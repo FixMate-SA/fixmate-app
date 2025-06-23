@@ -112,3 +112,9 @@ def whatsapp_webhook():
         send_whatsapp_message(from_number, response_message)
 
     return Response(status=200)
+
+# Add this new function at the end of the file for debugging
+@main.route('/ping', methods=['GET'])
+def ping():
+    print("--- PING ENDPOINT WAS HIT SUCCESSFULLY ---")
+    return "Pong!", 200
