@@ -11,7 +11,12 @@ from flask_migrate import Migrate
 app = Flask(__name__)
 
 # Configure the database connection using the Heroku environment variable
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace("://", "ql://", 1)
+# A small fix is needed for SQLAlchemy 1.4+ on Heroku
+db_url = os.environ.get('DATABASE_URL')
+if db_url and db_url.startswith("postgres://"):
+    # THIS LINE IS NOW CORRECTED
+    db_url = db_url.replace("postgres://", "postgresql://", 1) 
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Import and initialize the database with our app
@@ -54,7 +59,6 @@ def clear_user_state(user):
 
 
 # --- Service Functions ---
-# Note: These could be in services.py, but are here for simplicity in this refactor.
 
 def create_user_account_in_db(user, name):
     """Updates the user's name in the database."""
