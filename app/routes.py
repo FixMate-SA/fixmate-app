@@ -6,8 +6,9 @@ from .services import send_whatsapp_message, create_user_account, create_new_job
 
 main = Blueprint('main', __name__)
 
-@main.route('/whatsapp', methods=['POST'])
+@main.route('/whatsapp', methods=['GET', 'POST'])
 def whatsapp_webhook():
+    print("--- /WHATSAPP ENDPOINT WAS HIT SUCCESSFULLY ---")
     """Endpoint to receive incoming WhatsApp messages."""
     incoming_msg = request.values.get('Body', '').strip()
     from_number = request.values.get('From', '')
@@ -45,7 +46,7 @@ def whatsapp_webhook():
             service_details = user['data'].get('service', 'a service')
             lat = user['data'].get('latitude')
             lon = user['data'].get('longitude')
-            
+
             # Create the job with all the information
             job_id = create_new_job(from_number, service_details, lat, lon, potential_number)
 
@@ -108,13 +109,14 @@ def whatsapp_webhook():
 
     # --- End of Conversational Logic ---
 
+    # Only send a message if one has been defined
     if response_message:
         send_whatsapp_message(from_number, response_message)
 
     return Response(status=200)
 
-# Add this new function at the end of the file for debugging
 @main.route('/ping', methods=['GET'])
 def ping():
+    """A simple endpoint to test if the server is reachable and logging."""
     print("--- PING ENDPOINT WAS HIT SUCCESSFULLY ---")
     return "Pong!", 200
