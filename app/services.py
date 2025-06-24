@@ -1,14 +1,28 @@
 # app/services.py
 from twilio.rest import Client
-from .config import Config
+import os
 
-client = Client(Config.TWILIO_ACCOUNT_SID, Config.TWILIO_AUTH_TOKEN)
+# Get credentials from environment variables
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+TWILIO_WHATSAPP_NUMBER = os.environ.get('TWILIO_WHATSAPP_NUMBER')
+
+# Initialize the client only if credentials are available
+client = None
+if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
+    client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+else:
+    print("WARNING: Twilio credentials not found. The app will not be able to send messages.")
+
 
 def send_whatsapp_message(to_number, message_body):
     """Sends a message to a user via WhatsApp."""
+    if not client:
+        print(f"ERROR: Cannot send message. Twilio client not initialized.")
+        return None
     try:
         message = client.messages.create(
-            from_=Config.TWILIO_WHATSAPP_NUMBER,
+            from_=TWILIO_WHATSAPP_NUMBER,
             body=message_body,
             to=to_number
         )
@@ -21,20 +35,17 @@ def send_whatsapp_message(to_number, message_body):
 def create_user_account(name, phone_number):
     """
     Placeholder for creating a user in your database.
-    In a real app, this would interact with your PostgreSQL DB.
     """
     print(f"Creating user: {name} with number {phone_number}")
-    # DATABASE LOGIC GOES HERE
+    # In the future, you will add your database logic here.
     return True
 
 def create_new_job(user_id, service_requested, latitude, longitude, contact_number):
     """
     Placeholder for creating a new job in the database.
-    Now includes location data and a contact number.
     """
     print(f"User {user_id} requested a job for: '{service_requested}'")
     print(f"Location Data -> Latitude: {latitude}, Longitude: {longitude}")
     print(f"Contact Number for Fixer: {contact_number}")
-    # DATABASE LOGIC GOES HERE
-    # This would involve finding the nearest available fixer and creating a job record.
-    return "JOB-12347" # Return a mock job ID
+    # In the future, you will add your database logic here.
+    return "JOB-12348"
