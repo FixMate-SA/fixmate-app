@@ -6,10 +6,26 @@ from .services import send_whatsapp_message, create_user_account, create_new_job
 
 main = Blueprint('main', __name__)
 
+# NEW: Add a root route for health checks
+@main.route('/', methods=['GET'])
+def index():
+    """A simple homepage to confirm the app is running."""
+    print("--- ROOT / ENDPOINT WAS HIT ---")
+    return "<h1>FixMate WhatsApp Bot is running.</h1>", 200
+
+# This route is for browser testing
+@main.route('/ping', methods=['GET'])
+def ping():
+    """A simple endpoint to test if the server is reachable and logging."""
+    print("--- PING ENDPOINT WAS HIT SUCCESSFULLY ---")
+    return "Pong! The server is running.", 200
+
+# This is the main webhook route for Twilio
 @main.route('/whatsapp', methods=['GET', 'POST'])
 def whatsapp_webhook():
-    print("--- /WHATSAPP ENDPOINT WAS HIT SUCCESSFULLY ---")
     """Endpoint to receive incoming WhatsApp messages."""
+    print("--- /WHATSAPP ENDPOINT WAS HIT SUCCESSFULLY ---")
+
     incoming_msg = request.values.get('Body', '').strip()
     from_number = request.values.get('From', '')
 
@@ -25,49 +41,37 @@ def whatsapp_webhook():
 
     # --- Start of Conversational Logic ---
 
-    # We check for location data first, as it can be sent at any time.
     if current_state == 'awaiting_location' and latitude and longitude:
-        # Location received, now ask for contact number.
         response_message = (
             "Thank you for sharing your location.\n\n"
             "Lastly, please provide a contact number (e.g., 082 123 4567) that the fixer can call to confirm the address if needed."
         )
-        # Store location data and transition to the next state.
         user['data']['latitude'] = latitude
         user['data']['longitude'] = longitude
         set_user_state(from_number, 'awaiting_contact_number', data=user['data'])
 
     elif current_state == 'awaiting_contact_number':
-        # User has sent their contact number.
         potential_number = incoming_msg
-        # Basic validation: check if it contains digits and is a reasonable length.
         if any(char.isdigit() for char in potential_number) and len(potential_number) >= 10:
-            # Retrieve all stored data
             service_details = user['data'].get('service', 'a service')
             lat = user['data'].get('latitude')
             lon = user['data'].get('longitude')
-
-            # Create the job with all the information
             job_id = create_new_job(from_number, service_details, lat, lon, potential_number)
-
             response_message = (
                 f"Perfect! We have logged your request for '{service_details}' under contact number {potential_number}.\n\n"
                 f"Your job ID is {job_id}. We are finding a qualified fixer near you and will send a confirmation shortly."
             )
-            clear_user_state(from_number) # End conversation
+            clear_user_state(from_number)
         else:
-            # The provided text doesn't look like a phone number.
             response_message = "That doesn't seem to be a valid phone number. Please enter a valid South African contact number."
 
     elif current_state == 'awaiting_location':
-        # User sent text when we expected a location.
         response_message = (
             "I'm sorry, I can't understand a typed address yet.\n\n"
             "Please use the WhatsApp location sharing feature (the paperclip icon 📎) to send your pin location."
         )
 
     elif current_state is None:
-        # Start of a new conversation.
         if 'hello' in incoming_msg.lower() or 'hi' in incoming_msg.lower():
             response_message = (
                 "Welcome to FixMate! Your reliable help is a message away. \n\n"
@@ -97,26 +101,16 @@ def whatsapp_webhook():
 
     elif current_state == 'awaiting_service_request':
         service_details = incoming_msg
-        
-        # Ask for location.
         response_message = (
             f"Got it: '{service_details}'.\n\n"
             "Now, please share your location pin using the WhatsApp location feature so we can dispatch a fixer.\n\n"
             "Tap the paperclip icon 📎, then choose 'Location'."
         )
-        # Store the service request and set the new state
         set_user_state(from_number, 'awaiting_location', data={'service': service_details})
 
-    # --- End of Conversational Logic ---
-
-    # Only send a message if one has been defined
     if response_message:
         send_whatsapp_message(from_number, response_message)
 
+    # Always return a 200 OK for Twilio
     return Response(status=200)
 
-@main.route('/ping', methods=['GET'])
-def ping():
-    """A simple endpoint to test if the server is reachable and logging."""
-    print("--- PING ENDPOINT WAS HIT SUCCESSFULLY ---")
-    return "Pong!", 200
