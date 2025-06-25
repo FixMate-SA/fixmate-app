@@ -23,7 +23,6 @@ class User(db.Model, UserMixin):
     def __repr__(self):
         return f'<User {self.phone_number}>'
 
-# --- UPDATED: Fixer model now includes UserMixin ---
 class Fixer(db.Model, UserMixin):
     """Represents a service provider (fixer)."""
     __tablename__ = 'fixers'
@@ -55,6 +54,10 @@ class Job(db.Model):
     
     client_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     fixer_id = db.Column(db.Integer, db.ForeignKey('fixers.id'), nullable=True)
+    
+    # --- NEW: Rating fields ---
+    rating = db.Column(db.Integer, nullable=True) # e.g., 1 to 5 stars
+    rating_comment = db.Column(db.Text, nullable=True)
 
     def __repr__(self):
         return f'<Job {self.id} - {self.description[:20]}>'
