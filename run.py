@@ -1,7 +1,7 @@
 # run.py
 import os
 import re
-from flask import Flask, request, Response
+from flask import Flask, request, Response, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import click
@@ -20,7 +20,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 from app.models import db, User, Fixer, Job
 db.init_app(app)
 
-# Re-initialize Flask-Migrate for managing database schema changes
+# Initialize Flask-Migrate for managing database schema changes
 migrate = Migrate(app, db)
 
 
@@ -31,7 +31,6 @@ migrate = Migrate(app, db)
 @click.argument("skills")
 def add_fixer(name, phone, skills):
     """Creates a new fixer in the database."""
-    # Ensure phone number is in the correct format for WhatsApp
     if not phone.startswith("whatsapp:"):
         phone = f"whatsapp:{phone}"
         
@@ -84,18 +83,14 @@ def create_user_account_in_db(user, name):
 def find_fixer_for_job(service_description):
     """
     Finds an available fixer based on skills.
-    This is a simple version; it can be improved later.
     """
-    # Simple keyword matching for now
     if 'plumb' in service_description.lower() or 'pipe' in service_description.lower() or 'leak' in service_description.lower():
         skill_needed = 'plumbing'
     elif 'light' in service_description.lower() or 'electr' in service_description.lower():
         skill_needed = 'electrical'
     else:
-        # If no specific skill is detected, we can't find a fixer yet.
         return None
         
-    # Find the first active fixer who has the required skill
     fixer = Fixer.query.filter(Fixer.is_active==True, Fixer.skills.ilike(f'%{skill_needed}%')).first()
     return fixer
 
@@ -109,7 +104,6 @@ def create_new_job_in_db(user, service, lat, lon, contact):
         client_id=user.id
     )
 
-    # --- NEW: Job Matching Logic ---
     matched_fixer = find_fixer_for_job(service)
     
     if matched_fixer:
@@ -117,17 +111,15 @@ def create_new_job_in_db(user, service, lat, lon, contact):
         new_job.status = 'assigned'
         print(f"Job {new_job.id} assigned to {matched_fixer.full_name}")
         
-        # --- NEW: Notify the Fixer ---
         notification_message = (
             f"New FixMate Job Alert!\n\n"
             f"Service Needed: {service}\n"
             f"Client Contact: {contact}\n\n"
-            f"Please go to your Fixer dashboard to accept this job." # A future feature
+            f"Please go to your Fixer dashboard to accept this job."
         )
         send_whatsapp_message(to_number=matched_fixer.phone_number, message_body=notification_message)
     else:
         print(f"No suitable fixer found for job with description: {service}")
-        # The job remains 'pending'
 
     db.session.add(new_job)
     db.session.commit()
@@ -135,10 +127,17 @@ def create_new_job_in_db(user, service, lat, lon, contact):
     return new_job.id, matched_fixer is not None
 
 
-# --- Main Webhook Routes ---
+# --- Web and WhatsApp Routes ---
+
 @app.route('/', methods=['GET'])
 def index():
     return "<h1>FixMate WhatsApp Bot is running.</h1>", 200
+
+# --- NEW: Web Login Route ---
+@app.route('/login', methods=['GET'])
+def login():
+    """Displays the login page."""
+    return render_template('login.html')
 
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
@@ -152,7 +151,7 @@ def whatsapp_webhook():
     current_state = user.conversation_state
     response_message = ""
 
-    # (The conversational logic block is updated slightly at the end)
+    # (The conversational logic block remains unchanged)
     if current_state == 'awaiting_location' and latitude and longitude:
         response_message = (
             "Thank you for sharing your location.\n\n"
@@ -174,7 +173,6 @@ def whatsapp_webhook():
                 potential_number
             )
             
-            # --- NEW: Dynamic response based on whether a fixer was found ---
             if fixer_found:
                 response_message = (
                     f"Perfect! Your request has been logged (Job #{job_id}) and we have assigned a fixer.\n\n"
