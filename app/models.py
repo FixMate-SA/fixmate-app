@@ -1,10 +1,13 @@
 # app/models.py
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timezone
+from flask_login import UserMixin
 
 db = SQLAlchemy()
 
-class User(db.Model):
+# The User model now ONLY defines the database structure.
+# All login logic has been moved to run.py.
+class User(db.Model, UserMixin):
     """Represents a client who interacts with the bot."""
     __tablename__ = 'users'
 
