@@ -5,8 +5,6 @@ from flask_login import UserMixin
 
 db = SQLAlchemy()
 
-# The User model now ONLY defines the database structure.
-# All login logic has been moved to run.py.
 class User(db.Model, UserMixin):
     """Represents a client who interacts with the bot."""
     __tablename__ = 'users'
@@ -15,29 +13,27 @@ class User(db.Model, UserMixin):
     phone_number = db.Column(db.String(30), unique=True, nullable=False)
     full_name = db.Column(db.String(120), nullable=True)
     
-    # State management fields
     conversation_state = db.Column(db.String(50), nullable=True)
     service_request_cache = db.Column(db.String(255), nullable=True)
     latitude_cache = db.Column(db.Float, nullable=True)
     longitude_cache = db.Column(db.Float, nullable=True)
     
-    # Relationship to Jobs
     jobs = db.relationship('Job', backref='client', lazy=True)
 
     def __repr__(self):
         return f'<User {self.phone_number}>'
 
-class Fixer(db.Model):
+# --- UPDATED: Fixer model now includes UserMixin ---
+class Fixer(db.Model, UserMixin):
     """Represents a service provider (fixer)."""
     __tablename__ = 'fixers'
 
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(120), nullable=False)
     phone_number = db.Column(db.String(30), unique=True, nullable=False)
-    skills = db.Column(db.String(255), nullable=False) # e.g., "plumbing,electrical"
+    skills = db.Column(db.String(255), nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     
-    # Relationship to Jobs
     jobs = db.relationship('Job', backref='assigned_fixer', lazy=True)
 
     def __repr__(self):
@@ -49,18 +45,16 @@ class Job(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.Text, nullable=False)
-    status = db.Column(db.String(50), default='pending', nullable=False) # e.g., pending, assigned, complete
+    status = db.Column(db.String(50), default='pending', nullable=False)
     
-    # Location and Contact Info
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
     client_contact_number = db.Column(db.String(30), nullable=False)
     
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
-    # Foreign Keys to link User and Fixer
     client_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    fixer_id = db.Column(db.Integer, db.ForeignKey('fixers.id'), nullable=True) # Nullable until a fixer is assigned
+    fixer_id = db.Column(db.Integer, db.ForeignKey('fixers.id'), nullable=True)
 
     def __repr__(self):
         return f'<Job {self.id} - {self.description[:20]}>'
