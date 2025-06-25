@@ -2,35 +2,42 @@
 import os
 import re
 from flask import Flask, request, Response
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+import click
 
 # --- App Initialization ---
 app = Flask(__name__)
 
 # --- Database Configuration ---
-# Configure the database connection using the Heroku environment variable
 db_url = os.environ.get('DATABASE_URL')
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Import and initialize the database with our app
-from app.models import db, User
+# Import models and initialize db
+from app.models import db, User, Fixer, Job
 db.init_app(app)
 
-
-# --- NEW: Custom command to create database tables ---
-@app.cli.command("create-tables")
-def create_tables():
-    """Creates the database tables from the models."""
-    db.create_all()
-    print("Database tables created successfully!")
+# Re-initialize Flask-Migrate for managing database schema changes
+migrate = Migrate(app, db)
 
 
-# --- State Management (Now uses the database) ---
-# The 'with app.app_context()' blocks have been removed from these functions,
-# as Flask handles the context for the duration of a web request.
+# --- Admin Commands ---
+@app.cli.command("add-fixer")
+@click.argument("name")
+@click.argument("phone")
+@click.argument("skills")
+def add_fixer(name, phone, skills):
+    """Creates a new fixer in the database."""
+    new_fixer = Fixer(full_name=name, phone_number=phone, skills=skills)
+    db.session.add(new_fixer)
+    db.session.commit()
+    print(f"Successfully added fixer: {name}")
 
+
+# --- State Management (Uses the database) ---
 def get_or_create_user(phone_number):
     """Finds a user by phone number or creates a new one if not found."""
     user = User.query.filter_by(phone_number=phone_number).first()
@@ -69,10 +76,18 @@ def create_user_account_in_db(user, name):
     return True
 
 def create_new_job_in_db(user, service, lat, lon, contact):
-    """Placeholder for creating a job. This will eventually create a Job record."""
-    print(f"User {user.phone_number} requested a job for: '{service}'")
-    print(f"Location: {lat}, {lon} | Contact: {contact}")
-    return "JOB-DB-001"
+    """Creates a real Job record in the database."""
+    new_job = Job(
+        description=service,
+        latitude=lat,
+        longitude=lon,
+        client_contact_number=contact,
+        client_id=user.id
+    )
+    db.session.add(new_job)
+    db.session.commit()
+    print(f"New job created with ID: {new_job.id}")
+    return new_job.id
 
 
 # --- Twilio Integration ---
@@ -119,7 +134,7 @@ def whatsapp_webhook():
             )
             response_message = (
                 f"Perfect! We have logged your request for '{user.service_request_cache}' under contact number {potential_number}.\n\n"
-                f"Your job ID is {job_id}. We are finding a qualified fixer near you and will send a confirmation shortly."
+                f"Your job ID is #{job_id}. We are finding a qualified fixer near you and will send a confirmation shortly."
             )
             clear_user_state(user)
         else:
