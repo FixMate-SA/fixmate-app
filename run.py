@@ -8,7 +8,6 @@ app = Flask(__name__)
 
 # --- Database Configuration ---
 # Configure the database connection using the Heroku environment variable
-# A small fix is needed for SQLAlchemy 1.4+ on Heroku
 db_url = os.environ.get('DATABASE_URL')
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
@@ -19,54 +18,53 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 from app.models import db, User
 db.init_app(app)
 
+
 # --- NEW: Custom command to create database tables ---
 @app.cli.command("create-tables")
 def create_tables():
     """Creates the database tables from the models."""
-    with app.app_context():
-        db.create_all()
+    db.create_all()
     print("Database tables created successfully!")
 
 
-# --- State Management (Uses the database) ---
+# --- State Management (Now uses the database) ---
+# The 'with app.app_context()' blocks have been removed from these functions,
+# as Flask handles the context for the duration of a web request.
+
 def get_or_create_user(phone_number):
     """Finds a user by phone number or creates a new one if not found."""
-    with app.app_context():
-        user = User.query.filter_by(phone_number=phone_number).first()
-        if not user:
-            user = User(phone_number=phone_number)
-            db.session.add(user)
-            db.session.commit()
-        return user
+    user = User.query.filter_by(phone_number=phone_number).first()
+    if not user:
+        user = User(phone_number=phone_number)
+        db.session.add(user)
+        db.session.commit()
+    return user
 
 def set_user_state(user, new_state, data=None):
     """Sets a new state for a user in the database."""
-    with app.app_context():
-        user.conversation_state = new_state
-        if data:
-            user.service_request_cache = data.get('service')
-            user.latitude_cache = data.get('latitude')
-            user.longitude_cache = data.get('longitude')
-        db.session.commit()
+    user.conversation_state = new_state
+    if data:
+        user.service_request_cache = data.get('service')
+        user.latitude_cache = data.get('latitude')
+        user.longitude_cache = data.get('longitude')
+    db.session.commit()
     print(f"State for {user.phone_number} set to {new_state}")
 
 def clear_user_state(user):
     """Clears the state for a user in the database."""
-    with app.app_context():
-        user.conversation_state = None
-        user.service_request_cache = None
-        user.latitude_cache = None
-        user.longitude_cache = None
-        db.session.commit()
+    user.conversation_state = None
+    user.service_request_cache = None
+    user.latitude_cache = None
+    user.longitude_cache = None
+    db.session.commit()
     print(f"State for {user.phone_number} cleared.")
 
 
 # --- Service Functions ---
 def create_user_account_in_db(user, name):
     """Updates the user's name in the database."""
-    with app.app_context():
-        user.full_name = name
-        db.session.commit()
+    user.full_name = name
+    db.session.commit()
     print(f"Updated user: {name} with number {user.phone_number}")
     return True
 
