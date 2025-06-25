@@ -31,10 +31,14 @@ migrate = Migrate(app, db)
 @click.argument("skills")
 def add_fixer(name, phone, skills):
     """Creates a new fixer in the database."""
+    # Ensure phone number is in the correct format for WhatsApp
+    if not phone.startswith("whatsapp:"):
+        phone = f"whatsapp:{phone}"
+        
     new_fixer = Fixer(full_name=name, phone_number=phone, skills=skills)
     db.session.add(new_fixer)
     db.session.commit()
-    print(f"Successfully added fixer: {name}")
+    print(f"Successfully added fixer: {name} with number {phone}")
 
 
 # --- State Management (Uses the database) ---
@@ -68,6 +72,8 @@ def clear_user_state(user):
 
 
 # --- Service Functions ---
+from app.services import send_whatsapp_message
+
 def create_user_account_in_db(user, name):
     """Updates the user's name in the database."""
     user.full_name = name
@@ -75,8 +81,26 @@ def create_user_account_in_db(user, name):
     print(f"Updated user: {name} with number {user.phone_number}")
     return True
 
+def find_fixer_for_job(service_description):
+    """
+    Finds an available fixer based on skills.
+    This is a simple version; it can be improved later.
+    """
+    # Simple keyword matching for now
+    if 'plumb' in service_description.lower() or 'pipe' in service_description.lower() or 'leak' in service_description.lower():
+        skill_needed = 'plumbing'
+    elif 'light' in service_description.lower() or 'electr' in service_description.lower():
+        skill_needed = 'electrical'
+    else:
+        # If no specific skill is detected, we can't find a fixer yet.
+        return None
+        
+    # Find the first active fixer who has the required skill
+    fixer = Fixer.query.filter(Fixer.is_active==True, Fixer.skills.ilike(f'%{skill_needed}%')).first()
+    return fixer
+
 def create_new_job_in_db(user, service, lat, lon, contact):
-    """Creates a real Job record in the database."""
+    """Creates a Job record, finds a fixer, and notifies them."""
     new_job = Job(
         description=service,
         latitude=lat,
@@ -84,14 +108,31 @@ def create_new_job_in_db(user, service, lat, lon, contact):
         client_contact_number=contact,
         client_id=user.id
     )
+
+    # --- NEW: Job Matching Logic ---
+    matched_fixer = find_fixer_for_job(service)
+    
+    if matched_fixer:
+        new_job.assigned_fixer = matched_fixer
+        new_job.status = 'assigned'
+        print(f"Job {new_job.id} assigned to {matched_fixer.full_name}")
+        
+        # --- NEW: Notify the Fixer ---
+        notification_message = (
+            f"New FixMate Job Alert!\n\n"
+            f"Service Needed: {service}\n"
+            f"Client Contact: {contact}\n\n"
+            f"Please go to your Fixer dashboard to accept this job." # A future feature
+        )
+        send_whatsapp_message(to_number=matched_fixer.phone_number, message_body=notification_message)
+    else:
+        print(f"No suitable fixer found for job with description: {service}")
+        # The job remains 'pending'
+
     db.session.add(new_job)
     db.session.commit()
-    print(f"New job created with ID: {new_job.id}")
-    return new_job.id
-
-
-# --- Twilio Integration ---
-from app.services import send_whatsapp_message
+    
+    return new_job.id, matched_fixer is not None
 
 
 # --- Main Webhook Routes ---
@@ -111,7 +152,7 @@ def whatsapp_webhook():
     current_state = user.conversation_state
     response_message = ""
 
-    # (The entire conversational logic block remains unchanged)
+    # (The conversational logic block is updated slightly at the end)
     if current_state == 'awaiting_location' and latitude and longitude:
         response_message = (
             "Thank you for sharing your location.\n\n"
@@ -125,17 +166,25 @@ def whatsapp_webhook():
     elif current_state == 'awaiting_contact_number':
         potential_number = incoming_msg
         if any(char.isdigit() for char in potential_number) and len(potential_number) >= 10:
-            job_id = create_new_job_in_db(
+            job_id, fixer_found = create_new_job_in_db(
                 user,
                 user.service_request_cache,
                 user.latitude_cache,
                 user.longitude_cache,
                 potential_number
             )
-            response_message = (
-                f"Perfect! We have logged your request for '{user.service_request_cache}' under contact number {potential_number}.\n\n"
-                f"Your job ID is #{job_id}. We are finding a qualified fixer near you and will send a confirmation shortly."
-            )
+            
+            # --- NEW: Dynamic response based on whether a fixer was found ---
+            if fixer_found:
+                response_message = (
+                    f"Perfect! Your request has been logged (Job #{job_id}) and we have assigned a fixer.\n\n"
+                    f"They will contact you on {potential_number} shortly."
+                )
+            else:
+                 response_message = (
+                    f"Thank you. Your request has been logged (Job #{job_id}).\n\n"
+                    f"All our qualified fixers are currently busy. We will notify you as soon as one becomes available."
+                )
             clear_user_state(user)
         else:
             response_message = "That doesn't seem to be a valid phone number. Please enter a valid South African contact number."
