@@ -13,6 +13,9 @@ class User(db.Model, UserMixin):
     phone_number = db.Column(db.String(30), unique=True, nullable=False)
     full_name = db.Column(db.String(120), nullable=True)
     
+    # --- NEW: Admin flag ---
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
+
     conversation_state = db.Column(db.String(50), nullable=True)
     service_request_cache = db.Column(db.String(255), nullable=True)
     latitude_cache = db.Column(db.Float, nullable=True)
@@ -44,9 +47,9 @@ class Job(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.Text, nullable=False)
-    status = db.Column(db.String(50), default='awaiting_payment', nullable=False) # Status now starts as awaiting payment
+    status = db.Column(db.String(50), default='awaiting_payment', nullable=False)
     
-    latitude = db.Column(db.Float, nullable=True) # Now nullable until after payment
+    latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
     client_contact_number = db.Column(db.String(30), nullable=True)
     
@@ -57,10 +60,8 @@ class Job(db.Model):
     
     rating = db.Column(db.Integer, nullable=True)
     rating_comment = db.Column(db.Text, nullable=True)
-
-    # --- NEW: Payment fields ---
     amount = db.Column(db.Numeric(10, 2), nullable=True)
-    payment_status = db.Column(db.String(50), default='unpaid', nullable=False) # e.g., unpaid, paid
+    payment_status = db.Column(db.String(50), default='unpaid', nullable=False)
 
     def __repr__(self):
         return f'<Job {self.id} - {self.description[:20]}>'
