@@ -39,14 +39,12 @@ def load_user(user_id):
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 
-# --- Admin Commands & Helper Functions ---
+# --- Admin Commands & Helper Functions (condensed for brevity) ---
 @app.cli.command("add-fixer")
-# --- THIS IS THE CORRECTED SYNTAX ---
 @click.argument("name")
 @click.argument("phone")
 @click.argument("skills")
 def add_fixer(name, phone, skills):
-    """Creates a new fixer in the database."""
     if phone.startswith('0') and len(phone) == 10: formatted_phone = f"+27{phone[1:]}"
     elif phone.startswith('+') and len(phone) == 12: formatted_phone = phone
     else: print(f"Error: Invalid phone number format."); return
@@ -65,79 +63,100 @@ def get_or_create_user(phone_number):
 
 def set_user_state(user, new_state, data=None):
     user.conversation_state = new_state
-    if data: user.service_request_cache = data.get('job_id')
+    if data is not None:
+        user.service_request_cache = data.get('service', user.service_request_cache)
+        user.latitude_cache = data.get('latitude', user.latitude_cache)
+        user.longitude_cache = data.get('longitude', user.longitude_cache)
     db.session.commit()
 
 def clear_user_state(user):
-    user.conversation_state, user.service_request_cache = None, None
+    user.conversation_state, user.service_request_cache, user.latitude_cache, user.longitude_cache = None, None, None, None
     db.session.commit()
 
 def create_user_account_in_db(user, name): user.full_name = name; db.session.commit(); return True
 
+def find_fixer_for_job(service_description):
+    skill_needed = None
+    if 'plumb' in service_description.lower() or 'pipe' in service_description.lower() or 'leak' in service_description.lower(): skill_needed = 'plumbing'
+    elif 'light' in service_description.lower() or 'electr' in service_description.lower(): skill_needed = 'electrical'
+    if not skill_needed: return None
+    return Fixer.query.filter(Fixer.is_active==True, Fixer.skills.ilike(f'%{skill_needed}%')).first()
+
 from app.services import send_whatsapp_message
 
-def generate_payfast_signature(data, passphrase=None):
-    """Generates a PayFast signature."""
-    payload = urlencode(data)
-    if passphrase:
-        payload += f"&passphrase={passphrase}"
-    return hashlib.md5(payload.encode('utf-8')).hexdigest()
 
 # --- Web and WhatsApp Routes ---
 @app.route('/')
 def index(): return "<h1>FixMate WhatsApp Bot is running.</h1>"
-
-# (Login/Dashboard routes remain the same for now)
-# ...
 
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
     """Endpoint to receive incoming WhatsApp messages."""
     incoming_msg = request.values.get('Body', '').strip()
     from_number = request.values.get('From', '')
+    latitude = request.values.get('Latitude')
+    longitude = request.values.get('Longitude')
+
     user = get_or_create_user(from_number)
     current_state = user.conversation_state
     response_message = ""
     
-    # --- Conversation logic updated for payments ---
+    # --- Full Conversational Logic ---
     if current_state == 'awaiting_service_request':
         service_details = incoming_msg
-        
-        new_job = Job(description=service_details, client_id=user.id, amount=FIXED_CALLOUT_FEE)
-        db.session.add(new_job)
-        db.session.commit()
-
         response_message = (
-            f"Got it: '{service_details}'.\n\n"
-            f"There is a standard call-out fee of **R{FIXED_CALLOUT_FEE:.2f}** for this service.\n\n"
-            "Reply *YES* to approve the quote and proceed to payment."
+            "Got it. To help us find the nearest fixer, please share your location pin.\n\n"
+            "Tap the paperclip icon 📎, then choose 'Location'."
         )
-        set_user_state(user, 'awaiting_quote_approval', data={'job_id': new_job.id})
+        set_user_state(user, 'awaiting_location', data={'service': service_details})
+
+    elif current_state == 'awaiting_location' and latitude and longitude:
+        response_message = (
+            "Thank you for sharing your location.\n\n"
+            "Lastly, please provide a contact number (e.g., 082 123 4567) that the fixer can call if needed."
+        )
+        set_user_state(user, 'awaiting_contact_number', data={'latitude': latitude, 'longitude': longitude})
+
+    elif current_state == 'awaiting_contact_number':
+        potential_number = incoming_msg
+        if any(char.isdigit() for char in potential_number) and len(potential_number) >= 10:
+            # Now that we have all info, we create the job and quote the price
+            job = Job(
+                description=user.service_request_cache,
+                latitude=user.latitude_cache,
+                longitude=user.longitude_cache,
+                client_contact_number=potential_number,
+                client_id=user.id,
+                amount=FIXED_CALLOUT_FEE
+            )
+            db.session.add(job)
+            db.session.commit()
+
+            response_message = (
+                f"Great! We have all the details.\n\n"
+                f"There is a standard call-out fee of **R{FIXED_CALLOUT_FEE:.2f}** for this service.\n\n"
+                "Reply *YES* to approve the quote and proceed to payment."
+            )
+            # We store the job_id in the cache field to remember which job we're paying for
+            set_user_state(user, 'awaiting_quote_approval', data={'service': str(job.id)})
+        else:
+            response_message = "That doesn't seem to be a valid phone number. Please try again."
 
     elif current_state == 'awaiting_quote_approval':
-        job_id = user.service_request_cache
+        job_id = user.service_request_cache # service_request_cache now holds the job_id
         job = db.session.get(Job, int(job_id))
         
         if 'yes' in incoming_msg.lower() and job:
             payment_data = {
                 'merchant_id': PAYFAST_MERCHANT_ID,
                 'merchant_key': PAYFAST_MERCHANT_KEY,
-                'return_url': url_for('payment_success', _external=True),
-                'cancel_url': url_for('payment_cancel', _external=True),
+                'return_url': url_for('payment_success', job_id=job.id, _external=True),
+                'cancel_url': url_for('payment_cancel', job_id=job.id, _external=True),
                 'notify_url': url_for('payment_notify', _external=True),
                 'm_payment_id': str(job.id),
                 'amount': f"{job.amount:.2f}",
                 'item_name': f"FixMate Job #{job.id}: {job.description}"
             }
-
-            # Create the parameter string
-            pf_param_string = urlencode(payment_data)
-
-            # The signature is now correctly handled, but omitted for sandbox simplicity
-            # In a real app, you would generate a signature here
-            # signature = generate_payfast_signature(payment_data)
-            # payment_data['signature'] = signature
-            
             payment_url = f"{PAYFAST_URL}?{urlencode(payment_data)}"
 
             response_message = (
@@ -147,36 +166,71 @@ def whatsapp_webhook():
             )
             clear_user_state(user)
         else:
+            job.status = 'cancelled'
+            db.session.commit()
             response_message = "Okay, the job request has been cancelled. Please say 'hello' if you need anything else."
             clear_user_state(user)
-    
-    # (Other conversation states remain the same)
-    else: # Fallback for any other state
+
+    # (Other states like registration, or the initial 'hello')
+    else: 
         if 'hello' in incoming_msg.lower() or 'hi' in incoming_msg.lower():
             response_message = (
-                "Welcome back to FixMate! \n\n"
-                "To request a new service, just tell us what you need (e.g., 'Leaking pipe')."
+                "Welcome to FixMate! Your reliable help is a message away. \n\n"
+                "To request a service, please describe what you need (e.g., 'Leaking pipe', 'Broken light switch')."
             )
             set_user_state(user, 'awaiting_service_request')
         else:
-            # If the user is not in a specific flow, assume they want a new service
+            # If the user sends something unexpected, guide them to start a request
+            response_message = "Sorry, I didn't understand. To start a new request, please tell us what service you need."
             set_user_state(user, 'awaiting_service_request')
-            # Re-run the webhook logic with the new state
-            return whatsapp_webhook()
 
     if response_message: send_whatsapp_message(from_number, response_message)
     return Response(status=200)
 
-# --- Payment Callback Routes ---
+# --- NEW: Payment Callback Routes Updated ---
 @app.route('/payment/success')
 def payment_success():
-    return "<h1>Thank you! Your payment was successful.</h1><p>We are now finding a fixer for you.</p>"
+    """
+    Page user sees after a successful payment.
+    This is where we confirm the payment and dispatch the fixer.
+    """
+    job_id = request.args.get('job_id')
+    job = db.session.get(Job, int(job_id)) if job_id else None
+
+    if job and job.payment_status != 'paid':
+        job.payment_status = 'paid'
+        
+        # Now that payment is confirmed, find and notify a fixer
+        matched_fixer = find_fixer_for_job(job.description)
+        if matched_fixer:
+            job.assigned_fixer = matched_fixer
+            job.status = 'assigned'
+            notification_message = f"New FixMate Job Alert!\n\nService Needed: {job.description}\nClient Contact: {job.client_contact_number}\n\nPlease go to your Fixer Portal to accept this job:\n{url_for('fixer_login', _external=True)}"
+            send_whatsapp_message(to_number=matched_fixer.phone_number, message_body=notification_message)
+        else:
+            job.status = 'paid_unassigned' # A new status for paid but unassigned jobs
+        
+        db.session.commit()
+        return "<h1>Thank you! Your payment was successful.</h1><p>We are now finding a fixer for you.</p>"
+    
+    return "<h1>Payment Confirmed</h1><p>Your payment has already been processed. We are assigning a fixer.</p>"
 
 @app.route('/payment/cancel')
 def payment_cancel():
-    return "<h1>Payment Cancelled</h1><p>Your payment was not processed. Please start again if you wish to continue.</p>"
+    job_id = request.args.get('job_id')
+    job = db.session.get(Job, int(job_id)) if job_id else None
+    if job:
+        job.status = 'cancelled'
+        db.session.commit()
+    return "<h1>Payment Cancelled</h1><p>Your payment was not processed. Please start again by saying 'hello' on WhatsApp.</p>"
 
 @app.route('/payment/notify', methods=['POST'])
 def payment_notify():
+    # In a real app, you would add logic here to verify the ITN from PayFast
+    # and securely update the job status, as a backup to the /payment/success route.
     print("Received ITN from PayFast")
     return Response(status=200)
+
+# All other web routes (login, dashboard, etc.) remain the same.
+# ...
+
