@@ -44,20 +44,23 @@ class Job(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.Text, nullable=False)
-    status = db.Column(db.String(50), default='pending', nullable=False)
+    status = db.Column(db.String(50), default='awaiting_payment', nullable=False) # Status now starts as awaiting payment
     
-    latitude = db.Column(db.Float, nullable=False)
-    longitude = db.Column(db.Float, nullable=False)
-    client_contact_number = db.Column(db.String(30), nullable=False)
+    latitude = db.Column(db.Float, nullable=True) # Now nullable until after payment
+    longitude = db.Column(db.Float, nullable=True)
+    client_contact_number = db.Column(db.String(30), nullable=True)
     
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     client_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     fixer_id = db.Column(db.Integer, db.ForeignKey('fixers.id'), nullable=True)
     
-    # --- NEW: Rating fields ---
-    rating = db.Column(db.Integer, nullable=True) # e.g., 1 to 5 stars
+    rating = db.Column(db.Integer, nullable=True)
     rating_comment = db.Column(db.Text, nullable=True)
+
+    # --- NEW: Payment fields ---
+    amount = db.Column(db.Numeric(10, 2), nullable=True)
+    payment_status = db.Column(db.String(50), default='unpaid', nullable=False) # e.g., unpaid, paid
 
     def __repr__(self):
         return f'<Job {self.id} - {self.description[:20]}>'
