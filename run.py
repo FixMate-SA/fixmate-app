@@ -2,6 +2,7 @@
 import os
 import re
 import hashlib
+import requests # New import
 from urllib.parse import urlencode
 from flask import Flask, request, Response, render_template, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
@@ -33,12 +34,32 @@ login_manager.init_app(app)
 
 @login_manager.user_loader
 def load_user(user_id):
-    # Checks the session to see if we're loading a 'user' or a 'fixer'
-    if session.get('user_type') == 'fixer':
-        return db.session.get(Fixer, int(user_id))
+    if session.get('user_type') == 'fixer': return db.session.get(Fixer, int(user_id))
     return db.session.get(User, int(user_id))
-
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+
+
+# --- NEW: Speech-to-Text Placeholder Function ---
+def transcribe_audio(media_url):
+    """
+    Downloads audio from a Twilio URL and returns transcribed text.
+    This is a placeholder. In a real app, this would call a real Speech-to-Text API.
+    """
+    try:
+        # Twilio requires authentication to access media URLs
+        auth = (os.environ.get('TWILIO_ACCOUNT_SID'), os.environ.get('TWILIO_AUTH_TOKEN'))
+        r = requests.get(media_url, auth=auth)
+        
+        if r.status_code == 200:
+            print("Audio file downloaded successfully. Pretending to transcribe.")
+            # We'll return a specific phrase to test our dynamic quoting
+            return "my geyser is leaking badly"
+        else:
+            print(f"Error downloading audio: {r.status_code}")
+            return None
+    except Exception as e:
+        print(f"An error occurred during transcription: {e}")
+        return None
 
 
 # --- Admin Commands ---
@@ -188,7 +209,6 @@ def authenticate(token):
             redirect_to = 'fixer_dashboard'
         else:
             user = db.session.get(User, user_id)
-            # Admins use the standard user login but are redirected to the admin panel
             redirect_to = 'admin_dashboard' if user and user.is_admin else 'dashboard'
 
         if user:
@@ -311,12 +331,31 @@ def payment_notify():
 # --- Main WhatsApp Webhook ---
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
-    incoming_msg, from_number = request.values.get('Body', '').strip(), request.values.get('From', '')
-    latitude, longitude = request.values.get('Latitude'), request.values.get('Longitude')
+    """Endpoint to receive incoming WhatsApp messages."""
+    from_number = request.values.get('From', '')
+    
+    # --- NEW: Check for audio media FIRST ---
+    media_url = request.values.get('MediaUrl0')
+    media_type = request.values.get('MediaContentType0', '')
+    
+    if media_url and 'audio' in media_type:
+        print(f"Received audio message from {from_number}. Transcribing...")
+        incoming_msg = transcribe_audio(media_url)
+        if not incoming_msg:
+            send_whatsapp_message(from_number, "Sorry, I couldn't understand that audio. Please try again or send a text message.")
+            return Response(status=200)
+    else:
+        # If not audio, process as text
+        incoming_msg = request.values.get('Body', '').strip()
+
+    # The rest of the logic uses `incoming_msg` (from text or audio)
+    latitude = request.values.get('Latitude')
+    longitude = request.values.get('Longitude')
     user = get_or_create_user(from_number)
     current_state = user.conversation_state
     response_message = ""
     
+    # (The entire conversational logic block from the previous step is preserved here)
     if current_state == 'awaiting_rating':
         job_id_to_rate = user.service_request_cache
         job = db.session.get(Job, int(job_id_to_rate)) if job_id_to_rate else None
@@ -365,9 +404,9 @@ def whatsapp_webhook():
             clear_user_state(user)
         else: response_message = "That doesn't look like a valid phone number. Please try again."
     else: # Default state
-        response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe' or 'Garden cleaning')."
+        response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe') or send a voice note."
         set_user_state(user, 'awaiting_service_request')
     
-    if response_message: send_whatsapp_message(from_number, response_message)
+    if response_message:
+        send_whatsapp_message(from_number, response_message)
     return Response(status=200)
-

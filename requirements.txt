@@ -7,3 +7,7 @@ gunicorn
 Flask-SQLAlchemy
 Flask-Migrate
 Flask-Login
+itsdangerous
+click
+requests
+pydub
