@@ -11,3 +11,4 @@ itsdangerous
 click
 requests
 pydub
+google-generativeai

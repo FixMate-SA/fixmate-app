@@ -10,6 +10,9 @@ from flask_migrate import Migrate
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from itsdangerous import URLSafeTimedSerializer
 import click
+import google.generativeai as genai # New import
+from pydub import AudioSegment # New import
+import io # New import
 
 # --- App Initialization & Config ---
 app = Flask(__name__)
@@ -20,10 +23,13 @@ if db_url and db_url.startswith("postgres://"):
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# --- PayFast Configuration ---
+# --- API Keys Configuration ---
 PAYFAST_MERCHANT_ID = os.environ.get('PAYFAST_MERCHANT_ID')
 PAYFAST_MERCHANT_KEY = os.environ.get('PAYFAST_MERCHANT_KEY')
 PAYFAST_URL = 'https://sandbox.payfast.co.za/eng/process'
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY') # New
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 # --- Initialize Extensions ---
 from app.models import db, User, Fixer, Job
@@ -39,21 +45,38 @@ def load_user(user_id):
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 
-# --- NEW: Speech-to-Text Placeholder Function ---
+# --- Speech-to-Text Function ---
 def transcribe_audio(media_url):
-    """
-    Downloads audio from a Twilio URL and returns transcribed text.
-    This is a placeholder. In a real app, this would call a real Speech-to-Text API.
-    """
+    """Downloads audio, converts it, and transcribes it using the Gemini API."""
+    if not GEMINI_API_KEY:
+        print("ERROR: GEMINI_API_KEY not set. Cannot transcribe audio.")
+        return None
+        
     try:
-        # Twilio requires authentication to access media URLs
         auth = (os.environ.get('TWILIO_ACCOUNT_SID'), os.environ.get('TWILIO_AUTH_TOKEN'))
         r = requests.get(media_url, auth=auth)
         
         if r.status_code == 200:
-            print("Audio file downloaded successfully. Pretending to transcribe.")
-            # We'll return a specific phrase to test our dynamic quoting
-            return "my geyser is leaking badly"
+            ogg_audio = io.BytesIO(r.content)
+            audio = AudioSegment.from_ogg(ogg_audio)
+            
+            mp3_audio = io.BytesIO()
+            audio.export(mp3_audio, format="mp3")
+            mp3_audio.seek(0)
+
+            print("Audio converted to MP3. Uploading to Gemini for transcription...")
+            
+            gemini_file = genai.upload_file(mp3_audio, mime_type='audio/mp3')
+            model = genai.GenerativeModel('models/gemini-1.5-flash')
+            response = model.generate_content(["Please transcribe this audio.", gemini_file])
+            genai.delete_file(gemini_file.name)
+            
+            if response.text:
+                print(f"Transcription successful: '{response.text}'")
+                return response.text
+            else:
+                print("Transcription failed: No text in response.")
+                return None
         else:
             print(f"Error downloading audio: {r.status_code}")
             return None
@@ -68,92 +91,60 @@ def transcribe_audio(media_url):
 @click.argument("phone")
 @click.argument("skills")
 def add_fixer(name, phone, skills):
-    """Creates a new fixer in the database with correct phone formatting."""
-    if phone.startswith('0') and len(phone) == 10:
-        formatted_phone = f"+27{phone[1:]}"
-    elif phone.startswith('+') and len(phone) == 12:
-        formatted_phone = phone
-    else:
-        print(f"Error: Invalid phone number format. Please use a 10-digit SA number (e.g., 0821234567).")
-        return
-    
+    if phone.startswith('0') and len(phone) == 10: formatted_phone = f"+27{phone[1:]}"
+    elif phone.startswith('+') and len(phone) == 12: formatted_phone = phone
+    else: print(f"Error: Invalid phone number format."); return
     whatsapp_phone = f"whatsapp:{formatted_phone}"
-    
     if Fixer.query.filter_by(phone_number=whatsapp_phone).first():
-        print(f"Error: Fixer with phone number {whatsapp_phone} already exists.")
-        return
-
+        print(f"Error: Fixer with phone number {whatsapp_phone} already exists."); return
     new_fixer = Fixer(full_name=name, phone_number=whatsapp_phone, skills=skills)
-    db.session.add(new_fixer)
-    db.session.commit()
+    db.session.add(new_fixer); db.session.commit()
     print(f"Successfully added fixer: '{name}' with number {whatsapp_phone}")
 
 @app.cli.command("promote-admin")
 @click.argument("phone")
 def promote_admin(phone):
-    """Gives a user admin privileges."""
     if not (phone.startswith('0') and len(phone) == 10):
-        print("Error: Please provide a valid 10-digit SA number (e.g., 0821234567).")
-        return
-    
+        print("Error: Please provide a valid 10-digit SA number (e.g., 0821234567)."); return
     formatted_phone = f"whatsapp:+27{phone[1:]}"
     user = User.query.filter_by(phone_number=formatted_phone).first()
-    
-    if not user:
-        print(f"Error: User with phone number {formatted_phone} not found.")
-        return
-        
-    user.is_admin = True
-    db.session.commit()
+    if not user: print(f"Error: User with phone number {formatted_phone} not found."); return
+    user.is_admin = True; db.session.commit()
     print(f"Successfully promoted '{user.full_name or user.phone_number}' to admin.")
 
 
 # --- Helper & Service Functions ---
 def get_or_create_user(phone_number):
-    if not phone_number.startswith("whatsapp:"):
-        phone_number = f"whatsapp:{phone_number}"
+    if not phone_number.startswith("whatsapp:"): phone_number = f"whatsapp:{phone_number}"
     user = User.query.filter_by(phone_number=phone_number).first()
-    if not user:
-        user = User(phone_number=phone_number)
-        db.session.add(user)
-        db.session.commit()
+    if not user: user = User(phone_number=phone_number); db.session.add(user); db.session.commit()
     return user
-
 def set_user_state(user, new_state, data=None):
     user.conversation_state = new_state
-    if data is not None:
-        user.service_request_cache = str(data.get('job_id')) if data.get('job_id') else None
+    if data is not None: user.service_request_cache = str(data.get('job_id')) if data.get('job_id') else None
     db.session.commit()
-
 def clear_user_state(user):
-    user.conversation_state, user.service_request_cache = None, None
-    db.session.commit()
-
+    user.conversation_state, user.service_request_cache = None, None; db.session.commit()
 def find_fixer_for_job(service_description):
     desc = service_description.lower()
     skill_needed = None
     if any(k in desc for k in ['plumb', 'pipe', 'leak', 'geyser', 'tap', 'toilet']): skill_needed = 'plumbing'
     elif any(k in desc for k in ['light', 'electr', 'plug', 'wiring', 'switch']): skill_needed = 'electrical'
-    
     if skill_needed:
         fixer = Fixer.query.filter(Fixer.is_active==True, Fixer.skills.ilike(f'%{skill_needed}%')).first()
         if fixer: return fixer
-    
     return Fixer.query.filter(Fixer.is_active==True, Fixer.skills.ilike('%general%')).first()
-
 def get_quote_for_service(service_description):
     desc = service_description.lower()
     if any(k in desc for k in ['plumb', 'pipe', 'leak', 'geyser', 'tap', 'toilet']): return 450.00
     if any(k in desc for k in ['light', 'electr', 'plug', 'wiring', 'switch']): return 400.00
     return 350.00
-
 from app.services import send_whatsapp_message
 
 
 # --- Main Web Routes ---
 @app.route('/')
-def index():
-    return "<h1>FixMate-SA Bot is running.</h1>"
+def index(): return "<h1>FixMate-SA Bot is running.</h1>"
 
 # --- Authentication Routes ---
 @app.route('/login', methods=['GET', 'POST'])
@@ -161,18 +152,13 @@ def login():
     if request.method == 'POST':
         phone_number = request.form.get('phone')
         if not phone_number or not re.match(r'^(0[6-8][0-9]{8})$', phone_number.replace(" ", "")):
-            flash('Please enter a valid 10-digit South African cell number.', 'danger')
-            return redirect(url_for('login'))
-        
+            flash('Please enter a valid 10-digit South African cell number.', 'danger'); return redirect(url_for('login'))
         formatted_number_db = f"whatsapp:+27{phone_number[1:]}"
         user = get_or_create_user(formatted_number_db)
-        
         token = serializer.dumps({'id': user.id, 'type': 'user'}, salt='login-salt')
         login_url = url_for('authenticate', token=token, _external=True)
         send_whatsapp_message(to_number=formatted_number_db, message_body=f"Hi! To log in to your FixMate-SA dashboard, please click this link:\n\n{login_url}")
-        
-        flash('A login link has been sent to your WhatsApp number.', 'success')
-        return redirect(url_for('login'))
+        flash('A login link has been sent to your WhatsApp number.', 'success'); return redirect(url_for('login'))
     return render_template('login.html')
 
 @app.route('/fixer/login', methods=['GET', 'POST'])
@@ -180,22 +166,14 @@ def fixer_login():
     if request.method == 'POST':
         phone_number = request.form.get('phone')
         if not phone_number or not re.match(r'^(0[6-8][0-9]{8})$', phone_number.replace(" ", "")):
-            flash('Please enter a valid 10-digit South African cell number.', 'danger')
-            return redirect(url_for('fixer_login'))
-        
+            flash('Please enter a valid 10-digit SA cell number.', 'danger'); return redirect(url_for('fixer_login'))
         formatted_number_db = f"whatsapp:+27{phone_number[1:]}"
         fixer = Fixer.query.filter_by(phone_number=formatted_number_db).first()
-
-        if not fixer:
-            flash('This phone number is not registered as a Fixer.', 'danger')
-            return redirect(url_for('fixer_login'))
-            
+        if not fixer: flash('This phone number is not registered as a Fixer.', 'danger'); return redirect(url_for('fixer_login'))
         token = serializer.dumps({'id': fixer.id, 'type': 'fixer'}, salt='login-salt')
         login_url = url_for('authenticate', token=token, _external=True)
         send_whatsapp_message(to_number=fixer.phone_number, message_body=f"Hi {fixer.full_name}! To log in to your Fixer Portal, please click this link:\n\n{login_url}")
-        
-        flash('A login link has been sent to your WhatsApp number.', 'success')
-        return redirect(url_for('fixer_login'))
+        flash('A login link has been sent to your WhatsApp number.', 'success'); return redirect(url_for('fixer_login'))
     return render_template('login.html', fixer_login=True)
 
 @app.route('/authenticate/<token>')
@@ -203,59 +181,43 @@ def authenticate(token):
     try:
         data = serializer.loads(token, salt='login-salt', max_age=3600)
         user_id, user_type = data.get('id'), data.get('type')
-        
         if user_type == 'fixer':
-            user = db.session.get(Fixer, user_id)
-            redirect_to = 'fixer_dashboard'
+            user = db.session.get(Fixer, user_id); redirect_to = 'fixer_dashboard'
         else:
             user = db.session.get(User, user_id)
             redirect_to = 'admin_dashboard' if user and user.is_admin else 'dashboard'
-
         if user:
-            session['user_type'] = user_type
-            login_user(user)
-            flash('You have been logged in successfully!', 'success')
-            return redirect(url_for(redirect_to))
-        else:
-            flash('Login failed. User not found.', 'danger')
-    except Exception:
-        flash('Invalid or expired login link. Please try again.', 'danger')
+            session['user_type'] = user_type; login_user(user)
+            flash('You have been logged in successfully!', 'success'); return redirect(url_for(redirect_to))
+        else: flash('Login failed. User not found.', 'danger')
+    except Exception: flash('Invalid or expired login link. Please try again.', 'danger')
     return redirect(url_for('login'))
 
 @app.route('/logout')
 @login_required
-def logout():
-    logout_user()
-    flash('You have been logged out.', 'info')
-    return redirect(url_for('login'))
+def logout(): logout_user(); flash('You have been logged out.', 'info'); return redirect(url_for('login'))
 
-# --- Dashboard Routes ---
+# --- Dashboard & Job Action Routes ---
 @app.route('/dashboard')
 @login_required
-def dashboard():
-    return render_template('dashboard.html')
+def dashboard(): return render_template('dashboard.html')
 
 @app.route('/fixer/dashboard')
 @login_required
 def fixer_dashboard():
-    if session.get('user_type') != 'fixer':
-        flash('Access denied.', 'danger')
-        return redirect(url_for('login'))
+    if session.get('user_type') != 'fixer': flash('Access denied.', 'danger'); return redirect(url_for('login'))
     return render_template('fixer_dashboard.html')
 
 @app.route('/admin')
 @login_required
 def admin_dashboard():
     if not getattr(current_user, 'is_admin', False):
-        flash('You do not have permission to access this page.', 'danger')
-        return redirect(url_for('dashboard'))
-    
+        flash('You do not have permission to access this page.', 'danger'); return redirect(url_for('dashboard'))
     all_users = User.query.order_by(User.id.desc()).all()
     all_fixers = Fixer.query.order_by(Fixer.id.desc()).all()
     all_jobs = Job.query.order_by(Job.id.desc()).all()
     return render_template('admin_dashboard.html', users=all_users, fixers=all_fixers, jobs=all_jobs)
 
-# --- Job Action Routes ---
 @app.route('/admin/assign_job', methods=['POST'])
 @login_required
 def admin_assign_job():
@@ -271,8 +233,7 @@ def admin_assign_job():
         db.session.commit()
         send_whatsapp_message(to_number=fixer.phone_number, message_body=f"NEW JOB (Admin Assigned)\n\nService: {job.description}\nClient Contact: {job.client_contact_number}\n\nPlease go to your Fixer Portal to accept this job.")
         flash(f'Job #{job.id} has been manually assigned to {fixer.full_name}.', 'success')
-    else:
-        flash('Error assigning job. Job or Fixer not found.', 'danger')
+    else: flash('Error assigning job. Job or Fixer not found.', 'danger')
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/job/accept/<int:job_id>')
@@ -316,17 +277,16 @@ def payment_success():
         db.session.commit()
         return "<h1>Thank you! Your payment was successful.</h1><p>We are now finding a fixer for you.</p>"
     return "<h1>Payment Confirmed</h1><p>Your payment may have already been processed.</p>"
-
 @app.route('/payment/cancel')
 def payment_cancel():
     job_id = request.args.get('job_id')
     job = db.session.get(Job, int(job_id)) if job_id else None
     if job: job.status = 'cancelled'; db.session.commit()
     return "<h1>Payment Cancelled</h1><p>Your payment was not processed.</p>"
-
 @app.route('/payment/notify', methods=['POST'])
 def payment_notify():
     print("Received ITN from PayFast"); return Response(status=200)
+
 
 # --- Main WhatsApp Webhook ---
 @app.route('/whatsapp', methods=['POST'])
@@ -334,28 +294,28 @@ def whatsapp_webhook():
     """Endpoint to receive incoming WhatsApp messages."""
     from_number = request.values.get('From', '')
     
-    # --- NEW: Check for audio media FIRST ---
+    # Check for audio media FIRST
     media_url = request.values.get('MediaUrl0')
     media_type = request.values.get('MediaContentType0', '')
     
+    # Default to text message
+    incoming_msg = request.values.get('Body', '').strip()
+    
     if media_url and 'audio' in media_type:
         print(f"Received audio message from {from_number}. Transcribing...")
-        incoming_msg = transcribe_audio(media_url)
-        if not incoming_msg:
+        transcribed_text = transcribe_audio(media_url)
+        if transcribed_text:
+            incoming_msg = transcribed_text # Overwrite with transcribed text if successful
+        else:
             send_whatsapp_message(from_number, "Sorry, I couldn't understand that audio. Please try again or send a text message.")
             return Response(status=200)
-    else:
-        # If not audio, process as text
-        incoming_msg = request.values.get('Body', '').strip()
 
-    # The rest of the logic uses `incoming_msg` (from text or audio)
-    latitude = request.values.get('Latitude')
-    longitude = request.values.get('Longitude')
+    # --- The rest of the logic uses `incoming_msg` (from text or audio) ---
+    latitude = request.values.get('Latitude'); longitude = request.values.get('Longitude')
     user = get_or_create_user(from_number)
     current_state = user.conversation_state
     response_message = ""
     
-    # (The entire conversational logic block from the previous step is preserved here)
     if current_state == 'awaiting_rating':
         job_id_to_rate = user.service_request_cache
         job = db.session.get(Job, int(job_id_to_rate)) if job_id_to_rate else None
@@ -410,3 +370,4 @@ def whatsapp_webhook():
     if response_message:
         send_whatsapp_message(from_number, response_message)
     return Response(status=200)
+
