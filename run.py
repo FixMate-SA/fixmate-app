@@ -48,14 +48,24 @@ def transcribe_audio(media_url, media_type):
     """Downloads audio and transcribes it using the Gemini API directly."""
     if not GEMINI_API_KEY:
         print("ERROR: GEMINI_API_KEY not set."); return None
+        
     try:
         auth = (os.environ.get('TWILIO_ACCOUNT_SID'), os.environ.get('TWILIO_AUTH_TOKEN'))
         r = requests.get(media_url, auth=auth)
+        
         if r.status_code == 200:
-            gemini_file = genai.upload_file(r.content, mime_type=media_type)
+            print(f"Audio downloaded. Uploading to Gemini with MIME type: {media_type}")
+            
+            # --- THIS IS THE CORRECTED LINE ---
+            # We explicitly name the parameter `file_data` to pass the raw bytes
+            gemini_file = genai.upload_file(file_data=r.content, mime_type=media_type)
+            
             model = genai.GenerativeModel('models/gemini-1.5-flash')
-            response = model.generate_content(["Please transcribe this audio.", gemini_file])
+            prompt = "Please transcribe the following audio. The speaker may be using English, Sepedi, Xitsonga, or Venda."
+            response = model.generate_content([prompt, gemini_file])
+            
             genai.delete_file(gemini_file.name)
+            
             if response.text:
                 print(f"Transcription successful: '{response.text}'")
                 return response.text
@@ -94,7 +104,7 @@ def promote_admin(phone):
     print(f"Successfully promoted '{user.full_name or user.phone_number}' to admin.")
 
 
-# --- THIS IS THE RESTORED BLOCK OF HELPER FUNCTIONS ---
+# --- Helper & Service Functions ---
 from app.services import send_whatsapp_message
 def get_or_create_user(phone_number):
     if not phone_number.startswith("whatsapp:"): phone_number = f"whatsapp:{phone_number}"
@@ -131,7 +141,6 @@ def create_new_job_in_db(user, service, lat, lon, contact):
     return job.id, matched_fixer is not None
 def create_user_account_in_db(user, name):
     user.full_name = name; db.session.commit(); return True
-# --- END OF RESTORED BLOCK ---
 
 
 # --- Main Web Routes ---
