@@ -35,7 +35,7 @@
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fixer Assigned</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Your Rating</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -55,8 +55,13 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {{ job.assigned_fixer.full_name if job.assigned_fixer else 'Pending' }}
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {{ job.rating if job.rating else 'N/A' }}
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <!-- NEW: Link to the tracking page -->
+                                        {% if job.status == 'accepted' or job.status == 'complete' %}
+                                            <a href="{{ url_for('track_job', job_id=job.id) }}" class="text-indigo-600 hover:text-indigo-900">Track Fixer</a>
+                                        {% else %}
+                                            <span>-</span>
+                                        {% endif %}
                                     </td>
                                 </tr>
                             {% else %}
