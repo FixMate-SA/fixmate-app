@@ -52,10 +52,11 @@ def transcribe_audio(media_url, media_type):
         auth = (os.environ.get('TWILIO_ACCOUNT_SID'), os.environ.get('TWILIO_AUTH_TOKEN'))
         r = requests.get(media_url, auth=auth)
         if r.status_code == 200:
+            # Using the Gemini 1.5 Flash model for fast transcription
             gemini_file = genai.upload_file(r.content, mime_type=media_type)
             model = genai.GenerativeModel('models/gemini-1.5-flash')
             response = model.generate_content(["Please transcribe this audio.", gemini_file])
-            genai.delete_file(gemini_file.name)
+            genai.delete_file(gemini_file.name) # Clean up the uploaded file
             if response.text:
                 print(f"Transcription successful: '{response.text}'")
                 return response.text
@@ -94,33 +95,89 @@ def promote_admin(phone):
     print(f"Successfully promoted '{user.full_name or user.phone_number}' to admin.")
 
 
-# --- THIS IS THE RESTORED BLOCK OF HELPER FUNCTIONS ---
+# --- START OF MODIFIED BLOCK ---
+# --- Gemini-Powered Helper Functions ---
 from app.services import send_whatsapp_message
+
+def classify_service_request(service_description):
+    """Uses Gemini to classify a service description into a skill category."""
+    if not GEMINI_API_KEY:
+        print("WARN: GEMINI_API_KEY not set. Falling back to keyword matching.")
+        # Fallback to old logic if API key is not available
+        desc = service_description.lower()
+        if any(k in desc for k in ['plumb', 'pipe', 'leak', 'geyser', 'tap', 'toilet']): return 'plumbing'
+        if any(k in desc for k in ['light', 'electr', 'plug', 'wiring', 'switch']): return 'electrical'
+        return 'general'
+
+    try:
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        # Precise prompt to guide the model for a clean, single-word response
+        prompt = f"""
+        Analyze the following home repair request from a South African user.
+        Classify it into one of these three categories: 'plumbing', 'electrical', or 'general'.
+        Return ONLY the category name as a single word and nothing else.
+
+        Request: "{service_description}"
+
+        Category:
+        """
+        response = model.generate_content(prompt)
+        # Clean the response to get a single keyword
+        classification = response.text.strip().lower()
+
+        # Validate the response to ensure it's one of the expected categories
+        if classification in ['plumbing', 'electrical', 'general']:
+            print(f"Gemini classified '{service_description}' as: {classification}")
+            return classification
+        else:
+            print(f"WARN: Gemini returned an unexpected classification: '{classification}'. Defaulting to 'general'.")
+            return 'general'
+    except Exception as e:
+        print(f"ERROR: Gemini API call failed during classification: {e}. Defaulting to 'general'.")
+        return 'general'
+
 def get_or_create_user(phone_number):
     if not phone_number.startswith("whatsapp:"): phone_number = f"whatsapp:{phone_number}"
     user = User.query.filter_by(phone_number=phone_number).first()
     if not user: user = User(phone_number=phone_number); db.session.add(user); db.session.commit()
     return user
+
 def set_user_state(user, new_state, data=None):
     user.conversation_state = new_state
     if data is not None: user.service_request_cache = str(data.get('job_id')) if data.get('job_id') else None
     db.session.commit()
+
 def clear_user_state(user):
     user.conversation_state, user.service_request_cache = None, None; db.session.commit()
+
 def find_fixer_for_job(service_description):
-    desc = service_description.lower()
-    skill_needed = None
-    if any(k in desc for k in ['plumb', 'pipe', 'leak', 'geyser', 'tap']): skill_needed = 'plumbing'
-    elif any(k in desc for k in ['light', 'electr', 'plug', 'wiring']): skill_needed = 'electrical'
-    if skill_needed:
-        fixer = Fixer.query.filter(Fixer.is_active==True, Fixer.skills.ilike(f'%{skill_needed}%')).first()
-        if fixer: return fixer
+    """Finds an available fixer by first classifying the job using Gemini."""
+    # Use the new Gemini-powered classification function
+    skill_needed = classify_service_request(service_description)
+    
+    # Find a fixer with the classified skill
+    fixer = Fixer.query.filter(Fixer.is_active==True, Fixer.skills.ilike(f'%{skill_needed}%')).first()
+    
+    if fixer:
+        return fixer
+    
+    # Fallback to a general handyman if a specialized one isn't found
     return Fixer.query.filter(Fixer.is_active==True, Fixer.skills.ilike('%general%')).first()
+
 def get_quote_for_service(service_description):
-    desc = service_description.lower()
-    if any(k in desc for k in ['plumb', 'pipe', 'leak', 'geyser', 'tap', 'toilet']): return 450.00
-    if any(k in desc for k in ['light', 'electr', 'plug', 'wiring', 'switch']): return 400.00
+    """Determines the quote price by first classifying the job using Gemini."""
+    # Use the new Gemini-powered classification function
+    skill_needed = classify_service_request(service_description)
+    
+    # Assign quote based on the classification
+    if skill_needed == 'plumbing':
+        return 450.00
+    if skill_needed == 'electrical':
+        return 400.00
+    
+    # Default price for 'general' or any other case
     return 350.00
+
 def create_new_job_in_db(user, service, lat, lon, contact):
     job = Job(description=service, latitude=lat, longitude=lon, client_contact_number=contact, client_id=user.id)
     matched_fixer = find_fixer_for_job(service)
@@ -129,9 +186,10 @@ def create_new_job_in_db(user, service, lat, lon, contact):
         send_whatsapp_message(to_number=matched_fixer.phone_number, message_body=f"New FixMate Job Alert!\n\nService: {service}\nClient Contact: {contact}\n\nPlease go to your Fixer Portal to accept this job:\n{url_for('fixer_login', _external=True)}")
     db.session.add(job); db.session.commit()
     return job.id, matched_fixer is not None
+
 def create_user_account_in_db(user, name):
     user.full_name = name; db.session.commit(); return True
-# --- END OF RESTORED BLOCK ---
+# --- END OF MODIFIED BLOCK ---
 
 
 # --- Main Web Routes ---
@@ -255,6 +313,7 @@ def payment_success():
     job = db.session.get(Job, int(job_id)) if job_id else None
     if job and job.payment_status != 'paid':
         job.payment_status = 'paid'
+        # This now uses the smarter find_fixer_for_job function
         matched_fixer = find_fixer_for_job(job.description)
         if matched_fixer:
             job.assigned_fixer, job.status = matched_fixer, 'assigned'
@@ -283,7 +342,7 @@ def whatsapp_webhook():
     media_url = request.values.get('MediaUrl0')
     media_type = request.values.get('MediaContentType0', '')
     incoming_msg = request.values.get('Body', '').strip()
-    
+
     if media_url and 'audio' in media_type:
         print(f"Received audio message from {from_number}.")
         transcribed_text = transcribe_audio(media_url, media_type)
@@ -297,7 +356,7 @@ def whatsapp_webhook():
     user = get_or_create_user(from_number)
     current_state = user.conversation_state
     response_message = ""
-    
+
     if current_state == 'awaiting_rating':
         job_id_to_rate = user.service_request_cache
         job = db.session.get(Job, int(job_id_to_rate)) if job_id_to_rate else None
@@ -307,6 +366,7 @@ def whatsapp_webhook():
         else: response_message = "Thank you for your feedback!"
         clear_user_state(user)
     elif current_state == 'awaiting_service_request':
+        # This now calls the smarter get_quote_for_service function
         quote = get_quote_for_service(incoming_msg)
         job = Job(description=incoming_msg, client_id=user.id, amount=quote)
         db.session.add(job); db.session.commit()
@@ -333,6 +393,8 @@ def whatsapp_webhook():
         job = db.session.get(Job, int(job_id)) if job_id else None
         if job and any(char.isdigit() for char in potential_number) and len(potential_number) >= 10:
             job.client_contact_number = potential_number; db.session.commit()
+            # The signature hash generation has been removed for simplicity
+            # as it's not required by the sandbox and adds complexity.
             payment_data = {
                 'merchant_id': PAYFAST_MERCHANT_ID, 'merchant_key': PAYFAST_MERCHANT_KEY,
                 'return_url': url_for('payment_success', job_id=job.id, _external=True),
@@ -346,10 +408,9 @@ def whatsapp_webhook():
             clear_user_state(user)
         else: response_message = "That doesn't look like a valid phone number. Please try again."
     else: # Default state
-        response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe') or send a voice note."
+        response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'My toilet is blocked and won't flush') or send a voice note."
         set_user_state(user, 'awaiting_service_request')
-    
+
     if response_message:
         send_whatsapp_message(from_number, response_message)
     return Response(status=200)
-
