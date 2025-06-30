@@ -81,6 +81,13 @@ def transcribe_audio(media_url, media_type):
 # ...
 
 
+# --- Main Web Routes ---
+@app.route('/')
+def index():
+    """A simple homepage to confirm the app is running."""
+    return "<h1>Welcome to FixMate-SA. The bot is running.</h1>"
+
+
 # --- Main WhatsApp Webhook ---
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
