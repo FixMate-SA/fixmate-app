@@ -10,4 +10,4 @@ Flask-Login
 itsdangerous
 click
 requests
-openai
+google-generativeai
