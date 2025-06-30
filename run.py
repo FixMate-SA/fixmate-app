@@ -2,7 +2,7 @@
 import os
 import re
 import hashlib
-import requests
+import requests # New import
 from urllib.parse import urlencode
 from flask import Flask, request, Response, render_template, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
@@ -10,7 +10,9 @@ from flask_migrate import Migrate
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from itsdangerous import URLSafeTimedSerializer
 import click
-import google.generativeai as genai
+import google.generativeai as genai # New import
+from pydub import AudioSegment # New import
+import io # New import
 
 # --- App Initialization & Config ---
 app = Flask(__name__)
@@ -25,7 +27,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 PAYFAST_MERCHANT_ID = os.environ.get('PAYFAST_MERCHANT_ID')
 PAYFAST_MERCHANT_KEY = os.environ.get('PAYFAST_MERCHANT_KEY')
 PAYFAST_URL = 'https://sandbox.payfast.co.za/eng/process'
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY') # New
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
@@ -43,19 +45,32 @@ def load_user(user_id):
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 
-# --- Speech-to-Text Function ---
-def transcribe_audio(media_url, media_type):
-    """Downloads audio and transcribes it using the Gemini API directly."""
+# --- NEW: Speech-to-Text Function ---
+def transcribe_audio(media_url):
+    """
+    Downloads audio from a Twilio URL and transcribes it using the Gemini API.
+    """
     if not GEMINI_API_KEY:
-        print("ERROR: GEMINI_API_KEY not set."); return None
+        print("ERROR: GEMINI_API_KEY not set. Cannot transcribe audio.")
+        return None
+        
     try:
         auth = (os.environ.get('TWILIO_ACCOUNT_SID'), os.environ.get('TWILIO_AUTH_TOKEN'))
         r = requests.get(media_url, auth=auth)
+        
         if r.status_code == 200:
-            gemini_file = genai.upload_file(r.content, mime_type=media_type)
+            ogg_audio = io.BytesIO(r.content)
+            audio = AudioSegment.from_ogg(ogg_audio)
+            mp3_audio = io.BytesIO()
+            audio.export(mp3_audio, format="mp3")
+            mp3_audio.seek(0)
+            print("Audio converted to MP3. Uploading to Gemini for transcription...")
+            
+            gemini_file = genai.upload_file(mp3_audio, mime_type='audio/mp3')
             model = genai.GenerativeModel('models/gemini-1.5-flash')
-            response = model.generate_content(["Please transcribe this audio.", gemini_file])
+            response = model.generate_content(["Please transcribe this audio. The speaker may be using English, Sepedi, Xitsonga, or Venda.", gemini_file])
             genai.delete_file(gemini_file.name)
+            
             if response.text:
                 print(f"Transcription successful: '{response.text}'")
                 return response.text
@@ -94,7 +109,8 @@ def promote_admin(phone):
     print(f"Successfully promoted '{user.full_name or user.phone_number}' to admin.")
 
 
-# --- THIS IS THE MISSING BLOCK OF HELPER FUNCTIONS ---
+# --- Helper & Service Functions ---
+from app.services import send_whatsapp_message
 def get_or_create_user(phone_number):
     if not phone_number.startswith("whatsapp:"): phone_number = f"whatsapp:{phone_number}"
     user = User.query.filter_by(phone_number=phone_number).first()
@@ -106,6 +122,8 @@ def set_user_state(user, new_state, data=None):
     db.session.commit()
 def clear_user_state(user):
     user.conversation_state, user.service_request_cache = None, None; db.session.commit()
+def create_user_account_in_db(user, name):
+    user.full_name = name; db.session.commit(); return True
 def find_fixer_for_job(service_description):
     desc = service_description.lower()
     skill_needed = None
@@ -120,8 +138,6 @@ def get_quote_for_service(service_description):
     if any(k in desc for k in ['plumb', 'pipe', 'leak', 'geyser', 'tap', 'toilet']): return 450.00
     if any(k in desc for k in ['light', 'electr', 'plug', 'wiring', 'switch']): return 400.00
     return 350.00
-from app.services import send_whatsapp_message
-# --- END OF MISSING BLOCK ---
 
 
 # --- Main Web Routes ---
@@ -273,17 +289,21 @@ def whatsapp_webhook():
     media_url = request.values.get('MediaUrl0')
     media_type = request.values.get('MediaContentType0', '')
     incoming_msg = request.values.get('Body', '').strip()
+    
     if media_url and 'audio' in media_type:
         print(f"Received audio message from {from_number}.")
         transcribed_text = transcribe_audio(media_url, media_type)
-        if transcribed_text: incoming_msg = transcribed_text
+        if transcribed_text:
+            incoming_msg = transcribed_text
         else:
             send_whatsapp_message(from_number, "Sorry, I had trouble understanding that audio. Please try sending a text message instead.")
             return Response(status=200)
+
     latitude = request.values.get('Latitude'); longitude = request.values.get('Longitude')
     user = get_or_create_user(from_number)
     current_state = user.conversation_state
     response_message = ""
+    
     if current_state == 'awaiting_rating':
         job_id_to_rate = user.service_request_cache
         job = db.session.get(Job, int(job_id_to_rate)) if job_id_to_rate else None
@@ -334,6 +354,7 @@ def whatsapp_webhook():
     else: # Default state
         response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe') or send a voice note."
         set_user_state(user, 'awaiting_service_request')
+    
     if response_message:
         send_whatsapp_message(from_number, response_message)
     return Response(status=200)
