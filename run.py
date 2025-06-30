@@ -171,7 +171,6 @@ def promote_admin(phone):
     user.is_admin = True; db.session.commit()
     print(f"Successfully promoted '{user.full_name or user.phone_number}' to admin.")
 
-# --- NEW: Command to demote an admin back to a regular user ---
 @app.cli.command("demote-admin")
 @click.argument("phone")
 def demote_admin(phone):
@@ -314,6 +313,17 @@ def get_fixer_location(job_id):
 def track_job(job_id):
     job = Job.query.filter_by(id=job_id, client_id=current_user.id).first_or_404()
     return render_template('track_job.html', job=job)
+
+# --- NEW: Route to serve the fixer's location update page ---
+@app.route('/fixer/update_location/<int:job_id>')
+@login_required
+def location_updater(job_id):
+    if session.get('user_type') != 'fixer':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('login'))
+    
+    job = Job.query.filter_by(id=job_id, fixer_id=current_user.id).first_or_404()
+    return render_template('update_location.html', job=job)
 
 
 # --- Authentication Routes ---

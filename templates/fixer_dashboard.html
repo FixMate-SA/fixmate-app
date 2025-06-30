@@ -17,7 +17,7 @@
                 </div>
                 <div class="flex items-center">
                     <span class="text-gray-700 mr-4">Welcome, {{ current_user.full_name }}!</span>
-                    <a href="{{ url_for('fixer_logout') }}" class="px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100">Logout</a>
+                    <a href="{{ url_for('logout') }}" class="px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100">Logout</a>
                 </div>
             </div>
         </div>
@@ -25,6 +25,14 @@
 
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div class="px-4 py-6 sm:px-0">
+            <!-- AI Insight Section -->
+            {% if latest_insight %}
+            <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6" role="alert">
+                <p class="font-bold">Pro Tip:</p>
+                <p>{{ latest_insight.insight_text }}</p>
+            </div>
+            {% endif %}
+
             <h2 class="text-2xl font-semibold text-gray-800 mb-4">Your Assigned Jobs</h2>
             <div class="bg-white shadow overflow-hidden sm:rounded-lg">
                 <div class="overflow-x-auto">
@@ -61,6 +69,8 @@
                                         {% if job.status == 'assigned' %}
                                             <a href="{{ url_for('accept_job', job_id=job.id) }}" class="text-indigo-600 hover:text-indigo-900 mr-4">Accept</a>
                                         {% elif job.status == 'accepted' %}
+                                            <!-- NEW: Link to the location updater page -->
+                                            <a href="{{ url_for('track_job', job_id=job.id) }}" class="text-blue-600 hover:text-blue-900 mr-4">Update Location</a>
                                             <a href="{{ url_for('complete_job', job_id=job.id) }}" class="text-green-600 hover:text-green-900">Mark as Complete</a>
                                         {% else %}
                                             <span>-</span>
