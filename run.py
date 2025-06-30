@@ -4,9 +4,9 @@ import re
 import hashlib
 import requests
 import io
-import json # NEW: Added for data serialization
+import json 
 from urllib.parse import urlencode
-from flask import Flask, request, Response, render_template, redirect, url_for, flash, session
+from flask import Flask, request, Response, render_template, redirect, url_for, flash, session, jsonify # Add jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -178,7 +178,6 @@ def analyze_data():
     insight = generate_platform_insights()
     print(f"Insight: {insight}")
 
-# --- NEW: Command to get system statistics ---
 @app.cli.command("stats")
 def stats():
     """Gets the total number of users and fixers in the database."""
@@ -237,7 +236,6 @@ def set_user_state(user, new_state, data=None):
     if data and 'job_id' in data:
         user.service_request_cache = str(data['job_id'])
     else:
-        # Compatibility for older calls that might not pass data dictionary
         user.service_request_cache = None
     db.session.commit()
 
@@ -265,6 +263,50 @@ def get_quote_for_service(service_description):
 # --- Main Web Routes ---
 @app.route('/')
 def index(): return "<h1>FixMate-SA Bot is running.</h1>"
+
+# --- NEW: API endpoint for the fixer's app to post location updates ---
+@app.route('/api/update_location', methods=['POST'])
+@login_required # We can reuse our fixer login system for this
+def update_location():
+    if session.get('user_type') != 'fixer':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    data = request.json
+    lat = data.get('latitude')
+    lng = data.get('longitude')
+
+    if not lat or not lng:
+        return jsonify({'error': 'Missing location data'}), 400
+
+    # The current_user is the logged-in fixer
+    fixer = current_user
+    fixer.current_latitude = lat
+    fixer.current_longitude = lng
+    db.session.commit()
+    
+    print(f"Updated location for {fixer.full_name}: {lat}, {lng}")
+    return jsonify({'status': 'success'}), 200
+
+# --- NEW: API endpoint for the client's map to get fixer location ---
+@app.route('/api/fixer_location/<int:job_id>')
+@login_required # Ensures only the logged-in client can see their fixer
+def get_fixer_location(job_id):
+    job = Job.query.filter_by(id=job_id, client_id=current_user.id).first_or_404()
+    if job and job.assigned_fixer and job.assigned_fixer.current_latitude is not None:
+        return jsonify({
+            'latitude': job.assigned_fixer.current_latitude,
+            'longitude': job.assigned_fixer.current_longitude
+        })
+    return jsonify({'error': 'Fixer location not available'}), 404
+
+# --- NEW: Web page to display the tracking map ---
+@app.route('/track/<int:job_id>')
+@login_required
+def track_job(job_id):
+    # Ensure the logged-in user is the one who created this job
+    job = Job.query.filter_by(id=job_id, client_id=current_user.id).first_or_404()
+    return render_template('track_job.html', job=job)
+
 
 # --- Authentication Routes ---
 @app.route('/login', methods=['GET', 'POST'])
@@ -320,7 +362,10 @@ def logout(): logout_user(); flash('You have been logged out.', 'info'); return 
 # --- Dashboard & Job Action Routes ---
 @app.route('/dashboard')
 @login_required
-def dashboard(): return render_template('dashboard.html')
+def dashboard(): 
+    # This assumes the logged in user is a 'client'
+    jobs = Job.query.filter_by(client_id=current_user.id).order_by(Job.id.desc()).all()
+    return render_template('dashboard.html', jobs=jobs)
 
 @app.route('/fixer/dashboard')
 @login_required
@@ -335,18 +380,16 @@ def admin_dashboard():
     if not getattr(current_user, 'is_admin', False):
         flash('You do not have permission to access this page.', 'danger'); return redirect(url_for('dashboard'))
     
-    # Fetch all data from the database
     all_users = User.query.order_by(User.id.desc()).all()
     all_fixers = Fixer.query.order_by(Fixer.id.desc()).all()
     all_jobs = Job.query.order_by(Job.id.desc()).all()
-    # --- NEW: Fetch insights ---
     all_insights = DataInsight.query.order_by(DataInsight.id.desc()).all()
 
     return render_template('admin_dashboard.html', 
                            users=all_users, 
                            fixers=all_fixers, 
                            jobs=all_jobs,
-                           insights=all_insights) # Pass insights to the template
+                           insights=all_insights)
 
 @app.route('/admin/assign_job', methods=['POST'])
 @login_required
@@ -443,7 +486,6 @@ def whatsapp_webhook():
     current_state = user.conversation_state
     response_message = ""
 
-    # --- MODIFIED: Conversation logic updated for sentiment analysis ---
     if current_state == 'awaiting_rating':
         job_id_to_rate = user.service_request_cache
         job = db.session.get(Job, int(job_id_to_rate)) if job_id_to_rate else None
@@ -452,15 +494,12 @@ def whatsapp_webhook():
             job.rating = int(incoming_msg)
             db.session.commit()
             
-            # Ask for a comment
             response_message = "Thank you for the rating! Could you please share a brief comment about your experience?"
             set_user_state(user, 'awaiting_rating_comment', data={'job_id': job.id})
         else:
-            # If they send something other than a 1-5 number, just end the flow.
             response_message = "Thank you for your feedback!"
             clear_user_state(user)
 
-    # --- NEW: State to handle the incoming text comment ---
     elif current_state == 'awaiting_rating_comment':
         job_id_to_rate = user.service_request_cache
         job = db.session.get(Job, int(job_id_to_rate)) if job_id_to_rate else None
@@ -469,7 +508,6 @@ def whatsapp_webhook():
             comment_text = incoming_msg
             job.rating_comment = comment_text
             
-            # Analyze the sentiment of the comment
             sentiment = analyze_feedback_sentiment(comment_text)
             job.sentiment = sentiment
             
@@ -497,7 +535,6 @@ def whatsapp_webhook():
         job_id = user.service_request_cache
         job = db.session.get(Job, int(job_id)) if job_id else None
         if job:
-            # This is where we would ideally get the 'area' from lat/lon
             job.area = "Pretoria" # Placeholder
             db.session.commit()
             response_message = "Thank you. What is the best contact number for the fixer to use?"
@@ -526,3 +563,4 @@ def whatsapp_webhook():
     if response_message:
         send_whatsapp_message(from_number, response_message)
     return Response(status=200)
+

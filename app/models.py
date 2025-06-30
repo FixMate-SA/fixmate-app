@@ -31,6 +31,10 @@ class Fixer(db.Model, UserMixin):
     skills = db.Column(db.String(255), nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     
+    # --- NEW: Location fields for real-time tracking ---
+    current_latitude = db.Column(db.Float, nullable=True)
+    current_longitude = db.Column(db.Float, nullable=True)
+    
     jobs = db.relationship('Job', backref='assigned_fixer', lazy=True)
 
     def __repr__(self):
@@ -58,14 +62,11 @@ class Job(db.Model):
     rating_comment = db.Column(db.Text, nullable=True)
     amount = db.Column(db.Numeric(10, 2), nullable=True)
     payment_status = db.Column(db.String(50), default='unpaid', nullable=False)
-
-    # --- NEW: Sentiment field ---
     sentiment = db.Column(db.String(50), nullable=True) # e.g., Positive, Negative, Neutral
 
     def __repr__(self):
         return f'<Job {self.id} - {self.description[:20]}>'
 
-# --- NEW: DataInsight Model ---
 class DataInsight(db.Model):
     """Stores the generated insights from our data analysis."""
     __tablename__ = 'data_insights'

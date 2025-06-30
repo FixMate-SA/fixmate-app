@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Your Fixer - FixMate-SA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- LeafletJS for the map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style> 
+        body { font-family: 'Inter', sans-serif; }
+        #map { height: 400px; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex-shrink-0 flex items-center">
+                    <h1 class="text-2xl font-bold text-gray-900">FixMate-SA</h1>
+                </div>
+                <div class="flex items-center">
+                    <a href="{{ url_for('dashboard') }}" class="px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100">Back to Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg p-6">
+            <h2 class="text-2xl font-semibold text-gray-800">Tracking Job #{{ job.id }}</h2>
+            <p class="text-gray-600 mt-1">Your fixer, <span class="font-semibold">{{ job.assigned_fixer.full_name }}</span>, is on the way!</p>
+            
+            <div id="map" class="mt-4 rounded-lg z-0"></div>
+
+        </div>
+    </main>
+
+    <script>
+        // Get data passed from the Flask template
+        const clientLat = {{ job.client.latitude_cache or 'null' }};
+        const clientLng = {{ job.client.longitude_cache or 'null' }};
+        const fixerLat = {{ job.assigned_fixer.current_latitude or 'null' }};
+        const fixerLng = {{ job.assigned_fixer.current_longitude or 'null' }};
+        const jobId = {{ job.id }};
+
+        // Initialize the map
+        const map = L.map('map').setView([clientLat, clientLng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // Add markers
+        const homeIcon = L.icon({ iconUrl: 'https://img.icons8.com/office/40/000000/home.png', iconSize: [40, 40] });
+        const fixerIcon = L.icon({ iconUrl: 'https://img.icons8.com/ultraviolet/40/000000/worker-male.png', iconSize: [40, 40] });
+        
+        const clientMarker = L.marker([clientLat, clientLng], {icon: homeIcon}).addTo(map).bindPopup('Your Location');
+        let fixerMarker;
+
+        if (fixerLat && fixerLng) {
+            fixerMarker = L.marker([fixerLat, fixerLng], {icon: fixerIcon}).addTo(map).bindPopup('Your Fixer');
+        }
+
+        // Function to update the fixer's location
+        function updateFixerLocation() {
+            fetch(`/api/fixer_location/${jobId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.latitude && data.longitude) {
+                        const newLatLng = [data.latitude, data.longitude];
+                        if (fixerMarker) {
+                            fixerMarker.setLatLng(newLatLng);
+                        } else {
+                            fixerMarker = L.marker(newLatLng, {icon: fixerIcon}).addTo(map).bindPopup('Your Fixer');
+                        }
+                        // Optional: Pan the map to the new location
+                        // map.panTo(newLatLng);
+                    }
+                })
+                .catch(error => console.error('Error fetching fixer location:', error));
+        }
+
+        // Poll for the fixer's location every 10 seconds
+        setInterval(updateFixerLocation, 10000);
+    </script>
+</body>
+</html>
