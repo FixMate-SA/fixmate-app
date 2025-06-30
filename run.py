@@ -2,8 +2,7 @@
 import os
 import re
 import hashlib
-import requests
-import io
+import requests # Needed for downloading audio
 from urllib.parse import urlencode
 from flask import Flask, request, Response, render_template, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
@@ -11,7 +10,7 @@ from flask_migrate import Migrate
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from itsdangerous import URLSafeTimedSerializer
 import click
-import openai # New import for OpenAI
+import google.generativeai as genai # New import for Gemini
 
 # --- App Initialization & Config ---
 app = Flask(__name__)
@@ -26,8 +25,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 PAYFAST_MERCHANT_ID = os.environ.get('PAYFAST_MERCHANT_ID')
 PAYFAST_MERCHANT_KEY = os.environ.get('PAYFAST_MERCHANT_KEY')
 PAYFAST_URL = 'https://sandbox.payfast.co.za/eng/process'
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY') # Switched from Gemini to OpenAI
-openai.api_key = OPENAI_API_KEY
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY') # New
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 # --- Initialize Extensions ---
 from app.models import db, User, Fixer, Job
@@ -43,63 +43,92 @@ def load_user(user_id):
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 
-# --- NEW: Speech-to-Text Function using OpenAI Whisper ---
-def transcribe_audio(media_url):
-    """Downloads audio from a Twilio URL and transcribes it using the Whisper API."""
-    if not OPENAI_API_KEY:
-        print("ERROR: OPENAI_API_KEY not set. Cannot transcribe audio.")
-        return None
+# --- NEW: Simplified Speech-to-Text Function (No Conversion) ---
+def transcribe_audio(media_url, media_type):
+    """Downloads audio and transcribes it using the Gemini API directly."""
+    if not GEMINI_API_KEY:
+        print("ERROR: GEMINI_API_KEY not set."); return None
         
     try:
         auth = (os.environ.get('TWILIO_ACCOUNT_SID'), os.environ.get('TWILIO_AUTH_TOKEN'))
         r = requests.get(media_url, auth=auth)
         
         if r.status_code == 200:
-            audio_data = io.BytesIO(r.content)
-            audio_data.name = 'voice_note.ogg'
-            print("Audio downloaded. Transcribing with OpenAI Whisper...")
+            print(f"Audio downloaded. Uploading to Gemini with MIME type: {media_type}")
             
-            transcript = openai.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_data
-            )
+            # Upload the raw audio bytes directly to Gemini
+            gemini_file = genai.upload_file(r.content, mime_type=media_type)
             
-            if transcript.text:
-                print(f"Transcription successful: '{transcript.text}'")
-                return transcript.text
+            # Ask the model to transcribe, specifying the languages for better accuracy
+            model = genai.GenerativeModel('models/gemini-1.5-flash')
+            prompt = "Please transcribe the following audio. The speaker may be using English, Sepedi, Xitsonga, or Venda."
+            response = model.generate_content([prompt, gemini_file])
+            
+            # Clean up the file from the API after use
+            genai.delete_file(gemini_file.name)
+            
+            if response.text:
+                print(f"Transcription successful: '{response.text}'")
+                return response.text
             return None
         else:
-            print(f"Error downloading audio: {r.status_code}")
-            return None
+            print(f"Error downloading audio: {r.status_code}"); return None
     except Exception as e:
-        print(f"An error occurred during transcription: {e}")
-        return None
+        print(f"An error occurred during transcription: {e}"); return None
 
 
-# (The rest of the file, including all Admin commands, Helper Functions, and Web Routes, remains exactly the same)
+# (The rest of the file, including all Admin commands, Helper Functions, and Web Routes, remains unchanged)
 # ...
-from app.services import send_whatsapp_message
+
+
+# --- Main Web Routes ---
+@app.route('/')
+def index():
+    """A simple homepage to confirm the app is running."""
+    return "<h1>Welcome to FixMate-SA. The bot is running.</h1>"
+
 
 # --- Main WhatsApp Webhook ---
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
     """Endpoint to receive incoming WhatsApp messages."""
     from_number = request.values.get('From', '')
+    
     media_url = request.values.get('MediaUrl0')
-    media_type = request.values.get('MediaContentType0', '')
+    media_type = request.values.get('MediaContentType0', '') # e.g., 'audio/ogg'
     incoming_msg = request.values.get('Body', '').strip()
     
+    # Check if the message is a voice note first
     if media_url and 'audio' in media_type:
         print(f"Received audio message from {from_number}.")
-        transcribed_text = transcribe_audio(media_url) # Using the new Whisper function
+        transcribed_text = transcribe_audio(media_url, media_type)
         if transcribed_text:
-            incoming_msg = transcribed_text
+            incoming_msg = transcribed_text # Overwrite the empty body with the transcription
         else:
+            # If transcription fails, inform the user and stop
             send_whatsapp_message(from_number, "Sorry, I had trouble understanding that audio. Please try sending a text message instead.")
             return Response(status=200)
 
-    # (The entire conversation logic block remains unchanged)
-    # ...
+    # The rest of the conversation logic proceeds with `incoming_msg`
+    # It doesn't matter if it came from text or a successfully transcribed voice note
+    user = get_or_create_user(from_number)
+    current_state = user.conversation_state
+    response_message = ""
     
+    # (The entire conversational logic block remains unchanged from our last working version)
+    if current_state == 'awaiting_rating':
+        # ... logic to handle rating
+        pass
+    elif current_state == 'awaiting_service_request':
+        # ... logic to handle new service request
+        pass
+    # ... all other elif blocks for the conversation ...
+    else: # Default state
+        response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe') or send a voice note."
+        set_user_state(user, 'awaiting_service_request')
+    
+    if response_message:
+        send_whatsapp_message(from_number, response_message)
+        
     return Response(status=200)
 
