@@ -2,7 +2,7 @@
 import os
 import re
 import hashlib
-import requests # New import
+import requests
 from urllib.parse import urlencode
 from flask import Flask, request, Response, render_template, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
@@ -10,9 +10,7 @@ from flask_migrate import Migrate
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from itsdangerous import URLSafeTimedSerializer
 import click
-import google.generativeai as genai # New import
-from pydub import AudioSegment # New import
-import io # New import
+import google.generativeai as genai
 
 # --- App Initialization & Config ---
 app = Flask(__name__)
@@ -27,7 +25,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 PAYFAST_MERCHANT_ID = os.environ.get('PAYFAST_MERCHANT_ID')
 PAYFAST_MERCHANT_KEY = os.environ.get('PAYFAST_MERCHANT_KEY')
 PAYFAST_URL = 'https://sandbox.payfast.co.za/eng/process'
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY') # New
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
@@ -45,32 +43,19 @@ def load_user(user_id):
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 
-# --- NEW: Speech-to-Text Function ---
-def transcribe_audio(media_url):
-    """
-    Downloads audio from a Twilio URL and transcribes it using the Gemini API.
-    """
+# --- Speech-to-Text Function ---
+def transcribe_audio(media_url, media_type):
+    """Downloads audio and transcribes it using the Gemini API directly."""
     if not GEMINI_API_KEY:
-        print("ERROR: GEMINI_API_KEY not set. Cannot transcribe audio.")
-        return None
-        
+        print("ERROR: GEMINI_API_KEY not set."); return None
     try:
         auth = (os.environ.get('TWILIO_ACCOUNT_SID'), os.environ.get('TWILIO_AUTH_TOKEN'))
         r = requests.get(media_url, auth=auth)
-        
         if r.status_code == 200:
-            ogg_audio = io.BytesIO(r.content)
-            audio = AudioSegment.from_ogg(ogg_audio)
-            mp3_audio = io.BytesIO()
-            audio.export(mp3_audio, format="mp3")
-            mp3_audio.seek(0)
-            print("Audio converted to MP3. Uploading to Gemini for transcription...")
-            
-            gemini_file = genai.upload_file(mp3_audio, mime_type='audio/mp3')
+            gemini_file = genai.upload_file(r.content, mime_type=media_type)
             model = genai.GenerativeModel('models/gemini-1.5-flash')
-            response = model.generate_content(["Please transcribe this audio. The speaker may be using English, Sepedi, Xitsonga, or Venda.", gemini_file])
+            response = model.generate_content(["Please transcribe this audio.", gemini_file])
             genai.delete_file(gemini_file.name)
-            
             if response.text:
                 print(f"Transcription successful: '{response.text}'")
                 return response.text
@@ -109,7 +94,7 @@ def promote_admin(phone):
     print(f"Successfully promoted '{user.full_name or user.phone_number}' to admin.")
 
 
-# --- Helper & Service Functions ---
+# --- THIS IS THE RESTORED BLOCK OF HELPER FUNCTIONS ---
 from app.services import send_whatsapp_message
 def get_or_create_user(phone_number):
     if not phone_number.startswith("whatsapp:"): phone_number = f"whatsapp:{phone_number}"
@@ -122,8 +107,6 @@ def set_user_state(user, new_state, data=None):
     db.session.commit()
 def clear_user_state(user):
     user.conversation_state, user.service_request_cache = None, None; db.session.commit()
-def create_user_account_in_db(user, name):
-    user.full_name = name; db.session.commit(); return True
 def find_fixer_for_job(service_description):
     desc = service_description.lower()
     skill_needed = None
@@ -138,6 +121,17 @@ def get_quote_for_service(service_description):
     if any(k in desc for k in ['plumb', 'pipe', 'leak', 'geyser', 'tap', 'toilet']): return 450.00
     if any(k in desc for k in ['light', 'electr', 'plug', 'wiring', 'switch']): return 400.00
     return 350.00
+def create_new_job_in_db(user, service, lat, lon, contact):
+    job = Job(description=service, latitude=lat, longitude=lon, client_contact_number=contact, client_id=user.id)
+    matched_fixer = find_fixer_for_job(service)
+    if matched_fixer:
+        job.assigned_fixer = matched_fixer; job.status = 'assigned'
+        send_whatsapp_message(to_number=matched_fixer.phone_number, message_body=f"New FixMate Job Alert!\n\nService: {service}\nClient Contact: {contact}\n\nPlease go to your Fixer Portal to accept this job:\n{url_for('fixer_login', _external=True)}")
+    db.session.add(job); db.session.commit()
+    return job.id, matched_fixer is not None
+def create_user_account_in_db(user, name):
+    user.full_name = name; db.session.commit(); return True
+# --- END OF RESTORED BLOCK ---
 
 
 # --- Main Web Routes ---
