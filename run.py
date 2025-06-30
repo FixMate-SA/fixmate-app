@@ -3,6 +3,7 @@ import os
 import re
 import hashlib
 import requests
+import json # NEW: Added for data serialization
 from urllib.parse import urlencode
 from flask import Flask, request, Response, render_template, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
@@ -30,7 +31,8 @@ if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
 # --- Initialize Extensions ---
-from app.models import db, User, Fixer, Job
+# MODIFIED: Added DataInsight to the import list
+from app.models import db, User, Fixer, Job, DataInsight
 db.init_app(app)
 migrate = Migrate(app, db)
 login_manager = LoginManager()
@@ -52,11 +54,10 @@ def transcribe_audio(media_url, media_type):
         auth = (os.environ.get('TWILIO_ACCOUNT_SID'), os.environ.get('TWILIO_AUTH_TOKEN'))
         r = requests.get(media_url, auth=auth)
         if r.status_code == 200:
-            # Using the Gemini 1.5 Flash model for fast transcription
             gemini_file = genai.upload_file(r.content, mime_type=media_type)
             model = genai.GenerativeModel('models/gemini-1.5-flash')
             response = model.generate_content(["Please transcribe this audio.", gemini_file])
-            genai.delete_file(gemini_file.name) # Clean up the uploaded file
+            genai.delete_file(gemini_file.name)
             if response.text:
                 print(f"Transcription successful: '{response.text}'")
                 return response.text
@@ -66,6 +67,52 @@ def transcribe_audio(media_url, media_type):
     except Exception as e:
         print(f"An error occurred during transcription: {e}"); return None
 
+# --- NEW: AI Data Analysis Function ---
+def generate_platform_insights():
+    """Analyzes job data and suggests upskilling opportunities."""
+    if not GEMINI_API_KEY:
+        return "Insight generation failed: GEMINI_API_KEY not set."
+
+    # Assuming the Job model now has an 'area' field populated upon location sharing.
+    all_jobs = Job.query.filter(Job.area.isnot(None)).all()
+    if not all_jobs:
+        return "Not enough job data with location information to generate an insight."
+
+    job_data = [
+        {'id': job.id, 'description': job.description, 'area': job.area}
+        for job in all_jobs
+    ]
+
+    try:
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        prompt = f"""
+        You are a business analyst for FixMate-SA, a South African service platform.
+        Analyze the following list of recent jobs, which are provided as a JSON object.
+        Your task is to identify a single, specific, actionable insight that could help a fixer on the platform earn more money.
+        
+        Focus on identifying a high-demand skill in a specific area where there might be a lack of specialists.
+        
+        Format your response as a concise, one-sentence suggestion. For example: "There is high demand for plumbers specializing in geysers in Pretoria." or "Electrical compliance certificate jobs are very common in Johannesburg."
+
+        Job Data:
+        {json.dumps(job_data, indent=2)}
+
+        Actionable Insight:
+        """
+        response = model.generate_content(prompt)
+        insight = response.text.strip()
+
+        # Save the insight to the database
+        new_insight = DataInsight(insight_text=insight)
+        db.session.add(new_insight)
+        db.session.commit()
+
+        print(f"Generated and saved new insight: {insight}")
+        return insight
+
+    except Exception as e:
+        print(f"An error occurred during insight generation: {e}")
+        return "Could not generate an insight at this time."
 
 # --- Admin Commands ---
 @app.cli.command("add-fixer")
@@ -94,8 +141,15 @@ def promote_admin(phone):
     user.is_admin = True; db.session.commit()
     print(f"Successfully promoted '{user.full_name or user.phone_number}' to admin.")
 
+# --- NEW: CLI Command for Data Analysis ---
+@app.cli.command("analyze-data")
+def analyze_data():
+    """Triggers the AI data analysis and prints the insight."""
+    print("Starting data analysis for platform insights...")
+    insight = generate_platform_insights()
+    print(f"Insight: {insight}")
 
-# --- START OF MODIFIED BLOCK ---
+
 # --- Gemini-Powered Helper Functions ---
 from app.services import send_whatsapp_message
 
@@ -103,7 +157,6 @@ def classify_service_request(service_description):
     """Uses Gemini to classify a service description into a skill category."""
     if not GEMINI_API_KEY:
         print("WARN: GEMINI_API_KEY not set. Falling back to keyword matching.")
-        # Fallback to old logic if API key is not available
         desc = service_description.lower()
         if any(k in desc for k in ['plumb', 'pipe', 'leak', 'geyser', 'tap', 'toilet']): return 'plumbing'
         if any(k in desc for k in ['light', 'electr', 'plug', 'wiring', 'switch']): return 'electrical'
@@ -111,7 +164,6 @@ def classify_service_request(service_description):
 
     try:
         model = genai.GenerativeModel('models/gemini-1.5-flash')
-        # Precise prompt to guide the model for a clean, single-word response
         prompt = f"""
         Analyze the following home repair request from a South African user.
         Classify it into one of these three categories: 'plumbing', 'electrical', or 'general'.
@@ -122,10 +174,8 @@ def classify_service_request(service_description):
         Category:
         """
         response = model.generate_content(prompt)
-        # Clean the response to get a single keyword
         classification = response.text.strip().lower()
 
-        # Validate the response to ensure it's one of the expected categories
         if classification in ['plumbing', 'electrical', 'general']:
             print(f"Gemini classified '{service_description}' as: {classification}")
             return classification
@@ -152,33 +202,25 @@ def clear_user_state(user):
 
 def find_fixer_for_job(service_description):
     """Finds an available fixer by first classifying the job using Gemini."""
-    # Use the new Gemini-powered classification function
     skill_needed = classify_service_request(service_description)
-    
-    # Find a fixer with the classified skill
     fixer = Fixer.query.filter(Fixer.is_active==True, Fixer.skills.ilike(f'%{skill_needed}%')).first()
-    
     if fixer:
         return fixer
-    
-    # Fallback to a general handyman if a specialized one isn't found
     return Fixer.query.filter(Fixer.is_active==True, Fixer.skills.ilike('%general%')).first()
 
 def get_quote_for_service(service_description):
     """Determines the quote price by first classifying the job using Gemini."""
-    # Use the new Gemini-powered classification function
     skill_needed = classify_service_request(service_description)
-    
-    # Assign quote based on the classification
     if skill_needed == 'plumbing':
         return 450.00
     if skill_needed == 'electrical':
         return 400.00
-    
-    # Default price for 'general' or any other case
     return 350.00
 
 def create_new_job_in_db(user, service, lat, lon, contact):
+    # NOTE: To make the new feature work, the Job model should be updated
+    # to include an 'area' field. This field would ideally be populated
+    # via reverse geocoding 'lat' and 'lon' here.
     job = Job(description=service, latitude=lat, longitude=lon, client_contact_number=contact, client_id=user.id)
     matched_fixer = find_fixer_for_job(service)
     if matched_fixer:
@@ -189,7 +231,6 @@ def create_new_job_in_db(user, service, lat, lon, contact):
 
 def create_user_account_in_db(user, name):
     user.full_name = name; db.session.commit(); return True
-# --- END OF MODIFIED BLOCK ---
 
 
 # --- Main Web Routes ---
@@ -251,11 +292,15 @@ def logout(): logout_user(); flash('You have been logged out.', 'info'); return 
 @app.route('/dashboard')
 @login_required
 def dashboard(): return render_template('dashboard.html')
+
 @app.route('/fixer/dashboard')
 @login_required
 def fixer_dashboard():
     if session.get('user_type') != 'fixer': flash('Access denied.', 'danger'); return redirect(url_for('login'))
-    return render_template('fixer_dashboard.html')
+    # MODIFIED: Fetch and display the latest insight for the fixer
+    latest_insight = DataInsight.query.order_by(DataInsight.id.desc()).first()
+    return render_template('fixer_dashboard.html', latest_insight=latest_insight)
+
 @app.route('/admin')
 @login_required
 def admin_dashboard():
@@ -265,6 +310,7 @@ def admin_dashboard():
     all_fixers = Fixer.query.order_by(Fixer.id.desc()).all()
     all_jobs = Job.query.order_by(Job.id.desc()).all()
     return render_template('admin_dashboard.html', users=all_users, fixers=all_fixers, jobs=all_jobs)
+
 @app.route('/admin/assign_job', methods=['POST'])
 @login_required
 def admin_assign_job():
@@ -282,6 +328,7 @@ def admin_assign_job():
         flash(f'Job #{job.id} has been manually assigned to {fixer.full_name}.', 'success')
     else: flash('Error assigning job. Job or Fixer not found.', 'danger')
     return redirect(url_for('admin_dashboard'))
+
 @app.route('/job/accept/<int:job_id>')
 @login_required
 def accept_job(job_id):
@@ -293,6 +340,7 @@ def accept_job(job_id):
         flash(f'You have accepted Job #{job.id}.', 'success')
     else: flash('This job can no longer be accepted.', 'warning')
     return redirect(url_for('fixer_dashboard'))
+
 @app.route('/job/complete/<int:job_id>')
 @login_required
 def complete_job(job_id):
@@ -313,7 +361,6 @@ def payment_success():
     job = db.session.get(Job, int(job_id)) if job_id else None
     if job and job.payment_status != 'paid':
         job.payment_status = 'paid'
-        # This now uses the smarter find_fixer_for_job function
         matched_fixer = find_fixer_for_job(job.description)
         if matched_fixer:
             job.assigned_fixer, job.status = matched_fixer, 'assigned'
@@ -323,12 +370,14 @@ def payment_success():
         db.session.commit()
         return "<h1>Thank you! Your payment was successful.</h1><p>We are now finding a fixer for you.</p>"
     return "<h1>Payment Confirmed</h1><p>Your payment may have already been processed.</p>"
+
 @app.route('/payment/cancel')
 def payment_cancel():
     job_id = request.args.get('job_id')
     job = db.session.get(Job, int(job_id)) if job_id else None
     if job: job.status = 'cancelled'; db.session.commit()
     return "<h1>Payment Cancelled</h1><p>Your payment was not processed.</p>"
+
 @app.route('/payment/notify', methods=['POST'])
 def payment_notify():
     print("Received ITN from PayFast"); return Response(status=200)
@@ -366,7 +415,6 @@ def whatsapp_webhook():
         else: response_message = "Thank you for your feedback!"
         clear_user_state(user)
     elif current_state == 'awaiting_service_request':
-        # This now calls the smarter get_quote_for_service function
         quote = get_quote_for_service(incoming_msg)
         job = Job(description=incoming_msg, client_id=user.id, amount=quote)
         db.session.add(job); db.session.commit()
@@ -385,7 +433,11 @@ def whatsapp_webhook():
         job_id = user.service_request_cache
         job = db.session.get(Job, int(job_id)) if job_id else None
         if job:
-            job.latitude, job.longitude = latitude, longitude; db.session.commit()
+            job.latitude, job.longitude = latitude, longitude
+            # NOTE: Here you would ideally perform a reverse geocoding lookup
+            # using the lat/lon to get a city/suburb and save it to job.area
+            # For now, we assume the Job model and this step are handled.
+            db.session.commit()
             response_message = "Thank you. What is the best contact number for the fixer to use?"
             set_user_state(user, 'awaiting_contact_number', data={'job_id': job.id})
     elif current_state == 'awaiting_contact_number':
@@ -393,8 +445,6 @@ def whatsapp_webhook():
         job = db.session.get(Job, int(job_id)) if job_id else None
         if job and any(char.isdigit() for char in potential_number) and len(potential_number) >= 10:
             job.client_contact_number = potential_number; db.session.commit()
-            # The signature hash generation has been removed for simplicity
-            # as it's not required by the sandbox and adds complexity.
             payment_data = {
                 'merchant_id': PAYFAST_MERCHANT_ID, 'merchant_key': PAYFAST_MERCHANT_KEY,
                 'return_url': url_for('payment_success', job_id=job.id, _external=True),

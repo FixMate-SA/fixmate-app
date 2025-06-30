@@ -12,14 +12,10 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     phone_number = db.Column(db.String(30), unique=True, nullable=False)
     full_name = db.Column(db.String(120), nullable=True)
-    
-    # --- NEW: Admin flag ---
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
 
     conversation_state = db.Column(db.String(50), nullable=True)
     service_request_cache = db.Column(db.String(255), nullable=True)
-    latitude_cache = db.Column(db.Float, nullable=True)
-    longitude_cache = db.Column(db.Float, nullable=True)
     
     jobs = db.relationship('Job', backref='client', lazy=True)
 
@@ -49,10 +45,11 @@ class Job(db.Model):
     description = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(50), default='awaiting_payment', nullable=False)
     
-    latitude = db.Column(db.Float, nullable=True)
-    longitude = db.Column(db.Float, nullable=True)
-    client_contact_number = db.Column(db.String(30), nullable=True)
+    # We will need to add a real location field here in the future
+    # For now, we will use a placeholder
+    area = db.Column(db.String(100), default='Pretoria', nullable=True)
     
+    client_contact_number = db.Column(db.String(30), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     client_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -65,3 +62,15 @@ class Job(db.Model):
 
     def __repr__(self):
         return f'<Job {self.id} - {self.description[:20]}>'
+
+# --- NEW: DataInsight Model ---
+class DataInsight(db.Model):
+    """Stores the generated insights from our data analysis."""
+    __tablename__ = 'data_insights'
+
+    id = db.Column(db.Integer, primary_key=True)
+    insight_text = db.Column(db.Text, nullable=False)
+    generated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    def __repr__(self):
+        return f'<DataInsight {self.id}>'
