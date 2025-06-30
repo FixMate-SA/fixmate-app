@@ -6,7 +6,7 @@ import requests
 import io
 import json 
 from urllib.parse import urlencode
-from flask import Flask, request, Response, render_template, redirect, url_for, flash, session, jsonify # Add jsonify
+from flask import Flask, request, Response, render_template, redirect, url_for, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -171,6 +171,25 @@ def promote_admin(phone):
     user.is_admin = True; db.session.commit()
     print(f"Successfully promoted '{user.full_name or user.phone_number}' to admin.")
 
+# --- NEW: Command to demote an admin back to a regular user ---
+@app.cli.command("demote-admin")
+@click.argument("phone")
+def demote_admin(phone):
+    """Removes a user's admin privileges."""
+    if not (phone.startswith('0') and len(phone) == 10):
+        print("Error: Please provide a valid 10-digit SA number (e.g., 0821234567)."); return
+    
+    formatted_phone = f"whatsapp:+27{phone[1:]}"
+    user = User.query.filter_by(phone_number=formatted_phone).first()
+
+    if not user:
+        print(f"Error: User with phone number {formatted_phone} not found.")
+        return
+        
+    user.is_admin = False
+    db.session.commit()
+    print(f"Successfully demoted '{user.full_name or user.phone_number}'. They are now a regular client.")
+
 @app.cli.command("analyze-data")
 def analyze_data():
     """Triggers the AI data analysis and prints the insight."""
@@ -264,32 +283,23 @@ def get_quote_for_service(service_description):
 @app.route('/')
 def index(): return "<h1>FixMate-SA Bot is running.</h1>"
 
-# --- NEW: API endpoint for the fixer's app to post location updates ---
 @app.route('/api/update_location', methods=['POST'])
-@login_required # We can reuse our fixer login system for this
+@login_required
 def update_location():
     if session.get('user_type') != 'fixer':
         return jsonify({'error': 'Unauthorized'}), 403
-
     data = request.json
-    lat = data.get('latitude')
-    lng = data.get('longitude')
-
+    lat, lng = data.get('latitude'), data.get('longitude')
     if not lat or not lng:
         return jsonify({'error': 'Missing location data'}), 400
-
-    # The current_user is the logged-in fixer
     fixer = current_user
-    fixer.current_latitude = lat
-    fixer.current_longitude = lng
+    fixer.current_latitude, fixer.current_longitude = lat, lng
     db.session.commit()
-    
     print(f"Updated location for {fixer.full_name}: {lat}, {lng}")
     return jsonify({'status': 'success'}), 200
 
-# --- NEW: API endpoint for the client's map to get fixer location ---
 @app.route('/api/fixer_location/<int:job_id>')
-@login_required # Ensures only the logged-in client can see their fixer
+@login_required
 def get_fixer_location(job_id):
     job = Job.query.filter_by(id=job_id, client_id=current_user.id).first_or_404()
     if job and job.assigned_fixer and job.assigned_fixer.current_latitude is not None:
@@ -299,11 +309,9 @@ def get_fixer_location(job_id):
         })
     return jsonify({'error': 'Fixer location not available'}), 404
 
-# --- NEW: Web page to display the tracking map ---
 @app.route('/track/<int:job_id>')
 @login_required
 def track_job(job_id):
-    # Ensure the logged-in user is the one who created this job
     job = Job.query.filter_by(id=job_id, client_id=current_user.id).first_or_404()
     return render_template('track_job.html', job=job)
 
@@ -363,7 +371,6 @@ def logout(): logout_user(); flash('You have been logged out.', 'info'); return 
 @app.route('/dashboard')
 @login_required
 def dashboard(): 
-    # This assumes the logged in user is a 'client'
     jobs = Job.query.filter_by(client_id=current_user.id).order_by(Job.id.desc()).all()
     return render_template('dashboard.html', jobs=jobs)
 
@@ -563,4 +570,3 @@ def whatsapp_webhook():
     if response_message:
         send_whatsapp_message(from_number, response_message)
     return Response(status=200)
-
