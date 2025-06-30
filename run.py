@@ -178,6 +178,17 @@ def analyze_data():
     insight = generate_platform_insights()
     print(f"Insight: {insight}")
 
+# --- NEW: Command to get system statistics ---
+@app.cli.command("stats")
+def stats():
+    """Gets the total number of users and fixers in the database."""
+    user_count = User.query.count()
+    fixer_count = Fixer.query.count()
+    print("--- FixMate-SA System Statistics ---")
+    print(f"Total Registered Clients: {user_count}")
+    print(f"Total Registered Fixers:  {fixer_count}")
+    print("------------------------------------")
+
 
 # --- Gemini-Powered Helper Functions ---
 from app.services import send_whatsapp_message
@@ -515,4 +526,3 @@ def whatsapp_webhook():
     if response_message:
         send_whatsapp_message(from_number, response_message)
     return Response(status=200)
-
