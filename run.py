@@ -3,6 +3,7 @@ import os
 import re
 import hashlib
 import requests
+import io
 import json # NEW: Added for data serialization
 from urllib.parse import urlencode
 from flask import Flask, request, Response, render_template, redirect, url_for, flash, session
@@ -31,7 +32,6 @@ if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
 # --- Initialize Extensions ---
-# MODIFIED: Added DataInsight to the import list
 from app.models import db, User, Fixer, Job, DataInsight
 db.init_app(app)
 migrate = Migrate(app, db)
@@ -54,7 +54,7 @@ def transcribe_audio(media_url, media_type):
         auth = (os.environ.get('TWILIO_ACCOUNT_SID'), os.environ.get('TWILIO_AUTH_TOKEN'))
         r = requests.get(media_url, auth=auth)
         if r.status_code == 200:
-            gemini_file = genai.upload_file(r.content, mime_type=media_type)
+            gemini_file = genai.upload_file(io.BytesIO(r.content), mime_type=media_type)
             model = genai.GenerativeModel('models/gemini-1.5-flash')
             response = model.generate_content(["Please transcribe this audio.", gemini_file])
             genai.delete_file(gemini_file.name)
@@ -67,13 +67,12 @@ def transcribe_audio(media_url, media_type):
     except Exception as e:
         print(f"An error occurred during transcription: {e}"); return None
 
-# --- NEW: AI Data Analysis Function ---
+# --- AI Data Analysis & Sentiment Functions ---
 def generate_platform_insights():
     """Analyzes job data and suggests upskilling opportunities."""
     if not GEMINI_API_KEY:
         return "Insight generation failed: GEMINI_API_KEY not set."
 
-    # Assuming the Job model now has an 'area' field populated upon location sharing.
     all_jobs = Job.query.filter(Job.area.isnot(None)).all()
     if not all_jobs:
         return "Not enough job data with location information to generate an insight."
@@ -102,7 +101,6 @@ def generate_platform_insights():
         response = model.generate_content(prompt)
         insight = response.text.strip()
 
-        # Save the insight to the database
         new_insight = DataInsight(insight_text=insight)
         db.session.add(new_insight)
         db.session.commit()
@@ -113,6 +111,38 @@ def generate_platform_insights():
     except Exception as e:
         print(f"An error occurred during insight generation: {e}")
         return "Could not generate an insight at this time."
+
+def analyze_feedback_sentiment(comment):
+    """Uses Gemini to analyze the sentiment of a user's feedback."""
+    if not GEMINI_API_KEY:
+        print("WARN: GEMINI_API_KEY not set. Cannot analyze sentiment.")
+        return "Unknown"
+    
+    try:
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        prompt = f"""
+        Analyze the sentiment of the following customer feedback. 
+        Classify it as one of these three categories: 'Positive', 'Negative', or 'Neutral'.
+        Return ONLY the category name as a single word and nothing else.
+
+        Feedback: "{comment}"
+
+        Sentiment:
+        """
+        response = model.generate_content(prompt)
+        sentiment = response.text.strip().capitalize()
+
+        if sentiment in ['Positive', 'Negative', 'Neutral']:
+            print(f"Gemini analyzed sentiment as: {sentiment}")
+            return sentiment
+        else:
+            print(f"WARN: Gemini returned unexpected sentiment: '{sentiment}'. Defaulting to 'Neutral'.")
+            return 'Neutral'
+            
+    except Exception as e:
+        print(f"ERROR: Gemini API call failed during sentiment analysis: {e}")
+        return "Unknown"
+
 
 # --- Admin Commands ---
 @app.cli.command("add-fixer")
@@ -141,7 +171,6 @@ def promote_admin(phone):
     user.is_admin = True; db.session.commit()
     print(f"Successfully promoted '{user.full_name or user.phone_number}' to admin.")
 
-# --- NEW: CLI Command for Data Analysis ---
 @app.cli.command("analyze-data")
 def analyze_data():
     """Triggers the AI data analysis and prints the insight."""
@@ -194,7 +223,11 @@ def get_or_create_user(phone_number):
 
 def set_user_state(user, new_state, data=None):
     user.conversation_state = new_state
-    if data is not None: user.service_request_cache = str(data.get('job_id')) if data.get('job_id') else None
+    if data and 'job_id' in data:
+        user.service_request_cache = str(data['job_id'])
+    else:
+        # Compatibility for older calls that might not pass data dictionary
+        user.service_request_cache = None
     db.session.commit()
 
 def clear_user_state(user):
@@ -216,21 +249,6 @@ def get_quote_for_service(service_description):
     if skill_needed == 'electrical':
         return 400.00
     return 350.00
-
-def create_new_job_in_db(user, service, lat, lon, contact):
-    # NOTE: To make the new feature work, the Job model should be updated
-    # to include an 'area' field. This field would ideally be populated
-    # via reverse geocoding 'lat' and 'lon' here.
-    job = Job(description=service, latitude=lat, longitude=lon, client_contact_number=contact, client_id=user.id)
-    matched_fixer = find_fixer_for_job(service)
-    if matched_fixer:
-        job.assigned_fixer = matched_fixer; job.status = 'assigned'
-        send_whatsapp_message(to_number=matched_fixer.phone_number, message_body=f"New FixMate Job Alert!\n\nService: {service}\nClient Contact: {contact}\n\nPlease go to your Fixer Portal to accept this job:\n{url_for('fixer_login', _external=True)}")
-    db.session.add(job); db.session.commit()
-    return job.id, matched_fixer is not None
-
-def create_user_account_in_db(user, name):
-    user.full_name = name; db.session.commit(); return True
 
 
 # --- Main Web Routes ---
@@ -297,7 +315,6 @@ def dashboard(): return render_template('dashboard.html')
 @login_required
 def fixer_dashboard():
     if session.get('user_type') != 'fixer': flash('Access denied.', 'danger'); return redirect(url_for('login'))
-    # MODIFIED: Fetch and display the latest insight for the fixer
     latest_insight = DataInsight.query.order_by(DataInsight.id.desc()).first()
     return render_template('fixer_dashboard.html', latest_insight=latest_insight)
 
@@ -306,10 +323,19 @@ def fixer_dashboard():
 def admin_dashboard():
     if not getattr(current_user, 'is_admin', False):
         flash('You do not have permission to access this page.', 'danger'); return redirect(url_for('dashboard'))
+    
+    # Fetch all data from the database
     all_users = User.query.order_by(User.id.desc()).all()
     all_fixers = Fixer.query.order_by(Fixer.id.desc()).all()
     all_jobs = Job.query.order_by(Job.id.desc()).all()
-    return render_template('admin_dashboard.html', users=all_users, fixers=all_fixers, jobs=all_jobs)
+    # --- NEW: Fetch insights ---
+    all_insights = DataInsight.query.order_by(DataInsight.id.desc()).all()
+
+    return render_template('admin_dashboard.html', 
+                           users=all_users, 
+                           fixers=all_fixers, 
+                           jobs=all_jobs,
+                           insights=all_insights) # Pass insights to the template
 
 @app.route('/admin/assign_job', methods=['POST'])
 @login_required
@@ -406,14 +432,41 @@ def whatsapp_webhook():
     current_state = user.conversation_state
     response_message = ""
 
+    # --- MODIFIED: Conversation logic updated for sentiment analysis ---
     if current_state == 'awaiting_rating':
         job_id_to_rate = user.service_request_cache
         job = db.session.get(Job, int(job_id_to_rate)) if job_id_to_rate else None
+
         if job and incoming_msg.isdigit() and 1 <= int(incoming_msg) <= 5:
-            job.rating = int(incoming_msg); db.session.commit()
-            response_message = "Thank you for your valuable feedback!"
-        else: response_message = "Thank you for your feedback!"
+            job.rating = int(incoming_msg)
+            db.session.commit()
+            
+            # Ask for a comment
+            response_message = "Thank you for the rating! Could you please share a brief comment about your experience?"
+            set_user_state(user, 'awaiting_rating_comment', data={'job_id': job.id})
+        else:
+            # If they send something other than a 1-5 number, just end the flow.
+            response_message = "Thank you for your feedback!"
+            clear_user_state(user)
+
+    # --- NEW: State to handle the incoming text comment ---
+    elif current_state == 'awaiting_rating_comment':
+        job_id_to_rate = user.service_request_cache
+        job = db.session.get(Job, int(job_id_to_rate)) if job_id_to_rate else None
+        
+        if job:
+            comment_text = incoming_msg
+            job.rating_comment = comment_text
+            
+            # Analyze the sentiment of the comment
+            sentiment = analyze_feedback_sentiment(comment_text)
+            job.sentiment = sentiment
+            
+            db.session.commit()
+            
+        response_message = "Your feedback has been recorded. We appreciate you helping us improve FixMate-SA!"
         clear_user_state(user)
+
     elif current_state == 'awaiting_service_request':
         quote = get_quote_for_service(incoming_msg)
         job = Job(description=incoming_msg, client_id=user.id, amount=quote)
@@ -433,10 +486,8 @@ def whatsapp_webhook():
         job_id = user.service_request_cache
         job = db.session.get(Job, int(job_id)) if job_id else None
         if job:
-            job.latitude, job.longitude = latitude, longitude
-            # NOTE: Here you would ideally perform a reverse geocoding lookup
-            # using the lat/lon to get a city/suburb and save it to job.area
-            # For now, we assume the Job model and this step are handled.
+            # This is where we would ideally get the 'area' from lat/lon
+            job.area = "Pretoria" # Placeholder
             db.session.commit()
             response_message = "Thank you. What is the best contact number for the fixer to use?"
             set_user_state(user, 'awaiting_contact_number', data={'job_id': job.id})
@@ -464,3 +515,4 @@ def whatsapp_webhook():
     if response_message:
         send_whatsapp_message(from_number, response_message)
     return Response(status=200)
+

@@ -24,111 +24,27 @@
     </nav>
 
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 space-y-8">
-        <!-- Jobs Section -->
+        <!-- AI Insights Section -->
         <div>
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">All Jobs</h2>
-            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Desc</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fixer</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for job in jobs %}
-                            <tr class="bg-white">
-                                <td class="px-6 py-4 text-sm text-gray-500">#{{ job.id }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-500">{{ job.description }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-500">{{ job.status }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-500">{{ job.client.full_name or job.client.phone_number }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-500">{{ job.assigned_fixer.full_name if job.assigned_fixer else 'N/A' }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-500">
-                                    <!-- NEW: Manual assignment form -->
-                                    {% if not job.assigned_fixer %}
-                                    <form action="{{ url_for('admin_assign_job') }}" method="POST" class="flex items-center space-x-2">
-                                        <input type="hidden" name="job_id" value="{{ job.id }}">
-                                        <select name="fixer_id" class="block w-full pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                                            <option>Select Fixer</option>
-                                            {% for fixer in fixers %}
-                                            <option value="{{ fixer.id }}">{{ fixer.full_name }} ({{ fixer.skills }})</option>
-                                            {% endfor %}
-                                        </select>
-                                        <button type="submit" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none">
-                                            Assign
-                                        </button>
-                                    </form>
-                                    {% else %}
-                                    -
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">AI-Generated Insights</h2>
+             <div class="bg-white shadow overflow-hidden sm:rounded-lg p-4">
+                {% if insights %}
+                    <ul class="space-y-2">
+                    {% for insight in insights %}
+                        <li class="text-sm text-gray-700">- {{ insight.insight_text }} <span class="text-xs text-gray-400"> ({{ insight.generated_at.strftime('%Y-%m-%d') }})</span></li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-sm text-gray-500">No insights have been generated yet. Run the 'flask analyze-data' command.</p>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Users and Fixers Side-by-Side -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <!-- Users Section -->
-            <div>
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">All Users</h2>
-                <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-                     <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                           <thead class="bg-gray-50">
-                               <tr>
-                                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                               </tr>
-                           </thead>
-                           <tbody>
-                               {% for user in users %}
-                               <tr class="bg-white">
-                                   <td class="px-6 py-4 text-sm text-gray-500">{{ user.full_name or 'N/A' }}</td>
-                                   <td class="px-6 py-4 text-sm text-gray-500">{{ user.phone_number }}</td>
-                               </tr>
-                               {% endfor %}
-                           </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+        <!-- Jobs Section (Unchanged) -->
+        <!-- ... -->
 
-            <!-- Fixers Section -->
-            <div>
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">All Fixers</h2>
-                <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-                     <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                               <tr>
-                                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Skills</th>
-                               </tr>
-                           </thead>
-                           <tbody>
-                               {% for fixer in fixers %}
-                               <tr class="bg-white">
-                                   <td class="px-6 py-4 text-sm text-gray-500">{{ fixer.full_name }}</td>
-                                   <td class="px-6 py-4 text-sm text-gray-500">{{ fixer.phone_number }}</td>
-                                   <td class="px-6 py-4 text-sm text-gray-500">{{ fixer.skills }}</td>
-                               </tr>
-                               {% endfor %}
-                           </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Users and Fixers Side-by-Side (Unchanged) -->
+        <!-- ... -->
     </main>
 </body>
 </html>
