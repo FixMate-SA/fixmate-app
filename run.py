@@ -299,10 +299,10 @@ def get_quote_for_service(service_description):
     """Determines the quote price by first classifying the job using Gemini."""
     skill_needed = classify_service_request(service_description)
     if skill_needed == 'plumbing':
-        return 450.00
+        return 10.00
     if skill_needed == 'electrical':
-        return 400.00
-    return 350.00
+        return 10.00
+    return 10.00
 
 
 # --- Main Web Routes ---
