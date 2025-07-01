@@ -247,20 +247,13 @@ def set_user_state(user, new_state, data=None):
 def clear_user_state(user):
     user.conversation_state, user.service_request_cache = None, None; db.session.commit()
 
-# --- MODIFIED: find_fixer_for_job now checks for vetting status ---
 def find_fixer_for_job(service_description):
     """Finds an available and APPROVED fixer by first classifying the job using Gemini."""
     skill_needed = classify_service_request(service_description)
-    
-    # Base query to only include active and approved fixers
     base_query = Fixer.query.filter_by(is_active=True, vetting_status='approved')
-    
-    # Try to find a specialist first
     fixer = base_query.filter(Fixer.skills.ilike(f'%{skill_needed}%')).first()
     if fixer:
         return fixer
-        
-    # Fallback to a general handyman if no specialist is found
     return base_query.filter(Fixer.skills.ilike('%general%')).first()
 
 def get_quote_for_service(service_description):
@@ -317,25 +310,20 @@ def location_updater(job_id):
     job = Job.query.filter_by(id=job_id, fixer_id=current_user.id).first_or_404()
     return render_template('update_location.html', job=job)
 
-# --- NEW: Route to handle fixer vetting status updates ---
 @app.route('/admin/update_vetting_status', methods=['POST'])
 @login_required
 def update_vetting_status():
     if not getattr(current_user, 'is_admin', False):
         return redirect(url_for('login'))
-        
     fixer_id = request.form.get('fixer_id')
     new_status = request.form.get('new_status')
-    
     fixer = db.session.get(Fixer, int(fixer_id))
-
     if fixer and new_status in ['approved', 'rejected']:
         fixer.vetting_status = new_status
         db.session.commit()
         flash(f"Fixer '{fixer.full_name}' has been {new_status}.", 'success')
     else:
         flash("Invalid request.", 'danger')
-
     return redirect(url_for('admin_dashboard'))
 
 
@@ -437,16 +425,42 @@ def admin_assign_job():
     else: flash('Error assigning job. Job or Fixer not found.', 'danger')
     return redirect(url_for('admin_dashboard'))
 
+# --- UPDATED: Job Acceptance Route ---
 @app.route('/job/accept/<int:job_id>')
 @login_required
 def accept_job(job_id):
-    if session.get('user_type') != 'fixer': return redirect(url_for('login'))
+    if session.get('user_type') != 'fixer':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('login'))
+    
     job = Job.query.filter_by(id=job_id, fixer_id=current_user.id).first_or_404()
+    
     if job.status == 'assigned':
-        job.status = 'accepted'; db.session.commit()
-        send_whatsapp_message(to_number=job.client.phone_number, message_body=f"Great news! Your Fixer, {job.assigned_fixer.full_name}, has accepted your job (#{job.id}) and is on their way.")
-        flash(f'You have accepted Job #{job.id}.', 'success')
-    else: flash('This job can no longer be accepted.', 'warning')
+        job.status = 'accepted'
+        db.session.commit()
+        
+        # --- NEW: Generate specific URLs for tracking ---
+        client_tracking_url = url_for('track_job', job_id=job.id, _external=True)
+        fixer_update_url = url_for('location_updater', job_id=job.id, _external=True)
+
+        # Notify the client with their tracking link
+        client_message = (
+            f"Great news! Your Fixer, {job.assigned_fixer.full_name}, has accepted your job (#{job.id}) and is on their way.\n\n"
+            f"You can track their location in real-time here:\n{client_tracking_url}"
+        )
+        send_whatsapp_message(to_number=job.client.phone_number, message_body=client_message)
+
+        # Notify the fixer with their location update link
+        fixer_message = (
+            f"You have accepted Job #{job.id}. Please use the link below to periodically update your location for the client.\n\n"
+            f"{fixer_update_url}"
+        )
+        send_whatsapp_message(to_number=job.assigned_fixer.phone_number, message_body=fixer_message)
+        
+        flash(f'You have accepted Job #{job.id}. A tracking link has been sent to the client.', 'success')
+    else:
+        flash(f'This job can no longer be accepted.', 'warning')
+        
     return redirect(url_for('fixer_dashboard'))
 
 @app.route('/job/complete/<int:job_id>')
