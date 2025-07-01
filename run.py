@@ -269,6 +269,17 @@ def get_quote_for_service(service_description):
 @app.route('/')
 def index(): return "<h1>FixMate-SA Bot is running.</h1>"
 
+# --- NEW: Routes for Legal Pages ---
+@app.route('/terms')
+def terms():
+    """Renders the Terms of Service page."""
+    return render_template('terms.html')
+
+@app.route('/privacy')
+def privacy_policy():
+    """Renders the Privacy Policy page."""
+    return render_template('privacy.html')
+
 @app.route('/api/update_location', methods=['POST'])
 @login_required
 def update_location():
@@ -425,7 +436,6 @@ def admin_assign_job():
     else: flash('Error assigning job. Job or Fixer not found.', 'danger')
     return redirect(url_for('admin_dashboard'))
 
-# --- UPDATED: Job Acceptance Route ---
 @app.route('/job/accept/<int:job_id>')
 @login_required
 def accept_job(job_id):
@@ -439,18 +449,15 @@ def accept_job(job_id):
         job.status = 'accepted'
         db.session.commit()
         
-        # --- NEW: Generate specific URLs for tracking ---
         client_tracking_url = url_for('track_job', job_id=job.id, _external=True)
         fixer_update_url = url_for('location_updater', job_id=job.id, _external=True)
 
-        # Notify the client with their tracking link
         client_message = (
             f"Great news! Your Fixer, {job.assigned_fixer.full_name}, has accepted your job (#{job.id}) and is on their way.\n\n"
             f"You can track their location in real-time here:\n{client_tracking_url}"
         )
         send_whatsapp_message(to_number=job.client.phone_number, message_body=client_message)
 
-        # Notify the fixer with their location update link
         fixer_message = (
             f"You have accepted Job #{job.id}. Please use the link below to periodically update your location for the client.\n\n"
             f"{fixer_update_url}"
