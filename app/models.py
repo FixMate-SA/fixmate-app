@@ -31,7 +31,6 @@ class Fixer(db.Model, UserMixin):
     skills = db.Column(db.String(255), nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     
-    # --- NEW: Location fields for real-time tracking ---
     current_latitude = db.Column(db.Float, nullable=True)
     current_longitude = db.Column(db.Float, nullable=True)
     
@@ -48,8 +47,7 @@ class Job(db.Model):
     description = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(50), default='awaiting_payment', nullable=False)
     
-    # In a real app, this would be derived from lat/lon, but this is good for our MVP.
-    area = db.Column(db.String(100), default='Pretoria', nullable=True)
+    area = db.Column(db.String(100), default='Limpopo', nullable=True)
     
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
@@ -65,10 +63,12 @@ class Job(db.Model):
     amount = db.Column(db.Numeric(10, 2), nullable=True)
     payment_status = db.Column(db.String(50), default='unpaid', nullable=False)
 
+    # --- NEW: Fixer Fee Status field ---
+    fixer_fee_status = db.Column(db.String(50), default='unpaid', nullable=False)
+
     def __repr__(self):
         return f'<Job {self.id} - {self.description[:20]}>'
 
-# --- NEW: DataInsight Model ---
 class DataInsight(db.Model):
     """Stores the generated insights from our data analysis."""
     __tablename__ = 'data_insights'

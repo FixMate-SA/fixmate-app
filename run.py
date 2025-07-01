@@ -581,7 +581,7 @@ def whatsapp_webhook():
         job_id = user.service_request_cache
         job = db.session.get(Job, int(job_id)) if job_id else None
         if job:
-            job.area = "Pretoria" # Placeholder
+            job.area = "Limpopo" # Placeholder
             db.session.commit()
             response_message = "Thank you. What is the best contact number for the fixer to use?"
             set_user_state(user, 'awaiting_contact_number', data={'job_id': job.id})
