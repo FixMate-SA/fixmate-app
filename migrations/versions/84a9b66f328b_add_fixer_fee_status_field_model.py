@@ -1,4 +1,4 @@
-"""Add sentiment field to Job model
+"""Add fixer fee status field model
 
 Revision ID: 84a9b66f328b
 Revises: 5792e4b8bff3
