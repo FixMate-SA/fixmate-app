@@ -188,6 +188,48 @@ def demote_admin(phone):
     db.session.commit()
     print(f"Successfully demoted '{user.full_name or user.phone_number}'. They are now a regular client.")
 
+@app.cli.command("remove-fixer")
+@click.argument("phone")
+def remove_fixer(phone):
+    """Deletes a fixer from the database by their phone number."""
+    if phone.startswith('0') and len(phone) == 10: formatted_phone = f"+27{phone[1:]}"
+    elif phone.startswith('+') and len(phone) == 12: formatted_phone = phone
+    else: 
+        print("Error: Invalid phone number format. Use a 10-digit or international format."); return
+    
+    whatsapp_phone = f"whatsapp:{formatted_phone}"
+    fixer = Fixer.query.filter_by(phone_number=whatsapp_phone).first()
+
+    if not fixer:
+        print(f"Error: Fixer with phone number {whatsapp_phone} not found.")
+        return
+    
+    if click.confirm(f"Are you sure you want to delete fixer '{fixer.full_name}' ({fixer.phone_number})? This cannot be undone.", abort=True):
+        db.session.delete(fixer)
+        db.session.commit()
+        print(f"Successfully deleted fixer: {fixer.full_name}")
+
+@app.cli.command("remove-client")
+@click.argument("phone")
+def remove_client(phone):
+    """Deletes a client from the database by their phone number."""
+    if phone.startswith('0') and len(phone) == 10: formatted_phone = f"+27{phone[1:]}"
+    elif phone.startswith('+') and len(phone) == 12: formatted_phone = phone
+    else: 
+        print("Error: Invalid phone number format. Use a 10-digit or international format."); return
+
+    whatsapp_phone = f"whatsapp:{formatted_phone}"
+    user = User.query.filter_by(phone_number=whatsapp_phone).first()
+
+    if not user:
+        print(f"Error: Client with phone number {whatsapp_phone} not found.")
+        return
+
+    if click.confirm(f"Are you sure you want to delete client '{user.full_name or user.phone_number}'? This cannot be undone.", abort=True):
+        db.session.delete(user)
+        db.session.commit()
+        print(f"Successfully deleted client: {user.full_name or user.phone_number}")
+
 @app.cli.command("analyze-data")
 def analyze_data():
     print("Starting data analysis...")
@@ -202,6 +244,95 @@ def stats():
     print(f"Total Registered Clients: {user_count}")
     print(f"Total Registered Fixers:  {fixer_count}")
     print("------------------------------------")
+
+# --- NEW: Additional Management Commands ---
+@app.cli.command("list-admins")
+def list_admins():
+    """Lists all users with admin privileges."""
+    admins = User.query.filter_by(is_admin=True).all()
+    if not admins:
+        print("No administrators found.")
+        return
+    print("--- Current Administrators ---")
+    for admin in admins:
+        print(f"- {admin.full_name or 'Unnamed'} ({admin.phone_number})")
+    print("----------------------------")
+
+@app.cli.command("toggle-fixer-active")
+@click.argument("phone")
+def toggle_fixer_active(phone):
+    """Toggles a fixer's 'is_active' status."""
+    if phone.startswith('0') and len(phone) == 10: formatted_phone = f"+27{phone[1:]}"
+    elif phone.startswith('+') and len(phone) == 12: formatted_phone = phone
+    else: 
+        print("Error: Invalid phone number format."); return
+    
+    whatsapp_phone = f"whatsapp:{formatted_phone}"
+    fixer = Fixer.query.filter_by(phone_number=whatsapp_phone).first()
+
+    if not fixer:
+        print(f"Error: Fixer with phone number {whatsapp_phone} not found.")
+        return
+        
+    fixer.is_active = not fixer.is_active
+    db.session.commit()
+    status = "ACTIVE" if fixer.is_active else "INACTIVE"
+    print(f"Successfully set fixer '{fixer.full_name}' to {status}.")
+
+@app.cli.command("list-jobs")
+@click.option('--status', default=None, help='Filter jobs by status (e.g., paid_unassigned, awaiting_payment).')
+def list_jobs(status):
+    """Lists jobs, with an option to filter by status."""
+    query = Job.query
+    if status:
+        query = query.filter_by(status=status)
+    
+    jobs = query.order_by(Job.id.desc()).all()
+    
+    if not jobs:
+        print(f"No jobs found" + (f" with status '{status}'." if status else "."))
+        return
+        
+    print(f"--- Jobs" + (f" with status: {status}" if status else "") + " ---")
+    for job in jobs:
+        client_name = job.client.full_name or job.client.phone_number
+        fixer_name = job.assigned_fixer.full_name if job.assigned_fixer else "N/A"
+        print(f"ID: {job.id} | Status: {job.status} | Client: {client_name} | Fixer: {fixer_name} | Desc: {job.description[:30]}...")
+    print("--------------------")
+
+@app.cli.command("reassign-job")
+@click.argument("job_id", type=int)
+@click.argument("fixer_phone")
+def reassign_job(job_id, fixer_phone):
+    """Reassigns a job to a different fixer."""
+    job = db.session.get(Job, job_id)
+    if not job:
+        print(f"Error: Job with ID {job_id} not found.")
+        return
+
+    if fixer_phone.startswith('0') and len(fixer_phone) == 10: formatted_phone = f"+27{fixer_phone[1:]}"
+    elif fixer_phone.startswith('+') and len(fixer_phone) == 12: formatted_phone = fixer_phone
+    else: 
+        print("Error: Invalid phone number format for fixer."); return
+
+    whatsapp_phone = f"whatsapp:{formatted_phone}"
+    new_fixer = Fixer.query.filter_by(phone_number=whatsapp_phone).first()
+
+    if not new_fixer:
+        print(f"Error: New fixer with phone number {whatsapp_phone} not found.")
+        return
+
+    if new_fixer.vetting_status != 'approved':
+        print(f"Error: New fixer '{new_fixer.full_name}' is not approved and cannot be assigned jobs.")
+        return
+
+    old_fixer_name = job.assigned_fixer.full_name if job.assigned_fixer else "None"
+    job.fixer_id = new_fixer.id
+    job.status = 'assigned' # Reset status to assigned
+    db.session.commit()
+    print(f"Success! Job #{job.id} has been reassigned from {old_fixer_name} to {new_fixer.full_name}.")
+    # Optionally, send a notification to the new fixer
+    send_whatsapp_message(to_number=new_fixer.phone_number, message_body=f"Job Reassigned to You:\n\nService: {job.description}\nClient Contact: {job.client_contact_number}\n\nPlease go to your Fixer Portal to accept this job.")
 
 
 # --- Helper Functions ---
@@ -269,7 +400,6 @@ def get_quote_for_service(service_description):
 @app.route('/')
 def index(): return "<h1>FixMate-SA Bot is running.</h1>"
 
-# --- NEW: Routes for Legal Pages ---
 @app.route('/terms')
 def terms():
     """Renders the Terms of Service page."""
