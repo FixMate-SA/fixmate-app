@@ -34,6 +34,11 @@ class Fixer(db.Model, UserMixin):
     current_latitude = db.Column(db.Float, nullable=True)
     current_longitude = db.Column(db.Float, nullable=True)
     
+    # --- NEW: Vetting fields ---
+    vetting_status = db.Column(db.String(50), default='pending_review', nullable=False) # e.g., pending_review, approved, rejected
+    id_document_url = db.Column(db.String(255), nullable=True) # In the future, we can store uploaded ID photos here
+    vetting_notes = db.Column(db.Text, nullable=True) # For admin's internal notes
+
     jobs = db.relationship('Job', backref='assigned_fixer', lazy=True)
 
     def __repr__(self):
@@ -47,7 +52,7 @@ class Job(db.Model):
     description = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(50), default='awaiting_payment', nullable=False)
     
-    area = db.Column(db.String(100), default='Limpopo', nullable=True)
+    area = db.Column(db.String(100), default='Pretoria', nullable=True)
     
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
@@ -62,8 +67,6 @@ class Job(db.Model):
     sentiment = db.Column(db.String(50), nullable=True)
     amount = db.Column(db.Numeric(10, 2), nullable=True)
     payment_status = db.Column(db.String(50), default='unpaid', nullable=False)
-
-    # --- NEW: Fixer Fee Status field ---
     fixer_fee_status = db.Column(db.String(50), default='unpaid', nullable=False)
 
     def __repr__(self):

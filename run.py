@@ -23,13 +23,14 @@ if db_url and db_url.startswith("postgres://"):
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# --- API Keys Configuration ---
+# --- API Keys & Constants Configuration ---
 PAYFAST_MERCHANT_ID = os.environ.get('PAYFAST_MERCHANT_ID')
 PAYFAST_MERCHANT_KEY = os.environ.get('PAYFAST_MERCHANT_KEY')
 PAYFAST_URL = 'https://sandbox.payfast.co.za/eng/process'
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
+CLIENT_PLATFORM_FEE = 10.00
 
 # --- Initialize Extensions ---
 from app.models import db, User, Fixer, Job, DataInsight
@@ -46,7 +47,7 @@ def load_user(user_id):
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 
-# --- Speech-to-Text Function (MODIFIED FOR MULTILINGUAL SUPPORT) ---
+# --- Speech-to-Text Function ---
 def transcribe_audio(media_url, media_type):
     """
     Downloads audio and transcribes it using the Gemini API, 
@@ -60,16 +61,12 @@ def transcribe_audio(media_url, media_type):
         if r.status_code == 200:
             gemini_file = genai.upload_file(io.BytesIO(r.content), mime_type=media_type)
             model = genai.GenerativeModel('models/gemini-1.5-flash')
-            
-            # Add language context to the prompt for better accuracy
             prompt = [
                 "Please transcribe the following audio. The user is in South Africa and might be speaking in English, Sepedi, Xitsonga, Tshivenda, or Afrikaans.", 
                 gemini_file
             ]
-            
             response = model.generate_content(prompt)
             genai.delete_file(gemini_file.name)
-            
             if response.text:
                 print(f"Transcription successful: '{response.text}'")
                 return response.text
@@ -84,13 +81,10 @@ def generate_and_act_on_insight():
     """Analyzes job data, finds an opportunity, and notifies a relevant fixer."""
     if not GEMINI_API_KEY:
         return "Insight generation failed: GEMINI_API_KEY not set."
-
     completed_jobs = Job.query.filter_by(status='complete').all()
     if not completed_jobs:
         return "Not enough job data to analyze."
-
     job_data = [{'description': job.description, 'area': job.area} for job in completed_jobs]
-
     try:
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         prompt = f"""
@@ -98,31 +92,23 @@ def generate_and_act_on_insight():
         Identify a single high-demand skill in a specific area.
         Your response MUST be a JSON object with two keys: "skill" and "area".
         For example: {{"skill": "plumbing", "area": "Pretoria"}}
-
-        Job Data:
-        {json.dumps(job_data, indent=2)}
+        Job Data: {json.dumps(job_data, indent=2)}
         """
         response = model.generate_content(prompt)
-        
         clean_response = response.text.strip().replace("```json", "").replace("```", "")
         insight_data = json.loads(clean_response)
-        
         skill_in_demand = insight_data.get("skill")
         area_in_demand = insight_data.get("area")
-
         if not all([skill_in_demand, area_in_demand]):
             return "AI could not determine a specific skill/area insight."
-
         insight_text = f"High demand for '{skill_in_demand}' services identified in '{area_in_demand}'."
         new_insight = DataInsight(insight_text=insight_text)
         db.session.add(new_insight)
-        
         target_fixer = Fixer.query.filter(
             Fixer.is_active==True,
             Fixer.skills.ilike('%general%'),
             ~Fixer.skills.ilike(f'%{skill_in_demand}%')
         ).first()
-
         if target_fixer:
             suggestion_message = (
                 f"Hi {target_fixer.full_name}, this is FixMate-SA with a business tip!\n\n"
@@ -133,41 +119,30 @@ def generate_and_act_on_insight():
             send_whatsapp_message(to_number=target_fixer.phone_number, message_body=suggestion_message)
             insight_text += f" Proactively notified {target_fixer.full_name}."
             print(f"Notified {target_fixer.full_name} about upskilling opportunity.")
-        
         db.session.commit()
         return insight_text
-
     except Exception as e:
         print(f"An error occurred during insight generation: {e}")
         return "Could not generate an insight at this time."
 
 def analyze_feedback_sentiment(comment):
-    """Uses Gemini to analyze the sentiment of a user's feedback."""
     if not GEMINI_API_KEY:
         print("WARN: GEMINI_API_KEY not set. Cannot analyze sentiment.")
         return "Unknown"
-    
     try:
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         prompt = f"""
         Analyze the sentiment of the following customer feedback. 
         Classify it as one of these three categories: 'Positive', 'Negative', or 'Neutral'.
         Return ONLY the category name as a single word and nothing else.
-
         Feedback: "{comment}"
-
         Sentiment:
         """
         response = model.generate_content(prompt)
         sentiment = response.text.strip().capitalize()
-
         if sentiment in ['Positive', 'Negative', 'Neutral']:
-            print(f"Gemini analyzed sentiment as: {sentiment}")
             return sentiment
-        else:
-            print(f"WARN: Gemini returned unexpected sentiment: '{sentiment}'. Defaulting to 'Neutral'.")
-            return 'Neutral'
-            
+        return 'Neutral'
     except Exception as e:
         print(f"ERROR: Gemini API call failed during sentiment analysis: {e}")
         return "Unknown"
@@ -203,31 +178,24 @@ def promote_admin(phone):
 @app.cli.command("demote-admin")
 @click.argument("phone")
 def demote_admin(phone):
-    """Removes a user's admin privileges."""
     if not (phone.startswith('0') and len(phone) == 10):
         print("Error: Please provide a valid 10-digit SA number (e.g., 0821234567)."); return
-    
     formatted_phone = f"whatsapp:+27{phone[1:]}"
     user = User.query.filter_by(phone_number=formatted_phone).first()
-
     if not user:
-        print(f"Error: User with phone number {formatted_phone} not found.")
-        return
-        
+        print(f"Error: User with phone number {formatted_phone} not found."); return
     user.is_admin = False
     db.session.commit()
     print(f"Successfully demoted '{user.full_name or user.phone_number}'. They are now a regular client.")
 
 @app.cli.command("analyze-data")
 def analyze_data():
-    """Triggers the AI data analysis and proactive notification."""
     print("Starting data analysis...")
     insight = generate_and_act_on_insight()
     print(f"Insight & Action: {insight}")
 
 @app.cli.command("stats")
 def stats():
-    """Gets the total number of users and fixers in the database."""
     user_count = User.query.count()
     fixer_count = Fixer.query.count()
     print("--- FixMate-SA System Statistics ---")
@@ -236,36 +204,28 @@ def stats():
     print("------------------------------------")
 
 
-# --- Gemini-Powered Helper Functions ---
+# --- Helper Functions ---
 def classify_service_request(service_description):
-    """Uses Gemini to classify a service description into a skill category."""
     if not GEMINI_API_KEY:
         print("WARN: GEMINI_API_KEY not set. Falling back to keyword matching.")
         desc = service_description.lower()
         if any(k in desc for k in ['plumb', 'pipe', 'leak', 'geyser', 'tap', 'toilet']): return 'plumbing'
         if any(k in desc for k in ['light', 'electr', 'plug', 'wiring', 'switch']): return 'electrical'
         return 'general'
-
     try:
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         prompt = f"""
         Analyze the following home repair request from a South African user.
         Classify it into one of these three categories: 'plumbing', 'electrical', or 'general'.
         Return ONLY the category name as a single word and nothing else.
-
         Request: "{service_description}"
-
         Category:
         """
         response = model.generate_content(prompt)
         classification = response.text.strip().lower()
-
         if classification in ['plumbing', 'electrical', 'general']:
-            print(f"Gemini classified '{service_description}' as: {classification}")
             return classification
-        else:
-            print(f"WARN: Gemini returned an unexpected classification: '{classification}'. Defaulting to 'general'.")
-            return 'general'
+        return 'general'
     except Exception as e:
         print(f"ERROR: Gemini API call failed during classification: {e}. Defaulting to 'general'.")
         return 'general'
@@ -287,22 +247,29 @@ def set_user_state(user, new_state, data=None):
 def clear_user_state(user):
     user.conversation_state, user.service_request_cache = None, None; db.session.commit()
 
+# --- MODIFIED: find_fixer_for_job now checks for vetting status ---
 def find_fixer_for_job(service_description):
-    """Finds an available fixer by first classifying the job using Gemini."""
+    """Finds an available and APPROVED fixer by first classifying the job using Gemini."""
     skill_needed = classify_service_request(service_description)
-    fixer = Fixer.query.filter(Fixer.is_active==True, Fixer.skills.ilike(f'%{skill_needed}%')).first()
+    
+    # Base query to only include active and approved fixers
+    base_query = Fixer.query.filter_by(is_active=True, vetting_status='approved')
+    
+    # Try to find a specialist first
+    fixer = base_query.filter(Fixer.skills.ilike(f'%{skill_needed}%')).first()
     if fixer:
         return fixer
-    return Fixer.query.filter(Fixer.is_active==True, Fixer.skills.ilike('%general%')).first()
+        
+    # Fallback to a general handyman if no specialist is found
+    return base_query.filter(Fixer.skills.ilike('%general%')).first()
 
 def get_quote_for_service(service_description):
-    """Determines the quote price by first classifying the job using Gemini."""
     skill_needed = classify_service_request(service_description)
     if skill_needed == 'plumbing':
-        return 10.00
+        return 450.00
     if skill_needed == 'electrical':
-        return 10.00
-    return 10.00
+        return 400.00
+    return 350.00
 
 
 # --- Main Web Routes ---
@@ -347,13 +314,32 @@ def location_updater(job_id):
     if session.get('user_type') != 'fixer':
         flash('Access denied.', 'danger')
         return redirect(url_for('login'))
-    
     job = Job.query.filter_by(id=job_id, fixer_id=current_user.id).first_or_404()
     return render_template('update_location.html', job=job)
 
+# --- NEW: Route to handle fixer vetting status updates ---
+@app.route('/admin/update_vetting_status', methods=['POST'])
+@login_required
+def update_vetting_status():
+    if not getattr(current_user, 'is_admin', False):
+        return redirect(url_for('login'))
+        
+    fixer_id = request.form.get('fixer_id')
+    new_status = request.form.get('new_status')
+    
+    fixer = db.session.get(Fixer, int(fixer_id))
+
+    if fixer and new_status in ['approved', 'rejected']:
+        fixer.vetting_status = new_status
+        db.session.commit()
+        flash(f"Fixer '{fixer.full_name}' has been {new_status}.", 'success')
+    else:
+        flash("Invalid request.", 'danger')
+
+    return redirect(url_for('admin_dashboard'))
+
 
 # --- Authentication Routes ---
-# ... (These routes are unchanged)
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -405,7 +391,6 @@ def authenticate(token):
 def logout(): logout_user(); flash('You have been logged out.', 'info'); return redirect(url_for('login'))
 
 # --- Dashboard & Job Action Routes ---
-# ... (These routes are unchanged)
 @app.route('/dashboard')
 @login_required
 def dashboard(): 
@@ -424,12 +409,10 @@ def fixer_dashboard():
 def admin_dashboard():
     if not getattr(current_user, 'is_admin', False):
         flash('You do not have permission to access this page.', 'danger'); return redirect(url_for('dashboard'))
-    
     all_users = User.query.order_by(User.id.desc()).all()
     all_fixers = Fixer.query.order_by(Fixer.id.desc()).all()
     all_jobs = Job.query.order_by(Job.id.desc()).all()
     all_insights = DataInsight.query.order_by(DataInsight.id.desc()).all()
-
     return render_template('admin_dashboard.html', 
                            users=all_users, 
                            fixers=all_fixers, 
@@ -480,7 +463,6 @@ def complete_job(job_id):
     return redirect(url_for('fixer_dashboard'))
 
 # --- Payment Routes ---
-# ... (These routes are unchanged)
 @app.route('/payment/success')
 def payment_success():
     job_id = request.args.get('job_id')
@@ -512,7 +494,6 @@ def payment_notify():
 # --- Main WhatsApp Webhook ---
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
-    """Endpoint to receive incoming WhatsApp messages."""
     from_number = request.values.get('From', '')
     media_url = request.values.get('MediaUrl0')
     media_type = request.values.get('MediaContentType0', '')
@@ -535,11 +516,9 @@ def whatsapp_webhook():
     if current_state == 'awaiting_rating':
         job_id_to_rate = user.service_request_cache
         job = db.session.get(Job, int(job_id_to_rate)) if job_id_to_rate else None
-
         if job and incoming_msg.isdigit() and 1 <= int(incoming_msg) <= 5:
             job.rating = int(incoming_msg)
             db.session.commit()
-            
             response_message = "Thank you for the rating! Could you please share a brief comment about your experience?"
             set_user_state(user, 'awaiting_rating_comment', data={'job_id': job.id})
         else:
@@ -549,25 +528,31 @@ def whatsapp_webhook():
     elif current_state == 'awaiting_rating_comment':
         job_id_to_rate = user.service_request_cache
         job = db.session.get(Job, int(job_id_to_rate)) if job_id_to_rate else None
-        
         if job:
             comment_text = incoming_msg
             job.rating_comment = comment_text
-            
             sentiment = analyze_feedback_sentiment(comment_text)
             job.sentiment = sentiment
-            
             db.session.commit()
-            
         response_message = "Your feedback has been recorded. We appreciate you helping us improve FixMate-SA!"
         clear_user_state(user)
 
     elif current_state == 'awaiting_service_request':
-        quote = get_quote_for_service(incoming_msg)
-        job = Job(description=incoming_msg, client_id=user.id, amount=quote)
+        call_out_fee = get_quote_for_service(incoming_msg)
+        total_amount = call_out_fee + CLIENT_PLATFORM_FEE
+        job = Job(description=incoming_msg, client_id=user.id, amount=call_out_fee)
         db.session.add(job); db.session.commit()
-        response_message = f"Got it: '{incoming_msg}'.\n\nThe estimated call-out fee is **R{quote:.2f}**.\n\nReply *YES* to approve."
+        response_message = (
+            f"Got it: '{incoming_msg}'.\n\n"
+            f"Here's the quote breakdown:\n"
+            f"- Fixer Call-out Fee: R{call_out_fee:.2f}\n"
+            f"- Platform Fee: R{CLIENT_PLATFORM_FEE:.2f}\n"
+            f"--------------------\n"
+            f"**Total Due: R{total_amount:.2f}**\n\n"
+            "Reply *YES* to approve and proceed to payment."
+        )
         set_user_state(user, 'awaiting_quote_approval', data={'job_id': job.id})
+
     elif current_state == 'awaiting_quote_approval':
         job_id = user.service_request_cache
         job = db.session.get(Job, int(job_id)) if job_id else None
@@ -577,32 +562,36 @@ def whatsapp_webhook():
         else:
             if job: job.status = 'cancelled'; db.session.commit()
             response_message = "Job request cancelled. Say 'hello' to start again."; clear_user_state(user)
+
     elif current_state == 'awaiting_location' and latitude and longitude:
         job_id = user.service_request_cache
         job = db.session.get(Job, int(job_id)) if job_id else None
         if job:
-            job.area = "" \
-            "Pretoria" # Placeholder
+            job.area = "Pretoria" # Placeholder
             db.session.commit()
             response_message = "Thank you. What is the best contact number for the fixer to use?"
             set_user_state(user, 'awaiting_contact_number', data={'job_id': job.id})
+
     elif current_state == 'awaiting_contact_number':
         potential_number, job_id = incoming_msg, user.service_request_cache
         job = db.session.get(Job, int(job_id)) if job_id else None
         if job and any(char.isdigit() for char in potential_number) and len(potential_number) >= 10:
             job.client_contact_number = potential_number; db.session.commit()
+            total_payment_amount = job.amount + CLIENT_PLATFORM_FEE
             payment_data = {
                 'merchant_id': PAYFAST_MERCHANT_ID, 'merchant_key': PAYFAST_MERCHANT_KEY,
                 'return_url': url_for('payment_success', job_id=job.id, _external=True),
                 'cancel_url': url_for('payment_cancel', job_id=job.id, _external=True),
                 'notify_url': url_for('payment_notify', _external=True),
-                'm_payment_id': str(job.id), 'amount': f"{job.amount:.2f}",
+                'm_payment_id': str(job.id), 
+                'amount': f"{total_payment_amount:.2f}",
                 'item_name': f"FixMate-SA Job #{job.id}: {job.description}"
             }
             payment_url = f"{PAYFAST_URL}?{urlencode(payment_data)}"
             response_message = f"Thank you! We have all the details.\n\nPlease use the following secure link to complete your payment:\n\n{payment_url}"
             clear_user_state(user)
         else: response_message = "That doesn't look like a valid phone number. Please try again."
+    
     else: # Default state
         response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'My toilet is blocked and won't flush') or send a voice note."
         set_user_state(user, 'awaiting_service_request')
@@ -610,3 +599,4 @@ def whatsapp_webhook():
     if response_message:
         send_whatsapp_message(from_number, response_message)
     return Response(status=200)
+
