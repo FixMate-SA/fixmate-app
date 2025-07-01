@@ -48,10 +48,11 @@ class Job(db.Model):
     description = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(50), default='awaiting_payment', nullable=False)
     
-    # We will need to add a real location field here in the future
-    # For now, we will use a placeholder
+    # In a real app, this would be derived from lat/lon, but this is good for our MVP.
     area = db.Column(db.String(100), default='Pretoria', nullable=True)
     
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
     client_contact_number = db.Column(db.String(30), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
@@ -60,13 +61,14 @@ class Job(db.Model):
     
     rating = db.Column(db.Integer, nullable=True)
     rating_comment = db.Column(db.Text, nullable=True)
+    sentiment = db.Column(db.String(50), nullable=True)
     amount = db.Column(db.Numeric(10, 2), nullable=True)
     payment_status = db.Column(db.String(50), default='unpaid', nullable=False)
-    sentiment = db.Column(db.String(50), nullable=True) # e.g., Positive, Negative, Neutral
 
     def __repr__(self):
         return f'<Job {self.id} - {self.description[:20]}>'
 
+# --- NEW: DataInsight Model ---
 class DataInsight(db.Model):
     """Stores the generated insights from our data analysis."""
     __tablename__ = 'data_insights'

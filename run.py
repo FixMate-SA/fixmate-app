@@ -33,6 +33,7 @@ if GEMINI_API_KEY:
 
 # --- Initialize Extensions ---
 from app.models import db, User, Fixer, Job, DataInsight
+from app.services import send_whatsapp_message
 db.init_app(app)
 migrate = Migrate(app, db)
 login_manager = LoginManager()
@@ -68,45 +69,67 @@ def transcribe_audio(media_url, media_type):
         print(f"An error occurred during transcription: {e}"); return None
 
 # --- AI Data Analysis & Sentiment Functions ---
-def generate_platform_insights():
-    """Analyzes job data and suggests upskilling opportunities."""
+def generate_and_act_on_insight():
+    """Analyzes job data, finds an opportunity, and notifies a relevant fixer."""
     if not GEMINI_API_KEY:
         return "Insight generation failed: GEMINI_API_KEY not set."
 
-    all_jobs = Job.query.filter(Job.area.isnot(None)).all()
-    if not all_jobs:
-        return "Not enough job data with location information to generate an insight."
+    # Fetch all completed jobs to analyze
+    completed_jobs = Job.query.filter_by(status='complete').all()
+    if not completed_jobs:
+        return "Not enough job data to analyze."
 
-    job_data = [
-        {'id': job.id, 'description': job.description, 'area': job.area}
-        for job in all_jobs
-    ]
+    job_data = [{'description': job.description, 'area': job.area} for job in completed_jobs]
 
     try:
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         prompt = f"""
-        You are a business analyst for FixMate-SA, a South African service platform.
-        Analyze the following list of recent jobs, which are provided as a JSON object.
-        Your task is to identify a single, specific, actionable insight that could help a fixer on the platform earn more money.
-        
-        Focus on identifying a high-demand skill in a specific area where there might be a lack of specialists.
-        
-        Format your response as a concise, one-sentence suggestion. For example: "There is high demand for plumbers specializing in geysers in Pretoria." or "Electrical compliance certificate jobs are very common in Johannesburg."
+        You are a business analyst for FixMate-SA. Analyze the following list of jobs.
+        Identify a single high-demand skill in a specific area.
+        Your response MUST be a JSON object with two keys: "skill" and "area".
+        For example: {{"skill": "plumbing", "area": "Pretoria"}}
 
         Job Data:
         {json.dumps(job_data, indent=2)}
-
-        Actionable Insight:
         """
         response = model.generate_content(prompt)
-        insight = response.text.strip()
+        
+        # Clean the response to ensure it's valid JSON
+        clean_response = response.text.strip().replace("```json", "").replace("```", "")
+        insight_data = json.loads(clean_response)
+        
+        skill_in_demand = insight_data.get("skill")
+        area_in_demand = insight_data.get("area")
 
-        new_insight = DataInsight(insight_text=insight)
+        if not all([skill_in_demand, area_in_demand]):
+            return "AI could not determine a specific skill/area insight."
+
+        insight_text = f"High demand for '{skill_in_demand}' services identified in '{area_in_demand}'."
+        new_insight = DataInsight(insight_text=insight_text)
         db.session.add(new_insight)
-        db.session.commit()
+        
+        # Now, find a suitable fixer to notify
+        # We look for a 'general' fixer who does NOT already have the specialist skill
+        target_fixer = Fixer.query.filter(
+            Fixer.is_active==True,
+            Fixer.skills.ilike('%general%'),
+            ~Fixer.skills.ilike(f'%{skill_in_demand}%')
+        ).first() # In a real app, we'd also filter by area and rating
 
-        print(f"Generated and saved new insight: {insight}")
-        return insight
+        if target_fixer:
+            # We found a fixer to upskill!
+            suggestion_message = (
+                f"Hi {target_fixer.full_name}, this is FixMate-SA with a business tip!\n\n"
+                f"Our system has noticed a high demand for '{skill_in_demand}' services in the {area_in_demand} area. "
+                "You could increase your earnings by adding this skill to your profile.\n\n"
+                "Consider looking into local accredited courses to get certified."
+            )
+            send_whatsapp_message(to_number=target_fixer.phone_number, message_body=suggestion_message)
+            insight_text += f" Proactively notified {target_fixer.full_name}."
+            print(f"Notified {target_fixer.full_name} about upskilling opportunity.")
+        
+        db.session.commit()
+        return insight_text
 
     except Exception as e:
         print(f"An error occurred during insight generation: {e}")
@@ -191,10 +214,10 @@ def demote_admin(phone):
 
 @app.cli.command("analyze-data")
 def analyze_data():
-    """Triggers the AI data analysis and prints the insight."""
-    print("Starting data analysis for platform insights...")
-    insight = generate_platform_insights()
-    print(f"Insight: {insight}")
+    """Triggers the AI data analysis and proactive notification."""
+    print("Starting data analysis...")
+    insight = generate_and_act_on_insight()
+    print(f"Insight & Action: {insight}")
 
 @app.cli.command("stats")
 def stats():
@@ -208,8 +231,6 @@ def stats():
 
 
 # --- Gemini-Powered Helper Functions ---
-from app.services import send_whatsapp_message
-
 def classify_service_request(service_description):
     """Uses Gemini to classify a service description into a skill category."""
     if not GEMINI_API_KEY:
@@ -314,7 +335,6 @@ def track_job(job_id):
     job = Job.query.filter_by(id=job_id, client_id=current_user.id).first_or_404()
     return render_template('track_job.html', job=job)
 
-# --- NEW: Route to serve the fixer's location update page ---
 @app.route('/fixer/update_location/<int:job_id>')
 @login_required
 def location_updater(job_id):
