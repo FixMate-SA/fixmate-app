@@ -5,6 +5,7 @@ import hashlib
 import requests
 import io
 import json 
+from decimal import Decimal # NEW: Import the Decimal type for precise calculations
 from urllib.parse import urlencode
 from flask import Flask, request, Response, render_template, redirect, url_for, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -30,7 +31,9 @@ PAYFAST_URL = 'https://sandbox.payfast.co.za/eng/process'
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-CLIENT_PLATFORM_FEE = 10.00
+
+# MODIFIED: Use Decimal for financial calculations
+CLIENT_PLATFORM_FEE = Decimal('10.00')
 
 # --- Initialize Extensions ---
 from app.models import db, User, Fixer, Job, DataInsight
@@ -245,7 +248,6 @@ def stats():
     print(f"Total Registered Fixers:  {fixer_count}")
     print("------------------------------------")
 
-# --- NEW: Additional Management Commands ---
 @app.cli.command("list-admins")
 def list_admins():
     """Lists all users with admin privileges."""
@@ -331,7 +333,6 @@ def reassign_job(job_id, fixer_phone):
     job.status = 'assigned' # Reset status to assigned
     db.session.commit()
     print(f"Success! Job #{job.id} has been reassigned from {old_fixer_name} to {new_fixer.full_name}.")
-    # Optionally, send a notification to the new fixer
     send_whatsapp_message(to_number=new_fixer.phone_number, message_body=f"Job Reassigned to You:\n\nService: {job.description}\nClient Contact: {job.client_contact_number}\n\nPlease go to your Fixer Portal to accept this job.")
 
 
@@ -388,12 +389,13 @@ def find_fixer_for_job(service_description):
     return base_query.filter(Fixer.skills.ilike('%general%')).first()
 
 def get_quote_for_service(service_description):
+    # MODIFIED: Return Decimal objects for consistency
     skill_needed = classify_service_request(service_description)
     if skill_needed == 'plumbing':
-        return 450.00
+        return Decimal('450.00')
     if skill_needed == 'electrical':
-        return 400.00
-    return 350.00
+        return Decimal('400.00')
+    return Decimal('350.00')
 
 
 # --- Main Web Routes ---
