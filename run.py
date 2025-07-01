@@ -46,9 +46,12 @@ def load_user(user_id):
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 
-# --- Speech-to-Text Function ---
+# --- Speech-to-Text Function (MODIFIED FOR MULTILINGUAL SUPPORT) ---
 def transcribe_audio(media_url, media_type):
-    """Downloads audio and transcribes it using the Gemini API directly."""
+    """
+    Downloads audio and transcribes it using the Gemini API, 
+    with a prompt optimized for multiple South African languages.
+    """
     if not GEMINI_API_KEY:
         print("ERROR: GEMINI_API_KEY not set."); return None
     try:
@@ -57,8 +60,16 @@ def transcribe_audio(media_url, media_type):
         if r.status_code == 200:
             gemini_file = genai.upload_file(io.BytesIO(r.content), mime_type=media_type)
             model = genai.GenerativeModel('models/gemini-1.5-flash')
-            response = model.generate_content(["Please transcribe this audio.", gemini_file])
+            
+            # Add language context to the prompt for better accuracy
+            prompt = [
+                "Please transcribe the following audio. The user is in South Africa and might be speaking in English, Sepedi, Xitsonga, Tshivenda, or Afrikaans.", 
+                gemini_file
+            ]
+            
+            response = model.generate_content(prompt)
             genai.delete_file(gemini_file.name)
+            
             if response.text:
                 print(f"Transcription successful: '{response.text}'")
                 return response.text
@@ -74,7 +85,6 @@ def generate_and_act_on_insight():
     if not GEMINI_API_KEY:
         return "Insight generation failed: GEMINI_API_KEY not set."
 
-    # Fetch all completed jobs to analyze
     completed_jobs = Job.query.filter_by(status='complete').all()
     if not completed_jobs:
         return "Not enough job data to analyze."
@@ -94,7 +104,6 @@ def generate_and_act_on_insight():
         """
         response = model.generate_content(prompt)
         
-        # Clean the response to ensure it's valid JSON
         clean_response = response.text.strip().replace("```json", "").replace("```", "")
         insight_data = json.loads(clean_response)
         
@@ -108,16 +117,13 @@ def generate_and_act_on_insight():
         new_insight = DataInsight(insight_text=insight_text)
         db.session.add(new_insight)
         
-        # Now, find a suitable fixer to notify
-        # We look for a 'general' fixer who does NOT already have the specialist skill
         target_fixer = Fixer.query.filter(
             Fixer.is_active==True,
             Fixer.skills.ilike('%general%'),
             ~Fixer.skills.ilike(f'%{skill_in_demand}%')
-        ).first() # In a real app, we'd also filter by area and rating
+        ).first()
 
         if target_fixer:
-            # We found a fixer to upskill!
             suggestion_message = (
                 f"Hi {target_fixer.full_name}, this is FixMate-SA with a business tip!\n\n"
                 f"Our system has noticed a high demand for '{skill_in_demand}' services in the {area_in_demand} area. "
@@ -347,6 +353,7 @@ def location_updater(job_id):
 
 
 # --- Authentication Routes ---
+# ... (These routes are unchanged)
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -398,6 +405,7 @@ def authenticate(token):
 def logout(): logout_user(); flash('You have been logged out.', 'info'); return redirect(url_for('login'))
 
 # --- Dashboard & Job Action Routes ---
+# ... (These routes are unchanged)
 @app.route('/dashboard')
 @login_required
 def dashboard(): 
@@ -472,6 +480,7 @@ def complete_job(job_id):
     return redirect(url_for('fixer_dashboard'))
 
 # --- Payment Routes ---
+# ... (These routes are unchanged)
 @app.route('/payment/success')
 def payment_success():
     job_id = request.args.get('job_id')
