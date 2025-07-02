@@ -199,14 +199,14 @@ def remove_fixer(phone):
     elif phone.startswith('+') and len(phone) == 12: formatted_phone = phone
     else:
         print("Error: Invalid phone number format. Use a 10-digit or international format."); return
-    
+
     whatsapp_phone = f"whatsapp:{formatted_phone}"
     fixer = Fixer.query.filter_by(phone_number=whatsapp_phone).first()
 
     if not fixer:
         print(f"Error: Fixer with phone number {whatsapp_phone} not found.")
         return
-    
+
     if click.confirm(f"Are you sure you want to delete fixer '{fixer.full_name}' ({fixer.phone_number})? This cannot be undone.", abort=True):
         db.session.delete(fixer)
         db.session.commit()
@@ -268,14 +268,14 @@ def toggle_fixer_active(phone):
     elif phone.startswith('+') and len(phone) == 12: formatted_phone = phone
     else:
         print("Error: Invalid phone number format."); return
-    
+
     whatsapp_phone = f"whatsapp:{formatted_phone}"
     fixer = Fixer.query.filter_by(phone_number=whatsapp_phone).first()
 
     if not fixer:
         print(f"Error: Fixer with phone number {whatsapp_phone} not found.")
         return
-        
+
     fixer.is_active = not fixer.is_active
     db.session.commit()
     status = "ACTIVE" if fixer.is_active else "INACTIVE"
@@ -288,13 +288,13 @@ def list_jobs(status):
     query = Job.query
     if status:
         query = query.filter_by(status=status)
-    
+
     jobs = query.order_by(Job.id.desc()).all()
-    
+
     if not jobs:
         print(f"No jobs found" + (f" with status '{status}'." if status else "."))
         return
-        
+
     print(f"--- Jobs" + (f" with status: {status}" if status else "") + " ---")
     for job in jobs:
         client_name = job.client.full_name or job.client.phone_number
@@ -368,16 +368,33 @@ def get_or_create_user(phone_number):
     if not user: user = User(phone_number=phone_number); db.session.add(user); db.session.commit()
     return user
 
+# --- UPDATED State Management Functions ---
 def set_user_state(user, new_state, data=None):
+    """Saves the current state and temporary job data for a user."""
     user.conversation_state = new_state
-    if data and 'job_id' in data:
-        user.service_request_cache = str(data['job_id'])
-    else:
-        user.service_request_cache = None
+    
+    # Get existing cached data, or start with an empty dictionary
+    cached_data = json.loads(user.service_request_cache) if user.service_request_cache else {}
+    
+    if data:
+        cached_data.update(data)
+    
+    user.service_request_cache = json.dumps(cached_data)
     db.session.commit()
+    print(f"State for {user.phone_number} set to {new_state} with data: {cached_data}")
+
+def get_user_cache(user):
+    """Retrieves and decodes the cached job data for a user."""
+    if user.service_request_cache:
+        return json.loads(user.service_request_cache)
+    return {}
 
 def clear_user_state(user):
-    user.conversation_state, user.service_request_cache = None, None; db.session.commit()
+    """Clears the state and cache for a user."""
+    user.conversation_state = None
+    user.service_request_cache = None
+    db.session.commit()
+    print(f"State for {user.phone_number} cleared.")
 
 def find_fixer_for_job(service_description):
     """Finds an available and APPROVED fixer by first classifying the job using Gemini."""
@@ -388,14 +405,29 @@ def find_fixer_for_job(service_description):
         return fixer
     return base_query.filter(Fixer.skills.ilike('%general%')).first()
 
-def get_quote_for_service(service_description):
-    # MODIFIED: Return Decimal objects for consistency
-    skill_needed = classify_service_request(service_description)
-    if skill_needed == 'plumbing':
-        return Decimal('450.00')
-    if skill_needed == 'electrical':
-        return Decimal('400.00')
-    return Decimal('350.00')
+# --- UPDATED Service Function ---
+def create_new_job_in_db(user, job_data):
+    """Creates a Job record from cached data and notifies a fixer."""
+    job = Job(
+        description=job_data.get('service'),
+        latitude=job_data.get('latitude'),
+        longitude=job_data.get('longitude'),
+        client_contact_number=job_data.get('contact'),
+        client_id=user.id
+    )
+    
+    matched_fixer = find_fixer_for_job(job.description)
+    if matched_fixer:
+        job.assigned_fixer = matched_fixer
+        job.status = 'assigned'
+        notification_message = f"New FixMate-SA Job Alert!\n\nService: {job.description}\nClient Contact: {job.client_contact_number}\n\nPlease go to your Fixer Portal to accept this job:\n{url_for('fixer_login', _external=True)}"
+        send_whatsapp_message(to_number=matched_fixer.phone_number, message_body=notification_message)
+    else:
+        job.status = 'unassigned'
+        
+    db.session.add(job)
+    db.session.commit()
+    return job.id, matched_fixer is not None
 
 
 # --- Web and WhatsApp Routes ---
@@ -549,10 +581,10 @@ def admin_dashboard():
     all_jobs = Job.query.order_by(Job.id.desc()).all()
     all_insights = DataInsight.query.order_by(DataInsight.id.desc()).all()
     return render_template('admin_dashboard.html',
-                           users=all_users,
-                           fixers=all_fixers,
-                           jobs=all_jobs,
-                           insights=all_insights)
+                            users=all_users,
+                            fixers=all_fixers,
+                            jobs=all_jobs,
+                            insights=all_insights)
 
 @app.route('/admin/assign_job', methods=['POST'])
 @login_required
@@ -648,13 +680,16 @@ def payment_notify():
     print("Received ITN from PayFast"); return Response(status=200)
 
 
-# --- Main WhatsApp Webhook ---
+# --- Main WhatsApp Webhook (UPDATED) ---
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
+    """Endpoint to receive incoming WhatsApp messages."""
+    incoming_msg = request.values.get('Body', '').strip()
     from_number = request.values.get('From', '')
     media_url = request.values.get('MediaUrl0')
     media_type = request.values.get('MediaContentType0', '')
-    incoming_msg = request.values.get('Body', '').strip()
+    latitude = request.values.get('Latitude')
+    longitude = request.values.get('Longitude')
 
     if media_url and 'audio' in media_type:
         print(f"Received audio message from {from_number}.")
@@ -665,14 +700,14 @@ def whatsapp_webhook():
             send_whatsapp_message(from_number, "Sorry, I had trouble understanding that audio. Please try sending a text message instead.")
             return Response(status=200)
 
-    latitude = request.values.get('Latitude'); longitude = request.values.get('Longitude')
     user = get_or_create_user(from_number)
     current_state = user.conversation_state
     response_message = ""
 
+    # --- MERGED & SIMPLIFIED CONVERSATION FLOW ---
     if current_state == 'awaiting_rating':
-        job_id_to_rate = user.service_request_cache
-        job = db.session.get(Job, int(job_id_to_rate)) if job_id_to_rate else None
+        job_id_to_rate_str = get_user_cache(user).get('job_id')
+        job = db.session.get(Job, int(job_id_to_rate_str)) if job_id_to_rate_str else None
         if job and incoming_msg.isdigit() and 1 <= int(incoming_msg) <= 5:
             job.rating = int(incoming_msg)
             db.session.commit()
@@ -683,8 +718,8 @@ def whatsapp_webhook():
             clear_user_state(user)
 
     elif current_state == 'awaiting_rating_comment':
-        job_id_to_rate = user.service_request_cache
-        job = db.session.get(Job, int(job_id_to_rate)) if job_id_to_rate else None
+        job_id_to_rate_str = get_user_cache(user).get('job_id')
+        job = db.session.get(Job, int(job_id_to_rate_str)) if job_id_to_rate_str else None
         if job:
             comment_text = incoming_msg
             job.rating_comment = comment_text
@@ -695,64 +730,47 @@ def whatsapp_webhook():
         clear_user_state(user)
 
     elif current_state == 'awaiting_service_request':
-        call_out_fee = get_quote_for_service(incoming_msg)
-        total_amount = call_out_fee + CLIENT_PLATFORM_FEE
-        job = Job(description=incoming_msg, client_id=user.id, amount=call_out_fee)
-        db.session.add(job); db.session.commit()
-        response_message = (
-            f"Got it: '{incoming_msg}'.\n\n"
-            f"Here's the quote breakdown:\n"
-            f"- Fixer Call-out Fee: R{call_out_fee:.2f}\n"
-            f"- Platform Fee: R{CLIENT_PLATFORM_FEE:.2f}\n"
-            f"--------------------\n"
-            f"**Total Due: R{total_amount:.2f}**\n\n"
-            "Reply *YES* to approve and proceed to payment."
-        )
-        set_user_state(user, 'awaiting_quote_approval', data={'job_id': job.id})
-
-    elif current_state == 'awaiting_quote_approval':
-        job_id = user.service_request_cache
-        job = db.session.get(Job, int(job_id)) if job_id else None
-        if 'yes' in incoming_msg.lower() and job:
-            response_message = "Quote approved. Please share your location pin.\n\nTap 📎, then 'Location'."
-            set_user_state(user, 'awaiting_location', data={'job_id': job.id})
-        else:
-            if job: job.status = 'cancelled'; db.session.commit()
-            response_message = "Job request cancelled. Say 'hello' to start again."; clear_user_state(user)
+        response_message = "Got it. To help us find the nearest fixer, please share your location pin.\n\nTap the paperclip icon 📎, then choose 'Location'."
+        set_user_state(user, 'awaiting_location', data={'service': incoming_msg})
 
     elif current_state == 'awaiting_location' and latitude and longitude:
-        job_id = user.service_request_cache
-        job = db.session.get(Job, int(job_id)) if job_id else None
-        if job:
-            job.area = "Pretoria" # Placeholder
-            db.session.commit()
-            response_message = "Thank you. What is the best contact number for the fixer to use?"
-            set_user_state(user, 'awaiting_contact_number', data={'job_id': job.id})
+        response_message = "Thank you for sharing your location.\n\nLastly, please provide a contact number (e.g., 082 123 4567) that the fixer can call if needed."
+        set_user_state(user, 'awaiting_contact_number', data={'latitude': latitude, 'longitude': longitude})
 
     elif current_state == 'awaiting_contact_number':
-        potential_number, job_id = incoming_msg, user.service_request_cache
-        job = db.session.get(Job, int(job_id)) if job_id else None
-        if job and any(char.isdigit() for char in potential_number) and len(potential_number) >= 10:
-            job.client_contact_number = potential_number; db.session.commit()
-            total_payment_amount = job.amount + CLIENT_PLATFORM_FEE
-            payment_data = {
-                'merchant_id': PAYFAST_MERCHANT_ID, 'merchant_key': PAYFAST_MERCHANT_KEY,
-                'return_url': url_for('payment_success', job_id=job.id, _external=True),
-                'cancel_url': url_for('payment_cancel', job_id=job.id, _external=True),
-                'notify_url': url_for('payment_notify', _external=True),
-                'm_payment_id': str(job.id),
-                'amount': f"{total_payment_amount:.2f}",
-                'item_name': f"FixMate-SA Job #{job.id}: {job.description}"
-            }
-            payment_url = f"{PAYFAST_URL}?{urlencode(payment_data)}"
-            response_message = f"Thank you! We have all the details.\n\nPlease use the following secure link to complete your payment:\n\n{payment_url}"
-            clear_user_state(user)
-        else: response_message = "That doesn't look like a valid phone number. Please try again."
-    
-    else: # Default state
-        response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'My toilet is blocked and won't flush') or send a voice note."
-        set_user_state(user, 'awaiting_service_request')
+        potential_number = incoming_msg
+        if any(char.isdigit() for char in potential_number) and len(potential_number) >= 10:
+            terms_url = url_for('terms', _external=True)
+            response_message = (
+                f"Great! We have all the details.\n\n"
+                f"By proceeding, you agree to the FixMate-SA Terms of Service, which states that payment is handled directly between you and the fixer.\n"
+                f"View here: {terms_url}\n\n"
+                "Reply *YES* to confirm and dispatch a fixer."
+            )
+            set_user_state(user, 'awaiting_terms_approval', data={'contact': potential_number})
+        else:
+            response_message = "That doesn't seem to be a valid phone number. Please try again."
 
+    elif current_state == 'awaiting_terms_approval':
+        if 'yes' in incoming_msg.lower():
+            job_data = get_user_cache(user)
+            job_id, fixer_found = create_new_job_in_db(user, job_data)
+            
+            if fixer_found:
+                response_message = f"Perfect! We have logged your request (Job #{job_id}) and have notified a nearby fixer. They will contact you shortly."
+            else:
+                response_message = f"Thank you. We have logged your request (Job #{job_id}), but all our fixers for this skill are currently busy. We will notify you as soon as one becomes available."
+            
+            clear_user_state(user)
+        else:
+            response_message = "Job request cancelled. Please say 'hello' to start a new request."
+            clear_user_state(user)
+    
+    else: # Default state / start of conversation
+        response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe' or 'Garden cleaning') or send a voice note."
+        set_user_state(user, 'awaiting_service_request')
+    
     if response_message:
         send_whatsapp_message(from_number, response_message)
+        
     return Response(status=200)
