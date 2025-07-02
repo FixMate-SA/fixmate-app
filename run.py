@@ -14,6 +14,9 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from itsdangerous import URLSafeTimedSerializer
 import click
 import google.generativeai as genai
+from geopy.distance import geodesic # New import for distance calculation
+from datetime import datetime, timezone # New import for timestamps
+
 
 # --- App Initialization & Config ---
 app = Flask(__name__)
@@ -396,14 +399,66 @@ def clear_user_state(user):
     db.session.commit()
     print(f"State for {user.phone_number} cleared.")
 
-def find_fixer_for_job(service_description):
-    """Finds an available and APPROVED fixer by first classifying the job using Gemini."""
-    skill_needed = classify_service_request(service_description)
-    base_query = Fixer.query.filter_by(is_active=True, vetting_status='approved')
-    fixer = base_query.filter(Fixer.skills.ilike(f'%{skill_needed}%')).first()
-    if fixer:
-        return fixer
-    return base_query.filter(Fixer.skills.ilike('%general%')).first()
+# --- NEW: Intelligent Fixer Matching Algorithm ---
+def find_fixer_for_job(job):
+    """
+    Finds the best fixer for a job based on skill, proximity, rating, and fairness.
+    """
+    skill_needed = classify_service_request(job.description)
+    
+    eligible_fixers = Fixer.query.filter(
+        Fixer.is_active==True,
+        Fixer.vetting_status=='approved',
+        Fixer.skills.ilike(f'%{skill_needed}%')
+    ).all()
+
+    if not eligible_fixers:
+        eligible_fixers = Fixer.query.filter(
+            Fixer.is_active==True,
+            Fixer.vetting_status=='approved',
+            Fixer.skills.ilike('%general%')
+        ).all()
+        if not eligible_fixers:
+            print("No eligible fixers found for this job.")
+            return None
+
+    scored_fixers = []
+    for fixer in eligible_fixers:
+        score = 0
+        
+        # Proximity Score (up to 50 points)
+        if fixer.current_latitude and fixer.current_longitude and job.latitude and job.longitude:
+            client_location = (job.latitude, job.longitude)
+            fixer_location = (fixer.current_latitude, fixer.current_longitude)
+            distance_km = geodesic(client_location, fixer_location).km
+            proximity_score = max(0, 50 - (distance_km * 2)) # Higher penalty for distance
+            score += proximity_score
+        
+        # Rating Score (up to 30 points)
+        avg_rating = db.session.query(db.func.avg(Job.rating)).filter(Job.fixer_id==fixer.id, Job.rating != None).scalar() or 3.5
+        score += (avg_rating / 5) * 30
+
+        # Fairness Score (up to 20 points)
+        if fixer.last_assigned_at:
+            hours_since_last_job = (datetime.now(timezone.utc) - fixer.last_assigned_at).total_seconds() / 3600
+            score += min(20, hours_since_last_job) 
+        else:
+            score += 20
+            
+        scored_fixers.append({'fixer': fixer, 'score': score})
+        print(f"Fixer: {fixer.full_name}, Score: {score:.2f}")
+
+    if not scored_fixers:
+        return None
+        
+    best_fixer_data = max(scored_fixers, key=lambda x: x['score'])
+    best_fixer = best_fixer_data['fixer']
+    
+    best_fixer.last_assigned_at = datetime.now(timezone.utc)
+    db.session.commit()
+    
+    print(f"Best match found: {best_fixer.full_name} with score {best_fixer_data['score']:.2f}")
+    return best_fixer
 
 # --- UPDATED Service Function ---
 def create_new_job_in_db(user, job_data):
@@ -416,7 +471,9 @@ def create_new_job_in_db(user, job_data):
         client_id=user.id
     )
     
-    matched_fixer = find_fixer_for_job(job.description)
+    # MODIFIED: This now calls the intelligent matching algorithm
+    matched_fixer = find_fixer_for_job(job)
+    
     if matched_fixer:
         job.assigned_fixer = matched_fixer
         job.status = 'assigned'

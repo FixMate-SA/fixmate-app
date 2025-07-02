@@ -11,3 +11,4 @@ itsdangerous
 click
 requests
 google-generativeai
+geopy
