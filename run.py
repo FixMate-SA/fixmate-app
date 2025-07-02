@@ -4,8 +4,8 @@ import re
 import hashlib
 import requests
 import io
-import json 
-from decimal import Decimal # NEW: Import the Decimal type for precise calculations
+import json
+from decimal import Decimal
 from urllib.parse import urlencode
 from flask import Flask, request, Response, render_template, redirect, url_for, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -53,7 +53,7 @@ serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 # --- Speech-to-Text Function ---
 def transcribe_audio(media_url, media_type):
     """
-    Downloads audio and transcribes it using the Gemini API, 
+    Downloads audio and transcribes it using the Gemini API,
     with a prompt optimized for multiple South African languages.
     """
     if not GEMINI_API_KEY:
@@ -65,7 +65,7 @@ def transcribe_audio(media_url, media_type):
             gemini_file = genai.upload_file(io.BytesIO(r.content), mime_type=media_type)
             model = genai.GenerativeModel('models/gemini-1.5-flash')
             prompt = [
-                "Please transcribe the following audio. The user is in South Africa and might be speaking in English, Sepedi, Xitsonga, Tshivenda, or Afrikaans.", 
+                "Please transcribe the following audio. The user is in South Africa and might be speaking in English, Sepedi, Xitsonga, Tshivenda, or Afrikaans.",
                 gemini_file
             ]
             response = model.generate_content(prompt)
@@ -135,7 +135,7 @@ def analyze_feedback_sentiment(comment):
     try:
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         prompt = f"""
-        Analyze the sentiment of the following customer feedback. 
+        Analyze the sentiment of the following customer feedback.
         Classify it as one of these three categories: 'Positive', 'Negative', or 'Neutral'.
         Return ONLY the category name as a single word and nothing else.
         Feedback: "{comment}"
@@ -197,7 +197,7 @@ def remove_fixer(phone):
     """Deletes a fixer from the database by their phone number."""
     if phone.startswith('0') and len(phone) == 10: formatted_phone = f"+27{phone[1:]}"
     elif phone.startswith('+') and len(phone) == 12: formatted_phone = phone
-    else: 
+    else:
         print("Error: Invalid phone number format. Use a 10-digit or international format."); return
     
     whatsapp_phone = f"whatsapp:{formatted_phone}"
@@ -218,7 +218,7 @@ def remove_client(phone):
     """Deletes a client from the database by their phone number."""
     if phone.startswith('0') and len(phone) == 10: formatted_phone = f"+27{phone[1:]}"
     elif phone.startswith('+') and len(phone) == 12: formatted_phone = phone
-    else: 
+    else:
         print("Error: Invalid phone number format. Use a 10-digit or international format."); return
 
     whatsapp_phone = f"whatsapp:{formatted_phone}"
@@ -266,7 +266,7 @@ def toggle_fixer_active(phone):
     """Toggles a fixer's 'is_active' status."""
     if phone.startswith('0') and len(phone) == 10: formatted_phone = f"+27{phone[1:]}"
     elif phone.startswith('+') and len(phone) == 12: formatted_phone = phone
-    else: 
+    else:
         print("Error: Invalid phone number format."); return
     
     whatsapp_phone = f"whatsapp:{formatted_phone}"
@@ -314,7 +314,7 @@ def reassign_job(job_id, fixer_phone):
 
     if fixer_phone.startswith('0') and len(fixer_phone) == 10: formatted_phone = f"+27{fixer_phone[1:]}"
     elif fixer_phone.startswith('+') and len(fixer_phone) == 12: formatted_phone = fixer_phone
-    else: 
+    else:
         print("Error: Invalid phone number format for fixer."); return
 
     whatsapp_phone = f"whatsapp:{formatted_phone}"
@@ -398,9 +398,13 @@ def get_quote_for_service(service_description):
     return Decimal('350.00')
 
 
-# --- Main Web Routes ---
+# --- Web and WhatsApp Routes ---
+
+# --- UPDATED: The root route now renders our new website ---
 @app.route('/')
-def index(): return "<h1>FixMate-SA Bot is running.</h1>"
+def index():
+    """Renders the main marketing website homepage."""
+    return render_template('index.html')
 
 @app.route('/terms')
 def terms():
@@ -524,7 +528,7 @@ def logout(): logout_user(); flash('You have been logged out.', 'info'); return 
 # --- Dashboard & Job Action Routes ---
 @app.route('/dashboard')
 @login_required
-def dashboard(): 
+def dashboard():
     jobs = Job.query.filter_by(client_id=current_user.id).order_by(Job.id.desc()).all()
     return render_template('dashboard.html', jobs=jobs)
 
@@ -544,9 +548,9 @@ def admin_dashboard():
     all_fixers = Fixer.query.order_by(Fixer.id.desc()).all()
     all_jobs = Job.query.order_by(Job.id.desc()).all()
     all_insights = DataInsight.query.order_by(DataInsight.id.desc()).all()
-    return render_template('admin_dashboard.html', 
-                           users=all_users, 
-                           fixers=all_fixers, 
+    return render_template('admin_dashboard.html',
+                           users=all_users,
+                           fixers=all_fixers,
                            jobs=all_jobs,
                            insights=all_insights)
 
@@ -736,7 +740,7 @@ def whatsapp_webhook():
                 'return_url': url_for('payment_success', job_id=job.id, _external=True),
                 'cancel_url': url_for('payment_cancel', job_id=job.id, _external=True),
                 'notify_url': url_for('payment_notify', _external=True),
-                'm_payment_id': str(job.id), 
+                'm_payment_id': str(job.id),
                 'amount': f"{total_payment_amount:.2f}",
                 'item_name': f"FixMate-SA Job #{job.id}: {job.description}"
             }
@@ -752,4 +756,3 @@ def whatsapp_webhook():
     if response_message:
         send_whatsapp_message(from_number, response_message)
     return Response(status=200)
-
