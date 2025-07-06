@@ -29,12 +29,11 @@ def send_whatsapp_message(to_number, message_body):
     }
 
     # --- THIS IS THE CORRECTED PAYLOAD ---
-    # It now matches the simpler format required by the 360dialog API.
+    # The "preview_url" and "recipient_type" parameters have been removed to match the API.
     payload = {
         "to": recipient_number,
         "type": "text",
         "text": {
-            "preview_url": False,
             "body": message_body
         }
     }
