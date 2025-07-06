@@ -1,51 +1,46 @@
 # app/services.py
-from twilio.rest import Client
 import os
+import requests
 
-# Get credentials from environment variables
-TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
-TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
-TWILIO_WHATSAPP_NUMBER = os.environ.get('TWILIO_WHATSAPP_NUMBER')
-
-# Initialize the client only if credentials are available
-client = None
-if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
-    client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-else:
-    print("WARNING: Twilio credentials not found. The app will not be able to send messages.")
+# --- 360dialog Configuration ---
+DIALOG_360_API_KEY = os.environ.get('DIALOG_360_API_KEY')
+DIALOG_360_URL = "https://waba.360dialog.io/v1/messages"
 
 
 def send_whatsapp_message(to_number, message_body):
-    """Sends a message to a user via WhatsApp."""
-    if not client:
-        print(f"ERROR: Cannot send message. Twilio client not initialized.")
+    """
+    Sends a WhatsApp message using the 360dialog API.
+    """
+    if not DIALOG_360_API_KEY:
+        print("ERROR: DIALOG_360_API_KEY not set. Cannot send message.")
         return None
+
+    # 360dialog requires the number without the 'whatsapp:+' prefix
+    recipient_number = to_number.replace("whatsapp:+", "")
+
+    headers = {
+        "D360-API-KEY": DIALOG_360_API_KEY,
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "to": recipient_number,
+        "type": "text",
+        "text": {
+            "body": message_body
+        }
+    }
+
     try:
-        message = client.messages.create(
-            from_=TWILIO_WHATSAPP_NUMBER,
-            body=message_body,
-            to=to_number
-        )
-        print(f"Message sent to {to_number}: SID {message.sid}")
-        return message.sid
-    except Exception as e:
-        print(f"Error sending message to {to_number}: {e}")
+        response = requests.post(DIALOG_360_URL, json=payload, headers=headers)
+        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
+        
+        response_data = response.json()
+        message_id = response_data.get('messages', [{}])[0].get('id')
+        
+        print(f"Message sent to {recipient_number} via 360dialog: ID {message_id}")
+        return message_id
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending message via 360dialog: {e}")
         return None
 
-def create_user_account(name, phone_number):
-    """
-    Placeholder for creating a user in your database.
-    """
-    print(f"Creating user: {name} with number {phone_number}")
-    # In the future, you will add your database logic here.
-    return True
-
-def create_new_job(user_id, service_requested, latitude, longitude, contact_number):
-    """
-    Placeholder for creating a new job in the database.
-    """
-    print(f"User {user_id} requested a job for: '{service_requested}'")
-    print(f"Location Data -> Latitude: {latitude}, Longitude: {longitude}")
-    print(f"Contact Number for Fixer: {contact_number}")
-    # In the future, you will add your database logic here.
-    return "JOB-12348"
