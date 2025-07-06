@@ -668,45 +668,52 @@ def whatsapp_webhook():
     latitude = None
     longitude = None
 
-    try:
-        # Correctly parse the nested JSON structure from 360dialog
-        if 'entry' in data and data['entry']:
-            changes = data['entry'][0].get('changes', [])
-            if changes:
-                value = changes[0].get('value', {})
-                if 'messages' in value and 'contacts' in value:
-                    message = value['messages'][0]
+try:
+    # Initialize variables at the start
+    from_number = None
+    incoming_msg = None
+    latitude = None
+    longitude = None
+    
+    # Parse the 360dialog webhook payload
+    if 'entry' in data and data['entry']:
+        changes = data['entry'][0].get('changes', [])
+        if changes:
+            value = changes[0].get('value', {})
+            if 'messages' in value and 'contacts' in value:
+                message = value['messages'][0]
+                
+                # Extract sender's number (remove whatsapp:+ prefix)
+                from_number = message.get('from')
+                
+                # Determine message type and extract content
+                msg_type = message.get('type')
+                if msg_type == 'text':
+                    incoming_msg = message.get('text', {}).get('body', '').strip()
+                elif msg_type == 'location':
+                    latitude = message.get('location', {}).get('latitude')
+                    longitude = message.get('location', {}).get('longitude')
+                elif msg_type == 'audio':
+                    audio_id = message.get('audio', {}).get('id')
+                    print(f"Received audio message with ID: {audio_id}")
+                    send_whatsapp_message(from_number, "Sorry, audio message processing is not yet enabled.")
+                    return Response(status=200)
+                else:
+                    print(f"Received unhandled message type: {msg_type}")
+                    return Response(status=200)
                     
-                    # Extract sender's number
-                    from_number = f"whatsapp:+{message.get('from')}"
-                    
-                    # Determine message type and extract content
-                    msg_type = message.get('type')
-                    if msg_type == 'text':
-                        incoming_msg = message.get('text', {}).get('body', '').strip()
-                    elif msg_type == 'location':
-                        latitude = message.get('location', {}).get('latitude')
-                        longitude = message.get('location', {}).get('longitude')
-                    elif msg_type == 'audio':
-                        audio_id = message.get('audio', {}).get('id')
-                        print(f"Received audio message with ID: {audio_id}. Media URL retrieval needs to be implemented.")
-                        send_whatsapp_message(from_number, "Sorry, audio message processing is not yet enabled.")
-                        return Response(status=200)
-                    else:
-                        print(f"Received unhandled message type: {msg_type}")
-                        return Response(status=200)
-    except (IndexError, KeyError) as e:
-        print(f"Error parsing 360dialog payload: {e}")
-        return Response(status=200)
+except (IndexError, KeyError) as e:
+    print(f"Error parsing 360dialog payload: {e}")
+    return Response(status=200)
 
-    # If we couldn't parse a valid sender number, exit.
-    if not from_number:
-        return Response(status=200)
+# Exit if no valid sender number
+if not from_number:
+    return Response(status=200)
 
-    # --- Start Conversation State Machine (This logic is now reachable) ---
-    user = get_or_create_user(from_number)
-    current_state = user.conversation_state
-    response_message = ""
+# Continue with your conversation state machine...
+user = get_or_create_user(f"whatsapp:+{from_number}")
+current_state = user.conversation_state
+response_message = ""
 
     # MODIFIED: New, cleaner conversation flow
     if current_state == 'awaiting_rating':
