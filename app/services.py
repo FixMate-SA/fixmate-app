@@ -27,10 +27,10 @@ def send_whatsapp_message(to_number, message_body):
         "Content-Type": "application/json"
     }
     
-    # FINAL MODIFICATION: Using the most standard payload format.
-    # Removed `recipient_type` and re-added `preview_url` as per common API standards.
+    # FINAL MODIFICATION: Explicitly adding `recipient_type` as a final attempt.
     payload = {
         "to": recipient_number,
+        "recipient_type": "individual",
         "type": "text",
         "text": {
             "preview_url": False,
