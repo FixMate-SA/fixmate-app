@@ -27,18 +27,18 @@ def send_whatsapp_message(to_number, message_body):
         "Content-Type": "application/json"
     }
     
-    # MODIFIED: Sending a simpler payload, as the `preview_url` might cause issues on some accounts.
-    # This is a common troubleshooting step for their API.
+    # FINAL MODIFICATION: Using the most standard payload format.
+    # Removed `recipient_type` and re-added `preview_url` as per common API standards.
     payload = {
         "to": recipient_number,
-        "recipient_type": "individual",
         "type": "text",
         "text": {
+            "preview_url": False,
             "body": message_body
         }
     }
     
-    print(f"DEBUG: Sending payload to {recipient_number}: {json.dumps(payload)}")
+    print(f"DEBUG: Sending final payload format to {recipient_number}: {json.dumps(payload)}")
 
     try:
         response = requests.post(DIALOG_360_URL, json=payload, headers=headers, timeout=15)
@@ -56,16 +56,14 @@ def send_whatsapp_message(to_number, message_body):
         return message_id
         
     except requests.exceptions.RequestException as e:
-        # MODIFIED: Improved error logging to capture the trace ID for support.
         error_details = f"ERROR: An exception occurred while sending message via 360dialog: {e}"
         try:
-            # Try to get the trace ID from the response, if available
             response_json = e.response.json()
             trace_id = response_json.get('meta', {}).get('360dialog_trace_id')
             if trace_id:
                 error_details += f" | 360dialog Trace ID: {trace_id}"
         except:
-            pass # Ignore if we can't parse JSON from the error
+            pass
             
         print(error_details)
         print("--- WhatsApp message process finished with error ---")
