@@ -29,6 +29,7 @@ def send_whatsapp_message(to_number, message_body):
     
     # Corrected payload - removed messaging_product and recipient_type
     payload = {
+        "messaging_product": "whatsapp",
         "to": recipient_number,
         "type": "text",
         "text": {
