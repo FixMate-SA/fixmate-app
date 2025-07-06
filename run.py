@@ -26,7 +26,7 @@ if db_url and db_url.startswith("postgres://"):
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# --- API Keys & Constants Configuration (UPDATED) ---
+# --- API Keys & Constants Configuration ---
 PAYFAST_MERCHANT_ID = os.environ.get('PAYFAST_MERCHANT_ID')
 PAYFAST_MERCHANT_KEY = os.environ.get('PAYFAST_MERCHANT_KEY')
 PAYFAST_URL = 'https://sandbox.payfast.co.za/eng/process'
@@ -51,17 +51,14 @@ def load_user(user_id):
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 
-# --- Speech-to-Text Function (UPDATED) ---
+# --- AI & Helper Functions ---
+# (All functions from transcribe_audio to create_new_job_in_db are unchanged)
 def transcribe_audio(media_url, media_type):
-    """
-    Downloads audio from a direct URL and transcribes it using the Gemini API.
-    """
     if not GEMINI_API_KEY:
         print("ERROR: GEMINI_API_KEY not set."); return None
     try:
-        # 360dialog media URLs might require an API key in the header for auth
         headers = {'D360-API-KEY': os.environ.get('DIALOG_360_API_KEY')}
-        r = requests.get(media_url, headers=headers) # No longer uses Twilio auth
+        r = requests.get(media_url, headers=headers)
         if r.status_code == 200:
             gemini_file = genai.upload_file(io.BytesIO(r.content), mime_type=media_type)
             model = genai.GenerativeModel('models/gemini-1.5-flash')
@@ -80,9 +77,7 @@ def transcribe_audio(media_url, media_type):
     except Exception as e:
         print(f"An error occurred during transcription: {e}"); return None
 
-# --- AI Data Analysis & Sentiment Functions ---
 def generate_and_act_on_insight():
-    # (This function is unchanged)
     if not GEMINI_API_KEY:
         return "Insight generation failed: GEMINI_API_KEY not set."
     completed_jobs = Job.query.filter_by(status='complete').all()
@@ -130,7 +125,6 @@ def generate_and_act_on_insight():
         return "Could not generate an insight at this time."
 
 def analyze_feedback_sentiment(comment):
-    # (This function is unchanged)
     if not GEMINI_API_KEY:
         print("WARN: GEMINI_API_KEY not set. Cannot analyze sentiment.")
         return "Unknown"
@@ -152,9 +146,122 @@ def analyze_feedback_sentiment(comment):
         print(f"ERROR: Gemini API call failed during sentiment analysis: {e}")
         return "Unknown"
 
+def classify_service_request(service_description):
+    if not GEMINI_API_KEY:
+        print("WARN: GEMINI_API_KEY not set. Falling back to keyword matching.")
+        desc = service_description.lower()
+        if any(k in desc for k in ['plumb', 'pipe', 'leak', 'geyser', 'tap', 'toilet']): return 'plumbing'
+        if any(k in desc for k in ['light', 'electr', 'plug', 'wiring', 'switch']): return 'electrical'
+        return 'general'
+    try:
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        prompt = f"""
+        Analyze the following home repair request from a South African user.
+        Classify it into one of these three categories: 'plumbing', 'electrical', or 'general'.
+        Return ONLY the category name as a single word and nothing else.
+        Request: "{service_description}"
+        Category:
+        """
+        response = model.generate_content(prompt)
+        classification = response.text.strip().lower()
+        if classification in ['plumbing', 'electrical', 'general']:
+            return classification
+        return 'general'
+    except Exception as e:
+        print(f"ERROR: Gemini API call failed during classification: {e}. Defaulting to 'general'.")
+        return 'general'
 
-# --- Admin Commands ---
-# (All admin commands are unchanged and preserved)
+def get_or_create_user(phone_number):
+    if not phone_number.startswith("whatsapp:"): phone_number = f"whatsapp:{phone_number}"
+    user = User.query.filter_by(phone_number=phone_number).first()
+    if not user: user = User(phone_number=phone_number); db.session.add(user); db.session.commit()
+    return user
+
+def set_user_state(user, new_state, data=None):
+    cached_data = json.loads(user.service_request_cache) if user.service_request_cache else {}
+    if data:
+        cached_data.update(data)
+    user.conversation_state = new_state
+    user.service_request_cache = json.dumps(cached_data)
+    db.session.commit()
+    print(f"State for {user.phone_number} set to {new_state} with data: {cached_data}")
+
+def get_user_cache(user):
+    if user.service_request_cache:
+        return json.loads(user.service_request_cache)
+    return {}
+
+def clear_user_state(user):
+    user.conversation_state = None
+    user.service_request_cache = None
+    db.session.commit()
+    print(f"State for {user.phone_number} cleared.")
+
+def find_fixer_for_job(job):
+    skill_needed = classify_service_request(job.description)
+    eligible_fixers = Fixer.query.filter(
+        Fixer.is_active==True,
+        Fixer.vetting_status=='approved',
+        Fixer.skills.ilike(f'%{skill_needed}%')
+    ).all()
+    if not eligible_fixers:
+        eligible_fixers = Fixer.query.filter(
+            Fixer.is_active==True,
+            Fixer.vetting_status=='approved',
+            Fixer.skills.ilike('%general%')
+        ).all()
+        if not eligible_fixers:
+            print("No eligible fixers found for this job.")
+            return None
+    scored_fixers = []
+    for fixer in eligible_fixers:
+        score = 0
+        if fixer.current_latitude and fixer.current_longitude and job.latitude and job.longitude:
+            client_location = (job.latitude, job.longitude)
+            fixer_location = (fixer.current_latitude, fixer.current_longitude)
+            distance_km = geodesic(client_location, fixer_location).km
+            proximity_score = max(0, 50 - (distance_km * 2))
+            score += proximity_score
+        avg_rating = db.session.query(db.func.avg(Job.rating)).filter(Job.fixer_id==fixer.id, Job.rating != None).scalar() or 3.5
+        score += (avg_rating / 5) * 30
+        if fixer.last_assigned_at:
+            hours_since_last_job = (datetime.now(timezone.utc) - fixer.last_assigned_at).total_seconds() / 3600
+            score += min(20, hours_since_last_job) 
+        else:
+            score += 20
+        scored_fixers.append({'fixer': fixer, 'score': score})
+        print(f"Fixer: {fixer.full_name}, Score: {score:.2f}")
+    if not scored_fixers:
+        return None
+    best_fixer_data = max(scored_fixers, key=lambda x: x['score'])
+    best_fixer = best_fixer_data['fixer']
+    best_fixer.last_assigned_at = datetime.now(timezone.utc)
+    db.session.commit()
+    print(f"Best match found: {best_fixer.full_name} with score {best_fixer_data['score']:.2f}")
+    return best_fixer
+
+def create_new_job_in_db(user, job_data):
+    job = Job(
+        description=job_data.get('service'),
+        latitude=job_data.get('latitude'),
+        longitude=job_data.get('longitude'),
+        client_contact_number=job_data.get('contact'),
+        client_id=user.id
+    )
+    matched_fixer = find_fixer_for_job(job)
+    if matched_fixer:
+        job.assigned_fixer = matched_fixer
+        job.status = 'assigned'
+        notification_message = f"New FixMate-SA Job Alert!\n\nService: {job.description}\nClient Contact: {job.client_contact_number}\n\nPlease go to your Fixer Portal to accept this job:\n{url_for('fixer_login', _external=True)}"
+        send_whatsapp_message(to_number=matched_fixer.phone_number, message_body=notification_message)
+    else:
+        job.status = 'unassigned'
+    db.session.add(job)
+    db.session.commit()
+    return job.id, matched_fixer is not None
+
+# --- Admin Commands & Web Routes ---
+# (All commands and routes from @app.cli.command("add-fixer") to @app.route('/payment/notify') are unchanged)
 @app.cli.command("add-fixer")
 @click.argument("name")
 @click.argument("phone")
@@ -315,126 +422,6 @@ def reassign_job(job_id, fixer_phone):
     print(f"Success! Job #{job.id} has been reassigned from {old_fixer_name} to {new_fixer.full_name}.")
     send_whatsapp_message(to_number=new_fixer.phone_number, message_body=f"Job Reassigned to You:\n\nService: {job.description}\nClient Contact: {job.client_contact_number}\n\nPlease go to your Fixer Portal to accept this job.")
 
-
-# --- Helper Functions ---
-# (Helper functions like classify_service_request, get_or_create_user, etc., are unchanged)
-def classify_service_request(service_description):
-    if not GEMINI_API_KEY:
-        print("WARN: GEMINI_API_KEY not set. Falling back to keyword matching.")
-        desc = service_description.lower()
-        if any(k in desc for k in ['plumb', 'pipe', 'leak', 'geyser', 'tap', 'toilet']): return 'plumbing'
-        if any(k in desc for k in ['light', 'electr', 'plug', 'wiring', 'switch']): return 'electrical'
-        return 'general'
-    try:
-        model = genai.GenerativeModel('models/gemini-1.5-flash')
-        prompt = f"""
-        Analyze the following home repair request from a South African user.
-        Classify it into one of these three categories: 'plumbing', 'electrical', or 'general'.
-        Return ONLY the category name as a single word and nothing else.
-        Request: "{service_description}"
-        Category:
-        """
-        response = model.generate_content(prompt)
-        classification = response.text.strip().lower()
-        if classification in ['plumbing', 'electrical', 'general']:
-            return classification
-        return 'general'
-    except Exception as e:
-        print(f"ERROR: Gemini API call failed during classification: {e}. Defaulting to 'general'.")
-        return 'general'
-
-def get_or_create_user(phone_number):
-    if not phone_number.startswith("whatsapp:"): phone_number = f"whatsapp:{phone_number}"
-    user = User.query.filter_by(phone_number=phone_number).first()
-    if not user: user = User(phone_number=phone_number); db.session.add(user); db.session.commit()
-    return user
-
-def set_user_state(user, new_state, data=None):
-    cached_data = json.loads(user.service_request_cache) if user.service_request_cache else {}
-    if data:
-        cached_data.update(data)
-    user.conversation_state = new_state
-    user.service_request_cache = json.dumps(cached_data)
-    db.session.commit()
-    print(f"State for {user.phone_number} set to {new_state} with data: {cached_data}")
-
-def get_user_cache(user):
-    if user.service_request_cache:
-        return json.loads(user.service_request_cache)
-    return {}
-
-def clear_user_state(user):
-    user.conversation_state = None
-    user.service_request_cache = None
-    db.session.commit()
-    print(f"State for {user.phone_number} cleared.")
-
-def find_fixer_for_job(job):
-    skill_needed = classify_service_request(job.description)
-    eligible_fixers = Fixer.query.filter(
-        Fixer.is_active==True,
-        Fixer.vetting_status=='approved',
-        Fixer.skills.ilike(f'%{skill_needed}%')
-    ).all()
-    if not eligible_fixers:
-        eligible_fixers = Fixer.query.filter(
-            Fixer.is_active==True,
-            Fixer.vetting_status=='approved',
-            Fixer.skills.ilike('%general%')
-        ).all()
-        if not eligible_fixers:
-            print("No eligible fixers found for this job.")
-            return None
-    scored_fixers = []
-    for fixer in eligible_fixers:
-        score = 0
-        if fixer.current_latitude and fixer.current_longitude and job.latitude and job.longitude:
-            client_location = (job.latitude, job.longitude)
-            fixer_location = (fixer.current_latitude, fixer.current_longitude)
-            distance_km = geodesic(client_location, fixer_location).km
-            proximity_score = max(0, 50 - (distance_km * 2))
-            score += proximity_score
-        avg_rating = db.session.query(db.func.avg(Job.rating)).filter(Job.fixer_id==fixer.id, Job.rating != None).scalar() or 3.5
-        score += (avg_rating / 5) * 30
-        if fixer.last_assigned_at:
-            hours_since_last_job = (datetime.now(timezone.utc) - fixer.last_assigned_at).total_seconds() / 3600
-            score += min(20, hours_since_last_job) 
-        else:
-            score += 20
-        scored_fixers.append({'fixer': fixer, 'score': score})
-        print(f"Fixer: {fixer.full_name}, Score: {score:.2f}")
-    if not scored_fixers:
-        return None
-    best_fixer_data = max(scored_fixers, key=lambda x: x['score'])
-    best_fixer = best_fixer_data['fixer']
-    best_fixer.last_assigned_at = datetime.now(timezone.utc)
-    db.session.commit()
-    print(f"Best match found: {best_fixer.full_name} with score {best_fixer_data['score']:.2f}")
-    return best_fixer
-
-def create_new_job_in_db(user, job_data):
-    job = Job(
-        description=job_data.get('service'),
-        latitude=job_data.get('latitude'),
-        longitude=job_data.get('longitude'),
-        client_contact_number=job_data.get('contact'),
-        client_id=user.id
-    )
-    matched_fixer = find_fixer_for_job(job)
-    if matched_fixer:
-        job.assigned_fixer = matched_fixer
-        job.status = 'assigned'
-        notification_message = f"New FixMate-SA Job Alert!\n\nService: {job.description}\nClient Contact: {job.client_contact_number}\n\nPlease go to your Fixer Portal to accept this job:\n{url_for('fixer_login', _external=True)}"
-        send_whatsapp_message(to_number=matched_fixer.phone_number, message_body=notification_message)
-    else:
-        job.status = 'unassigned'
-    db.session.add(job)
-    db.session.commit()
-    return job.id, matched_fixer is not None
-
-
-# --- Web and WhatsApp Routes ---
-# (All web routes like index, terms, privacy, etc., are unchanged)
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -504,8 +491,6 @@ def update_vetting_status():
         flash("Invalid request.", 'danger')
     return redirect(url_for('admin_dashboard'))
 
-# --- Authentication Routes ---
-# (Authentication routes are unchanged)
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -556,8 +541,6 @@ def authenticate(token):
 @login_required
 def logout(): logout_user(); flash('You have been logged out.', 'info'); return redirect(url_for('login'))
 
-# --- Dashboard & Job Action Routes ---
-# (Dashboard and Job Action routes are unchanged)
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -644,15 +627,13 @@ def complete_job(job_id):
     else: flash('This job cannot be marked as complete at this time.', 'warning')
     return redirect(url_for('fixer_dashboard'))
 
-# --- Payment Routes ---
-# (Payment routes are unchanged)
 @app.route('/payment/success')
 def payment_success():
     job_id = request.args.get('job_id')
     job = db.session.get(Job, int(job_id)) if job_id else None
     if job and job.payment_status != 'paid':
         job.payment_status = 'paid'
-        matched_fixer = find_fixer_for_job(job) # Updated to pass job object
+        matched_fixer = find_fixer_for_job(job)
         if matched_fixer:
             job.assigned_fixer, job.status = matched_fixer, 'assigned'
             send_whatsapp_message(to_number=matched_fixer.phone_number, message_body=f"New FixMate Job Alert!\n\nService Needed: {job.description}\nClient Contact: {job.client_contact_number}\n\nPlease go to your Fixer Portal to accept this job:\n{url_for('fixer_login', _external=True)}")
@@ -674,14 +655,14 @@ def payment_notify():
     print("Received ITN from PayFast"); return Response(status=200)
 
 
-# --- Main WhatsApp Webhook (REWRITTEN FOR 360DIALOG) ---
+# --- Main WhatsApp Webhook (CORRECTED FOR 360DIALOG) ---
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
     """Endpoint to receive incoming WhatsApp messages from 360dialog."""
     data = request.json
     print(f"Received 360dialog webhook: {json.dumps(data, indent=2)}")
 
-    # Initialize variables to be extracted from the payload
+    # Initialize variables
     from_number = None
     incoming_msg = ""
     latitude = None
@@ -689,56 +670,50 @@ def whatsapp_webhook():
     media_url = None
     media_type = None
 
-    # --- Start Payload Parsing ---
-    if 'contacts' in data and 'messages' in data:
-        message = data['messages'][0]
-        
-        # Ensure it's an incoming message, not an outbound status update
-        if message.get('from'):
-            from_number = f"whatsapp:+{message.get('from')}"
-            
-            # Determine message type and extract content
-            msg_type = message.get('type')
-            
-            if msg_type == 'text':
-                incoming_msg = message['text'].get('body', '').strip()
-            elif msg_type == 'location':
-                latitude = message['location'].get('latitude')
-                longitude = message['location'].get('longitude')
-            elif msg_type == 'audio':
-                # This part assumes you can get a direct download URL for media.
-                # 360dialog might require a separate API call to get the media URL from the ID.
-                # This is a placeholder for that logic.
-                audio_id = message['audio'].get('id')
-                # In a real scenario, you'd call a function here:
-                # media_url = get_media_url_from_360dialog(audio_id)
-                # For now, we'll simulate that we can't process it without a direct URL.
-                print(f"Received audio message with ID: {audio_id}. Media URL retrieval not implemented.")
-                # We will handle the transcription call below if a media_url is somehow retrieved.
-            else:
-                print(f"Received unhandled message type: {msg_type}")
-    
-    # If we couldn't identify the sender, we can't proceed.
+    try:
+        # Correctly parse the nested JSON structure from 360dialog
+        if 'entry' in data and data['entry']:
+            changes = data['entry'][0].get('changes', [])
+            if changes:
+                value = changes[0].get('value', {})
+                if 'messages' in value and 'contacts' in value:
+                    message = value['messages'][0]
+                    
+                    # Extract sender's number
+                    from_number = f"whatsapp:+{message.get('from')}"
+                    
+                    # Determine message type and extract content
+                    msg_type = message.get('type')
+                    if msg_type == 'text':
+                        incoming_msg = message.get('text', {}).get('body', '').strip()
+                    elif msg_type == 'location':
+                        latitude = message.get('location', {}).get('latitude')
+                        longitude = message.get('location', {}).get('longitude')
+                    elif msg_type == 'audio':
+                        # This part is a placeholder. 360dialog often requires a separate
+                        # API call to get a downloadable media URL from the media ID.
+                        audio_id = message.get('audio', {}).get('id')
+                        print(f"Received audio message with ID: {audio_id}. Media URL retrieval needs to be implemented.")
+                        # For now, we'll inform the user we can't process it.
+                        send_whatsapp_message(from_number, "Sorry, audio message processing is not yet enabled.")
+                        return Response(status=200)
+                    else:
+                        print(f"Received unhandled message type: {msg_type}")
+                        # Don't proceed if we don't know what to do with the message
+                        return Response(status=200)
+    except (IndexError, KeyError) as e:
+        print(f"Error parsing 360dialog payload: {e}")
+        return Response(status=200)
+
+    # If we couldn't parse a valid sender number, exit.
     if not from_number:
         return Response(status=200)
-    # --- End Payload Parsing ---
 
-    # --- Start Media Processing ---
-    if media_url and media_type:
-        print(f"Processing audio message from {from_number}.")
-        transcribed_text = transcribe_audio(media_url, media_type)
-        if transcribed_text:
-            incoming_msg = transcribed_text # Overwrite text with transcription
-        else:
-            send_whatsapp_message(from_number, "Sorry, I had trouble understanding that audio. Please try sending a text message instead.")
-            return Response(status=200)
-    # --- End Media Processing ---
-
+    # --- Start Conversation State Machine (This logic is now reachable) ---
     user = get_or_create_user(from_number)
     current_state = user.conversation_state
     response_message = ""
 
-    # --- Start Conversation State Machine (Unchanged Logic) ---
     if current_state == 'awaiting_rating':
         job_id_to_rate_str = get_user_cache(user).get('job_id')
         job = db.session.get(Job, int(job_id_to_rate_str)) if job_id_to_rate_str else None
@@ -799,10 +774,13 @@ def whatsapp_webhook():
             clear_user_state(user)
     
     else: # Default state / start of conversation
-        response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe' or 'Garden cleaning') or send a voice note."
-        set_user_state(user, 'awaiting_service_request')
+        if incoming_msg: # Only trigger on a text message
+             response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe' or 'Garden cleaning') or send a voice note."
+             set_user_state(user, 'awaiting_service_request')
     
+    # Send the determined response message, if any
     if response_message:
         send_whatsapp_message(from_number, response_message)
         
     return Response(status=200)
+
