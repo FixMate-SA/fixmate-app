@@ -1,7 +1,6 @@
 # requirements.txt
 flask
 python-dotenv
-twilio
 psycopg2-binary
 gunicorn
 Flask-SQLAlchemy
