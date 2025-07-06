@@ -32,6 +32,7 @@ def send_whatsapp_message(to_number, message_body):
         "messaging_product": "whatsapp",
         "to": recipient_number,
         "type": "text",
+        "recipient_type": "individual",
         "text": {
             "body": message_body
         }
