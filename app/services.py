@@ -10,9 +10,9 @@ DIALOG_360_URL = "https://waba-v2.360dialog.io/v1/messages"
 
 def send_whatsapp_message(to_number, message_body):
     """
-    Sends a WhatsApp message using the 360dialog API with detailed logging.
+    Sends a WhatsApp message using the 360dialog API with a minimal payload.
     """
-    print("--- Attempting to send WhatsApp message ---")
+    print("--- Attempting to send WhatsApp message (Minimal Payload) ---")
     
     if not DIALOG_360_API_KEY:
         print("DEBUG: FATAL - DIALOG_360_API_KEY is not set or not found. Cannot send message.")
@@ -27,18 +27,17 @@ def send_whatsapp_message(to_number, message_body):
         "Content-Type": "application/json"
     }
     
-    # FINAL MODIFICATION: Explicitly adding `recipient_type` as a final attempt.
+    # FINAL MODIFICATION: Using the absolute bare minimum payload as per support's advice.
+    # All optional fields like `recipient_type` and `preview_url` have been removed.
     payload = {
         "to": recipient_number,
-        "recipient_type": "individual",
         "type": "text",
         "text": {
-            "preview_url": False,
             "body": message_body
         }
     }
     
-    print(f"DEBUG: Sending final payload format to {recipient_number}: {json.dumps(payload)}")
+    print(f"DEBUG: Sending minimal payload to {recipient_number}: {json.dumps(payload)}")
 
     try:
         response = requests.post(DIALOG_360_URL, json=payload, headers=headers, timeout=15)
