@@ -33,6 +33,7 @@ def send_whatsapp_message(to_number, message_body):
         "to": recipient_number,
         "type": "text",
         "recipient_type": "individual",
+        "from": "702642972933051",  # <- your phone number ID
         "text": {
             "body": message_body
         }
