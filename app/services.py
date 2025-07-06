@@ -1,3 +1,14 @@
+# app/services.py
+import os
+import requests
+import json
+
+# --- NEW: Define necessary variables at the top of the file ---
+DIALOG_360_API_KEY = os.environ.get('DIALOG_360_API_KEY')
+# Using the correct v2 endpoint for production
+DIALOG_360_URL = "https://waba-v2.360dialog.io/v1/messages" 
+
+
 def send_whatsapp_message(to_number, message_body):
     print("\n--- Attempting to send WhatsApp message ---")
 
