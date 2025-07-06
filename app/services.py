@@ -3,13 +3,14 @@ import os
 import requests
 import json
 
-# --- NEW: Define necessary variables at the top of the file ---
+# --- Define necessary variables at the top of the file ---
 DIALOG_360_API_KEY = os.environ.get('DIALOG_360_API_KEY')
 # Using the correct v2 endpoint for production
 DIALOG_360_URL = "https://waba.360dialog.io/v1/messages" 
 
 
 def send_whatsapp_message(to_number, message_body):
+    """Sends a message to a user via the 360dialog API."""
     print("\n--- Attempting to send WhatsApp message ---")
 
     if not DIALOG_360_API_KEY:
@@ -27,11 +28,13 @@ def send_whatsapp_message(to_number, message_body):
         "Content-Type": "application/json"
     }
 
-    # The payload is now corrected to not include the unsupported 'preview_url'
+    # --- THIS IS THE CORRECTED PAYLOAD ---
+    # It now matches the simpler format required by the 360dialog API.
     payload = {
         "to": recipient_number,
         "type": "text",
         "text": {
+            "preview_url": False,
             "body": message_body
         }
     }
