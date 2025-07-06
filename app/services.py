@@ -18,10 +18,8 @@ def send_whatsapp_message(to_number, message_body):
         print("DEBUG: FATAL - DIALOG_360_API_KEY is not set or not found. Cannot send message.")
         return None
     
-    # Let's print a part of the key to confirm it's loaded correctly
     print(f"DEBUG: API Key found, starting with: {DIALOG_360_API_KEY[:4]}...")
 
-    # 360dialog requires the number without the 'whatsapp:+' prefix
     recipient_number = to_number.replace("whatsapp:+", "")
 
     headers = {
@@ -29,24 +27,25 @@ def send_whatsapp_message(to_number, message_body):
         "Content-Type": "application/json"
     }
     
+    # MODIFIED: Added "preview_url": False to match official docs
     payload = {
         "to": recipient_number,
         "type": "text",
         "text": {
-            "body": message_body
+            "body": message_body,
+            "preview_url": False
         }
     }
     
     print(f"DEBUG: Sending payload to {recipient_number}: {json.dumps(payload)}")
 
     try:
-        response = requests.post(DIALOG_360_URL, json=payload, headers=headers, timeout=15) # Added timeout
+        response = requests.post(DIALOG_360_URL, json=payload, headers=headers, timeout=15)
         
-        # Log the response regardless of status code
         print(f"DEBUG: Received HTTP status code: {response.status_code}")
         print(f"DEBUG: Full response content: {response.text}")
         
-        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
+        response.raise_for_status()
         
         response_data = response.json()
         message_id = response_data.get('messages', [{}])[0].get('id')
@@ -59,4 +58,3 @@ def send_whatsapp_message(to_number, message_body):
         print(f"ERROR: An exception occurred while sending message via 360dialog: {e}")
         print("--- WhatsApp message process finished with error ---")
         return None
-

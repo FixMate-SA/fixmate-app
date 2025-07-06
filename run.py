@@ -667,8 +667,6 @@ def whatsapp_webhook():
     incoming_msg = ""
     latitude = None
     longitude = None
-    media_url = None
-    media_type = None
 
     try:
         # Correctly parse the nested JSON structure from 360dialog
@@ -690,16 +688,12 @@ def whatsapp_webhook():
                         latitude = message.get('location', {}).get('latitude')
                         longitude = message.get('location', {}).get('longitude')
                     elif msg_type == 'audio':
-                        # This part is a placeholder. 360dialog often requires a separate
-                        # API call to get a downloadable media URL from the media ID.
                         audio_id = message.get('audio', {}).get('id')
                         print(f"Received audio message with ID: {audio_id}. Media URL retrieval needs to be implemented.")
-                        # For now, we'll inform the user we can't process it.
                         send_whatsapp_message(from_number, "Sorry, audio message processing is not yet enabled.")
                         return Response(status=200)
                     else:
                         print(f"Received unhandled message type: {msg_type}")
-                        # Don't proceed if we don't know what to do with the message
                         return Response(status=200)
     except (IndexError, KeyError) as e:
         print(f"Error parsing 360dialog payload: {e}")
@@ -714,6 +708,7 @@ def whatsapp_webhook():
     current_state = user.conversation_state
     response_message = ""
 
+    # MODIFIED: New, cleaner conversation flow
     if current_state == 'awaiting_rating':
         job_id_to_rate_str = get_user_cache(user).get('job_id')
         job = db.session.get(Job, int(job_id_to_rate_str)) if job_id_to_rate_str else None
@@ -774,9 +769,18 @@ def whatsapp_webhook():
             clear_user_state(user)
     
     else: # Default state / start of conversation
-        if incoming_msg: # Only trigger on a text message
-             response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe' or 'Garden cleaning') or send a voice note."
-             set_user_state(user, 'awaiting_service_request')
+        if incoming_msg:
+            # Clear any stale data from previous, unfinished conversations
+            clear_user_state(user)
+            
+            # Check for a simple greeting
+            if incoming_msg.lower() in ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo']:
+                response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe') or send a voice note."
+                set_user_state(user, 'awaiting_service_request')
+            else:
+                # Assume it's a direct service request
+                response_message = "Got it. To help us find the nearest fixer, please share your location pin.\n\nTap the paperclip icon 📎, then choose 'Location'."
+                set_user_state(user, 'awaiting_location', data={'service': incoming_msg})
     
     # Send the determined response message, if any
     if response_message:
