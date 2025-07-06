@@ -1,19 +1,25 @@
 # app/services.py
 import os
 import requests
+import json
 
-# Get the API key from environment variables
+# --- 360dialog Configuration ---
 DIALOG_360_API_KEY = os.environ.get('DIALOG_360_API_KEY')
-# Using the correct v2 endpoint for production
-DIALOG_360_URL = "https://waba.360dialog.io/v1/messages" 
+DIALOG_360_URL = "https://waba-v2.360dialog.io/v1/messages"
+
 
 def send_whatsapp_message(to_number, message_body):
-    """Sends a message to a user via the 360dialog API."""
+    """
+    Sends a WhatsApp message using the 360dialog API with detailed logging.
+    """
+    print("--- Attempting to send WhatsApp message ---")
+    
     if not DIALOG_360_API_KEY:
-        print("ERROR: DIALOG_360_API_KEY not set. Cannot send message.")
+        print("DEBUG: FATAL - DIALOG_360_API_KEY is not set or not found. Cannot send message.")
         return None
+    
+    print(f"DEBUG: API Key found, starting with: {DIALOG_360_API_KEY[:4]}...")
 
-    # 360dialog requires the number without the 'whatsapp:' prefix
     recipient_number = to_number.replace("whatsapp:+", "")
 
     headers = {
@@ -21,31 +27,46 @@ def send_whatsapp_message(to_number, message_body):
         "Content-Type": "application/json"
     }
     
-    # --- THIS IS THE CORRECTED PAYLOAD ---
-    # The "preview_url" parameter has been removed.
+    # MODIFIED: Sending a simpler payload, as the `preview_url` might cause issues on some accounts.
+    # This is a common troubleshooting step for their API.
     payload = {
         "to": recipient_number,
+        "recipient_type": "individual",
         "type": "text",
         "text": {
             "body": message_body
         }
     }
+    
+    print(f"DEBUG: Sending payload to {recipient_number}: {json.dumps(payload)}")
 
     try:
-        print(f"DEBUG: Sending payload to {recipient_number}: {payload}")
-        response = requests.post(DIALOG_360_URL, json=payload, headers=headers)
+        response = requests.post(DIALOG_360_URL, json=payload, headers=headers, timeout=15)
         
-        # Check for a successful response (2xx status code)
-        if response.status_code >= 200 and response.status_code < 300:
-            response_data = response.json()
-            message_id = response_data.get('messages', [{}])[0].get('id')
-            print(f"Message sent successfully to {recipient_number}: ID {message_id}")
-            return message_id
-        else:
-            # Print more detailed error info if available
-            print(f"ERROR: Failed to send message. Status: {response.status_code}, Response: {response.text}")
-            return None
-
+        print(f"DEBUG: Received HTTP status code: {response.status_code}")
+        print(f"DEBUG: Full response content: {response.text}")
+        
+        response.raise_for_status()
+        
+        response_data = response.json()
+        message_id = response_data.get('messages', [{}])[0].get('id')
+        
+        print(f"SUCCESS: Message sent to {recipient_number} via 360dialog: ID {message_id}")
+        print("--- WhatsApp message process finished ---")
+        return message_id
+        
     except requests.exceptions.RequestException as e:
-        print(f"ERROR: An exception occurred while sending message via 360dialog: {e}")
+        # MODIFIED: Improved error logging to capture the trace ID for support.
+        error_details = f"ERROR: An exception occurred while sending message via 360dialog: {e}"
+        try:
+            # Try to get the trace ID from the response, if available
+            response_json = e.response.json()
+            trace_id = response_json.get('meta', {}).get('360dialog_trace_id')
+            if trace_id:
+                error_details += f" | 360dialog Trace ID: {trace_id}"
+        except:
+            pass # Ignore if we can't parse JSON from the error
+            
+        print(error_details)
+        print("--- WhatsApp message process finished with error ---")
         return None
