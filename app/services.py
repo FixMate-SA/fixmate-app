@@ -18,7 +18,7 @@ def send_whatsapp_message(to_number, message_body):
         return None
 
     headers = {
-        "D360-API-KEY": DIALOG_360_API_KEY,
+        "D360-API-KEY": "fAZcu5FIR9j4xexivP2sry3gAK"
         "Content-Type": "application/json"
     }
 
