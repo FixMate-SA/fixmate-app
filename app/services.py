@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 # 360dialog API configuration
 API_URL = "https://waba-v2.360dialog.io/v1/messages"
-API_KEY = os.environ.get('D360_API_KEY')  # Set this in your Heroku config vars
+API_KEY = os.environ.get('DIALOG_360_API_KEY')  # Set this in your Heroku config vars
 
 def send_whatsapp_message(to_number, message_body):
     """Send WhatsApp message using 360dialog API"""
