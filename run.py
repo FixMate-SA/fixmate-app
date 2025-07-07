@@ -32,7 +32,7 @@ PAYFAST_MERCHANT_KEY = os.environ.get('PAYFAST_MERCHANT_KEY')
 PAYFAST_URL = 'https://sandbox.payfast.co.za/eng/process'
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 DIALOG_360_API_KEY = os.environ.get('DIALOG_360_API_KEY')
-DIALOG_360_URL = "https://waba.360dialog.io/v1/messages"
+DIALOG_360_URL = "https://waba-v2.360dialog.io/v1/messages"
 
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
