@@ -1,8 +1,20 @@
+import os  # Add this import at the top of the file
+import requests
+import json
+
 def send_whatsapp_message(to_number, message_body):
     print("--- Attempting to send WhatsApp message ---")
+    
+    # Get API key from environment variables
+    DIALOG_360_API_KEY = os.environ.get('DIALOG_360_API_KEY')
+    DIALOG_360_URL = os.environ.get('DIALOG_360_URL')  # Also get URL from env
 
     if not DIALOG_360_API_KEY:
         print("❌ API key not set.")
+        return None
+
+    if not DIALOG_360_URL:  # Add URL validation
+        print("❌ DIALOG_360_URL not set.")
         return None
 
     headers = {
