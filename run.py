@@ -52,11 +52,41 @@ def load_user(user_id):
 
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
-# --- AI & Helper Functions ---
-# (All functions from transcribe_audio to create_new_job_in_db are unchanged)
+# --- Helper Functions ---
+def get_or_create_user(phone_number):
+    if not phone_number.startswith("whatsapp:"):
+        phone_number = f"whatsapp:{phone_number}"
+    user = User.query.filter_by(phone_number=phone_number).first()
+    if not user:
+        user = User(phone_number=phone_number)
+        db.session.add(user)
+        db.session.commit()
+    return user
+
+def set_user_state(user, new_state, data=None):
+    cached_data = json.loads(user.service_request_cache) if user.service_request_cache else {}
+    if data:
+        cached_data.update(data)
+    user.conversation_state = new_state
+    user.service_request_cache = json.dumps(cached_data)
+    db.session.commit()
+    print(f"State for {user.phone_number} set to {new_state} with data: {cached_data}")
+
+def get_user_cache(user):
+    if user.service_request_cache:
+        return json.loads(user.service_request_cache)
+    return {}
+
+def clear_user_state(user):
+    user.conversation_state = None
+    user.service_request_cache = None
+    db.session.commit()
+    print(f"State for {user.phone_number} cleared.")
+
 def transcribe_audio(media_url, media_type):
     if not GEMINI_API_KEY:
-        print("ERROR: GEMINI_API_KEY not set."); return None
+        print("ERROR: GEMINI_API_KEY not set.")
+        return None
     try:
         headers = {'D360-API-KEY': os.environ.get('DIALOG_360_API_KEY')}
         r = requests.get(media_url, headers=headers)
@@ -74,92 +104,27 @@ def transcribe_audio(media_url, media_type):
                 return response.text
             return None
         else:
-            print(f"Error downloading audio from 360dialog: {r.status_code}"); return None
+            print(f"Error downloading audio from 360dialog: {r.status_code}")
+            return None
     except Exception as e:
-        print(f"An error occurred during transcription: {e}"); return None
+        print(f"An error occurred during transcription: {e}")
+        return None
 
-# [All other helper functions remain unchanged - generate_and_act_on_insight, analyze_feedback_sentiment, etc.]
-
-# --- Main WhatsApp Webhook (FIXED FOR 360DIALOG) ---
-@app.route('/whatsapp', methods=['POST'])
-def whatsapp_webhook():
-    """Endpoint to receive incoming WhatsApp messages from 360dialog."""
-    # Return 200 immediately as per best practices
+def generate_and_act_on_insight():
+    if not GEMINI_API_KEY:
+        return "Insight generation failed: GEMINI_API_KEY not set."
+    completed_jobs = Job.query.filter_by(status='complete').all()
+    if not completed_jobs:
+        return "Not enough job data to analyze."
+    job_data = [{'description': job.description, 'area': job.area} for job in completed_jobs]
     try:
-        data = request.json
-        print(f"[{datetime.now()}] Received 360dialog webhook: {json.dumps(data, indent=2)}")
-        
-        # Process webhook asynchronously
-        process_webhook_data(data)
-        
-    except Exception as e:
-        print(f"ERROR: Could not parse 360dialog payload. Error: {e}")
-    
-    return Response(status=200)
-
-def process_webhook_data(data):
-    """Process webhook data asynchronously"""
-    # Initialize variables
-    from_number = None
-    incoming_msg = ""
-    latitude = None
-    longitude = None
-    
-    try:
-        # Parse 360dialog webhook structure
-        if 'entry' in data and data['entry']:
-            entry = data['entry'][0]
-            changes = entry.get('changes', [])
-            
-            if changes:
-                value = changes[0].get('value', {})
-                messages = value.get('messages', [])
-                
-                if messages:
-                    message = messages[0]
-                    
-                    # Extract sender's number
-                    from_number = f"whatsapp:+{message.get('from')}"
-                    
-                    # Determine message type and extract content
-                    msg_type = message.get('type')
-                    if msg_type == 'text':
-                        incoming_msg = message.get('text', {}).get('body', '').strip()
-                    elif msg_type == 'location':
-                        latitude = message.get('location', {}).get('latitude')
-                        longitude = message.get('location', {}).get('longitude')
-                    elif msg_type == 'audio':
-                        audio_id = message.get('audio', {}).get('id')
-                        print(f"Received audio message with ID: {audio_id}. Media URL retrieval needs to be implemented.")
-                        send_whatsapp_message(from_number, "Sorry, audio message processing is not yet enabled.")
-                        return
-                    else:
-                        print(f"Received unhandled message type: {msg_type}")
-                        return
-                        
-    except Exception as e:
-        print(f"ERROR: Could not parse 360dialog payload. Error: {e}. Payload: {data}")
-        return
-    
-    # If we couldn't parse a valid sender number, exit
-    if not from_number:
-        print("No valid sender number found in webhook")
-        return
-    
-    # --- Start Conversation State Machine ---
-    user = get_or_create_user(from_number)
-    current_state = user.conversation_state
-    response_message = ""
-    
-    # [Rest of conversation logic remains exactly the same]
-    if current_state == 'awaiting_rating':
-        job_id_to_rate_str = get_user_cache(user).get('job_id')
-        job = db.session.get(Job, int(job_id_to_rate_str)) if job_id_to_rate_str else None
-        if job and incoming_msg.isdigit() and 1 <= int(incoming_msg) <= 5:
-            job.rating = int(incoming_msg)
-            db.session.commit()
-            response_message = "Thank you for the rating! Could you please share a brief comment about your experience?"
-            set_user_state(user, 'awaiting_rating_comment', data={'job_id': job.id})
-        else:
-            response_message = "Thank you for your feedback!"
-            clear_user_state(user)
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        prompt = f"""
+        You are a business analyst for FixMate-SA. Analyze the following list of jobs.
+        Identify a single high-demand skill in a specific area.
+        Your response MUST be a JSON object with two keys: "skill" and "area".
+        For example: {{"skill": "plumbing", "area": "Pretoria"}}
+        Job Data: {json.dumps(job_data, indent=2)}
+        """
+        response = model.generate_content(prompt)
+        clean_response = response.text.strip().replace("
