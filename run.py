@@ -51,23 +51,18 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
-
-# --- AI & Helper Functions ---
-# (All functions from transcribe_audio to create_new_job_in_db are unchanged)
+# --- Speech-to-Text Function ---
 def transcribe_audio(media_url, media_type):
     """Downloads audio and transcribes it using the Gemini API directly."""
     if not GEMINI_API_KEY:
         print("ERROR: GEMINI_API_KEY not set."); return None
     try:
-        # Use the app's requests session if available, otherwise create a new one
-        r = requests.get(media_url) # Removed auth for 360dialog media
+        auth = (os.environ.get('DIALOG_360_API_KEY'), os.environ.get('DIALOG_360_URL'))
+        r = requests.get(media_url, auth=auth)
         if r.status_code == 200:
-            print(f"Audio downloaded. Uploading to Gemini with MIME type: {media_type}")
-            # Correctly pass the raw bytes using the 'file_data' parameter name
-            gemini_file = genai.upload_file(file_data=r.content, mime_type=media_type)
+            gemini_file = genai.upload_file(io.BytesIO(r.content), mime_type=media_type)
             model = genai.GenerativeModel('models/gemini-1.5-flash')
-            prompt = "Please transcribe the following audio. The speaker may be using English, Sepedi, Xitsonga, or Venda."
-            response = model.generate_content([prompt, gemini_file])
+            response = model.generate_content(["Please transcribe this audio.", gemini_file])
             genai.delete_file(gemini_file.name)
             if response.text:
                 print(f"Transcription successful: '{response.text}'")
@@ -78,7 +73,83 @@ def transcribe_audio(media_url, media_type):
     except Exception as e:
         print(f"An error occurred during transcription: {e}"); return None
 
+# --- AI Data Analysis & Sentiment Functions ---
+def generate_platform_insights():
+    """Analyzes job data and suggests upskilling opportunities."""
+    if not GEMINI_API_KEY:
+        return "Insight generation failed: GEMINI_API_KEY not set."
 
+    all_jobs = Job.query.filter(Job.area.isnot(None)).all()
+    if not all_jobs:
+        return "Not enough job data with location information to generate an insight."
+
+    job_data = [
+        {'id': job.id, 'description': job.description, 'area': job.area}
+        for job in all_jobs
+    ]
+
+    try:
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        prompt = f"""
+        You are a business analyst for FixMate-SA, a South African service platform.
+        Analyze the following list of recent jobs, which are provided as a JSON object.
+        Your task is to identify a single, specific, actionable insight that could help a fixer on the platform earn more money.
+        
+        Focus on identifying a high-demand skill in a specific area where there might be a lack of specialists.
+        
+        Format your response as a concise, one-sentence suggestion. For example: "There is high demand for plumbers specializing in geysers in Pretoria." or "Electrical compliance certificate jobs are very common in Johannesburg."
+
+        Job Data:
+        {json.dumps(job_data, indent=2)}
+
+        Actionable Insight:
+        """
+        response = model.generate_content(prompt)
+        insight = response.text.strip()
+
+        new_insight = DataInsight(insight_text=insight)
+        db.session.add(new_insight)
+        db.session.commit()
+
+        print(f"Generated and saved new insight: {insight}")
+        return insight
+
+    except Exception as e:
+        print(f"An error occurred during insight generation: {e}")
+        return "Could not generate an insight at this time."
+
+def analyze_feedback_sentiment(comment):
+    """Uses Gemini to analyze the sentiment of a user's feedback."""
+    if not GEMINI_API_KEY:
+        print("WARN: GEMINI_API_KEY not set. Cannot analyze sentiment.")
+        return "Unknown"
+    
+    try:
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        prompt = f"""
+        Analyze the sentiment of the following customer feedback. 
+        Classify it as one of these three categories: 'Positive', 'Negative', or 'Neutral'.
+        Return ONLY the category name as a single word and nothing else.
+
+        Feedback: "{comment}"
+
+        Sentiment:
+        """
+        response = model.generate_content(prompt)
+        sentiment = response.text.strip().capitalize()
+
+        if sentiment in ['Positive', 'Negative', 'Neutral']:
+            print(f"Gemini analyzed sentiment as: {sentiment}")
+            return sentiment
+        else:
+            print(f"WARN: Gemini returned unexpected sentiment: '{sentiment}'. Defaulting to 'Neutral'.")
+            return 'Neutral'
+            
+    except Exception as e:
+        print(f"ERROR: Gemini API call failed during sentiment analysis: {e}")
+        return "Unknown"
+
+# --- AI & Helper Functions ---
 def generate_and_act_on_insight():
     if not GEMINI_API_KEY:
         return "Insight generation failed: GEMINI_API_KEY not set."
@@ -682,6 +753,76 @@ def payment_cancel():
 def payment_notify():
     print("Received ITN from PayFast"); return Response(status=200)
 
+# --- Gemini-Powered Helper Functions ---
+from app.services import send_whatsapp_message
+
+def classify_service_request(service_description):
+    """Uses Gemini to classify a service description into a skill category."""
+    if not GEMINI_API_KEY:
+        print("WARN: GEMINI_API_KEY not set. Falling back to keyword matching.")
+        desc = service_description.lower()
+        if any(k in desc for k in ['plumb', 'pipe', 'leak', 'geyser', 'tap', 'toilet']): return 'plumbing'
+        if any(k in desc for k in ['light', 'electr', 'plug', 'wiring', 'switch']): return 'electrical'
+        return 'general'
+
+    try:
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        prompt = f"""
+        Analyze the following home repair request from a South African user.
+        Classify it into one of these three categories: 'plumbing', 'electrical', or 'general'.
+        Return ONLY the category name as a single word and nothing else.
+
+        Request: "{service_description}"
+
+        Category:
+        """
+        response = model.generate_content(prompt)
+        classification = response.text.strip().lower()
+
+        if classification in ['plumbing', 'electrical', 'general']:
+            print(f"Gemini classified '{service_description}' as: {classification}")
+            return classification
+        else:
+            print(f"WARN: Gemini returned an unexpected classification: '{classification}'. Defaulting to 'general'.")
+            return 'general'
+    except Exception as e:
+        print(f"ERROR: Gemini API call failed during classification: {e}. Defaulting to 'general'.")
+        return 'general'
+
+def get_or_create_user(phone_number):
+    if not phone_number.startswith("whatsapp:"): phone_number = f"whatsapp:{phone_number}"
+    user = User.query.filter_by(phone_number=phone_number).first()
+    if not user: user = User(phone_number=phone_number); db.session.add(user); db.session.commit()
+    return user
+
+def set_user_state(user, new_state, data=None):
+    user.conversation_state = new_state
+    if data and 'job_id' in data:
+        user.service_request_cache = str(data['job_id'])
+    else:
+        # Compatibility for older calls that might not pass data dictionary
+        user.service_request_cache = None
+    db.session.commit()
+
+def clear_user_state(user):
+    user.conversation_state, user.service_request_cache = None, None; db.session.commit()
+
+def find_fixer_for_job(service_description):
+    """Finds an available fixer by first classifying the job using Gemini."""
+    skill_needed = classify_service_request(service_description)
+    fixer = Fixer.query.filter(Fixer.is_active==True, Fixer.skills.ilike(f'%{skill_needed}%')).first()
+    if fixer:
+        return fixer
+    return Fixer.query.filter(Fixer.is_active==True, Fixer.skills.ilike('%general%')).first()
+
+def get_quote_for_service(service_description):
+    """Determines the quote price by first classifying the job using Gemini."""
+    skill_needed = classify_service_request(service_description)
+    if skill_needed == 'plumbing':
+        return 0.00
+    if skill_needed == 'electrical':
+        return 0.00
+    return 0.00
 
 # --- Main WhatsApp Webhook (CORRECTED FOR 360DIALOG) ---
 @app.route('/whatsapp', methods=['POST'])
