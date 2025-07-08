@@ -328,6 +328,24 @@ def remove_fixer(phone):
         db.session.commit()
         print(f"Successfully deleted fixer: {fixer.full_name}")
 
+@app.route('/admin/delete_fixer', methods=['POST'])
+@login_required
+def admin_delete_fixer():
+    if not getattr(current_user, 'is_admin', False):
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+
+    fixer_id = request.form.get('fixer_id')
+    fixer = db.session.get(Fixer, int(fixer_id))
+    if fixer:
+        db.session.delete(fixer)
+        db.session.commit()
+        flash(f"Fixer '{fixer.full_name}' has been deleted.", 'success')
+    else:
+        flash("Fixer not found.", 'warning')
+
+    return redirect(url_for('admin_dashboard'))
+
 @app.cli.command("remove-client")
 @click.argument("phone")
 def remove_client(phone):

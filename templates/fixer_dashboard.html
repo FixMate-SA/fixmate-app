@@ -69,7 +69,6 @@
                                         {% if job.status == 'assigned' %}
                                             <a href="{{ url_for('accept_job', job_id=job.id) }}" class="text-indigo-600 hover:text-indigo-900 mr-4">Accept</a>
                                         {% elif job.status == 'accepted' %}
-                                            <!-- NEW: Link to the location updater page -->
                                             <a href="{{ url_for('track_job', job_id=job.id) }}" class="text-blue-600 hover:text-blue-900 mr-4">Update Location</a>
                                             <a href="{{ url_for('complete_job', job_id=job.id) }}" class="text-green-600 hover:text-green-900">Mark as Complete</a>
                                         {% else %}
@@ -80,6 +79,42 @@
                             {% else %}
                                 <tr>
                                     <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">You have no jobs assigned to you yet.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 👇 NEW: Fixer Management Section -->
+            <h2 class="text-2xl font-semibold text-gray-800 mt-10 mb-4">Manage Fixers</h2>
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Full Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone Number</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Skills</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for fixer in fixers %}
+                                <tr>
+                                    <td class="px-6 py-4 text-sm text-gray-900">{{ fixer.full_name }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">{{ fixer.phone_number }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">{{ fixer.skills }}</td>
+                                    <td class="px-6 py-4 text-sm">
+                                        <form method="POST" action="{{ url_for('admin_delete_fixer') }}" onsubmit="return confirm('Are you sure you want to delete {{ fixer.full_name }}?');">
+                                            <input type="hidden" name="fixer_id" value="{{ fixer.id }}">
+                                            <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">No fixers registered.</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
