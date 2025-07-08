@@ -55,28 +55,29 @@ serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 # --- AI & Helper Functions ---
 # (All functions from transcribe_audio to create_new_job_in_db are unchanged)
 def transcribe_audio(media_url, media_type):
+    """Downloads audio and transcribes it using the Gemini API directly."""
     if not GEMINI_API_KEY:
         print("ERROR: GEMINI_API_KEY not set."); return None
     try:
-        headers = {'D360-API-KEY': os.environ.get('DIALOG_360_API_KEY')}
-        r = requests.get(media_url, headers=headers)
+        # Use the app's requests session if available, otherwise create a new one
+        r = requests.get(media_url) # Removed auth for 360dialog media
         if r.status_code == 200:
-            gemini_file = genai.upload_file(io.BytesIO(r.content), mime_type=media_type)
+            print(f"Audio downloaded. Uploading to Gemini with MIME type: {media_type}")
+            # Correctly pass the raw bytes using the 'file_data' parameter name
+            gemini_file = genai.upload_file(file_data=r.content, mime_type=media_type)
             model = genai.GenerativeModel('models/gemini-1.5-flash')
-            prompt = [
-                "Please transcribe the following audio. The user is in South Africa and might be speaking in English, Sepedi, Xitsonga, Tshivenda, or Afrikaans.",
-                gemini_file
-            ]
-            response = model.generate_content(prompt)
+            prompt = "Please transcribe the following audio. The speaker may be using English, Sepedi, Xitsonga, or Venda."
+            response = model.generate_content([prompt, gemini_file])
             genai.delete_file(gemini_file.name)
             if response.text:
                 print(f"Transcription successful: '{response.text}'")
                 return response.text
             return None
         else:
-            print(f"Error downloading audio from 360dialog: {r.status_code}"); return None
+            print(f"Error downloading audio: {r.status_code}"); return None
     except Exception as e:
         print(f"An error occurred during transcription: {e}"); return None
+
 
 def generate_and_act_on_insight():
     if not GEMINI_API_KEY:
