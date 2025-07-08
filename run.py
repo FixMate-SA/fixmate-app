@@ -282,12 +282,20 @@ def add_fixer(name, phone, skills):
 @click.argument("phone")
 def promote_admin(phone):
     if not (phone.startswith('0') and len(phone) == 10):
-        print("Error: Please provide a valid 10-digit SA number (e.g., 0821234567)."); return
+        print("Error: Please provide a valid 10-digit SA number (e.g., 0821234567).")
+        return
     formatted_phone = f"whatsapp:+27{phone[1:]}"
     user = User.query.filter_by(phone_number=formatted_phone).first()
-    if not user: print(f"Error: User with phone number {formatted_phone} not found."); return
-    user.is_admin = True; db.session.commit()
-    print(f"Successfully promoted '{user.full_name or user.phone_number}' to admin.")
+    if not user:
+        print(f"User not found. Creating new admin user for {formatted_phone}...")
+        user = User(phone_number=formatted_phone, is_admin=True)
+        db.session.add(user)
+        db.session.commit()
+        print(f"Successfully created and promoted new admin: {user.phone_number}")
+    else:
+        user.is_admin = True
+        db.session.commit()
+        print(f"Successfully promoted existing user '{user.full_name or user.phone_number}' to admin.")
 
 @app.cli.command("demote-admin")
 @click.argument("phone")
