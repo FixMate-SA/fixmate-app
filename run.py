@@ -52,26 +52,23 @@ def load_user(user_id):
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # --- Speech-to-Text Function ---
-def transcribe_audio(media_url, media_type):
-    """Downloads audio and transcribes it using the Gemini API directly."""
-    if not GEMINI_API_KEY:
-        print("ERROR: GEMINI_API_KEY not set."); return None
+def transcribe_audio(audio_bytes, mime_type="audio/ogg"):
+    gemini_api_key = os.environ.get("GEMINI_API_KEY")
+    if not gemini_api_key:
+        raise Exception("GEMINI_API_KEY not set")
+
+    genai.configure(api_key=gemini_api_key)
+
     try:
-        auth = (os.environ.get('DIALOG_360_API_KEY'), os.environ.get('DIALOG_360_URL'))
-        r = requests.get(media_url, auth=auth)
-        if r.status_code == 200:
-            gemini_file = genai.upload_file(io.BytesIO(r.content), mime_type=media_type)
-            model = genai.GenerativeModel('models/gemini-1.5-flash')
-            response = model.generate_content(["Please transcribe this audio.", gemini_file])
-            genai.delete_file(gemini_file.name)
-            if response.text:
-                print(f"Transcription successful: '{response.text}'")
-                return response.text
-            return None
-        else:
-            print(f"Error downloading audio: {r.status_code}"); return None
+        gemini_file = genai.upload_file(file_data=audio_bytes, mime_type=mime_type)
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        prompt = "Please transcribe the following voice note. The speaker may use English, Sepedi, Xitsonga, or isiZulu."
+        result = model.generate_content([prompt, gemini_file])
+        genai.delete_file(gemini_file.name)
+        return result.text.strip() if result.text else "Transcription failed."
     except Exception as e:
-        print(f"An error occurred during transcription: {e}"); return None
+        print(f"[Transcription Error] {e}")
+        return "Sorry, transcription failed."
 
 # --- AI Data Analysis & Sentiment Functions ---
 def generate_platform_insights():
