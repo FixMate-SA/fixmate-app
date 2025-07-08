@@ -1,19 +1,15 @@
-import os  # Add this import at the top of the file
-import requests
-import json
-
-def send_whatsapp_message(to_number, message_body):
+def send_whatsapp_message(to_number, message_body=None, audio_url=None, audio_id=None):
     print("--- Attempting to send WhatsApp message ---")
-    
-    # Get API key from environment variables
+
+    # Get API key and URL from environment variables
     DIALOG_360_API_KEY = os.environ.get('DIALOG_360_API_KEY')
-    DIALOG_360_URL = os.environ.get('DIALOG_360_URL')  # Also get URL from env
+    DIALOG_360_URL = os.environ.get('DIALOG_360_URL')
 
     if not DIALOG_360_API_KEY:
         print("❌ API key not set.")
         return None
 
-    if not DIALOG_360_URL:  # Add URL validation
+    if not DIALOG_360_URL:
         print("❌ DIALOG_360_URL not set.")
         return None
 
@@ -26,13 +22,22 @@ def send_whatsapp_message(to_number, message_body):
 
     payload = {
         "messaging_product": "whatsapp",
-        "recipient_type": "individual",  # Add this line
-        "to": recipient_number,
-        "type": "text",
-        "text": {
-            "body": message_body
-        }
+        "recipient_type": "individual",
+        "to": recipient_number
     }
+
+    if message_body:
+        payload["type"] = "text"
+        payload["text"] = {"body": message_body}
+    elif audio_url:
+        payload["type"] = "audio"
+        payload["audio"] = {"link": audio_url, "voice": True}
+    elif audio_id:
+        payload["type"] = "audio"
+        payload["audio"] = {"id": audio_id, "voice": True}
+    else:
+        print("❌ ERROR: No valid content provided (text, audio_url, or audio_id).")
+        return None
 
     print(f"🔁 Payload: {json.dumps(payload)}")
 
