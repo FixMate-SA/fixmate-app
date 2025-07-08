@@ -1,3 +1,7 @@
+import os  # Add this import at the top of the file
+import requests
+import json
+
 def send_whatsapp_message(to_number, message_body=None, audio_url=None, audio_id=None):
     print("--- Attempting to send WhatsApp message ---")
 
