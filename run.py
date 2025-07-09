@@ -518,6 +518,29 @@ def reassign_job(job_id, fixer_phone):
     print(f"Success! Job #{job.id} has been reassigned from {old_fixer_name} to {new_fixer.full_name}.")
     send_whatsapp_message(to_number=new_fixer.phone_number, message_body=f"Job Reassigned to You:\n\nService: {job.description}\nClient Contact: {job.client_contact_number}\n\nPlease go to your Fixer Portal to accept this job.")
 
+@app.cli.command("remove-all-clients")
+def remove_all_clients():
+    """Deletes all non-admin clients and their associated jobs."""
+    clients_to_delete = User.query.filter_by(is_admin=False).all()
+    
+    if not clients_to_delete:
+        print("There are no non-admin clients to remove.")
+        return
+
+    client_count = len(clients_to_delete)
+    
+    # Confirmation prompt to prevent accidental deletion
+    if click.confirm(
+        f"Are you sure you want to delete {client_count} client(s)? "
+        "This will also delete all of their associated jobs and cannot be undone.", 
+        abort=True
+    ):
+        for client in clients_to_delete:
+            db.session.delete(client)
+        
+        db.session.commit()
+        print(f"Successfully deleted {client_count} client(s).")
+
 @app.route('/')
 def index():
     return render_template('index.html')
