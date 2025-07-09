@@ -39,7 +39,7 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            {% for job in current_user.jobs|reverse %}
+                            {% for job in jobs %}
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ job.id }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ job.description }}</td>
@@ -56,8 +56,8 @@
                                         {{ job.assigned_fixer.full_name if job.assigned_fixer else 'Pending' }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <!-- NEW: Link to the tracking page -->
-                                        {% if job.status == 'accepted' or job.status == 'complete' %}
+                                        <!-- NEW: Link to the tracking page for accepted jobs -->
+                                        {% if job.status == 'accepted' %}
                                             <a href="{{ url_for('track_job', job_id=job.id) }}" class="text-indigo-600 hover:text-indigo-900">Track Fixer</a>
                                         {% else %}
                                             <span>-</span>

@@ -40,51 +40,55 @@
 
     <script>
         // Get data passed from the Flask template
-        const clientLat = {{ job.client.latitude_cache or 'null' }};
-        const clientLng = {{ job.client.longitude_cache or 'null' }};
+        const clientLat = {{ job.latitude or 'null' }};
+        const clientLng = {{ job.longitude or 'null' }};
         const fixerLat = {{ job.assigned_fixer.current_latitude or 'null' }};
         const fixerLng = {{ job.assigned_fixer.current_longitude or 'null' }};
         const jobId = {{ job.id }};
 
-        // Initialize the map
-        const map = L.map('map').setView([clientLat, clientLng], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+        if (clientLat && clientLng) {
+            // Initialize the map centered on the client's location
+            const map = L.map('map').setView([clientLat, clientLng], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
 
-        // Add markers
-        const homeIcon = L.icon({ iconUrl: 'https://img.icons8.com/office/40/000000/home.png', iconSize: [40, 40] });
-        const fixerIcon = L.icon({ iconUrl: 'https://img.icons8.com/ultraviolet/40/000000/worker-male.png', iconSize: [40, 40] });
-        
-        const clientMarker = L.marker([clientLat, clientLng], {icon: homeIcon}).addTo(map).bindPopup('Your Location');
-        let fixerMarker;
+            // Add markers
+            const homeIcon = L.icon({ iconUrl: 'https://img.icons8.com/office/40/000000/home.png', iconSize: [40, 40] });
+            const fixerIcon = L.icon({ iconUrl: 'https://img.icons8.com/ultraviolet/40/000000/worker-male.png', iconSize: [40, 40] });
+            
+            const clientMarker = L.marker([clientLat, clientLng], {icon: homeIcon}).addTo(map).bindPopup('Your Location');
+            let fixerMarker;
 
-        if (fixerLat && fixerLng) {
-            fixerMarker = L.marker([fixerLat, fixerLng], {icon: fixerIcon}).addTo(map).bindPopup('Your Fixer');
-        }
+            if (fixerLat && fixerLng) {
+                fixerMarker = L.marker([fixerLat, fixerLng], {icon: fixerIcon}).addTo(map).bindPopup('Your Fixer');
+            }
 
-        // Function to update the fixer's location
-        function updateFixerLocation() {
-            fetch(`/api/fixer_location/${jobId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.latitude && data.longitude) {
-                        const newLatLng = [data.latitude, data.longitude];
-                        if (fixerMarker) {
-                            fixerMarker.setLatLng(newLatLng);
-                        } else {
-                            fixerMarker = L.marker(newLatLng, {icon: fixerIcon}).addTo(map).bindPopup('Your Fixer');
+            // Function to update the fixer's location
+            function updateFixerLocation() {
+                fetch(`/api/fixer_location/${jobId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.latitude && data.longitude) {
+                            const newLatLng = [data.latitude, data.longitude];
+                            if (fixerMarker) {
+                                fixerMarker.setLatLng(newLatLng);
+                            } else {
+                                fixerMarker = L.marker(newLatLng, {icon: fixerIcon}).addTo(map).bindPopup('Your Fixer');
+                            }
+                            // Optional: Pan the map to keep both markers in view
+                            map.fitBounds([clientMarker.getLatLng(), fixerMarker.getLatLng()], { padding: [50, 50] });
                         }
-                        // Optional: Pan the map to the new location
-                        // map.panTo(newLatLng);
-                    }
-                })
-                .catch(error => console.error('Error fetching fixer location:', error));
-        }
+                    })
+                    .catch(error => console.error('Error fetching fixer location:', error));
+            }
 
-        // Poll for the fixer's location every 10 seconds
-        setInterval(updateFixerLocation, 10000);
+            // Poll for the fixer's location every 10 seconds
+            setInterval(updateFixerLocation, 10000);
+        } else {
+            document.getElementById('map').innerHTML = '<p class="text-center text-red-500">Could not display map: Client location is missing.</p>';
+        }
     </script>
 </body>
 </html>
