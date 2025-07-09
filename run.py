@@ -30,7 +30,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 PAYFAST_MERCHANT_ID = os.environ.get('PAYFAST_MERCHANT_ID')
 PAYFAST_MERCHANT_KEY = os.environ.get('PAYFAST_MERCHANT_KEY')
 PAYFAST_URL = 'https://sandbox.payfast.co.za/eng/process'
-DIALOG_360_URL = 'https://waba-v2.360dialog.io/messages'
+DIALOG_360_URL = 'https://waba-v2.360dialog.io' # Base URL for 360dialog
+D360_API_KEY = os.environ.get('D360_API_KEY') # Store your 360dialog API key
 CLIENT_PLATFORM_FEE = Decimal('10.00')
 
 # --- Initialize Extensions ---
@@ -56,6 +57,7 @@ serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 # --- AI & Helper Functions (Single Source of Truth) ---
 def transcribe_audio(audio_bytes, mime_type="audio/ogg"):
     try:
+        # Note: genai.upload_file expects 'file_data' not 'file_bytes'
         gemini_file = genai.upload_file(file_data=audio_bytes, mime_type=mime_type)
         model = get_gemini_model()
         prompt = "Please transcribe the following voice note. The speaker may use English, Sepedi, Xitsonga, or isiZulu."
@@ -315,7 +317,6 @@ def analyze_data(notify):
 def index():
     return render_template('index.html')
 
-# === FIX 1: ADDED MISSING /terms ROUTE ===
 @app.route('/terms')
 def terms():
     return render_template('terms.html')
@@ -432,7 +433,7 @@ def update_location():
     # ... logic for updating location ...
     pass
     
-# === FIX 2: UPDATED WHATSAPP WEBHOOK TO HANDLE STATUSES ===
+# === WHATSAPP WEBHOOK WITH AUDIO TRANSCRIPTION ===
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
     data = request.json
@@ -441,7 +442,12 @@ def whatsapp_webhook():
     try:
         value = data['entry'][0]['changes'][0]['value']
 
-        # Check if the webhook is a user message
+        # Ignore status updates
+        if 'statuses' in value:
+            print("Received a status update. Ignoring.")
+            return Response(status=200)
+        
+        # Process incoming messages
         if 'messages' in value:
             message = value['messages'][0]
             from_number = f"whatsapp:+{message['from']}"
@@ -453,37 +459,94 @@ def whatsapp_webhook():
             
             if msg_type == 'text':
                 incoming_msg = message['text']['body'].strip()
+
+            elif msg_type == 'audio':
+                audio_id = message['audio']['id']
+                media_url_endpoint = f"{DIALOG_360_URL}/v1/media/{audio_id}"
+                headers = {'D360-API-KEY': D360_API_KEY}
+                
+                # Get the direct media URL
+                media_response = requests.get(media_url_endpoint, headers=headers)
+                if media_response.status_code != 200:
+                    print(f"Error fetching media URL: {media_response.text}")
+                    send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
+                    return Response(status=200)
+
+                # Download the actual audio file
+                audio_url = media_response.json().get('url')
+                audio_content_response = requests.get(audio_url, headers=headers)
+                if audio_content_response.status_code == 200:
+                    audio_bytes = audio_content_response.content
+                    mime_type = message['audio'].get('mime_type', 'audio/ogg')
+                    # Transcribe the audio
+                    incoming_msg = transcribe_audio(audio_bytes, mime_type)
+                    if "failed" in incoming_msg.lower():
+                        send_whatsapp_message(from_number, incoming_msg) # Send failure message
+                        return Response(status=200)
+                else:
+                    print("Error downloading audio content.")
+                    send_whatsapp_message(from_number, "Sorry, I had trouble downloading the voice note.")
+                    return Response(status=200)
+
             elif msg_type == 'location':
                 location = message['location']
-            elif msg_type == 'audio':
-                # Handle audio messages if you have transcription enabled
-                response_message = "Audio message received. We will transcribe it and get back to you shortly."
-                send_whatsapp_message(from_number, response_message)
-                # Note: Add your audio processing/transcription logic here
-                return Response(status=200)
-
+            
             # --- Conversation State Machine ---
             current_state = user.conversation_state
+            response_message = "" # Initialize response message
 
-            if current_state == 'awaiting_rating':
-                # ... handle rating ...
-                pass
-            # ... and so on for the rest of the conversation flow ...
-            else: # Default state
-                if incoming_msg and incoming_msg.lower() in ['hi', 'hello', 'dumela']:
-                    response_message = "Welcome to FixMate-SA! Please describe your issue or send a voice note."
-                    set_user_state(user, 'awaiting_service_request')
-                    send_whatsapp_message(from_number, response_message)
-                elif incoming_msg: # Assumed direct request
-                    response_message = "Got it. Please share your location pin so we can find a nearby fixer."
+            # Handle location data if the state is awaiting_location
+            if current_state == 'awaiting_location' and location:
+                 response_message = "Thank you for sharing your location.\n\nLastly, please provide a contact number (e.g., 082 123 4567) that the fixer can call if needed."
+                 set_user_state(user, 'awaiting_contact_number', data={'latitude': str(location.get('latitude')), 'longitude': str(location.get('longitude'))})
+
+            # Handle text/transcribed audio messages
+            elif incoming_msg:
+                if current_state == 'awaiting_service_request':
+                    response_message = "Got it. To help us find the nearest fixer, please share your location pin.\n\nTap the paperclip icon 📎, then choose 'Location'."
                     set_user_state(user, 'awaiting_location', data={'service': incoming_msg})
-                    send_whatsapp_message(from_number, response_message)
+                
+                elif current_state == 'awaiting_contact_number':
+                    if any(char.isdigit() for char in incoming_msg) and len(incoming_msg) >= 10:
+                        terms_url = url_for('terms', _external=True)
+                        response_message = (
+                            f"Great! We have all the details.\n\n"
+                            f"By proceeding, you agree to the FixMate-SA Terms of Service, which states that payment is handled directly between you and the fixer.\n"
+                            f"View here: {terms_url}\n\n"
+                            "Reply *YES* to confirm and dispatch a fixer."
+                        )
+                        set_user_state(user, 'awaiting_terms_approval', data={'contact': incoming_msg})
+                    else:
+                        response_message = "That doesn't seem to be a valid phone number. Please try again."
 
-        # Check if the webhook is a status update and ignore it
-        elif 'statuses' in value:
-            print("Received a status update. No action needed.")
+                elif current_state == 'awaiting_terms_approval':
+                    if 'yes' in incoming_msg.lower():
+                        job_data = get_user_cache(user)
+                        job_id, fixer_found = create_new_job_in_db(user, job_data)
+                        if fixer_found:
+                            response_message = f"Perfect! We have logged your request (Job #{job_id}) and have notified a nearby fixer. They will contact you shortly."
+                        else:
+                            response_message = f"Thank you. We have logged your request (Job #{job_id}), but all our fixers for this skill are currently busy. We will notify you as soon as one becomes available."
+                        clear_user_state(user)
+                    else:
+                        response_message = "Job request cancelled. Please say 'hello' to start a new request."
+                        clear_user_state(user)
+                
+                # Default state / New conversation
+                else: 
+                    clear_user_state(user)
+                    if incoming_msg.lower() in ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo']:
+                        response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe') or send a voice note."
+                        set_user_state(user, 'awaiting_service_request')
+                    else: # Assumed direct service request
+                        response_message = "Got it. To help us find the nearest fixer, please share your location pin.\n\nTap the paperclip icon 📎, then choose 'Location'."
+                        set_user_state(user, 'awaiting_location', data={'service': incoming_msg})
+            
+            # Send the determined response message, if any
+            if response_message:
+                send_whatsapp_message(from_number, response_message)
 
     except (IndexError, KeyError) as e:
-        print(f"Error parsing 360dialog payload: {e}")
+        print(f"Error parsing 360dialog payload or processing message: {e}")
 
     return Response(status=200)
