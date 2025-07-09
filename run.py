@@ -315,8 +315,10 @@ def analyze_data(notify):
 def index():
     return render_template('index.html')
 
-# (Static pages like /terms and /privacy remain the same)
-# ...
+# === FIX 1: ADDED MISSING /terms ROUTE ===
+@app.route('/terms')
+def terms():
+    return render_template('terms.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -401,7 +403,6 @@ def dashboard():
 @login_required
 @admin_required
 def admin_dashboard():
-    # ... logic for admin dashboard ...
     all_users = User.query.order_by(User.id.desc()).all()
     all_fixers = Fixer.query.order_by(Fixer.id.desc()).all()
     all_jobs = Job.query.order_by(Job.id.desc()).all()
@@ -431,43 +432,56 @@ def update_location():
     # ... logic for updating location ...
     pass
     
-
+# === FIX 2: UPDATED WHATSAPP WEBHOOK TO HANDLE STATUSES ===
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
     data = request.json
     print(f"Received 360dialog webhook: {json.dumps(data, indent=2)}")
 
     try:
-        message = data['entry'][0]['changes'][0]['value']['messages'][0]
-        from_number = f"whatsapp:+{message['from']}"
-        user = get_or_create_user(from_number)
-        
-        msg_type = message.get('type')
-        incoming_msg = ""
-        location = None
-        
-        if msg_type == 'text':
-            incoming_msg = message['text']['body'].strip()
-        elif msg_type == 'location':
-            location = message['location']
-        # ... other message type handling
-        
-        # --- Conversation State Machine ---
-        current_state = user.conversation_state
+        value = data['entry'][0]['changes'][0]['value']
 
-        if current_state == 'awaiting_rating':
-            # ... handle rating ...
-            pass
-        # ... and so on for the rest of the conversation flow ...
-        else: # Default state
-            if incoming_msg.lower() in ['hi', 'hello', 'dumela']:
-                response_message = "Welcome to FixMate-SA! Please describe your issue or send a voice note."
-                set_user_state(user, 'awaiting_service_request')
+        # Check if the webhook is a user message
+        if 'messages' in value:
+            message = value['messages'][0]
+            from_number = f"whatsapp:+{message['from']}"
+            user = get_or_create_user(from_number)
+            
+            msg_type = message.get('type')
+            incoming_msg = ""
+            location = None
+            
+            if msg_type == 'text':
+                incoming_msg = message['text']['body'].strip()
+            elif msg_type == 'location':
+                location = message['location']
+            elif msg_type == 'audio':
+                # Handle audio messages if you have transcription enabled
+                response_message = "Audio message received. We will transcribe it and get back to you shortly."
                 send_whatsapp_message(from_number, response_message)
-            else: # Assumed direct request
-                response_message = "Got it. Please share your location pin so we can find a nearby fixer."
-                set_user_state(user, 'awaiting_location', data={'service': incoming_msg})
-                send_whatsapp_message(from_number, response_message)
+                # Note: Add your audio processing/transcription logic here
+                return Response(status=200)
+
+            # --- Conversation State Machine ---
+            current_state = user.conversation_state
+
+            if current_state == 'awaiting_rating':
+                # ... handle rating ...
+                pass
+            # ... and so on for the rest of the conversation flow ...
+            else: # Default state
+                if incoming_msg and incoming_msg.lower() in ['hi', 'hello', 'dumela']:
+                    response_message = "Welcome to FixMate-SA! Please describe your issue or send a voice note."
+                    set_user_state(user, 'awaiting_service_request')
+                    send_whatsapp_message(from_number, response_message)
+                elif incoming_msg: # Assumed direct request
+                    response_message = "Got it. Please share your location pin so we can find a nearby fixer."
+                    set_user_state(user, 'awaiting_location', data={'service': incoming_msg})
+                    send_whatsapp_message(from_number, response_message)
+
+        # Check if the webhook is a status update and ignore it
+        elif 'statuses' in value:
+            print("Received a status update. No action needed.")
 
     except (IndexError, KeyError) as e:
         print(f"Error parsing 360dialog payload: {e}")
