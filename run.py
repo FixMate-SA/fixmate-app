@@ -433,7 +433,7 @@ def update_location():
     # ... logic for updating location ...
     pass
     
-# === WHATSAPP WEBHOOK WITH AUDIO TRANSCRIPTION ===
+# === WHATSAPP WEBHOOK WITH AUDIO TRANSCRIPTION (CORRECTED) ===
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
     data = request.json
@@ -462,19 +462,28 @@ def whatsapp_webhook():
 
             elif msg_type == 'audio':
                 audio_id = message['audio']['id']
-                media_url_endpoint = f"{DIALOG_360_URL}/v1/media/{audio_id}"
-                headers = {'D360-API-KEY': D360_API_KEY}
+                # Corrected endpoint to /v1/media/{media-id}
+                media_url_endpoint = f"{DIALOG_360_URL}/v1/media/{audio_id}" 
+                
+                # === FIX: Corrected Header Key ===
+                headers = {'API-KEY': D360_API_KEY} 
                 
                 # Get the direct media URL
+                # This first request gets the URL, not the file itself.
                 media_response = requests.get(media_url_endpoint, headers=headers)
                 if media_response.status_code != 200:
                     print(f"Error fetching media URL: {media_response.text}")
                     send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
                     return Response(status=200)
 
-                # Download the actual audio file
-                audio_url = media_response.json().get('url')
-                audio_content_response = requests.get(audio_url, headers=headers)
+                # The actual audio file is at a temporary URL provided in the response
+                # No API key is needed for this second request.
+                audio_download_url = media_response.json().get('url')
+                if not audio_download_url:
+                    print(f"Could not find 'url' key in media response: {media_response.json()}")
+                    return Response(status=200)
+
+                audio_content_response = requests.get(audio_download_url)
                 if audio_content_response.status_code == 200:
                     audio_bytes = audio_content_response.content
                     mime_type = message['audio'].get('mime_type', 'audio/ogg')
