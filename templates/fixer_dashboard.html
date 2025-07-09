@@ -25,13 +25,37 @@
 
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div class="px-4 py-6 sm:px-0">
+            
             <!-- AI Insight Section -->
             {% if latest_insight %}
-            <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6" role="alert">
+            <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-r-lg" role="alert">
                 <p class="font-bold">Pro Tip:</p>
                 <p>{{ latest_insight.insight_text }}</p>
             </div>
             {% endif %}
+
+            <!-- === NEW: Account Balance and Banking Details Section === -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Balance Card -->
+                <div class="bg-indigo-600 rounded-lg shadow p-6 text-white col-span-1">
+                    <h3 class="text-lg font-medium text-indigo-200">Your Account Balance</h3>
+                    <p class="text-4xl font-bold mt-2">R {{ "%.2f"|format(current_user.balance) }}</p>
+                    <p class="text-sm text-indigo-300 mt-1">Available for withdrawal.</p>
+                </div>
+                <!-- Banking Details Card -->
+                <div class="bg-white rounded-lg shadow p-6 col-span-1 md:col-span-2">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-gray-800">Banking Details</h3>
+                        <!-- Note: You will need to create a route and template for editing details -->
+                        <a href="#" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">Edit Details</a>
+                    </div>
+                    <div class="mt-4 space-y-2 text-sm text-gray-600">
+                        <p><strong>Account Holder:</strong> {{ current_user.bank_account_holder or 'Not set' }}</p>
+                        <p><strong>Bank Name:</strong> {{ current_user.bank_name or 'Not set' }}</p>
+                        <p><strong>Account Number:</strong> {{ current_user.bank_account_number or 'Not set' }}</p>
+                    </div>
+                </div>
+            </div>
 
             <h2 class="text-2xl font-semibold text-gray-800 mb-4">Your Assigned Jobs</h2>
             <div class="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -39,20 +63,20 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job ID</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             {% for job in current_user.jobs|reverse %}
                                 <tr>
-                                    <td class="px-6 py-4 text-sm font-medium text-gray-900">#{{ job.id }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-500">{{ job.description }}</td>
-                                    <td class="px-6 py-4">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ job.id }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ job.description }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                             {% if job.status == 'assigned' %} bg-yellow-100 text-yellow-800 
                                             {% elif job.status == 'accepted' %} bg-blue-100 text-blue-800
@@ -61,15 +85,15 @@
                                             {{ job.status.replace('_', ' ').capitalize() }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-gray-500">{{ job.client.full_name or 'N/A' }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-500">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ job.client.full_name or 'N/A' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         <a href="https://www.google.com/maps/search/?api=1&query={{ job.latitude }},{{ job.longitude }}" target="_blank" class="text-indigo-600 hover:text-indigo-900">View Map</a>
                                     </td>
-                                    <td class="px-6 py-4 text-sm font-medium">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         {% if job.status == 'assigned' %}
                                             <a href="{{ url_for('accept_job', job_id=job.id) }}" class="text-indigo-600 hover:text-indigo-900 mr-4">Accept</a>
                                         {% elif job.status == 'accepted' %}
-                                            <a href="{{ url_for('track_job', job_id=job.id) }}" class="text-blue-600 hover:text-blue-900 mr-4">Update Location</a>
+                                            <a href="{{ url_for('location_updater', job_id=job.id) }}" class="text-blue-600 hover:text-blue-900 mr-4">Update Location</a>
                                             <a href="{{ url_for('complete_job', job_id=job.id) }}" class="text-green-600 hover:text-green-900">Mark as Complete</a>
                                         {% else %}
                                             <span>-</span>
@@ -85,27 +109,27 @@
                     </table>
                 </div>
             </div>
-
-            <!-- 👇 NEW: Fixer Management Section -->
+            
+            <!-- Note: This section seems more appropriate for an admin dashboard -->
             <h2 class="text-2xl font-semibold text-gray-800 mt-10 mb-4">Manage Fixers</h2>
             <div class="bg-white shadow overflow-hidden sm:rounded-lg">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Full Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone Number</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Skills</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone Number</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Skills</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             {% for fixer in fixers %}
                                 <tr>
-                                    <td class="px-6 py-4 text-sm text-gray-900">{{ fixer.full_name }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-500">{{ fixer.phone_number }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-500">{{ fixer.skills }}</td>
-                                    <td class="px-6 py-4 text-sm">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ fixer.full_name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ fixer.phone_number }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ fixer.skills }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
                                         <form method="POST" action="{{ url_for('admin_delete_fixer') }}" onsubmit="return confirm('Are you sure you want to delete {{ fixer.full_name }}?');">
                                             <input type="hidden" name="fixer_id" value="{{ fixer.id }}">
                                             <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>

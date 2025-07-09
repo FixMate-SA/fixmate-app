@@ -2,6 +2,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timezone
 from flask_login import UserMixin
+from decimal import Decimal # <-- Add this import
 
 db = SQLAlchemy()
 
@@ -39,9 +40,15 @@ class Fixer(db.Model, UserMixin):
     id_document_url = db.Column(db.String(255), nullable=True)
     vetting_notes = db.Column(db.Text, nullable=True)
 
+    # === NEWLY ADDED COLUMNS ===
+    balance = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
+    bank_account_holder = db.Column(db.String(150), nullable=True)
+    bank_account_number = db.Column(db.String(50), nullable=True)
+    bank_name = db.Column(db.String(100), nullable=True)
+
     # --- NEW: Timestamp for fairness algorithm ---
     last_assigned_at = db.Column(db.DateTime, nullable=True)
-    
+
     jobs = db.relationship('Job', backref='assigned_fixer', lazy=True)
 
 class Job(db.Model):

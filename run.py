@@ -35,7 +35,7 @@ GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-CLIENT_PLATFORM_FEE = Decimal('10.00')
+FIXER_JOB_FEE = Decimal('20.00') # <-- ADD THIS LINE
 
 # --- Initialize Extensions ---
 from app.models import db, User, Fixer, Job, DataInsight
@@ -736,14 +736,40 @@ def accept_job(job_id):
 @app.route('/job/complete/<int:job_id>')
 @login_required
 def complete_job(job_id):
-    if session.get('user_type') != 'fixer': return redirect(url_for('login'))
+    if session.get('user_type') != 'fixer': 
+        return redirect(url_for('login'))
+        
     job = Job.query.filter_by(id=job_id, fixer_id=current_user.id).first_or_404()
+    
     if job.status == 'accepted':
-        job.status = 'complete'; db.session.commit()
-        send_whatsapp_message(to_number=job.client.phone_number, message_body=f"Your FixMate job (#{job.id}: '{job.description}') has been marked as complete by {job.assigned_fixer.full_name}.\n\nHow would you rate the service? Please reply with a number from 1 (bad) to 5 (excellent).")
+        # --- Start of new logic ---
+        
+        # 1. Get the fixer (which is the current_user)
+        fixer = current_user
+        
+        # 2. Deduct the fee from the fixer's balance
+        fixer.balance -= FIXER_JOB_FEE
+        
+        # 3. Update the job status
+        job.status = 'complete'
+        
+        # 4. Commit all changes to the database
+        db.session.commit()
+        
+        # --- End of new logic ---
+
+        # The rest of the function remains the same
+        send_whatsapp_message(
+            to_number=job.client.phone_number, 
+            message_body=f"Your FixMate job (#{job.id}: '{job.description}') has been marked as complete by {job.assigned_fixer.full_name}.\n\nHow would you rate the service? Please reply with a number from 1 (bad) to 5 (excellent)."
+        )
         set_user_state(job.client, 'awaiting_rating', data={'job_id': job.id})
-        flash(f'Job #{job.id} marked as complete.', 'success')
-    else: flash('This job cannot be marked as complete at this time.', 'warning')
+        
+        # Add a more informative flash message
+        flash(f'Job #{job.id} marked as complete. A fee of R{FIXER_JOB_FEE:.2f} has been deducted from your balance.', 'success')
+    else:
+        flash('This job cannot be marked as complete at this time.', 'warning')
+        
     return redirect(url_for('fixer_dashboard'))
 
 @app.route('/payment/success')
