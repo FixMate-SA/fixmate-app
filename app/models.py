@@ -40,8 +40,8 @@ class Fixer(db.Model, UserMixin):
     id_document_url = db.Column(db.String(255), nullable=True)
     vetting_notes = db.Column(db.Text, nullable=True)
 
-    # === NEWLY ADDED COLUMNS ===
-    balance = db.Column(db.Numeric(10, 2), nullable=False, default=Decimal('0.00'))
+    # === NEWLY ADDED COLUMNS (Corrected) ===
+    balance = db.Column(db.Numeric(10, 2), nullable=False, server_default='0.00')
     bank_account_holder = db.Column(db.String(150), nullable=True)
     bank_account_number = db.Column(db.String(50), nullable=True)
     bank_name = db.Column(db.String(100), nullable=True)
