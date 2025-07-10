@@ -907,14 +907,15 @@ def whatsapp_webhook():
                 print(f"DEBUG: Attempting to fetch audio from URL: {media_url_endpoint}")
 
 
-            if media_info_response.status_code != 200:
-                print(f"Error fetching media info. Status: {media_info_response.status_code}")
-                print(f"Response: {media_info_response.text}")  # Log error details
+                media_info_response = requests.get(media_url_endpoint, headers=headers)
+                if media_info_response.status_code != 200:
+                    print(f"Error fetching media info: {media_info_response.text}")
+                    send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
+                    return Response(status=200)
 
                 media_info = media_info_response.json()
                 audio_download_url = media_info.get('url')
 
-                # ADD HEADERS TO THIS REQUEST
                 audio_content_response = requests.get(audio_download_url, headers=headers)  # <- FIX IS HERE
 
                 if not audio_download_url:
