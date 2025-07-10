@@ -916,6 +916,9 @@ def whatsapp_webhook():
                 media_info = media_info_response.json()
                 audio_download_url = media_info.get('url')
 
+                # ADD HEADERS TO THIS REQUEST
+                audio_content_response = requests.get(audio_download_url, headers=headers)  # <- FIX IS HERE
+
                 if not audio_download_url:
                     print(f"Could not find 'url' key in media info response: {media_info}")
                     send_whatsapp_message(from_number, "An error occurred while getting the voice note.")
