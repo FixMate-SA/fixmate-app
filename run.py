@@ -903,6 +903,9 @@ def whatsapp_webhook():
                 audio_id = message['audio']['id']
                 media_url_endpoint = f"https://waba-v2.360dialog.io/v1/media/{audio_id}"
                 headers = {'D360-API-KEY': DIALOG_360_API_KEY}
+                  # --- ADD THIS DEBUG LINE ---
+                print(f"DEBUG: Attempting to fetch audio from URL: {media_url_endpoint}")
+
 
                 media_info_response = requests.get(media_url_endpoint, headers=headers)
                 if media_info_response.status_code != 200:
