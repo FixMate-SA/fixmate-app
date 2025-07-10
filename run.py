@@ -902,7 +902,7 @@ def whatsapp_webhook():
             elif msg_type == 'audio':
                 audio_id = message['audio']['id']
                 media_url_endpoint = f"{DIALOG_360_URL}/v1/media/{audio_id}"
-                headers = {'API-KEY': DIALOG_360_API_KEY}
+                headers = {'D360-API-KEY': DIALOG_360_API_KEY}
 
                 media_info_response = requests.get(media_url_endpoint, headers=headers)
                 if media_info_response.status_code != 200:
