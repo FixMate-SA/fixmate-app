@@ -842,15 +842,6 @@ def get_or_create_user(phone_number):
     if not user: user = User(phone_number=phone_number); db.session.add(user); db.session.commit()
     return user
 
-def set_user_state(user, new_state, data=None):
-    user.conversation_state = new_state
-    if data and 'job_id' in data:
-        user.service_request_cache = str(data['job_id'])
-    else:
-        # Compatibility for older calls that might not pass data dictionary
-        user.service_request_cache = None
-    db.session.commit()
-
 def clear_user_state(user):
     user.conversation_state, user.service_request_cache = None, None; db.session.commit()
 
