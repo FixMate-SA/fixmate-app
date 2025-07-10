@@ -901,17 +901,15 @@ def whatsapp_webhook():
 
             elif msg_type == 'audio':
                 audio_id = message['audio']['id']
-                media_url_endpoint = f"https://waba-v2.360dialog.io/{media_id}"
+                media_url_endpoint = f"https://waba-v2.360dialog.io/{audio_id}"
                 headers = {'D360-API-KEY': DIALOG_360_API_KEY}
                   # --- ADD THIS DEBUG LINE ---
                 print(f"DEBUG: Attempting to fetch audio from URL: {media_url_endpoint}")
 
 
-                media_info_response = requests.get(media_url_endpoint, headers=headers)
-                if media_info_response.status_code != 200:
-                    print(f"Error fetching media info: {media_info_response.text}")
-                    send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
-                    return Response(status=200)
+            if media_info_response.status_code != 200:
+                print(f"Error fetching media info. Status: {media_info_response.status_code}")
+                print(f"Response: {media_info_response.text}")  # Log error details
 
                 media_info = media_info_response.json()
                 audio_download_url = media_info.get('url')
