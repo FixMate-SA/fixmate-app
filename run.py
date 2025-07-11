@@ -63,7 +63,7 @@ def transcribe_audio(audio_bytes, mime_type="audio/ogg"):
 
     try:
         # The parameter name is changed from 'file_data' to 'contents'
-        gemini_file = genai.upload_file(contents=audio_bytes, mime_type=mime_type)
+        gemini_file = genai.upload_file(file_data=audio_bytes, mime_type=mime_type)
         
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         prompt = "Please transcribe the following voice note. The speaker may use English, Sepedi, Xitsonga, or isiZulu."
