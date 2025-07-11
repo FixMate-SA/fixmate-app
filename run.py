@@ -62,7 +62,9 @@ def transcribe_audio(audio_bytes, mime_type="audio/ogg"):
     genai.configure(api_key=gemini_api_key)
 
     try:
-        gemini_file = genai.upload_file(file_data=audio_bytes, mime_type=mime_type)
+        # The parameter name is changed from 'file_data' to 'contents'
+        gemini_file = genai.upload_file(contents=audio_bytes, mime_type=mime_type)
+        
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         prompt = "Please transcribe the following voice note. The speaker may use English, Sepedi, Xitsonga, or isiZulu."
         result = model.generate_content([prompt, gemini_file])
@@ -71,7 +73,7 @@ def transcribe_audio(audio_bytes, mime_type="audio/ogg"):
     except Exception as e:
         print(f"[Transcription Error] {e}")
         return "Sorry, transcription failed."
-
+    
 # --- AI Data Analysis & Sentiment Functions ---
 def generate_platform_insights():
     """Analyzes job data and suggests upskilling opportunities."""
