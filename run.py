@@ -4,7 +4,7 @@ import re
 from urllib.parse import urlparse # <-- ADD THIS LINE
 import hashlib
 import requests
-import io
+import io import BytesIO
 import json
 from decimal import Decimal
 from urllib.parse import urlencode
@@ -66,9 +66,12 @@ def transcribe_audio(audio_bytes, mime_type="audio/ogg"):
     genai.configure(api_key=gemini_api_key)
 
     try:
-        # Upload the audio file to Gemini
-        # The correct parameter name for byte content is 'contents'
-        gemini_file = genai.upload_file(contents=audio_bytes, mime_type=mime_type)
+        # Create a file-like object from bytes
+        audio_file = BytesIO(audio_bytes)
+        audio_file.name = "audio_message.oga"  # Provide a filename
+        
+        # Correct upload method - use 'file' parameter instead of 'contents'
+        gemini_file = genai.upload_file(file=audio_file, mime_type=mime_type)
         
         # Call the model to transcribe
         model = genai.GenerativeModel('models/gemini-1.5-flash')
@@ -79,6 +82,10 @@ def transcribe_audio(audio_bytes, mime_type="audio/ogg"):
         genai.delete_file(gemini_file.name)
         
         return result.text.strip() if result.text else "Transcription failed."
+
+    except Exception as e:
+        print(f"[Transcription Error] {e}")
+        return "Sorry, transcription failed."
 
     except Exception as e:
         print(f"[Transcription Error] {e}")
