@@ -18,6 +18,7 @@ import google.generativeai as genai
 from geopy.distance import geodesic
 from datetime import datetime, timezone
 from app.services import send_whatsapp_message
+import tempfile
 
 
 
