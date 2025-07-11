@@ -6,6 +6,7 @@ import hashlib
 import requests
 import io
 import json
+import threading # <--- ADD THIS
 from decimal import Decimal
 from urllib.parse import urlencode
 from flask import Flask, request, Response, render_template, redirect, url_for, flash, session, jsonify
@@ -892,13 +893,41 @@ def get_quote_for_service(service_description):
         return 0.00
     return 0.00
 
+# ADD THIS ENTIRE NEW FUNCTION
+def process_audio_in_background(audio_bytes, mime_type, from_number):
+    """
+    This function runs in a background thread to handle slow tasks
+    without making the webhook time out.
+    """
+    with app.app_context():
+        # Transcribe the audio
+        incoming_msg = transcribe_audio(audio_bytes, mime_type)
+        if "failed" in incoming_msg.lower():
+            send_whatsapp_message(from_number, incoming_msg)
+            return
+
+        # Get the user and continue the conversation state machine
+        user = get_or_create_user(from_number)
+        
+        # Check if user was waiting for a service request
+        if user.conversation_state == 'awaiting_service_request':
+            set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
+            response_message = "Got it. And what is your name?"
+            send_whatsapp_message(from_number, response_message)
+        else:
+            # Handle cases where audio is received unexpectedly
+            # For now, we can just treat it as a new request
+            clear_user_state(user)
+            set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
+            response_message = "Got it. And what is your name?"
+            send_whatsapp_message(from_number, response_message)
+
 # === Main WhatsApp Webhook with Combined Functionality ===
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
     """Endpoint to receive and process incoming WhatsApp messages from 360dialog."""
     data = request.json
     print(f"Received 360dialog webhook: {json.dumps(data, indent=2)}")
-
     try:
         value = data['entry'][0]['changes'][0]['value']
 
@@ -921,39 +950,34 @@ def whatsapp_webhook():
                 incoming_msg = message['text']['body'].strip()
 
             elif msg_type == 'audio':
+    # --- THIS IS THE NEW, CORRECTED BLOCK ---
                 audio_id = message['audio']['id']
-                media_url_endpoint = f"https://waba-v2.360dialog.io/{audio_id}"
-                headers = {'D360-API-KEY': DIALOG_360_API_KEY}
-                  # --- ADD THIS DEBUG LINE ---
-                print(f"DEBUG: Attempting to fetch audio from URL: {media_url_endpoint}")
+    
+    # Get media info from 360dialog
+    media_info_url = f"https://waba-v2.360dialog.io/{audio_id}"
+    headers = {'D360-API-KEY': DIALOG_360_API_KEY}
+    media_info_response = requests.get(media_info_url, headers=headers)
 
-            # --- STEP 1: Get Media Info (This part is working) ---
-                media_info_url = f"https://waba-v2.360dialog.io/{audio_id}"
-                media_info_response = requests.get(media_info_url, headers=headers)
-                if media_info_response.status_code != 200:
-                    print(f"Error fetching media info: {media_info_response.text}")
-                    send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
-                    return Response(status=200)
-
-            # --- STEP 2: Reconstruct the URL and Download the File ---
-                media_info = media_info_response.json()
-                original_download_url = media_info.get('url')
-
-                if not original_download_url:
-                    print(f"Could not find 'url' key in media info response: {media_info}")
-                    send_whatsapp_message(from_number, "An error occurred while getting the voice note.")
-                    return Response(status=200)
-
-                # Rebuild the URL as required by the documentation
-                parsed_url = urlparse(original_download_url)
-                path_and_query = f"{parsed_url.path}?{parsed_url.query}"
-                reconstructed_url = f"https://waba-v2.360dialog.io{path_and_query}"
-
-                print(f"DEBUG: Reconstructed URL for download: {reconstructed_url}")
+    if media_info_response.status_code == 200:
+        media_info = media_info_response.json()
+        audio_download_url = media_info.get('url')
+        if audio_download_url:
+            # Download the audio file
+            parsed_url = urlparse(audio_download_url)
+            path_and_query = f"{parsed_url.path}?{parsed_url.query}"
+            reconstructed_url = f"https://waba-v2.360dialog.io{path_and_query}"
+            audio_content_response = requests.get(reconstructed_url, headers=headers)
+            
+            if audio_content_response.status_code == 200:
+                audio_bytes = audio_content_response.content
+                mime_type = message['audio'].get('mime_type', 'audio/ogg')
                 
-                # Download the file from the RECONSTRUCTED URL
-                audio_content_response = requests.get(reconstructed_url, headers=headers)
-
+                # Create and start the background thread
+                thread = threading.Thread(
+                    target=process_audio_in_background,
+                    args=(audio_bytes, mime_type, from_number)
+                )
+                thread.start()
             # --- STEP 3: Process the downloaded file ---
                 if audio_content_response.status_code == 200:
                     audio_bytes = audio_content_response.content
