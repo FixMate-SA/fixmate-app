@@ -4,7 +4,7 @@ import re
 from urllib.parse import urlparse # <-- ADD THIS LINE
 import hashlib
 import requests
-import io import BytesIO
+import io
 import json
 from decimal import Decimal
 from urllib.parse import urlencode
@@ -18,6 +18,7 @@ import google.generativeai as genai
 from geopy.distance import geodesic
 from datetime import datetime, timezone
 from app.services import send_whatsapp_message
+from io import BytesIO  # Corrected import syntax
 
 
 # --- App Initialization & Config ---
