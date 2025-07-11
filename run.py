@@ -1,6 +1,7 @@
 # run.py
 import os
 import re
+from urllib.parse import urlparse # <-- ADD THIS LINE
 import hashlib
 import requests
 import io
@@ -897,34 +898,44 @@ def whatsapp_webhook():
                   # --- ADD THIS DEBUG LINE ---
                 print(f"DEBUG: Attempting to fetch audio from URL: {media_url_endpoint}")
 
-
-                media_info_response = requests.get(media_url_endpoint, headers=headers)
+            # --- STEP 1: Get Media Info (This part is working) ---
+                media_info_url = f"https://waba-v2.360dialog.io/{audio_id}"
+                media_info_response = requests.get(media_info_url, headers=headers)
                 if media_info_response.status_code != 200:
                     print(f"Error fetching media info: {media_info_response.text}")
                     send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
                     return Response(status=200)
 
+            # --- STEP 2: Reconstruct the URL and Download the File ---
                 media_info = media_info_response.json()
-                audio_download_url = media_info.get('url')
+                original_download_url = media_info.get('url')
 
-                audio_content_response = requests.get(audio_download_url, headers=headers)  # <- FIX IS HERE
-
-                if not audio_download_url:
+                if not original_download_url:
                     print(f"Could not find 'url' key in media info response: {media_info}")
                     send_whatsapp_message(from_number, "An error occurred while getting the voice note.")
                     return Response(status=200)
 
-                audio_content_response = requests.get(audio_download_url)
+                # Rebuild the URL as required by the documentation
+                parsed_url = urlparse(original_download_url)
+                path_and_query = f"{parsed_url.path}?{parsed_url.query}"
+                reconstructed_url = f"https://waba-v2.360dialog.io{path_and_query}"
+
+                print(f"DEBUG: Reconstructed URL for download: {reconstructed_url}")
+                
+                # Download the file from the RECONSTRUCTED URL
+                audio_content_response = requests.get(reconstructed_url, headers=headers)
+
+            # --- STEP 3: Process the downloaded file ---
                 if audio_content_response.status_code == 200:
                     audio_bytes = audio_content_response.content
                     mime_type = message['audio'].get('mime_type', 'audio/ogg')
                     incoming_msg = transcribe_audio(audio_bytes, mime_type)
                     if "failed" in incoming_msg.lower():
                         send_whatsapp_message(from_number, incoming_msg)
-                        return Response(status=200)
                 else:
                     print(f"Error downloading audio content. Status: {audio_content_response.status_code}")
                     send_whatsapp_message(from_number, "Sorry, I had trouble downloading the voice note.")
+
                     return Response(status=200)
 
             elif msg_type == 'location':
