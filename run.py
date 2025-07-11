@@ -18,7 +18,7 @@ import google.generativeai as genai
 from geopy.distance import geodesic
 from datetime import datetime, timezone
 from app.services import send_whatsapp_message
-from io import BytesIO  # Corrected import syntax
+
 
 
 # --- App Initialization & Config ---
@@ -67,12 +67,16 @@ def transcribe_audio(audio_bytes, mime_type="audio/ogg"):
     genai.configure(api_key=gemini_api_key)
 
     try:
-        # Create a file-like object from bytes
-        audio_file = BytesIO(audio_bytes)
-        audio_file.name = "audio_message.oga"  # Provide a filename
-        
-        # Correct upload method - use 'file' parameter instead of 'contents'
-        gemini_file = genai.upload_file(file=audio_file, mime_type=mime_type)
+        # Create a temporary file to store the audio
+        with tempfile.NamedTemporaryFile(suffix=".oga", delete=True) as tmp_file:
+            tmp_file.write(audio_bytes)
+            tmp_file.flush()
+            
+            # Upload to Gemini using the correct parameter name
+            gemini_file = genai.upload_file(
+                path=tmp_file.name,
+                mime_type=mime_type.split(';')[0]  # Remove codecs if present
+            )
         
         # Call the model to transcribe
         model = genai.GenerativeModel('models/gemini-1.5-flash')
@@ -83,6 +87,10 @@ def transcribe_audio(audio_bytes, mime_type="audio/ogg"):
         genai.delete_file(gemini_file.name)
         
         return result.text.strip() if result.text else "Transcription failed."
+
+    except Exception as e:
+        print(f"[Transcription Error] {e}")
+        return "Sorry, transcription failed."
 
     except Exception as e:
         print(f"[Transcription Error] {e}")
