@@ -55,21 +55,29 @@ serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # --- Speech-to-Text Function ---
 def transcribe_audio(audio_bytes, mime_type="audio/ogg"):
+    """Transcribes audio using the Google Generative AI API."""
     gemini_api_key = os.environ.get("GEMINI_API_KEY")
     if not gemini_api_key:
-        raise Exception("GEMINI_API_KEY not set")
+        print("[Transcription Error] GEMINI_API_KEY not set.")
+        return "Sorry, transcription configuration is missing."
 
     genai.configure(api_key=gemini_api_key)
 
     try:
-        # The parameter name is changed from 'file_data' to 'contents'
-        gemini_file = genai.upload_file(file_data=audio_bytes, mime_type=mime_type)
+        # Upload the audio file to Gemini
+        # The correct parameter name for byte content is 'contents'
+        gemini_file = genai.upload_file(contents=audio_bytes, mime_type=mime_type)
         
+        # Call the model to transcribe
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         prompt = "Please transcribe the following voice note. The speaker may use English, Sepedi, Xitsonga, or isiZulu."
         result = model.generate_content([prompt, gemini_file])
+
+        # Clean up the uploaded file
         genai.delete_file(gemini_file.name)
+        
         return result.text.strip() if result.text else "Transcription failed."
+
     except Exception as e:
         print(f"[Transcription Error] {e}")
         return "Sorry, transcription failed."
