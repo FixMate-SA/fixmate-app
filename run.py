@@ -17,6 +17,8 @@ import click
 import google.generativeai as genai
 from geopy.distance import geodesic
 from datetime import datetime, timezone
+from app.services import send_whatsapp_message
+
 
 # --- App Initialization & Config ---
 app = Flask(__name__)
