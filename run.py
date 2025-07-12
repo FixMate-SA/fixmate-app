@@ -55,46 +55,42 @@ def load_user(user_id):
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # --- NEW: Robust WhatsApp Message Function ---
-def send_whatsapp_message(to_number, message_body):
+def send_whatsapp_message(to_number, message_body=None, audio_url=None, audio_id=None):
     """
-    Sends a WhatsApp message using the 360dialog API.
-    Includes robust error handling and logging.
+    Enhanced function to support both text and audio messages.
+    Works with 360dialog WhatsApp API.
     """
-    if not all([DIALOG_360_URL, DIALOG_360_API_KEY]):
-        print(f"ERROR: WhatsApp API credentials not set. Cannot send message to {to_number}")
-        return False
-
-    # Ensure the number is in the correct format for the API
-    if to_number.startswith("whatsapp:+"):
-        recipient_number = to_number.replace("whatsapp:+", "")
-    else:
-        recipient_number = to_number
+    api_key = os.environ.get("DIALOG_360_API_KEY")
+    if not api_key:
+        raise Exception("DIALOG_360_API_KEY not set")
 
     headers = {
-        'D360-API-KEY': DIALOG_360_API_KEY,
-        'Content-Type': 'application/json'
-    }
-    payload = {
-        'to': recipient_number,
-        'type': 'text',
-        'text': {
-            'body': message_body
-        }
+        "Content-Type": "application/json",
+        "D360-API-KEY": api_key
     }
 
-    try:
-        response = requests.post(DIALOG_360_URL, headers=headers, json=payload, timeout=15)
-        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
-        print(f"Successfully sent WhatsApp message to {recipient_number}. Response: {response.json()}")
-        return True
-    except requests.exceptions.HTTPError as http_err:
-        print(f"HTTP ERROR sending WhatsApp to {recipient_number}: {http_err} - Response: {response.text}")
-    except requests.exceptions.RequestException as req_err:
-        print(f"REQUEST ERROR sending WhatsApp to {recipient_number}: {req_err}")
-    except Exception as e:
-        print(f"An unexpected error occurred sending WhatsApp to {recipient_number}: {e}")
-        
-    return False
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": to_number.replace("whatsapp:", "")
+    }
+
+    if message_body:
+        payload["type"] = "text"
+        payload["text"] = {"body": message_body}
+    elif audio_url:
+        payload["type"] = "audio"
+        payload["audio"] = {"link": audio_url, "voice": True}
+    elif audio_id:
+        payload["type"] = "audio"
+        payload["audio"] = {"id": audio_id, "voice": True}
+    else:
+        raise Exception("You must provide either message_body, audio_url, or audio_id")
+
+    response = requests.post("https://waba-v2.360dialog.io/messages", headers=headers, json=payload)
+    print(f"[WhatsApp Message] Sent to {to_number}. Status: {response.status_code}. Response: {response.text}")
+    return response
+
 
 # --- Speech-to-Text Function ---
 def transcribe_audio(audio_bytes, mime_type="audio/ogg"):
