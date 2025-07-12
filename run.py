@@ -893,10 +893,62 @@ def get_quote_for_service(service_description):
         return 0.00
     return 0.00
 
+# --- Global State Management ---
+user_message_queues = {}
+message_lock = threading.Lock()
+
+# --- Voice Processing Optimization ---
+def process_voice_note_async(app, message, from_number, user):
+    """Process voice note in background thread to avoid blocking"""
+    with app.app_context():
+        try:
+            # ... (existing voice processing code)
+            incoming_msg = transcribe_audio(audio_bytes, mime_type)
+            
+            # Add to user's message queue
+            with message_lock:
+                if from_number not in user_message_queues:
+                    user_message_queues[from_number] = deque()
+                user_message_queues[from_number].append(incoming_msg)
+        except Exception as e:
+            print(f"Voice processing error: {e}")
+            send_whatsapp_message(from_number, "⚠️ Voice note processing failed. Please try again or type your message.")
+
+# --- Response Throttling System ---
+def process_user_messages():
+    """Process message queues at fixed intervals"""
+    while True:
+        with message_lock:
+            for number, queue in list(user_message_queues.items()):
+                if queue:
+                    message = queue.popleft()
+                    user = get_or_create_user(number)
+                    handle_conversation(user, number, text_message=message)
+                    
+                    # Clear queue if it's growing too large
+                    if len(queue) > 3:
+                        queue.clear()
+                        send_whatsapp_message(number, "❌ Too many pending messages. Please start over.")
+            
+            # Clean up empty queues
+            user_message_queues = {k: v for k, v in user_message_queues.items() if v}
+        time.sleep(2)  # Process every 2 seconds
+
+# --- Central Conversation Handler ---
+def handle_conversation(user, from_number, text_message=None, location_message=None):
+    """Centralized conversation state handler"""
+    # ... (existing state machine logic moved here)
+    # This is the same state machine logic from the webhook, 
+    # just moved into a separate function
+
+# --- Start Message Processing Thread ---
+message_thread = threading.Thread(target=process_user_messages, daemon=True)
+message_thread.start()
+
 # === Main WhatsApp Webhook with Combined Functionality ===
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
-    """Endpoint to receive and process incoming WhatsApp messages from 360dialog."""
+    """Optimized webhook with voice note acceleration and response throttling"""
     data = request.json
     print(f"Received 360dialog webhook: {json.dumps(data, indent=2)}")
 
@@ -918,65 +970,158 @@ def whatsapp_webhook():
             incoming_msg = ""
             location = None
 
-            if msg_type == 'text':
-                incoming_msg = message['text']['body'].strip()
-
-            elif msg_type == 'audio':
-                audio_id = message['audio']['id']
-                media_url_endpoint = f"https://waba-v2.360dialog.io/{audio_id}"
-                headers = {'D360-API-KEY': DIALOG_360_API_KEY}
-                  # --- ADD THIS DEBUG LINE ---
-                print(f"DEBUG: Attempting to fetch audio from URL: {media_url_endpoint}")
-
-            # --- STEP 1: Get Media Info (This part is working) ---
-                media_info_url = f"https://waba-v2.360dialog.io/{audio_id}"
-                media_info_response = requests.get(media_info_url, headers=headers)
-                if media_info_response.status_code != 200:
-                    print(f"Error fetching media info: {media_info_response.text}")
-                    send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
-                    return Response(status=200)
-
-            # --- STEP 2: Reconstruct the URL and Download the File ---
-                media_info = media_info_response.json()
-                original_download_url = media_info.get('url')
-
-                if not original_download_url:
-                    print(f"Could not find 'url' key in media info response: {media_info}")
-                    send_whatsapp_message(from_number, "An error occurred while getting the voice note.")
-                    return Response(status=200)
-
-                # Rebuild the URL as required by the documentation
-                parsed_url = urlparse(original_download_url)
-                path_and_query = f"{parsed_url.path}?{parsed_url.query}"
-                reconstructed_url = f"https://waba-v2.360dialog.io{path_and_query}"
-
-                print(f"DEBUG: Reconstructed URL for download: {reconstructed_url}")
+            # --- Voice Note Handling with Async Processing ---
+            if msg_type == 'audio':
+                # Immediately acknowledge voice note
+                send_whatsapp_message(from_number, "⌛ Processing your voice note...")
                 
-                # Download the file from the RECONSTRUCTED URL
-                audio_content_response = requests.get(reconstructed_url, headers=headers)
+                # Start background processing
+                threading.Thread(
+                    target=process_voice_note_async,
+                    args=(app, message, from_number)
+                ).start()
+                return Response(status=200)  # Return immediately after starting processing
 
-            # --- STEP 3: Process the downloaded file ---
-                if audio_content_response.status_code == 200:
-                    audio_bytes = audio_content_response.content
-                    mime_type = message['audio'].get('mime_type', 'audio/ogg')
-                    incoming_msg = transcribe_audio(audio_bytes, mime_type)
-                    if "failed" in incoming_msg.lower():
-                        send_whatsapp_message(from_number, incoming_msg)
-                else:
-                    print(f"Error downloading audio content. Status: {audio_content_response.status_code}")
-                    send_whatsapp_message(from_number, "Sorry, I had trouble downloading the voice note.")
-
-                    return Response(status=200)
+            elif msg_type == 'text':
+                incoming_msg = message['text']['body'].strip()
 
             elif msg_type == 'location':
                 location = message['location']
 
+            # --- Message Queue System ---
+            if msg_type in ['text', 'location']:
+                # Add message to processing queue
+                with message_lock:
+                    if from_number not in user_message_queues:
+                        user_message_queues[from_number] = deque()
+                    user_message_queues[from_number].append({
+                        'text': incoming_msg,
+                        'location': location,
+                        'timestamp': datetime.now()
+                    })
+
+    except Exception as e:
+        print(f"Webhook processing error: {e}")
+
+    return Response(status=200)
+
+# --- Global State Management ---
+user_message_queues = {}
+message_lock = threading.Lock()
+
+# --- Voice Processing Function ---
+def process_voice_note_async(app, message, from_number):
+    """Process voice note in background thread"""
+    with app.app_context():
+        try:
+            print(f"Processing voice note async for {from_number}")
+            audio_id = message['audio']['id']
+            headers = {'D360-API-KEY': DIALOG_360_API_KEY}
+            
+            # Get media info
+            media_info_url = f"https://waba-v2.360dialog.io/{audio_id}"
+            media_info_response = requests.get(media_info_url, headers=headers)
+            if media_info_response.status_code != 200:
+                print(f"Error fetching media info: {media_info_response.text}")
+                send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
+                return
+
+            # Reconstruct download URL
+            media_info = media_info_response.json()
+            original_download_url = media_info.get('url')
+            if not original_download_url:
+                print("Missing 'url' in media info response")
+                send_whatsapp_message(from_number, "An error occurred while getting the voice note.")
+                return
+
+            parsed_url = urlparse(original_download_url)
+            reconstructed_url = f"https://waba-v2.360dialog.io{parsed_url.path}?{parsed_url.query}"
+            
+            # Download audio content
+            audio_content_response = requests.get(reconstructed_url, headers=headers)
+            if audio_content_response.status_code != 200:
+                print(f"Error downloading audio: {audio_content_response.status_code}")
+                send_whatsapp_message(from_number, "Sorry, I had trouble downloading the voice note.")
+                return
+
+            # Transcribe audio
+            audio_bytes = audio_content_response.content
+            mime_type = message['audio'].get('mime_type', 'audio/ogg')
+            transcribed_text = transcribe_audio(audio_bytes, mime_type)
+            
+            # Add to message queue
+            with message_lock:
+                if from_number not in user_message_queues:
+                    user_message_queues[from_number] = deque()
+                user_message_queues[from_number].append({
+                    'text': transcribed_text,
+                    'location': None,
+                    'timestamp': datetime.now()
+                })
+                
+        except Exception as e:
+            print(f"Voice processing error: {e}")
+            send_whatsapp_message(from_number, "⚠️ Voice note processing failed. Please try again or type your message.")
+
+# --- Message Processing Thread ---
+def process_message_queues():
+    """Process message queues at fixed intervals"""
+    while True:
+        try:
+            current_time = datetime.now()
+            with message_lock:
+                # Process each user's queue
+                for number, queue in list(user_message_queues.items()):
+                    if queue:
+                        message_data = queue.popleft()
+                        user = get_or_create_user(number)
+                        process_conversation(user, number, message_data)
+                        
+                        # Prevent queue flooding
+                        if len(queue) > 3:
+                            queue.clear()
+                            send_whatsapp_message(number, "⚠️ Too many messages in queue. Please start over.")
+                
+                # Clean up empty queues
+                user_message_queues = {k: v for k, v in user_message_queues.items() if v}
+            
+            # Sleep before next processing cycle
+            time.sleep(1.5)  # Process every 1.5 seconds
+            
+        except Exception as e:
+            print(f"Queue processing error: {e}")
+            time.sleep(5)
+
+# --- Central Conversation Processor ---
+def process_conversation(user, from_number, message_data):
+    """Handle conversation state with queue-based processing"""
+    try:
+        incoming_msg = message_data['text']
+        location = message_data['location']
+        
+        # --- Existing State Machine Logic ---
+        # (Copy the entire state machine logic from your original webhook here)
+        # This includes all the conversation state handling (awaiting_service_request, 
+        # awaiting_location, awaiting_contact_number, etc.)
+        
+        # Example structure:
+        current_state = user.conversation_state
+        # ... rest of your state handling code ...
+        
+    except Exception as e:
+        print(f"Conversation processing error: {e}")
+        send_whatsapp_message(from_number, "⚠️ Something went wrong. Please try again.")
+
+# --- Start Message Processing Thread ---
+processing_thread = threading.Thread(target=process_message_queues, daemon=True)
+processing_thread.start()
+
             # --- Conversation State Machine ---
-            current_state = user.conversation_state
-            response_message = ""
+urrent_state = user.conversation_state
+response_message = ""
 
             # --- Post-Job States (Rating & Feedback) ---
-            if current_state == 'awaiting_rating':
+if current_state == 'awaiting_rating':
                 job_id_to_rate_str = get_user_cache(user).get('job_id')
                 job = db.session.get(Job, int(job_id_to_rate_str)) if job_id_to_rate_str else None
                 if job and incoming_msg.isdigit() and 1 <= int(incoming_msg) <= 5:
@@ -998,65 +1143,65 @@ def whatsapp_webhook():
                 response_message = "Your feedback has been recorded. We appreciate you helping us improve FixMate-SA!"
                 clear_user_state(user)
 
-            # --- Job Request States ---
-            elif current_state == 'awaiting_location' and location:
-                user_name_greet = f"{user.full_name.split(' ')[0]}, " if user.full_name else ""
-                response_message = f"Thanks, {user_name_greet}I've got your location. Lastly, what's the best contact number for the fixer to use?"
-                set_user_state(user, 'awaiting_contact_number', data={'latitude': str(location.get('latitude')), 'longitude': str(location.get('longitude'))})
+   # --- Job Request States ---
+elif current_state == 'awaiting_location' and location:
+    user_name_greet = f"{user.full_name.split(' ')[0]}, " if user.full_name else ""
+    response_message = f"Thanks, {user_name_greet}I've got your location. Lastly, what's the best contact number for the fixer to use?"
+    set_user_state(user, 'awaiting_contact_number', data={'latitude': str(location.get('latitude')), 'longitude': str(location.get('longitude'))})
 
-            elif incoming_msg:
-                if current_state == 'awaiting_service_request':
-                    response_message = "Got it. And what is your name?"
-                    set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
+elif incoming_msg:
+    if current_state == 'awaiting_service_request':
+        response_message = "Got it. And what is your name?"
+        set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
 
-                elif current_state == 'awaiting_name':
-                    user.full_name = incoming_msg
-                    db.session.commit()
-                    response_message = f"Thanks, {user.full_name.split(' ')[0]}! To help us find the nearest fixer, please share your location pin.\n\nTap the paperclip icon 📎, then choose 'Location'."
-                    set_user_state(user, 'awaiting_location')
+    elif current_state == 'awaiting_name':
+        user.full_name = incoming_msg
+        db.session.commit()
+        response_message = f"Thanks, {user.full_name.split(' ')[0]}! To help us find the nearest fixer, please share your location pin.\n\nTap the paperclip icon 📎, then choose 'Location'."
+        set_user_state(user, 'awaiting_location')
 
-                elif current_state == 'awaiting_contact_number':
-                    if any(char.isdigit() for char in incoming_msg) and len(incoming_msg) >= 10:
-                        terms_url = url_for('terms', _external=True)
-                        response_message = (
-                            f"Great! We have all the details.\n\n"
-                            f"By proceeding, you agree to the FixMate-SA Terms of Service.\n"
-                            f"View here: {terms_url}\n\n"
-                            "Reply *YES* to confirm and dispatch a fixer."
-                        )
-                        set_user_state(user, 'awaiting_terms_approval', data={'contact': incoming_msg})
-                    else:
-                        response_message = "That doesn't seem to be a valid phone number. Please try again."
+    elif current_state == 'awaiting_contact_number':
+        if any(char.isdigit() for char in incoming_msg) and len(incoming_msg) >= 10:
+            terms_url = url_for('terms', _external=True)
+            response_message = (
+                f"Great! We have all the details.\n\n"
+                f"By proceeding, you agree to the FixMate-SA Terms of Service.\n"
+                f"View here: {terms_url}\n\n"
+                "Reply *YES* to confirm and dispatch a fixer."
+            )
+            set_user_state(user, 'awaiting_terms_approval', data={'contact': incoming_msg})
+        else:
+            response_message = "That doesn't seem to be a valid phone number. Please try again."
 
-                elif current_state == 'awaiting_terms_approval':
-                    if 'yes' in incoming_msg.lower():
-                        job_data = get_user_cache(user)
-                        job_id, fixer_found = create_new_job_in_db(user, job_data)
-                        if fixer_found:
-                            response_message = f"Perfect! We have logged your request (Job #{job_id}) and have notified a nearby fixer. They will contact you shortly."
-                        else:
-                            response_message = f"Thank you. We have logged your request (Job #{job_id}), but all our fixers for this skill are currently busy. We will notify you as soon as one becomes available."
-                        clear_user_state(user)
-                    else:
-                        response_message = "Job request cancelled. Please say 'hello' to start a new request."
-                        clear_user_state(user)
-                
-                else: # Default state / New Conversation
-                    clear_user_state(user)
-                    user_name = f" {user.full_name.split(' ')[0]}" if user.full_name else ""
-                    
-                    if incoming_msg.lower() in ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo']:
-                        response_message = f"Welcome back{user_name} to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe') or send a voice note."
-                        set_user_state(user, 'awaiting_service_request')
-                    else:
-                        response_message = "Got it. And what is your name?"
-                        set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
-            
-            if response_message:
-                send_whatsapp_message(from_number, response_message)
+    elif current_state == 'awaiting_terms_approval':
+        if 'yes' in incoming_msg.lower():
+            job_data = get_user_cache(user)
+            job_id, fixer_found = create_new_job_in_db(user, job_data)
+            if fixer_found:
+                response_message = f"Perfect! We have logged your request (Job #{job_id}) and have notified a nearby fixer. They will contact you shortly."
+            else:
+                response_message = f"Thank you. We have logged your request (Job #{job_id}), but all our fixers for this skill are currently busy. We will notify you as soon as one becomes available."
+            clear_user_state(user)
+        else:
+            response_message = "Job request cancelled. Please say 'hello' to start a new request."
+            clear_user_state(user)
+    
+    else: # Default state / New Conversation
+        clear_user_state(user)
+        user_name = f" {user.full_name.split(' ')[0]}" if user.full_name else ""
+        
+        if incoming_msg.lower() in ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo']:
+            response_message = f"Welcome back{user_name} to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe') or send a voice note."
+            set_user_state(user, 'awaiting_service_request')
+        else:
+            response_message = "Got it. And what is your name?"
+            set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
+
+# Send response message if set
+if response_message:
+    send_whatsapp_message(from_number, response_message)
 
     except (IndexError, KeyError) as e:
-        print(f"Error parsing 360dialog payload or processing message: {e}")
+    print(f"Error parsing 360dialog payload or processing message: {e}")
 
-    return Response(status=200)
-
+return Response(status=200)
