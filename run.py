@@ -893,35 +893,6 @@ def get_quote_for_service(service_description):
         return 0.00
     return 0.00
 
-# ADD THIS ENTIRE NEW FUNCTION
-def process_audio_in_background(audio_bytes, mime_type, from_number):
-    """
-    This function runs in a background thread to handle slow tasks
-    without making the webhook time out.
-    """
-    with app.app_context():
-        # Transcribe the audio
-        incoming_msg = transcribe_audio(audio_bytes, mime_type)
-        if "failed" in incoming_msg.lower():
-            send_whatsapp_message(from_number, incoming_msg)
-            return
-
-        # Get the user and continue the conversation state machine
-        user = get_or_create_user(from_number)
-        
-        # Check if user was waiting for a service request
-        if user.conversation_state == 'awaiting_service_request':
-            set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
-            response_message = "Got it. And what is your name?"
-            send_whatsapp_message(from_number, response_message)
-        else:
-            # Handle cases where audio is received unexpectedly
-            # For now, we can just treat it as a new request
-            clear_user_state(user)
-            set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
-            response_message = "Got it. And what is your name?"
-            send_whatsapp_message(from_number, response_message)
-
 # === Main WhatsApp Webhook with Combined Functionality ===
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
