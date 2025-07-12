@@ -6,9 +6,7 @@ import hashlib
 import requests
 import io
 import json
-import threading
-import time
-from collections import deque
+import threading # <--- ADD THIS
 from decimal import Decimal
 from urllib.parse import urlencode
 from flask import Flask, request, Response, render_template, redirect, url_for, flash, session, jsonify
@@ -895,57 +893,6 @@ def get_quote_for_service(service_description):
         return 0.00
     return 0.00
 
-# --- Global State Management ---
-user_message_queues = {}
-message_lock = threading.Lock()
-
-# --- Voice Processing Optimization ---
-def process_voice_note_async(app, message, from_number, user):
-    """Process voice note in background thread to avoid blocking"""
-    with app.app_context():
-        try:
-            # ... (existing voice processing code)
-            incoming_msg = transcribe_audio(audio_bytes, mime_type)
-            
-            # Add to user's message queue
-            with message_lock:
-                if from_number not in user_message_queues:
-                    user_message_queues[from_number] = deque()
-                user_message_queues[from_number].append(incoming_msg)
-        except Exception as e:
-            print(f"Voice processing error: {e}")
-            send_whatsapp_message(from_number, "⚠️ Voice note processing failed. Please try again or type your message.")
-
-# --- Response Throttling System ---
-def process_user_messages():
-    """Process message queues at fixed intervals"""
-    while True:
-        with message_lock:
-            for number, queue in list(user_message_queues.items()):
-                if queue:
-                    message = queue.popleft()
-                    user = get_or_create_user(number)
-                    handle_conversation(user, number, text_message=message)
-                    
-                    # Clear queue if it's growing too large
-                    if len(queue) > 3:
-                        queue.clear()
-                        send_whatsapp_message(number, "❌ Too many pending messages. Please start over.")
-            
-            # Clean up empty queues
-            user_message_queues = {k: v for k, v in user_message_queues.items() if v}
-        time.sleep(2)  # Process every 2 seconds
-
-# --- Central Conversation Handler ---
-def handle_conversation(user, from_number, text_message=None, location_message=None):
-    """Centralized conversation state handler"""
-    # ... (existing state machine logic moved here)
-    # This is the same state machine logic from the webhook, 
-    # just moved into a separate function
-
-# --- Start Message Processing Thread ---
-message_thread = threading.Thread(target=process_user_messages, daemon=True)
-message_thread.start()
 
 # === Main WhatsApp Webhook with Combined Functionality ===
 @app.route('/whatsapp', methods=['POST'])
