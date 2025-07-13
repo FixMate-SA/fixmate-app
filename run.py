@@ -1041,17 +1041,32 @@ def whatsapp_webhook():
                         response_message = "Job request cancelled. Please say 'hello' to start a new request."
                         clear_user_state(user)
                 
-                else: # Default state / New Conversation
-                    clear_user_state(user)
-                    user_name = f" {user.full_name.split(' ')[0]}" if user.full_name else ""
-                    
-                    if incoming_msg.lower() in ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo']:
-                        response_message = f"Welcome back{user_name} to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe') or send a voice note."
-                        set_user_state(user, 'awaiting_service_request')
-                    else:
-                        response_message = "Got it. And what is your name?"
-                        set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
+        else: # Default state / New Conversation
+            clear_user_state(user)
+            welcome_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'leaking pipe,' 'hairdresser,' or 'any service') or send a voice note."
             
+            if user.full_name:
+                # Returning user
+                user_name = user.full_name.split(' ')[0]
+                if incoming_msg.lower() in ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo']:
+                    response_message = f"Welcome back {user_name}! {welcome_message}"
+                else:
+                    # Treat non-greeting as service request
+                    response_message = "Got it. And what is your name?"
+                    set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
+            else:
+                # New user
+                if incoming_msg.lower() in ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo']:
+                    response_message = welcome_message
+                else:
+                    # Treat non-greeting as service request
+                    response_message = "Got it. And what is your name?"
+                    set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
+            
+            # Set service request state if we didn't set awaiting_name
+            if 'Got it.' not in response_message:
+                set_user_state(user, 'awaiting_service_request')
+
             if response_message:
                 send_whatsapp_message(from_number, response_message)
 
