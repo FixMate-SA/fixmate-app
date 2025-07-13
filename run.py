@@ -900,15 +900,15 @@ def whatsapp_webhook():
     data = request.json
     print(f"Received 360dialog webhook: {json.dumps(data, indent=2)}")
 try:
-        value = data['entry'][0]['changes'][0]['value']
+    value = data['entry'][0]['changes'][0]['value']
 
         # Ignore status updates from WhatsApp
-        if 'statuses' in value:
+    if 'statuses' in value:
             print("Received a status update. Ignoring.")
             return Response(status=200)
 
         # Ensure the webhook is a message and not some other event
-        if 'messages' in value:
+    if 'messages' in value:
             message = value['messages'][0]
             from_number = f"whatsapp:+{message['from']}"
             user = get_or_create_user(from_number)
@@ -998,13 +998,13 @@ try:
                 response_message = "Your feedback has been recorded. We appreciate you helping us improve FixMate-SA!"
                 clear_user_state(user)
 
-   # --- Job Request States ---
-if current_state == 'awaiting_location' and location:
+ # --- Job Request States ---
+    if current_state == 'awaiting_location' and location:
         user_name_greet = f"{user.full_name.split(' ')[0]}, " if user.full_name else ""
         response_message = f"Thanks, {user_name_greet}I've got your location. Lastly, what's the best contact number for the fixer to use?"
         set_user_state(user, 'awaiting_contact_number', data={'latitude': str(location.get('latitude')), 'longitude': str(location.get('longitude'))})
 
-elif incoming_msg:
+    elif incoming_msg:
         if current_state == 'awaiting_service_request':
             response_message = "Got it. And what is your name?"
             set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
@@ -1068,7 +1068,7 @@ elif incoming_msg:
                 set_user_state(user, 'awaiting_service_request')
 
     # Send single response after processing
-if response_message:
+    if response_message:
         send_whatsapp_message(from_number, response_message)
 
 except (IndexError, KeyError) as e:
