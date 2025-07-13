@@ -6,7 +6,7 @@ import hashlib
 import requests
 import io
 import json
-import threading # <--- ADD THIS
+import threading
 from decimal import Decimal
 from urllib.parse import urlencode
 from flask import Flask, request, Response, render_template, redirect, url_for, flash, session, jsonify
@@ -361,6 +361,11 @@ def create_new_job_in_db(user, job_data):
     db.session.add(job)
     db.session.commit()
     return job.id, matched_fixer is not None
+
+# New helper function to process messages through state machine
+def process_message(user, incoming_msg, location):
+    current_state = user.conversation_state
+    response_message = None
 
 # --- Admin Commands & Web Routes ---
 # (All commands and routes from @app.cli.command("add-fixer") to @app.route('/payment/notify') are unchanged)
@@ -917,18 +922,17 @@ def whatsapp_webhook():
             msg_type = message.get('type')
             incoming_msg = ""
             location = None
+            is_voice_note = False
 
-            if msg_type == 'text':
-                incoming_msg = message['text']['body'].strip()
-
-            elif msg_type == 'audio':
+            # Handle voice notes separately
+            if msg_type == 'audio':
+                is_voice_note = True
                 audio_id = message['audio']['id']
                 media_url_endpoint = f"https://waba-v2.360dialog.io/{audio_id}"
                 headers = {'D360-API-KEY': DIALOG_360_API_KEY}
-                  # --- ADD THIS DEBUG LINE ---
                 print(f"DEBUG: Attempting to fetch audio from URL: {media_url_endpoint}")
 
-            # --- STEP 1: Get Media Info (This part is working) ---
+                # Get media info
                 media_info_url = f"https://waba-v2.360dialog.io/{audio_id}"
                 media_info_response = requests.get(media_info_url, headers=headers)
                 if media_info_response.status_code != 200:
@@ -936,7 +940,6 @@ def whatsapp_webhook():
                     send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
                     return Response(status=200)
 
-            # --- STEP 2: Reconstruct the URL and Download the File ---
                 media_info = media_info_response.json()
                 original_download_url = media_info.get('url')
 
@@ -945,58 +948,45 @@ def whatsapp_webhook():
                     send_whatsapp_message(from_number, "An error occurred while getting the voice note.")
                     return Response(status=200)
 
-                # Rebuild the URL as required by the documentation
+                # Rebuild the URL
                 parsed_url = urlparse(original_download_url)
                 path_and_query = f"{parsed_url.path}?{parsed_url.query}"
                 reconstructed_url = f"https://waba-v2.360dialog.io{path_and_query}"
-
                 print(f"DEBUG: Reconstructed URL for download: {reconstructed_url}")
                 
-                # Download the file from the RECONSTRUCTED URL
+                # Download the audio file
                 audio_content_response = requests.get(reconstructed_url, headers=headers)
 
-            # --- STEP 3: Process the downloaded file ---
                 if audio_content_response.status_code == 200:
                     audio_bytes = audio_content_response.content
                     mime_type = message['audio'].get('mime_type', 'audio/ogg')
                     incoming_msg = transcribe_audio(audio_bytes, mime_type)
-                    if "failed" in incoming_msg.lower():
+                    
+                    # Only process if transcription succeeded
+                    if "failed" not in incoming_msg.lower():
+                        # Process transcribed text through state machine
+                        response_message = process_message(user, incoming_msg, None, from_number)
+                        if response_message:
+                            send_whatsapp_message(from_number, response_message)
+                    else:
                         send_whatsapp_message(from_number, incoming_msg)
                 else:
                     print(f"Error downloading audio content. Status: {audio_content_response.status_code}")
                     send_whatsapp_message(from_number, "Sorry, I had trouble downloading the voice note.")
+                
+                return Response(status=200)
 
-                    return Response(status=200)
-
+            # Handle text and location messages normally
+            elif msg_type == 'text':
+                incoming_msg = message['text']['body'].strip()
             elif msg_type == 'location':
                 location = message['location']
 
-            # --- Conversation State Machine ---
-            current_state = user.conversation_state
-            response_message = ""
-
-            # --- Post-Job States (Rating & Feedback) ---
-            if current_state == 'awaiting_rating':
-                job_id_to_rate_str = get_user_cache(user).get('job_id')
-                job = db.session.get(Job, int(job_id_to_rate_str)) if job_id_to_rate_str else None
-                if job and incoming_msg.isdigit() and 1 <= int(incoming_msg) <= 5:
-                    job.rating = int(incoming_msg)
-                    db.session.commit()
-                    response_message = "Thank you for the rating! Could you please share a brief comment about your experience?"
-                    set_user_state(user, 'awaiting_rating_comment', data={'job_id': job.id})
-                else:
-                    response_message = "Thank you for your feedback!"
-                    clear_user_state(user)
-            
-            elif current_state == 'awaiting_rating_comment':
-                job_id_to_rate_str = get_user_cache(user).get('job_id')
-                job = db.session.get(Job, int(job_id_to_rate_str)) if job_id_to_rate_str else None
-                if job:
-                    job.rating_comment = incoming_msg
-                    job.sentiment = analyze_feedback_sentiment(incoming_msg)
-                    db.session.commit()
-                response_message = "Your feedback has been recorded. We appreciate you helping us improve FixMate-SA!"
-                clear_user_state(user)
+            # Process non-voice messages through state machine
+            if not is_voice_note:
+                # --- Conversation State Machine ---
+                current_state = user.conversation_state
+                response_message = None
 
             # --- Job Request States ---
             elif current_state == 'awaiting_location' and location:
@@ -1049,9 +1039,13 @@ def whatsapp_webhook():
                         response_message = f"Welcome back{user_name} to FixMate-SA! To request a service, please describe what you need (e.g., 'leaking pipe,' 'hairdresser,' or 'any service')"
                         set_user_state(user, 'awaiting_service_request')
                     else:
-                        response_message = "Welcome back{user_name} to FixMate-SA! To request a service, please describe what you need (e.g., 'leaking pipe,' 'hairdresser,' or 'any service')"
+                        response_message = "Welcome back to FixMate-SA! To request a service, please describe what you need (e.g., 'leaking pipe,' 'hairdresser,' or 'any service')"
                         set_user_state(user, 'awaiting_service_request')
-            
+
+                    # Set service request state if not already set
+                    if 'awaiting_name' not in locals():  # Only set if we didn't set awaiting_name
+                        set_user_state(user, 'awaiting_service_request')
+
             if response_message:
                 send_whatsapp_message(from_number, response_message)
 
