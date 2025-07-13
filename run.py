@@ -363,7 +363,7 @@ def create_new_job_in_db(user, job_data):
     return job.id, matched_fixer is not None
 
 # New helper function to process messages through state machine
-def process_message(user, incoming_msg, location):
+def process_message(user, incoming_msg, location, from_number):  # Added from_number parameter
     current_state = user.conversation_state
     response_message = None
 
@@ -922,19 +922,18 @@ def whatsapp_webhook():
             msg_type = message.get('type')
             incoming_msg = ""
             location = None
-            is_voice_note = False
 
-            # Handle voice notes separately
+            # === Handle voice notes ===
             if msg_type == 'audio':
-                is_voice_note = True
                 audio_id = message['audio']['id']
-                media_url_endpoint = f"https://waba-v2.360dialog.io/{audio_id}"
                 headers = {'D360-API-KEY': DIALOG_360_API_KEY}
-                print(f"DEBUG: Attempting to fetch audio from URL: {media_url_endpoint}")
 
-                # Get media info
+                print(f"DEBUG: Attempting to fetch audio from URL: https://waba-v2.360dialog.io/{audio_id}")
+                
+                # Step 1: Get media metadata
                 media_info_url = f"https://waba-v2.360dialog.io/{audio_id}"
                 media_info_response = requests.get(media_info_url, headers=headers)
+
                 if media_info_response.status_code != 200:
                     print(f"Error fetching media info: {media_info_response.text}")
                     send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
@@ -944,113 +943,127 @@ def whatsapp_webhook():
                 original_download_url = media_info.get('url')
 
                 if not original_download_url:
-                    print(f"Could not find 'url' key in media info response: {media_info}")
+                    print(f"Missing 'url' in media info: {media_info}")
                     send_whatsapp_message(from_number, "An error occurred while getting the voice note.")
                     return Response(status=200)
 
-                # Rebuild the URL
+                # Step 2: Rebuild download URL
                 parsed_url = urlparse(original_download_url)
                 path_and_query = f"{parsed_url.path}?{parsed_url.query}"
                 reconstructed_url = f"https://waba-v2.360dialog.io{path_and_query}"
+
                 print(f"DEBUG: Reconstructed URL for download: {reconstructed_url}")
-                
-                # Download the audio file
+
+                # Step 3: Download the audio content
                 audio_content_response = requests.get(reconstructed_url, headers=headers)
 
                 if audio_content_response.status_code == 200:
                     audio_bytes = audio_content_response.content
                     mime_type = message['audio'].get('mime_type', 'audio/ogg')
+
                     incoming_msg = transcribe_audio(audio_bytes, mime_type)
-                    
-                    # Only process if transcription succeeded
+
+                    # Step 4: Only proceed if transcription succeeded
                     if "failed" not in incoming_msg.lower():
-                        # Process transcribed text through state machine
-                        response_message = process_message(user, incoming_msg, None, from_number)
-                        if response_message:
-                            send_whatsapp_message(from_number, response_message)
+                        process_message(user, incoming_msg, None, from_number)
                     else:
                         send_whatsapp_message(from_number, incoming_msg)
                 else:
-                    print(f"Error downloading audio content. Status: {audio_content_response.status_code}")
+                    print(f"Error downloading audio. Status: {audio_content_response.status_code}")
                     send_whatsapp_message(from_number, "Sorry, I had trouble downloading the voice note.")
-                
+
                 return Response(status=200)
 
-            # Handle text and location messages normally
+            # === Handle text messages ===
             elif msg_type == 'text':
                 incoming_msg = message['text']['body'].strip()
+                process_message(user, incoming_msg, None, from_number)
+
+            # === Handle location messages ===
             elif msg_type == 'location':
                 location = message['location']
+                process_message(user, None, location, from_number)
 
-            # Process non-voice messages through state machine
-            if not is_voice_note:
-                # --- Conversation State Machine ---
-                current_state = user.conversation_state
-                response_message = None
-
-            # --- Job Request States ---
-            elif current_state == 'awaiting_location' and location:
-                user_name_greet = f"{user.full_name.split(' ')[0]}, " if user.full_name else ""
-                response_message = f"Thanks, {user_name_greet}I've got your location. Lastly, what's the best contact number for the fixer to use?"
-                set_user_state(user, 'awaiting_contact_number', data={'latitude': str(location.get('latitude')), 'longitude': str(location.get('longitude'))})
-
-            elif incoming_msg:
-                if current_state == 'awaiting_service_request':
-                    response_message = "Got it. And what is your name?"
-                    set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
-
-                elif current_state == 'awaiting_name':
-                    user.full_name = incoming_msg
-                    db.session.commit()
-                    response_message = f"Thanks, {user.full_name.split(' ')[0]}! To help us find the nearest fixer, please share your location pin.\n\nTap the paperclip icon 📎, then choose 'Location'."
-                    set_user_state(user, 'awaiting_location')
-
-                elif current_state == 'awaiting_contact_number':
-                    if any(char.isdigit() for char in incoming_msg) and len(incoming_msg) >= 10:
-                        terms_url = url_for('terms', _external=True)
-                        response_message = (
-                            f"Great! We have all the details.\n\n"
-                            f"By proceeding, you agree to the FixMate-SA Terms of Service.\n"
-                            f"View here: {terms_url}\n\n"
-                            "Reply *YES* to confirm and dispatch a fixer."
-                        )
-                        set_user_state(user, 'awaiting_terms_approval', data={'contact': incoming_msg})
-                    else:
-                        response_message = "That doesn't seem to be a valid phone number. Please try again."
-
-                elif current_state == 'awaiting_terms_approval':
-                    if 'yes' in incoming_msg.lower():
-                        job_data = get_user_cache(user)
-                        job_id, fixer_found = create_new_job_in_db(user, job_data)
-                        if fixer_found:
-                            response_message = f"Perfect! We have logged your request (Job #{job_id}) and have notified a nearby fixer. They will contact you shortly."
-                        else:
-                            response_message = f"Thank you. We have logged your request (Job #{job_id}), but all our fixers for this skill are currently busy. We will notify you as soon as one becomes available."
-                        clear_user_state(user)
-                    else:
-                        response_message = "Job request cancelled. Please say 'hello' to start a new request."
-                        clear_user_state(user)
-                
-                else: # Default state / New Conversation
-                    clear_user_state(user)
-                    user_name = f" {user.full_name.split(' ')[0]}" if user.full_name else ""
-                    
-                    if incoming_msg.lower() in ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo', 'avuxeni', 'ndaa']:
-                        response_message = f"Welcome back{user_name} to FixMate-SA! To request a service, please describe what you need (e.g., 'leaking pipe,' 'hairdresser,' or 'any service')"
-                        set_user_state(user, 'awaiting_service_request')
-                    else:
-                        response_message = "Welcome back to FixMate-SA! To request a service, please describe what you need (e.g., 'leaking pipe,' 'hairdresser,' or 'any service')"
-                        set_user_state(user, 'awaiting_service_request')
-
-                    # Set service request state if not already set
-                    if 'awaiting_name' not in locals():  # Only set if we didn't set awaiting_name
-                        set_user_state(user, 'awaiting_service_request')
-
-            if response_message:
-                send_whatsapp_message(from_number, response_message)
+            # === Unhandled message types ===
+            else:
+                print(f"Unhandled message type: {msg_type}")
+                send_whatsapp_message(from_number, "Sorry, I can't process this type of message yet.")
 
     except (IndexError, KeyError) as e:
         print(f"Error parsing 360dialog payload or processing message: {e}")
 
-    return Response(status=200)
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
+    # --- Job Request States ---
+    if current_state == 'awaiting_location' and location:
+        user_name_greet = f"{user.full_name.split(' ')[0]}, " if user.full_name else ""
+        response_message = f"Thanks, {user_name_greet}I've got your location. Lastly, what's the best contact number for the fixer to use?"
+        set_user_state(user, 'awaiting_contact_number', data={'latitude': str(location.get('latitude')), 'longitude': str(location.get('longitude'))})
+
+    elif incoming_msg:
+        if current_state == 'awaiting_service_request':
+            response_message = "Got it. And what is your name?"
+            set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
+
+        elif current_state == 'awaiting_name':
+            user.full_name = incoming_msg
+            db.session.commit()
+            response_message = f"Thanks, {user.full_name.split(' ')[0]}! To help us find the nearest fixer, please share your location pin.\n\nTap the paperclip icon 📎, then choose 'Location'."
+            set_user_state(user, 'awaiting_location')
+
+        elif current_state == 'awaiting_contact_number':
+            if any(char.isdigit() for char in incoming_msg) and len(incoming_msg) >= 10:
+                terms_url = url_for('terms', _external=True)
+                response_message = (
+                    f"Great! We have all the details.\n\n"
+                    f"By proceeding, you agree to the FixMate-SA Terms of Service.\n"
+                    f"View here: {terms_url}\n\n"
+                    "Reply *YES* to confirm and dispatch a fixer."
+                )
+                set_user_state(user, 'awaiting_terms_approval', data={'contact': incoming_msg})
+            else:
+                response_message = "That doesn't seem to be a valid phone number. Please try again."
+
+        elif current_state == 'awaiting_terms_approval':
+            if 'yes' in incoming_msg.lower():
+                job_data = get_user_cache(user)
+                job_id, fixer_found = create_new_job_in_db(user, job_data)
+                if fixer_found:
+                    response_message = f"Perfect! We have logged your request (Job #{job_id}) and have notified a nearby fixer. They will contact you shortly."
+                else:
+                    response_message = f"Thank you. We have logged your request (Job #{job_id}), but all our fixers for this skill are currently busy. We will notify you as soon as one becomes available."
+                clear_user_state(user)
+            else:
+                response_message = "Job request cancelled. Please say 'hello' to start a new request."
+                clear_user_state(user)
+        
+        else:  # Default state / New Conversation
+            clear_user_state(user)
+            welcome_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'leaking pipe,' 'hairdresser,' or 'any service') or send a voice note."
+            
+            if user.full_name:
+                # Returning user
+                user_name = user.full_name.split(' ')[0]
+                if incoming_msg.lower() in ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo', 'avuxeni', 'ndaa']:
+                    response_message = f"Welcome back {user_name}! {welcome_message}"
+                else:
+                    # Treat non-greeting as service request
+                    response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'leaking pipe,' 'hairdresser,' or 'any service') or send a voice note."
+                    set_user_state(user, 'awaiting_service', data={'service': incoming_msg})
+            else:
+                # New user
+                if incoming_msg.lower() in ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo']:
+                    response_message = welcome_message
+                else:
+                    # Treat non-greeting as service request
+                    response_message = "Got it. And what is your name?"
+                    response_message = welcome_message
+            
+            # Set service request state if we didn't set awaiting_name
+            if 'Got it.' not in response_message:
+                set_user_state(user, 'awaiting_service_request')
+    
+    # Send response if we have one
+    if response_message:
+        send_whatsapp_message(from_number, response_message)
