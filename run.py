@@ -1073,5 +1073,4 @@ try:
 
 except (IndexError, KeyError) as e:
     print(f"Error parsing 360dialog payload or processing message: {e}")
-
-return Response(status=200)
+    return Response(status=200)
