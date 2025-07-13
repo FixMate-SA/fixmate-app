@@ -1083,11 +1083,15 @@ elif incoming_msg:
             response_message = "Got it. And what is your name?"
             set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
 
-# --- Send Final Response ---
-            if response_message:
-                send_whatsapp_message(from_number, response_message)
+            # Set service request state if we didn't set awaiting_name
+            if 'Got it.' not in response_message:
+                set_user_state(user, 'awaiting_service_request')
 
-    except (IndexError, KeyError) as e:
-        print(f"Error parsing 360dialog payload or processing message: {e}")
+    # Send single response after processing
+    if response_message:
+        send_whatsapp_message(from_number, response_message)
 
-    return Response(status=200)
+except (IndexError, KeyError) as e:
+    print(f"Error parsing 360dialog payload or processing message: {e}")
+
+return Response(status=200)
