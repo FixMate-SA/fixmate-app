@@ -998,96 +998,98 @@ try:
                 response_message = "Your feedback has been recorded. We appreciate you helping us improve FixMate-SA!"
                 clear_user_state(user)
 
-# --- Job Request States ---
-if current_state == 'awaiting_location' and location:
-    user_name_greet = f"{user.full_name.split(' ')[0]}, " if user.full_name else ""
-    response_message = (
-        f"Thanks, {user_name_greet}I've got your location. "
-        "Lastly, what's the best contact number for the fixer to use?"
-    )
-    set_user_state(user, 'awaiting_contact_number', data={
-        'latitude': str(location.get('latitude')),
-        'longitude': str(location.get('longitude'))
-    })
-
-elif current_state == 'awaiting_service_request' and incoming_msg:
-    response_message = "Got it. And what is your name?"
-    set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
-
-elif current_state == 'awaiting_name' and incoming_msg:
-    user.full_name = incoming_msg
-    db.session.commit()
-    response_message = (
-        f"Thanks, {user.full_name.split(' ')[0]}! "
-        "To help us find the nearest fixer, please share your location pin.\n\n"
-        "Tap the paperclip icon 📎, then choose 'Location'."
-    )
-    set_user_state(user, 'awaiting_location')
-
-elif current_state == 'awaiting_contact_number' and incoming_msg:
-    if any(char.isdigit() for char in incoming_msg) and len(incoming_msg) >= 10:
-        terms_url = url_for('terms', _external=True)
+try:
+    # --- Job Request States ---
+    if current_state == 'awaiting_location' and location:
+        user_name_greet = f"{user.full_name.split(' ')[0]}, " if user.full_name else ""
         response_message = (
-            f"Great! We have all the details.\n\n"
-            f"By proceeding, you agree to the FixMate-SA Terms of Service.\n"
-            f"View here: {terms_url}\n\n"
-            "Reply *YES* to confirm and dispatch a fixer."
+            f"Thanks, {user_name_greet}I've got your location. "
+            "Lastly, what's the best contact number for the fixer to use?"
         )
-        set_user_state(user, 'awaiting_terms_approval', data={'contact': incoming_msg})
-    else:
-        response_message = "That doesn't seem to be a valid phone number. Please try again."
+        set_user_state(user, 'awaiting_contact_number', data={
+            'latitude': str(location.get('latitude')),
+            'longitude': str(location.get('longitude'))
+        })
 
-elif current_state == 'awaiting_terms_approval' and incoming_msg:
-    if 'yes' in incoming_msg.lower():
-        job_data = get_user_cache(user)
-        job_id, fixer_found = create_new_job_in_db(user, job_data)
-        if fixer_found:
+    elif current_state == 'awaiting_service_request' and incoming_msg:
+        response_message = "Got it. And what is your name?"
+        set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
+
+    elif current_state == 'awaiting_name' and incoming_msg:
+        user.full_name = incoming_msg
+        db.session.commit()
+        response_message = (
+            f"Thanks, {user.full_name.split(' ')[0]}! "
+            "To help us find the nearest fixer, please share your location pin.\n\n"
+            "Tap the paperclip icon 📎, then choose 'Location'."
+        )
+        set_user_state(user, 'awaiting_location')
+
+    elif current_state == 'awaiting_contact_number' and incoming_msg:
+        if any(char.isdigit() for char in incoming_msg) and len(incoming_msg) >= 10:
+            terms_url = url_for('terms', _external=True)
             response_message = (
-                f"Perfect! We have logged your request (Job #{job_id}) and have notified a nearby fixer. "
-                "They will contact you shortly."
+                f"Great! We have all the details.\n\n"
+                f"By proceeding, you agree to the FixMate-SA Terms of Service.\n"
+                f"View here: {terms_url}\n\n"
+                "Reply *YES* to confirm and dispatch a fixer."
             )
+            set_user_state(user, 'awaiting_terms_approval', data={'contact': incoming_msg})
         else:
-            response_message = (
-                f"Thank you. We have logged your request (Job #{job_id}), but all our fixers for this skill are currently busy. "
-                "We will notify you as soon as one becomes available."
-            )
+            response_message = "That doesn't seem to be a valid phone number. Please try again."
+
+    elif current_state == 'awaiting_terms_approval' and incoming_msg:
+        if 'yes' in incoming_msg.lower():
+            job_data = get_user_cache(user)
+            job_id, fixer_found = create_new_job_in_db(user, job_data)
+            if fixer_found:
+                response_message = (
+                    f"Perfect! We have logged your request (Job #{job_id}) and have notified a nearby fixer. "
+                    "They will contact you shortly."
+                )
+            else:
+                response_message = (
+                    f"Thank you. We have logged your request (Job #{job_id}), but all our fixers for this skill are currently busy. "
+                    "We will notify you as soon as one becomes available."
+                )
+            clear_user_state(user)
+        else:
+            response_message = "Job request cancelled. Please say 'hello' to start a new request."
+            clear_user_state(user)
+
+    # --- Default / New Conversation ---
+    elif incoming_msg:
         clear_user_state(user)
-    else:
-        response_message = "Job request cancelled. Please say 'hello' to start a new request."
-        clear_user_state(user)
 
-# --- Default / New Conversation ---
-elif incoming_msg:
-    clear_user_state(user)
+        greetings = ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo', 'ndaa', 'avuxeni']
+        is_greeting = incoming_msg.lower() in greetings
 
-    greetings = ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo','ndaa', 'avuxeni']
-    is_greeting = incoming_msg.lower() in greetings
-    welcome_text = (
-        "Welcome to FixMate-SA! To request a service, please describe what you need "
-        "(e.g., 'leaking pipe,' 'hairdresser,' or 'any service') or send a voice note."
-    )
+        welcome_text = (
+            "Welcome to FixMate-SA! To request a service, please describe what you need "
+            "(e.g., 'leaking pipe,' 'hairdresser,' or 'any service') or send a voice note."
+        )
 
-    if user.full_name:
-        user_name = user.full_name.split(' ')[0]
-        if is_greeting:
-            response_message = f"Welcome back {user_name}! {welcome_text}"
-            set_user_state(user, 'awaiting_service_request')
-        else:
-            response_message = "Got it. And what is your name?"
-            set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
-    else:
-        if is_greeting:
-            response_message = welcome_text
-            set_user_state(user, 'awaiting_service_request')
-        else:
-            response_message = "Got it. And what is your name?"
-            set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
-
-            # Set service request state if we didn't set awaiting_name
-            if 'Got it.' not in response_message:
+        if user.full_name:
+            user_name = user.full_name.split(' ')[0]
+            if is_greeting:
+                response_message = f"Welcome back {user_name}! {welcome_text}"
                 set_user_state(user, 'awaiting_service_request')
+            else:
+                response_message = "Got it. And what is your name?"
+                set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
+        else:
+            if is_greeting:
+                response_message = welcome_text
+                set_user_state(user, 'awaiting_service_request')
+            else:
+                response_message = "Got it. And what is your name?"
+                set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
 
-    # Send single response after processing
+        # Set state if not already in awaiting_name
+        if 'Got it.' not in response_message:
+            set_user_state(user, 'awaiting_service_request')
+
+    # --- Send Final Response ---
     if response_message:
         send_whatsapp_message(from_number, response_message)
 
