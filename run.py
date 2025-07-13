@@ -1084,17 +1084,10 @@ elif incoming_msg:
             set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
 
 # --- Send Final Response ---
-if response_message:
-    send_whatsapp_message(from_number, response_message)
-    # final default block
-elif incoming_msg:
-        ...
+            if response_message:
+                send_whatsapp_message(from_number, response_message)
 
-if response_message:
-        send_whatsapp_message(from_number, response_message)
+    except (IndexError, KeyError) as e:
+        print(f"Error parsing 360dialog payload or processing message: {e}")
 
-except (IndexError, KeyError) as e:
-print(f"Error parsing 360dialog payload or processing message: {e}")
-    # Optionally log the user or fallback message here
-
-return Response(status=200)
+    return Response(status=200)
