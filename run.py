@@ -20,6 +20,7 @@ from geopy.distance import geodesic
 from datetime import datetime, timezone
 from app.services import send_whatsapp_message
 import tempfile
+from functools import lru_cache
 
 
 
@@ -248,59 +249,43 @@ def analyze_feedback_sentiment(comment):
         print(f"ERROR: Gemini API call failed during sentiment analysis: {e}")
         return "Unknown"
 
+# Add caching for classification results
+@lru_cache(maxsize=128)
 def classify_service_request(service_description):
+    """Uses Gemini to classify a service description into a skill category with caching."""
     if not GEMINI_API_KEY:
         print("WARN: GEMINI_API_KEY not set. Falling back to keyword matching.")
         desc = service_description.lower()
         if any(k in desc for k in ['plumb', 'pipe', 'leak', 'geyser', 'tap', 'toilet']): return 'plumbing'
         if any(k in desc for k in ['light', 'electr', 'plug', 'wiring', 'switch']): return 'electrical'
         return 'general'
+
     try:
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         prompt = f"""
         Analyze the following home repair request from a South African user.
         Classify it into one of these three categories: 'plumbing', 'electrical', or 'general'.
         Return ONLY the category name as a single word and nothing else.
+
         Request: "{service_description}"
+
         Category:
         """
         response = model.generate_content(prompt)
         classification = response.text.strip().lower()
+
         if classification in ['plumbing', 'electrical', 'general']:
+            print(f"Gemini classified '{service_description}' as: {classification}")
             return classification
-        return 'general'
+        else:
+            print(f"WARN: Gemini returned an unexpected classification: '{classification}'. Defaulting to 'general'.")
+            return 'general'
     except Exception as e:
         print(f"ERROR: Gemini API call failed during classification: {e}. Defaulting to 'general'.")
         return 'general'
 
-def get_or_create_user(phone_number):
-    if not phone_number.startswith("whatsapp:"): phone_number = f"whatsapp:{phone_number}"
-    user = User.query.filter_by(phone_number=phone_number).first()
-    if not user: user = User(phone_number=phone_number); db.session.add(user); db.session.commit()
-    return user
-
-def set_user_state(user, new_state, data=None):
-    cached_data = json.loads(user.service_request_cache) if user.service_request_cache else {}
-    if data:
-        cached_data.update(data)
-    user.conversation_state = new_state
-    user.service_request_cache = json.dumps(cached_data)
-    db.session.commit()
-    print(f"State for {user.phone_number} set to {new_state} with data: {cached_data}")
-
-def get_user_cache(user):
-    if user.service_request_cache:
-        return json.loads(user.service_request_cache)
-    return {}
-
-def clear_user_state(user):
-    user.conversation_state = None
-    user.service_request_cache = None
-    db.session.commit()
-    print(f"State for {user.phone_number} cleared.")
-
 def find_fixer_for_job(job):
-    skill_needed = classify_service_request(job.description)
+    skill_needed = classify_service_request(job.description)  # Use the cached function
     eligible_fixers = Fixer.query.filter(
         Fixer.is_active==True,
         Fixer.vetting_status=='approved',
@@ -350,22 +335,34 @@ def create_new_job_in_db(user, job_data):
         client_contact_number=job_data.get('contact'),
         client_id=user.id
     )
-    matched_fixer = find_fixer_for_job(job)
     if matched_fixer:
-        job.assigned_fixer = matched_fixer
-        job.status = 'assigned'
-        notification_message = f"New FixMate-SA Job Alert!\n\nService: {job.description}\nClient Contact: {job.client_contact_number}\n\nPlease go to your Fixer Portal to accept this job:\n{url_for('fixer_login', _external=True)}"
-        send_whatsapp_message(to_number=matched_fixer.phone_number, message_body=notification_message)
-    else:
-        job.status = 'unassigned'
-    db.session.add(job)
-    db.session.commit()
-    return job.id, matched_fixer is not None
+        # Check last interaction time
+        now = datetime.now(timezone.utc)
+        hours_since_last_interaction = (now - matched_fixer.last_interaction_at).total_seconds() / 3600
+        
+        if hours_since_last_interaction > 24:
+            # Use WhatsApp template message for re-engagement
+            template_name = "job_alert_reengagement"
+            template_params = [
+                {"type": "text", "text": job.description},
+                {"type": "text", "text": job.client_contact_number}
+            ]
+            send_whatsapp_template(
+                to_number=matched_fixer.phone_number,
+                template_name=template_name,
+                components=template_params
+            )
+            print(f"Sent re-engagement template to fixer {matched_fixer.id}")
+        else:
+            # Send normal message
+            notification_message = f"New FixMate-SA Job Alert!\n\nService: {job.description}\nClient Contact: {job.client_contact_number}\n\nPlease go to your Fixer Portal to accept this job:\n{url_for('fixer_login', _external=True)}"
+            send_whatsapp_message(to_number=matched_fixer.phone_number, message_body=notification_message)
 
 # New helper function to process messages through state machine
 def process_message(user, incoming_msg, location, from_number):  # Added from_number parameter
-    current_state = user.conversation_state
-    response_message = None
+
+            current_state = user.conversation_state
+            response_message = None
 
 # --- Admin Commands & Web Routes ---
 # (All commands and routes from @app.cli.command("add-fixer") to @app.route('/payment/notify') are unchanged)
@@ -976,6 +973,8 @@ def whatsapp_webhook():
                 
                 return Response(status=200)
 
+
+                        
             # Handle text and location messages normally
             elif msg_type == 'text':
                 incoming_msg = message['text']['body'].strip()
@@ -987,8 +986,33 @@ def whatsapp_webhook():
                 # --- Conversation State Machine ---
                 current_state = user.conversation_state
                 response_message = None
+                    # Check for duplicate message processing
 
-                            # --- Post-Job States (Rating & Feedback) ---
+            if message_id in processed_message_ids:
+                print(f"Skipping duplicate audio message: {message_id}")
+                return Response(status=200)
+            processed_message_ids.add(message_id)
+            
+            # Add error logging for failed messages
+        if 'statuses' in value:
+            status_data = value['statuses'][0] 
+        if status_data.get('status') == 'failed':
+            error = status_data.get('errors', [{}])[0]
+            error_code = error.get('code')
+            error_message = error.get('message', 'Unknown error')
+            print(f"⚠️ Message failed! Error {error_code}: {error_message}")
+
+             # Log detailed error to database
+            new_error = SystemError(
+                        error_code=error_code,
+                        error_message=error_message,
+                        recipient_id=status_data.get('recipient_id'),
+                        message_id=status_data.get('id')
+            )
+            db.session.add(new_error)
+            db.session.commit()
+
+         # --- Post-Job States (Rating & Feedback) ---
             if current_state == 'awaiting_rating':
                 job_id_to_rate_str = get_user_cache(user).get('job_id')
                 job = db.session.get(Job, int(job_id_to_rate_str)) if job_id_to_rate_str else None
@@ -1076,4 +1100,3 @@ def whatsapp_webhook():
         print(f"Error parsing 360dialog payload or processing message: {e}")
 
     return Response(status=200)
-
