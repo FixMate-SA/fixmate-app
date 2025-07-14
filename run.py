@@ -6,7 +6,7 @@ import hashlib
 import requests
 import io
 import json
-from threading import Lock
+import threading # <--- ADD THIS
 from decimal import Decimal
 from urllib.parse import urlencode
 from flask import Flask, request, Response, render_template, redirect, url_for, flash, session, jsonify
@@ -20,16 +20,10 @@ from geopy.distance import geodesic
 from datetime import datetime, timezone
 from app.services import send_whatsapp_message
 import tempfile
-from functools import lru_cache
-import concurrent.futures
 
 
 
 # --- App Initialization & Config ---
-# Add after app initialization
-processed_message_ids = set()
-message_id_lock = Lock()
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-secret-key-that-is-long-and-random')
 db_url = os.environ.get('DATABASE_URL')
@@ -51,8 +45,6 @@ if GEMINI_API_KEY:
 FIXER_JOB_FEE = Decimal('20.00') # <-- ADD THIS LINE
 
 # --- Initialize Extensions ---
-# Create a thread pool executor (add after app initialization)
-audio_executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 from app.models import db, User, Fixer, Job, DataInsight
 from app.services import send_whatsapp_message
 db.init_app(app)
@@ -256,43 +248,59 @@ def analyze_feedback_sentiment(comment):
         print(f"ERROR: Gemini API call failed during sentiment analysis: {e}")
         return "Unknown"
 
-# Add caching for classification results
-@lru_cache(maxsize=128)
 def classify_service_request(service_description):
-    """Uses Gemini to classify a service description into a skill category with caching."""
     if not GEMINI_API_KEY:
         print("WARN: GEMINI_API_KEY not set. Falling back to keyword matching.")
         desc = service_description.lower()
         if any(k in desc for k in ['plumb', 'pipe', 'leak', 'geyser', 'tap', 'toilet']): return 'plumbing'
         if any(k in desc for k in ['light', 'electr', 'plug', 'wiring', 'switch']): return 'electrical'
         return 'general'
-
     try:
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         prompt = f"""
         Analyze the following home repair request from a South African user.
         Classify it into one of these three categories: 'plumbing', 'electrical', or 'general'.
         Return ONLY the category name as a single word and nothing else.
-
         Request: "{service_description}"
-
         Category:
         """
         response = model.generate_content(prompt)
         classification = response.text.strip().lower()
-
         if classification in ['plumbing', 'electrical', 'general']:
-            print(f"Gemini classified '{service_description}' as: {classification}")
             return classification
-        else:
-            print(f"WARN: Gemini returned an unexpected classification: '{classification}'. Defaulting to 'general'.")
-            return 'general'
+        return 'general'
     except Exception as e:
         print(f"ERROR: Gemini API call failed during classification: {e}. Defaulting to 'general'.")
         return 'general'
 
+def get_or_create_user(phone_number):
+    if not phone_number.startswith("whatsapp:"): phone_number = f"whatsapp:{phone_number}"
+    user = User.query.filter_by(phone_number=phone_number).first()
+    if not user: user = User(phone_number=phone_number); db.session.add(user); db.session.commit()
+    return user
+
+def set_user_state(user, new_state, data=None):
+    cached_data = json.loads(user.service_request_cache) if user.service_request_cache else {}
+    if data:
+        cached_data.update(data)
+    user.conversation_state = new_state
+    user.service_request_cache = json.dumps(cached_data)
+    db.session.commit()
+    print(f"State for {user.phone_number} set to {new_state} with data: {cached_data}")
+
+def get_user_cache(user):
+    if user.service_request_cache:
+        return json.loads(user.service_request_cache)
+    return {}
+
+def clear_user_state(user):
+    user.conversation_state = None
+    user.service_request_cache = None
+    db.session.commit()
+    print(f"State for {user.phone_number} cleared.")
+
 def find_fixer_for_job(job):
-    skill_needed = classify_service_request(job.description)  # Use the cached function
+    skill_needed = classify_service_request(job.description)
     eligible_fixers = Fixer.query.filter(
         Fixer.is_active==True,
         Fixer.vetting_status=='approved',
@@ -342,34 +350,17 @@ def create_new_job_in_db(user, job_data):
         client_contact_number=job_data.get('contact'),
         client_id=user.id
     )
+    matched_fixer = find_fixer_for_job(job)
     if matched_fixer:
-        # Check last interaction time
-        now = datetime.now(timezone.utc)
-        hours_since_last_interaction = (now - matched_fixer.last_interaction_at).total_seconds() / 3600
-        
-        if hours_since_last_interaction > 24:
-            # Use WhatsApp template message for re-engagement
-            template_name = "job_alert_reengagement"
-            template_params = [
-                {"type": "text", "text": job.description},
-                {"type": "text", "text": job.client_contact_number}
-            ]
-            send_whatsapp_template(
-                to_number=matched_fixer.phone_number,
-                template_name=template_name,
-                components=template_params
-            )
-            print(f"Sent re-engagement template to fixer {matched_fixer.id}")
-        else:
-            # Send normal message
-            notification_message = f"New FixMate-SA Job Alert!\n\nService: {job.description}\nClient Contact: {job.client_contact_number}\n\nPlease go to your Fixer Portal to accept this job:\n{url_for('fixer_login', _external=True)}"
-            send_whatsapp_message(to_number=matched_fixer.phone_number, message_body=notification_message)
-
-# New helper function to process messages through state machine
-def process_message(user, incoming_msg, location, from_number):  # Added from_number parameter
-
-            current_state = user.conversation_state
-            response_message = None
+        job.assigned_fixer = matched_fixer
+        job.status = 'assigned'
+        notification_message = f"New FixMate-SA Job Alert!\n\nService: {job.description}\nClient Contact: {job.client_contact_number}\n\nPlease go to your Fixer Portal to accept this job:\n{url_for('fixer_login', _external=True)}"
+        send_whatsapp_message(to_number=matched_fixer.phone_number, message_body=notification_message)
+    else:
+        job.status = 'unassigned'
+    db.session.add(job)
+    db.session.commit()
+    return job.id, matched_fixer is not None
 
 # --- Admin Commands & Web Routes ---
 # (All commands and routes from @app.cli.command("add-fixer") to @app.route('/payment/notify') are unchanged)
