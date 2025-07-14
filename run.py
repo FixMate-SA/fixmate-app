@@ -688,13 +688,58 @@ def whatsapp_webhook():
                         latitude = message.get('location', {}).get('latitude')
                         longitude = message.get('location', {}).get('longitude')
                     elif msg_type == 'audio':
-                        audio_id = message.get('audio', {}).get('id')
-                        print(f"Received audio message with ID: {audio_id}. Media URL retrieval needs to be implemented.")
-                        send_whatsapp_message(from_number, "Sorry, audio message processing is not yet enabled.")
-                        return Response(status=200)
+                        is_voice_note = True
+                        audio_id = message['audio']['id']
+                        media_url_endpoint = f"https://waba-v2.360dialog.io/{audio_id}"
+                        headers = {'D360-API-KEY': DIALOG_360_API_KEY}
+                        print(f"DEBUG: Attempting to fetch audio from URL: {media_url_endpoint}")
+
+                # Get media info
+                media_info_url = f"https://waba-v2.360dialog.io/{audio_id}"
+                media_info_response = requests.get(media_info_url, headers=headers)
+                if media_info_response.status_code != 200:
+                    print(f"Error fetching media info: {media_info_response.text}")
+                    send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
+                    return Response(status=200)
+
+                media_info = media_info_response.json()
+                original_download_url = media_info.get('url')
+
+                if not original_download_url:
+                    print(f"Could not find 'url' key in media info response: {media_info}")
+                    send_whatsapp_message(from_number, "An error occurred while getting the voice note.")
+                    return Response(status=200)
+
+                # Rebuild the URL
+                parsed_url = urlparse(original_download_url)
+                path_and_query = f"{parsed_url.path}?{parsed_url.query}"
+                reconstructed_url = f"https://waba-v2.360dialog.io{path_and_query}"
+                print(f"DEBUG: Reconstructed URL for download: {reconstructed_url}")
+                
+                # Download the audio file
+                audio_content_response = requests.get(reconstructed_url, headers=headers)
+
+                if audio_content_response.status_code == 200:
+                    audio_bytes = audio_content_response.content
+                    mime_type = message['audio'].get('mime_type', 'audio/ogg')
+                    incoming_msg = transcribe_audio(audio_bytes, mime_type)
+                    
+                    # Only process if transcription succeeded
+                    if "failed" not in incoming_msg.lower():
+                        # Process transcribed text through state machine
+                        response_message = process_message(user, incoming_msg, None, from_number)
+                        if response_message:
+                            send_whatsapp_message(from_number, response_message)
                     else:
-                        print(f"Received unhandled message type: {msg_type}")
-                        return Response(status=200)
+                        send_whatsapp_message(from_number, incoming_msg)
+                else:
+                    print(f"Error downloading audio content. Status: {audio_content_response.status_code}")
+                    send_whatsapp_message(from_number, "Sorry, I had trouble downloading the voice note.")
+                
+                    return Response(status=200)
+            else:
+                print(f"Received unhandled message type: {msg_type}")
+                return Response(status=200)
     except (IndexError, KeyError) as e:
         print(f"Error parsing 360dialog payload: {e}")
         return Response(status=200)
