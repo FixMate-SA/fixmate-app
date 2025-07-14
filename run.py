@@ -899,7 +899,6 @@ def get_quote_for_service(service_description):
         return 0.00
     return 0.00
 
-# === Main WhatsApp Webhook with Combined Functionality ===
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
     """Endpoint to receive and process incoming WhatsApp messages from 360dialog."""
@@ -917,7 +916,9 @@ def whatsapp_webhook():
         # Ensure the webhook is a message and not some other event
         if 'messages' in value:
             message = value['messages'][0]
-            message_id = message['id']  # Extract message ID here
+            # Extract message ID and type first
+            message_id = message['id']
+            msg_type = message.get('type', '')
             
             # Deduplication check
             with message_id_lock:
@@ -928,6 +929,10 @@ def whatsapp_webhook():
                 
             from_number = f"whatsapp:+{message['from']}"
             user = get_or_create_user(from_number)
+
+            incoming_msg = ""
+            location = None
+            is_voice_note = False
 
             # Handle voice notes separately
             if msg_type == 'audio':
@@ -981,44 +986,17 @@ def whatsapp_webhook():
                 
                 return Response(status=200)
 
-
             # Handle text and location messages normally
             elif msg_type == 'text':
                 incoming_msg = message['text']['body'].strip()
             elif msg_type == 'location':
                 location = message['location']
+                
+            # --- Conversation State Machine ---
+            current_state = user.conversation_state
+            response_message = None
 
-            # Process non-voice messages through state machine
-            if not is_voice_note:
-                # --- Conversation State Machine ---
-                current_state = user.conversation_state
-                response_message = None
-                    # Check for duplicate message processing
-
-            if message_id in processed_message_ids:
-                print(f"Skipping duplicate audio message: {message_id}")
-                return Response(status=200)
-            processed_message_ids.add(message_id)
             
-            # Add error logging for failed messages
-        if 'statuses' in value:
-            status_data = value['statuses'][0] 
-        if status_data.get('status') == 'failed':
-            error = status_data.get('errors', [{}])[0]
-            error_code = error.get('code')
-            error_message = error.get('message', 'Unknown error')
-            print(f"⚠️ Message failed! Error {error_code}: {error_message}")
-
-             # Log detailed error to database
-            new_error = SystemError(
-                        error_code=error_code,
-                        error_message=error_message,
-                        recipient_id=status_data.get('recipient_id'),
-                        message_id=status_data.get('id')
-            )
-            db.session.add(new_error)
-            db.session.commit()
-
          # --- Post-Job States (Rating & Feedback) ---
             if current_state == 'awaiting_rating':
                 job_id_to_rate_str = get_user_cache(user).get('job_id')
