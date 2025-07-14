@@ -909,159 +909,84 @@ def whatsapp_webhook():
     print(f"Received 360dialog webhook: {json.dumps(data, indent=2)}")
 
     try:
-        value = data['entry'][0]['changes'][0]['value']
+        audio_id = message['audio']['id']
+        headers = {'D360-API-KEY': DIALOG_360_API_KEY}
+        print(f"Processing audio message: {audio_id}")
 
-        # Ignore status updates from WhatsApp
-        if 'statuses' in value:
-            print("Received a status update. Ignoring.")
-            return Response(status=200)
+        # Get media info
+        media_info_url = f"https://waba-v2.360dialog.io/{audio_id}"
+        media_info_response = requests.get(media_info_url, headers=headers)
+        
+        if media_info_response.status_code != 200:
+            print(f"Error fetching media info: {media_info_response.text}")
+            send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
+            return
 
-        # Ensure the webhook is a message and not some other event
-        if 'messages' in value:
-            message = value['messages'][0]
-            # Extract message ID and type first
-            message_id = message['id']
-            msg_type = message.get('type', '')
+        media_info = media_info_response.json()
+        original_download_url = media_info.get('url')
+
+        if not original_download_url:
+            print(f"Could not find 'url' key in media info response: {media_info}")
+            send_whatsapp_message(from_number, "An error occurred while getting the voice note.")
+            return
+
+        # Download the audio file
+        audio_content_response = requests.get(original_download_url, headers=headers)
+
+        if audio_content_response.status_code == 200:
+            audio_bytes = audio_content_response.content
+            mime_type = message['audio'].get('mime_type', 'audio/ogg')
             
-            # Deduplication check
-            with message_id_lock:
-                if message_id in processed_message_ids:
-                    print(f"Skipping duplicate message: {message_id}")
-                    return Response(status=200)
-                processed_message_ids.add(message_id)
-                
-            from_number = f"whatsapp:+{message['from']}"
-            user = get_or_create_user(from_number)
-
-            incoming_msg = ""
-            location = None
-            is_voice_note = False
-
-            # Handle voice notes separately
-            if msg_type == 'audio':
-              # Submit audio processing to thread pool
-                audio_executor.submit(process_audio_message, message, from_number)
-                return Response(status=200)  # Immediately acknowledge receipt  
-                is_voice_note = True
-                audio_id = message['audio']['id']
-                media_url_endpoint = f"https://waba-v2.360dialog.io/{audio_id}"
-                headers = {'D360-API-KEY': DIALOG_360_API_KEY}
-                print(f"DEBUG: Attempting to fetch audio from URL: {media_url_endpoint}")
-
-                # Get media info
-                media_info_url = f"https://waba-v2.360dialog.io/{audio_id}"
-                media_info_response = requests.get(media_info_url, headers=headers)
-                if media_info_response.status_code != 200:
-                    print(f"Error fetching media info: {media_info_response.text}")
-                    send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
-                    return Response(status=200)
-
-                media_info = media_info_response.json()
-                original_download_url = media_info.get('url')
-
-                if not original_download_url:
-                    print(f"Could not find 'url' key in media info response: {media_info}")
-                    send_whatsapp_message(from_number, "An error occurred while getting the voice note.")
-                    return Response(status=200)
-
-                # Rebuild the URL
-                parsed_url = urlparse(original_download_url)
-                path_and_query = f"{parsed_url.path}?{parsed_url.query}"
-                reconstructed_url = f"https://waba-v2.360dialog.io{path_and_query}"
-                print(f"DEBUG: Reconstructed URL for download: {reconstructed_url}")
-                
-                # Download the audio file
-                audio_content_response = requests.get(reconstructed_url, headers=headers)
-
-                if audio_content_response.status_code == 200:
-                    audio_bytes = audio_content_response.content
-                    mime_type = message['audio'].get('mime_type', 'audio/ogg')
-                    incoming_msg = transcribe_audio(audio_bytes, mime_type)
-                    
-                    # Only process if transcription succeeded
-                    if "failed" not in incoming_msg.lower():
-                        # Process transcribed text through state machine
-                        response_message = process_message(user, incoming_msg, None, from_number)
-                        if response_message:
-                            send_whatsapp_message(from_number, response_message)
-                    else:
-                        send_whatsapp_message(from_number, incoming_msg)
-                else:
-                    print(f"Error downloading audio content. Status: {audio_content_response.status_code}")
-                    send_whatsapp_message(from_number, "Sorry, I had trouble downloading the voice note.")
-                
-                return Response(status=200)
-
-            # Handle text and location messages normally
-            elif msg_type == 'text':
-                incoming_msg = message['text']['body'].strip()
-            elif msg_type == 'location':
-                location = message['location']
-                
-            # --- Conversation State Machine ---
-            current_state = user.conversation_state
-            response_message = None
-
-    except (IndexError, KeyError) as e:
-        print(f"Error parsing 360dialog payload or processing message: {e}")
-
-    return Response(status=200)
-
-
-         # --- Post-Job States (Rating & Feedback) ---
-    if current_state == 'awaiting_rating':
-                    job_id_to_rate_str = get_user_cache(user).get('job_id')
-                    job = db.session.get(Job, int(job_id_to_rate_str)) if job_id_to_rate_str else None
-                    if job and incoming_msg.isdigit() and 1 <= int(incoming_msg) <= 5:
-                        job.rating = int(incoming_msg)
-                        db.session.commit()
-                        response_message = "Thank you for the rating! Could you please share a brief comment about your experience?"
-                        set_user_state(user, 'awaiting_rating_comment', data={'job_id': job.id})
-                    else:
-                        response_message = "Thank you for your feedback!"
-                    clear_user_state(user)
+            # Transcribe audio
+            incoming_msg = transcribe_audio(audio_bytes, mime_type)
             
-    elif current_state == 'awaiting_rating_comment':
-                job_id_to_rate_str = get_user_cache(user).get('job_id')
-                job = db.session.get(Job, int(job_id_to_rate_str)) if job_id_to_rate_str else None
-                if job:
-                    job.rating_comment = incoming_msg
-                    job.sentiment = analyze_feedback_sentiment(incoming_msg)
-                    db.session.commit()
-                    response_message = "Your feedback has been recorded. We appreciate you helping us improve FixMate-SA!"
-                    clear_user_state(user)
+            if "failed" not in incoming_msg.lower():
+                # Process transcribed text
+                user = get_or_create_user(from_number)
+                response_message = process_message(user, incoming_msg, None, from_number)
+                if response_message:
+                    send_whatsapp_message(from_number, response_message)
+            else:
+                send_whatsapp_message(from_number, incoming_msg)
+        else:
+            print(f"Error downloading audio content. Status: {audio_content_response.status_code}")
+            send_whatsapp_message(from_number, "Sorry, I had trouble downloading the voice note.")
+            
+    except Exception as e:
+        print(f"Error processing audio message: {e}")
+
 
             # --- Job Request States ---
-    elif current_state == 'awaiting_location' and location:
-                    user_name_greet = f"{user.full_name.split(' ')[0]}, " if user.full_name else ""
-                    response_message = f"Thanks, {user_name_greet}I've got your location. Lastly, what's the best contact number for the fixer to use?"
-                    set_user_state(user, 'awaiting_contact_number', data={'latitude': str(location.get('latitude')), 'longitude': str(location.get('longitude'))})
+            elif current_state == 'awaiting_location' and location:
+                user_name_greet = f"{user.full_name.split(' ')[0]}, " if user.full_name else ""
+                response_message = f"Thanks, {user_name_greet}I've got your location. Lastly, what's the best contact number for the fixer to use?"
+                set_user_state(user, 'awaiting_contact_number', data={'latitude': str(location.get('latitude')), 'longitude': str(location.get('longitude'))})
 
-    elif incoming_msg:
-                    if current_state == 'awaiting_service_request':
-                        response_message = "Got it. And what is your name?"
-                        set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
+            elif incoming_msg:
+                if current_state == 'awaiting_service_request':
+                    response_message = "Got it. And what is your name?"
+                    set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
 
-                    elif current_state == 'awaiting_name':
-                        user.full_name = incoming_msg
-                        db.session.commit()
-                        response_message = f"Thanks, {user.full_name.split(' ')[0]}! To help us find the nearest fixer, please share your location pin.\n\nTap the paperclip icon 📎, then choose 'Location'."
-                        set_user_state(user, 'awaiting_location')
+                elif current_state == 'awaiting_name':
+                    user.full_name = incoming_msg
+                    db.session.commit()
+                    response_message = f"Thanks, {user.full_name.split(' ')[0]}! To help us find the nearest fixer, please share your location pin.\n\nTap the paperclip icon 📎, then choose 'Location'."
+                    set_user_state(user, 'awaiting_location')
 
-                    elif current_state == 'awaiting_contact_number':
-                        if any(char.isdigit() for char in incoming_msg) and len(incoming_msg) >= 10:
-                            terms_url = url_for('terms', _external=True)
-                            response_message = (
-                                f"Great! We have all the details.\n\n"
-                                f"By proceeding, you agree to the FixMate-SA Terms of Service.\n"
-                                f"View here: {terms_url}\n\n"
-                                "Reply *YES* to confirm and dispatch a fixer."
-                            )
-                            set_user_state(user, 'awaiting_terms_approval', data={'contact': incoming_msg})
+                elif current_state == 'awaiting_contact_number':
+                    if any(char.isdigit() for char in incoming_msg) and len(incoming_msg) >= 10:
+                        terms_url = url_for('terms', _external=True)
+                        response_message = (
+                            f"Great! We have all the details.\n\n"
+                            f"By proceeding, you agree to the FixMate-SA Terms of Service.\n"
+                            f"View here: {terms_url}\n\n"
+                            "Reply *YES* to confirm and dispatch a fixer."
+                        )
+                        set_user_state(user, 'awaiting_terms_approval', data={'contact': incoming_msg})
                     else:
                         response_message = "That doesn't seem to be a valid phone number. Please try again."
 
-    elif current_state == 'awaiting_terms_approval':
+                elif current_state == 'awaiting_terms_approval':
                     if 'yes' in incoming_msg.lower():
                         job_data = get_user_cache(user)
                         job_id, fixer_found = create_new_job_in_db(user, job_data)
@@ -1069,26 +994,26 @@ def whatsapp_webhook():
                             response_message = f"Perfect! We have logged your request (Job #{job_id}) and have notified a nearby fixer. They will contact you shortly."
                         else:
                             response_message = f"Thank you. We have logged your request (Job #{job_id}), but all our fixers for this skill are currently busy. We will notify you as soon as one becomes available."
-                            clear_user_state(user)
+                        clear_user_state(user)
                     else:
                         response_message = "Job request cancelled. Please say 'hello' to start a new request."
                         clear_user_state(user)
                 
-    else: # Default state / New Conversation
+                else: # Default state / New Conversation
                     clear_user_state(user)
                     user_name = f" {user.full_name.split(' ')[0]}" if user.full_name else ""
                     
-                    if incoming_msg.lower() in ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo', 'avuxeni', 'ndaa']:
-                        response_message = f"Welcome back{user_name} to FixMate-SA! To request a service, please describe what you need (e.g., 'leaking pipe,' 'hairdresser,' or 'any service')"
+                    if incoming_msg.lower() in ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo']:
+                        response_message = f"Welcome back{user_name} to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe') or send a voice note."
                         set_user_state(user, 'awaiting_service_request')
                     else:
-                        response_message = "Welcome back to FixMate-SA! To request a service, please describe what you need (e.g., 'leaking pipe,' 'hairdresser,' or 'any service')"
-                        set_user_state(user, 'awaiting_service_request')
-
-                    # Set service request state if not already set
-                    if 'awaiting_name' not in locals():  # Only set if we didn't set awaiting_name
-                        set_user_state(user, 'awaiting_service_request')
-
-    if response_message:
+                        response_message = "Got it. And what is your name?"
+                        set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
+            
+            if response_message:
                 send_whatsapp_message(from_number, response_message)
 
+    except (IndexError, KeyError) as e:
+        print(f"Error parsing 360dialog payload or processing message: {e}")
+
+    return Response(status=200)
