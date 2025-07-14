@@ -6,7 +6,7 @@ import hashlib
 import requests
 import io
 import json
-import threading
+from threading import Lock
 from decimal import Decimal
 from urllib.parse import urlencode
 from flask import Flask, request, Response, render_template, redirect, url_for, flash, session, jsonify
@@ -25,6 +25,10 @@ from functools import lru_cache
 
 
 # --- App Initialization & Config ---
+# Add after app initialization
+processed_message_ids = set()
+message_id_lock = Lock()
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-secret-key-that-is-long-and-random')
 db_url = os.environ.get('DATABASE_URL')
@@ -913,13 +917,17 @@ def whatsapp_webhook():
         # Ensure the webhook is a message and not some other event
         if 'messages' in value:
             message = value['messages'][0]
+            message_id = message['id']  # Extract message ID here
+            
+            # Deduplication check
+            with message_id_lock:
+                if message_id in processed_message_ids:
+                    print(f"Skipping duplicate message: {message_id}")
+                    return Response(status=200)
+                processed_message_ids.add(message_id)
+                
             from_number = f"whatsapp:+{message['from']}"
             user = get_or_create_user(from_number)
-
-            msg_type = message.get('type')
-            incoming_msg = ""
-            location = None
-            is_voice_note = False
 
             # Handle voice notes separately
             if msg_type == 'audio':
@@ -974,7 +982,6 @@ def whatsapp_webhook():
                 return Response(status=200)
 
 
-                        
             # Handle text and location messages normally
             elif msg_type == 'text':
                 incoming_msg = message['text']['body'].strip()
