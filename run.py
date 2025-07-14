@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 from app.services import send_whatsapp_message
 import tempfile
 from functools import lru_cache
+import concurrent.futures
 
 
 
@@ -50,6 +51,8 @@ if GEMINI_API_KEY:
 FIXER_JOB_FEE = Decimal('20.00') # <-- ADD THIS LINE
 
 # --- Initialize Extensions ---
+# Create a thread pool executor (add after app initialization)
+audio_executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 from app.models import db, User, Fixer, Job, DataInsight
 from app.services import send_whatsapp_message
 db.init_app(app)
@@ -936,6 +939,9 @@ def whatsapp_webhook():
 
             # Handle voice notes separately
             if msg_type == 'audio':
+              # Submit audio processing to thread pool
+                audio_executor.submit(process_audio_message, message, from_number)
+                return Response(status=200)  # Immediately acknowledge receipt  
                 is_voice_note = True
                 audio_id = message['audio']['id']
                 media_url_endpoint = f"https://waba-v2.360dialog.io/{audio_id}"
@@ -996,61 +1002,66 @@ def whatsapp_webhook():
             current_state = user.conversation_state
             response_message = None
 
-            
+    except (IndexError, KeyError) as e:
+        print(f"Error parsing 360dialog payload or processing message: {e}")
+
+    return Response(status=200)
+
+
          # --- Post-Job States (Rating & Feedback) ---
-            if current_state == 'awaiting_rating':
-                job_id_to_rate_str = get_user_cache(user).get('job_id')
-                job = db.session.get(Job, int(job_id_to_rate_str)) if job_id_to_rate_str else None
-                if job and incoming_msg.isdigit() and 1 <= int(incoming_msg) <= 5:
-                    job.rating = int(incoming_msg)
-                    db.session.commit()
-                    response_message = "Thank you for the rating! Could you please share a brief comment about your experience?"
-                    set_user_state(user, 'awaiting_rating_comment', data={'job_id': job.id})
-                else:
-                    response_message = "Thank you for your feedback!"
+    if current_state == 'awaiting_rating':
+                    job_id_to_rate_str = get_user_cache(user).get('job_id')
+                    job = db.session.get(Job, int(job_id_to_rate_str)) if job_id_to_rate_str else None
+                    if job and incoming_msg.isdigit() and 1 <= int(incoming_msg) <= 5:
+                        job.rating = int(incoming_msg)
+                        db.session.commit()
+                        response_message = "Thank you for the rating! Could you please share a brief comment about your experience?"
+                        set_user_state(user, 'awaiting_rating_comment', data={'job_id': job.id})
+                    else:
+                        response_message = "Thank you for your feedback!"
                     clear_user_state(user)
             
-            elif current_state == 'awaiting_rating_comment':
+    elif current_state == 'awaiting_rating_comment':
                 job_id_to_rate_str = get_user_cache(user).get('job_id')
                 job = db.session.get(Job, int(job_id_to_rate_str)) if job_id_to_rate_str else None
                 if job:
                     job.rating_comment = incoming_msg
                     job.sentiment = analyze_feedback_sentiment(incoming_msg)
                     db.session.commit()
-                response_message = "Your feedback has been recorded. We appreciate you helping us improve FixMate-SA!"
-                clear_user_state(user)
+                    response_message = "Your feedback has been recorded. We appreciate you helping us improve FixMate-SA!"
+                    clear_user_state(user)
 
             # --- Job Request States ---
-            elif current_state == 'awaiting_location' and location:
-                user_name_greet = f"{user.full_name.split(' ')[0]}, " if user.full_name else ""
-                response_message = f"Thanks, {user_name_greet}I've got your location. Lastly, what's the best contact number for the fixer to use?"
-                set_user_state(user, 'awaiting_contact_number', data={'latitude': str(location.get('latitude')), 'longitude': str(location.get('longitude'))})
+    elif current_state == 'awaiting_location' and location:
+                    user_name_greet = f"{user.full_name.split(' ')[0]}, " if user.full_name else ""
+                    response_message = f"Thanks, {user_name_greet}I've got your location. Lastly, what's the best contact number for the fixer to use?"
+                    set_user_state(user, 'awaiting_contact_number', data={'latitude': str(location.get('latitude')), 'longitude': str(location.get('longitude'))})
 
-            elif incoming_msg:
-                if current_state == 'awaiting_service_request':
-                    response_message = "Got it. And what is your name?"
-                    set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
+    elif incoming_msg:
+                    if current_state == 'awaiting_service_request':
+                        response_message = "Got it. And what is your name?"
+                        set_user_state(user, 'awaiting_name', data={'service': incoming_msg})
 
-                elif current_state == 'awaiting_name':
-                    user.full_name = incoming_msg
-                    db.session.commit()
-                    response_message = f"Thanks, {user.full_name.split(' ')[0]}! To help us find the nearest fixer, please share your location pin.\n\nTap the paperclip icon 📎, then choose 'Location'."
-                    set_user_state(user, 'awaiting_location')
+                    elif current_state == 'awaiting_name':
+                        user.full_name = incoming_msg
+                        db.session.commit()
+                        response_message = f"Thanks, {user.full_name.split(' ')[0]}! To help us find the nearest fixer, please share your location pin.\n\nTap the paperclip icon 📎, then choose 'Location'."
+                        set_user_state(user, 'awaiting_location')
 
-                elif current_state == 'awaiting_contact_number':
-                    if any(char.isdigit() for char in incoming_msg) and len(incoming_msg) >= 10:
-                        terms_url = url_for('terms', _external=True)
-                        response_message = (
-                            f"Great! We have all the details.\n\n"
-                            f"By proceeding, you agree to the FixMate-SA Terms of Service.\n"
-                            f"View here: {terms_url}\n\n"
-                            "Reply *YES* to confirm and dispatch a fixer."
-                        )
-                        set_user_state(user, 'awaiting_terms_approval', data={'contact': incoming_msg})
+                    elif current_state == 'awaiting_contact_number':
+                        if any(char.isdigit() for char in incoming_msg) and len(incoming_msg) >= 10:
+                            terms_url = url_for('terms', _external=True)
+                            response_message = (
+                                f"Great! We have all the details.\n\n"
+                                f"By proceeding, you agree to the FixMate-SA Terms of Service.\n"
+                                f"View here: {terms_url}\n\n"
+                                "Reply *YES* to confirm and dispatch a fixer."
+                            )
+                            set_user_state(user, 'awaiting_terms_approval', data={'contact': incoming_msg})
                     else:
                         response_message = "That doesn't seem to be a valid phone number. Please try again."
 
-                elif current_state == 'awaiting_terms_approval':
+    elif current_state == 'awaiting_terms_approval':
                     if 'yes' in incoming_msg.lower():
                         job_data = get_user_cache(user)
                         job_id, fixer_found = create_new_job_in_db(user, job_data)
@@ -1058,12 +1069,12 @@ def whatsapp_webhook():
                             response_message = f"Perfect! We have logged your request (Job #{job_id}) and have notified a nearby fixer. They will contact you shortly."
                         else:
                             response_message = f"Thank you. We have logged your request (Job #{job_id}), but all our fixers for this skill are currently busy. We will notify you as soon as one becomes available."
-                        clear_user_state(user)
+                            clear_user_state(user)
                     else:
                         response_message = "Job request cancelled. Please say 'hello' to start a new request."
                         clear_user_state(user)
                 
-                else: # Default state / New Conversation
+    else: # Default state / New Conversation
                     clear_user_state(user)
                     user_name = f" {user.full_name.split(' ')[0]}" if user.full_name else ""
                     
@@ -1078,10 +1089,6 @@ def whatsapp_webhook():
                     if 'awaiting_name' not in locals():  # Only set if we didn't set awaiting_name
                         set_user_state(user, 'awaiting_service_request')
 
-            if response_message:
+    if response_message:
                 send_whatsapp_message(from_number, response_message)
 
-    except (IndexError, KeyError) as e:
-        print(f"Error parsing 360dialog payload or processing message: {e}")
-
-    return Response(status=200)
