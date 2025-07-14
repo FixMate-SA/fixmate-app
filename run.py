@@ -742,7 +742,7 @@ def whatsapp_webhook():
                 location = message['location']
 
             # --- Conversation State Machine ---
-            current_state = user.conversation_state
+            current_state = User.conversation_state
             response_message = ""
 
     except (IndexError, KeyError) as e:
