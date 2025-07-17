@@ -1,12 +1,14 @@
 # run.py
 import os
 import re
+from urllib.parse import urlparse # <-- ADD THIS LINE
 import hashlib
 import requests
 import io
 import json
+import threading # <--- ADD THIS
 from decimal import Decimal
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlencode
 from flask import Flask, request, Response, render_template, redirect, url_for, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -16,6 +18,10 @@ import click
 import google.generativeai as genai
 from geopy.distance import geodesic
 from datetime import datetime, timezone
+from app.services import send_whatsapp_message
+import tempfile
+
+
 
 # --- App Initialization & Config ---
 app = Flask(__name__)
@@ -30,12 +36,13 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 PAYFAST_MERCHANT_ID = os.environ.get('PAYFAST_MERCHANT_ID')
 PAYFAST_MERCHANT_KEY = os.environ.get('PAYFAST_MERCHANT_KEY')
 PAYFAST_URL = 'https://sandbox.payfast.co.za/eng/process'
+DIALOG_360_URL = 'https://waba-v2.360dialog.io/messages'
 DIALOG_360_API_KEY = os.environ.get('DIALOG_360_API_KEY') # <-- ADD THIS LINE
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-CLIENT_PLATFORM_FEE = Decimal('10.00')
+FIXER_JOB_FEE = Decimal('20.00') # <-- ADD THIS LINE
 
 # --- Initialize Extensions ---
 from app.models import db, User, Fixer, Job, DataInsight
@@ -51,32 +58,168 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
+# --- MODIFIED: Speech-to-Text & Translation Function for 360dialog ---
+def transcribe_audio(media_id):
+    """
+    Downloads audio from 360dialog using a media ID, transcribes it, 
+    and then translates the result to English using Gemini.
+    """
+    if not DIALOG_API_KEY:
+        print("ERROR: DIALOG_API_KEY not set. Cannot download media."); return None
+    if not GEMINI_API_KEY:
+        print("ERROR: GEMINI_API_KEY not set. Cannot transcribe/translate."); return None
+
+    try:
+        # Step 1: Download the audio file from 360dialog
+        media_info_url = f"https://waba-v2.360dialog.io/{audio_id}"
+        headers = {'D360-API-KEY': DIALOG_360_API_KEY}
+        
+        print(f"Downloading media with ID: {media_id}")
+        r = requests.get(media_url, headers=headers)
+        r.raise_for_status() # Raise an error for bad responses
+
+        # The content type is important for Gemini
+        content_type = r.headers.get('Content-Type', 'audio/ogg')
+        print(f"Downloaded audio with content type: {content_type}")
+        
+        # Step 2: Upload to Gemini and Transcribe
+        gemini_file = genai.upload_file(io.BytesIO(r.content), mime_type=content_type)
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        
+        transcription_prompt = [
+            "Please transcribe the following audio. The user is in South Africa and might be speaking in English, Sepedi, Xitsonga, Tshivenda, or Afrikaans.", 
+            gemini_file
+        ]
+        transcription_response = model.generate_content(transcription_prompt)
+        genai.delete_file(gemini_file.name)
+        
+        if not transcription_response.text:
+            print("Transcription failed: No text in response.")
+            return None
+            
+        transcribed_text = transcription_response.text
+        print(f"Original Transcription: '{transcribed_text}'")
+
+        # Step 3: Translate the transcribed text into English
+        translation_prompt = f"Translate the following text into English: '{transcribed_text}'"
+        translation_response = model.generate_content(translation_prompt)
+
+        if not translation_response.text:
+            print("Translation failed. Returning original transcription.")
+            return transcribed_text
+
+        translated_text = translation_response.text.strip()
+        print(f"Translated Text: '{translated_text}'")
+        return translated_text
+
+    except Exception as e:
+        print(f"An error occurred during transcription/translation: {e}"); return None
+    
+# --- AI Data Analysis & Sentiment Functions ---
+def generate_platform_insights():
+    """Analyzes job data and suggests upskilling opportunities."""
+    if not GEMINI_API_KEY:
+        return "Insight generation failed: GEMINI_API_KEY not set."
+
+    all_jobs = Job.query.filter(Job.area.isnot(None)).all()
+    if not all_jobs:
+        return "Not enough job data with location information to generate an insight."
+
+    job_data = [
+        {'id': job.id, 'description': job.description, 'area': job.area}
+        for job in all_jobs
+    ]
+
+    try:
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        prompt = f"""
+        You are a business analyst for FixMate-SA, a South African service platform.
+        Analyze the following list of recent jobs, which are provided as a JSON object.
+        Your task is to identify a single, specific, actionable insight that could help a fixer on the platform earn more money.
+        
+        Focus on identifying a high-demand skill in a specific area where there might be a lack of specialists.
+        
+        Format your response as a concise, one-sentence suggestion. For example: "There is high demand for plumbers specializing in geysers in Pretoria." or "Electrical compliance certificate jobs are very common in Johannesburg."
+
+        Job Data:
+        {json.dumps(job_data, indent=2)}
+
+        Actionable Insight:
+        """
+        response = model.generate_content(prompt)
+        insight = response.text.strip()
+
+        new_insight = DataInsight(insight_text=insight)
+        db.session.add(new_insight)
+        db.session.commit()
+
+        print(f"Generated and saved new insight: {insight}")
+        return insight
+
+    except Exception as e:
+        print(f"An error occurred during insight generation: {e}")
+        return "Could not generate an insight at this time."
+
+def analyze_feedback_sentiment(comment):
+    """Uses Gemini to analyze the sentiment of a user's feedback."""
+    if not GEMINI_API_KEY:
+        print("WARN: GEMINI_API_KEY not set. Cannot analyze sentiment.")
+        return "Unknown"
+    
+    try:
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        prompt = f"""
+        Analyze the sentiment of the following customer feedback. 
+        Classify it as one of these three categories: 'Positive', 'Negative', or 'Neutral'.
+        Return ONLY the category name as a single word and nothing else.
+
+        Feedback: "{comment}"
+
+        Sentiment:
+        """
+        response = model.generate_content(prompt)
+        sentiment = response.text.strip().capitalize()
+
+        if sentiment in ['Positive', 'Negative', 'Neutral']:
+            print(f"Gemini analyzed sentiment as: {sentiment}")
+            return sentiment
+        else:
+            print(f"WARN: Gemini returned unexpected sentiment: '{sentiment}'. Defaulting to 'Neutral'.")
+            return 'Neutral'
+            
+    except Exception as e:
+        print(f"ERROR: Gemini API call failed during sentiment analysis: {e}")
+        return "Unknown"
 
 # --- AI & Helper Functions ---
-# (All functions from transcribe_audio to create_new_job_in_db are unchanged)
-def transcribe_audio(media_url, media_type):
-    if not GEMINI_API_KEY:
-        print("ERROR: GEMINI_API_KEY not set."); return None
+def get_area_from_coords(lat, lon):
+    """
+    Performs a reverse geocoding lookup to get a suburb/city from coordinates.
+    Uses the free OpenStreetMap Nominatim API.
+    """
     try:
-        headers = {'D360-API-KEY': os.environ.get('DIALOG_360_API_KEY')}
-        r = requests.get(media_url, headers=headers)
-        if r.status_code == 200:
-            gemini_file = genai.upload_file(io.BytesIO(r.content), mime_type=media_type)
-            model = genai.GenerativeModel('models/gemini-1.5-flash')
-            prompt = [
-                "Please transcribe the following audio. The user is in South Africa and might be speaking in English, Sepedi, Xitsonga, Tshivenda, or Afrikaans.",
-                gemini_file
-            ]
-            response = model.generate_content(prompt)
-            genai.delete_file(gemini_file.name)
-            if response.text:
-                print(f"Transcription successful: '{response.text}'")
-                return response.text
-            return None
+        url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}"
+        # Nominatim requires a descriptive User-Agent header
+        headers = {'User-Agent': 'FixMate-SA/1.0'}
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        data = response.json()
+        address = data.get('address', {})
+        
+        # Try to get the most specific location available
+        area = address.get('suburb') or address.get('city_district') or address.get('city') or address.get('town')
+        
+        if area:
+            print(f"Reverse geocoding successful: Found area '{area}'")
+            return area
         else:
-            print(f"Error downloading audio from 360dialog: {r.status_code}"); return None
-    except Exception as e:
-        print(f"An error occurred during transcription: {e}"); return None
+            print("Reverse geocoding could not determine a specific area.")
+            return "Unknown Area"
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Error during reverse geocoding API call: {e}")
+        return "Unknown Area" # Fallback in case of API error
 
 def generate_and_act_on_insight():
     if not GEMINI_API_KEY:
@@ -282,12 +425,20 @@ def add_fixer(name, phone, skills):
 @click.argument("phone")
 def promote_admin(phone):
     if not (phone.startswith('0') and len(phone) == 10):
-        print("Error: Please provide a valid 10-digit SA number (e.g., 0821234567)."); return
+        print("Error: Please provide a valid 10-digit SA number (e.g., 0821234567).")
+        return
     formatted_phone = f"whatsapp:+27{phone[1:]}"
     user = User.query.filter_by(phone_number=formatted_phone).first()
-    if not user: print(f"Error: User with phone number {formatted_phone} not found."); return
-    user.is_admin = True; db.session.commit()
-    print(f"Successfully promoted '{user.full_name or user.phone_number}' to admin.")
+    if not user:
+        print(f"User not found. Creating new admin user for {formatted_phone}...")
+        user = User(phone_number=formatted_phone, is_admin=True)
+        db.session.add(user)
+        db.session.commit()
+        print(f"Successfully created and promoted new admin: {user.phone_number}")
+    else:
+        user.is_admin = True
+        db.session.commit()
+        print(f"Successfully promoted existing user '{user.full_name or user.phone_number}' to admin.")
 
 @app.cli.command("demote-admin")
 @click.argument("phone")
@@ -318,6 +469,24 @@ def remove_fixer(phone):
         db.session.delete(fixer)
         db.session.commit()
         print(f"Successfully deleted fixer: {fixer.full_name}")
+
+@app.route('/admin/delete_fixer', methods=['POST'])
+@login_required
+def admin_delete_fixer():
+    if not getattr(current_user, 'is_admin', False):
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('login'))
+
+    fixer_id = request.form.get('fixer_id')
+    fixer = db.session.get(Fixer, int(fixer_id))
+    if fixer:
+        db.session.delete(fixer)
+        db.session.commit()
+        flash(f"Fixer '{fixer.full_name}' has been deleted.", 'success')
+    else:
+        flash("Fixer not found.", 'warning')
+
+    return redirect(url_for('admin_dashboard'))
 
 @app.cli.command("remove-client")
 @click.argument("phone")
@@ -422,6 +591,29 @@ def reassign_job(job_id, fixer_phone):
     db.session.commit()
     print(f"Success! Job #{job.id} has been reassigned from {old_fixer_name} to {new_fixer.full_name}.")
     send_whatsapp_message(to_number=new_fixer.phone_number, message_body=f"Job Reassigned to You:\n\nService: {job.description}\nClient Contact: {job.client_contact_number}\n\nPlease go to your Fixer Portal to accept this job.")
+
+@app.cli.command("remove-all-clients")
+def remove_all_clients():
+    """Deletes all non-admin clients and their associated jobs."""
+    clients_to_delete = User.query.filter_by(is_admin=False).all()
+    
+    if not clients_to_delete:
+        print("There are no non-admin clients to remove.")
+        return
+
+    client_count = len(clients_to_delete)
+    
+    # Confirmation prompt to prevent accidental deletion
+    if click.confirm(
+        f"Are you sure you want to delete {client_count} client(s)? "
+        "This will also delete all of their associated jobs and cannot be undone.", 
+        abort=True
+    ):
+        for client in clients_to_delete:
+            db.session.delete(client)
+        
+        db.session.commit()
+        print(f"Successfully deleted {client_count} client(s).")
 
 @app.route('/')
 def index():
@@ -618,14 +810,40 @@ def accept_job(job_id):
 @app.route('/job/complete/<int:job_id>')
 @login_required
 def complete_job(job_id):
-    if session.get('user_type') != 'fixer': return redirect(url_for('login'))
+    if session.get('user_type') != 'fixer': 
+        return redirect(url_for('login'))
+        
     job = Job.query.filter_by(id=job_id, fixer_id=current_user.id).first_or_404()
+    
     if job.status == 'accepted':
-        job.status = 'complete'; db.session.commit()
-        send_whatsapp_message(to_number=job.client.phone_number, message_body=f"Your FixMate job (#{job.id}: '{job.description}') has been marked as complete by {job.assigned_fixer.full_name}.\n\nHow would you rate the service? Please reply with a number from 1 (bad) to 5 (excellent).")
+        # --- Start of new logic ---
+        
+        # 1. Get the fixer (which is the current_user)
+        fixer = current_user
+        
+        # 2. Deduct the fee from the fixer's balance
+        fixer.balance -= FIXER_JOB_FEE
+        
+        # 3. Update the job status
+        job.status = 'complete'
+        
+        # 4. Commit all changes to the database
+        db.session.commit()
+        
+        # --- End of new logic ---
+
+        # The rest of the function remains the same
+        send_whatsapp_message(
+            to_number=job.client.phone_number, 
+            message_body=f"Your FixMate job (#{job.id}: '{job.description}') has been marked as complete by {job.assigned_fixer.full_name}.\n\nHow would you rate the service? Please reply with a number from 1 (bad) to 5 (excellent)."
+        )
         set_user_state(job.client, 'awaiting_rating', data={'job_id': job.id})
-        flash(f'Job #{job.id} marked as complete.', 'success')
-    else: flash('This job cannot be marked as complete at this time.', 'warning')
+        
+        # Add a more informative flash message
+        flash(f'Job #{job.id} marked as complete. A fee of R{FIXER_JOB_FEE:.2f} has been deducted from your balance.', 'success')
+    else:
+        flash('This job cannot be marked as complete at this time.', 'warning')
+        
     return redirect(url_for('fixer_dashboard'))
 
 @app.route('/payment/success')
@@ -655,110 +873,126 @@ def payment_cancel():
 def payment_notify():
     print("Received ITN from PayFast"); return Response(status=200)
 
+# --- Gemini-Powered Helper Functions ---
+from app.services import send_whatsapp_message
 
-# --- Main WhatsApp Webhook (CORRECTED FOR 360DIALOG) ---
+def classify_service_request(service_description):
+    """
+    Uses Gemini to extract a specific, concise skill from a user's service description.
+    """
+    if not GEMINI_API_KEY:
+        print("WARN: GEMINI_API_KEY not set. Cannot classify service.")
+        return 'general handyman' # Fallback if API key is missing
+
+    try:
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        
+        # This new prompt is much more flexible and intelligent.
+        prompt = f"""
+        You are a dispatcher for a South African home repair service. 
+        Analyze the following user request and identify the specific skill or trade required.
+        Your response should be a concise, two-to-three word description of the service.
+        
+        Here are some examples of good responses:
+        - "geyser repair"
+        - "tiling"
+        - "gate motor installation"
+        - "roof waterproofing"
+        - "painting"
+        - "electrical wiring"
+        - "appliance repair"
+        - "carpentry"
+        - "welding"
+
+        If the request is too vague or unclear, return "general handyman".
+        
+        User Request: "{service_description}"
+
+        Required Skill:
+        """
+        
+        response = model.generate_content(prompt)
+        classification = response.text.strip().lower()
+
+        print(f"Gemini classified '{service_description}' as: {classification}")
+        return classification
+        
+    except Exception as e:
+        print(f"ERROR: Gemini API call failed during classification: {e}. Defaulting to 'general handyman'.")
+        return 'general handyman'
+    
+def get_or_create_user(phone_number):
+    if not phone_number.startswith("whatsapp:"): phone_number = f"whatsapp:{phone_number}"
+    user = User.query.filter_by(phone_number=phone_number).first()
+    if not user: user = User(phone_number=phone_number); db.session.add(user); db.session.commit()
+    return user
+
+def clear_user_state(user):
+    user.conversation_state, user.service_request_cache = None, None; db.session.commit()
+
+def find_fixer_for_job(service_description):
+    """Finds an available fixer by first classifying the job using Gemini."""
+    skill_needed = classify_service_request(service_description)
+    fixer = Fixer.query.filter(Fixer.is_active==True, Fixer.skills.ilike(f'%{skill_needed}%')).first()
+    if fixer:
+        return fixer
+    return Fixer.query.filter(Fixer.is_active==True, Fixer.skills.ilike('%general%')).first()
+
+def get_quote_for_service(service_description):
+    """Determines the quote price by first classifying the job using Gemini."""
+    skill_needed = classify_service_request(service_description)
+    if skill_needed == 'plumbing':
+        return 0.00
+    if skill_needed == 'electrical':
+        return 0.00
+    return 0.00
+
+# --- MODIFIED: Main WhatsApp Webhook for 360dialog ---
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
     """Endpoint to receive incoming WhatsApp messages from 360dialog."""
     data = request.json
-    print(f"Received 360dialog webhook: {json.dumps(data, indent=2)}")
+    print(f"Received webhook from 360dialog: {json.dumps(data, indent=2)}")
 
-    # Initialize variables
-    from_number = None
+    # 360dialog sends a 'messages' array. We process the first message.
+    if not data.get('messages'):
+        return Response(status=200) # Not a message we can process
+
+    message = data['messages'][0]
+    from_number = f"whatsapp:{message['from']}"
+    
     incoming_msg = ""
     latitude = None
     longitude = None
 
-    try:
-        # Correctly parse the nested JSON structure from 360dialog
-        if 'entry' in data and data['entry']:
-            changes = data['entry'][0].get('changes', [])
-            if changes:
-                value = changes[0].get('value', {})
-                if 'messages' in value and 'contacts' in value:
-                    message = value['messages'][0]
-                    
-                    # Extract sender's number
-                    from_number = f"whatsapp:+{message.get('from')}"
-                    
-                    # Determine message type and extract content
-                    msg_type = message.get('type')
-                    if msg_type == 'text':
-                        incoming_msg = message.get('text', {}).get('body', '').strip()
-                    elif msg_type == 'location':
-                        latitude = message.get('location', {}).get('latitude')
-                        longitude = message.get('location', {}).get('longitude')
-                    elif msg_type == 'text':
-                         incoming_msg = message['text']['body'].strip()
+    # Determine the message type and extract content
+    if message['type'] == 'text':
+        incoming_msg = message['text']['body']
+    elif message['type'] == 'voice':
+        # For voice, we get the media ID and pass it to our processing function
+        media_id = message['voice']['id']
+        translated_text = transcribe_audio(media_id)
+        if translated_text:
+            incoming_msg = translated_text
+        else:
+            send_whatsapp_message(from_number, "Sorry, I had trouble understanding that audio. Please try sending a text message instead.")
+            return Response(status=200)
+    elif message['type'] == 'location':
+        latitude = message['location']['latitude']
+        longitude = message['location']['longitude']
+    else:
+        # Ignore other message types for now (images, stickers, etc.)
+        return Response(status=200)
 
-            elif msg_type == 'audio':
-                audio_id = message['audio']['id']
-                media_url_endpoint = f"https://waba-v2.360dialog.io/{audio_id}"
-                headers = {'D360-API-KEY': DIALOG_360_API_KEY}
-                  # --- ADD THIS DEBUG LINE ---
-                print(f"DEBUG: Attempting to fetch audio from URL: {media_url_endpoint}")
-
-            # --- STEP 1: Get Media Info (This part is working) ---
-                media_info_url = f"https://waba-v2.360dialog.io/{audio_id}"
-                media_info_response = requests.get(media_info_url, headers=headers)
-                if media_info_response.status_code != 200:
-                    print(f"Error fetching media info: {media_info_response.text}")
-                    send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
-                    return Response(status=200)
-
-            # --- STEP 2: Reconstruct the URL and Download the File ---
-                media_info = media_info_response.json()
-                original_download_url = media_info.get('url')
-
-                if not original_download_url:
-                    print(f"Could not find 'url' key in media info response: {media_info}")
-                    send_whatsapp_message(from_number, "An error occurred while getting the voice note.")
-                    return Response(status=200)
-
-                # Rebuild the URL as required by the documentation
-                parsed_url = urlparse(original_download_url)
-                path_and_query = f"{parsed_url.path}?{parsed_url.query}"
-                reconstructed_url = f"https://waba-v2.360dialog.io{path_and_query}"
-
-                print(f"DEBUG: Reconstructed URL for download: {reconstructed_url}")
-                
-                # Download the file from the RECONSTRUCTED URL
-                audio_content_response = requests.get(reconstructed_url, headers=headers)
-
-            # --- STEP 3: Process the downloaded file ---
-                if audio_content_response.status_code == 200:
-                    audio_bytes = audio_content_response.content
-                    mime_type = message['audio'].get('mime_type', 'audio/ogg')
-                    incoming_msg = transcribe_audio(audio_bytes, mime_type)
-                    if "failed" in incoming_msg.lower():
-                        send_whatsapp_message(from_number, incoming_msg)
-                else:
-                    print(f"Error downloading audio content. Status: {audio_content_response.status_code}")
-                    send_whatsapp_message(from_number, "Sorry, I had trouble downloading the voice note.")
-
-                    return Response(status=200)
-
-            elif msg_type == 'location':
-                location = message['location']
-
-            # --- Conversation State Machine ---
-            current_state = User.conversation_state
-            response_message = ""
-
-    except (IndexError, KeyError) as e:
-        print(f"Error parsing 360dialog payload or processing message: {e}")
-
-    return Response(status=200)
-
-    # --- Start Conversation State Machine (This logic is now reachable) ---
+    # --- The rest of the conversation logic is now the same ---
     user = get_or_create_user(from_number)
     current_state = user.conversation_state
     response_message = ""
 
-    # MODIFIED: New, cleaner conversation flow
+            # --- Job Request States ---
     if current_state == 'awaiting_rating':
-        job_id_to_rate_str = get_user_cache(user).get('job_id')
-        job = db.session.get(Job, int(job_id_to_rate_str)) if job_id_to_rate_str else None
+        job_id_to_rate = user.service_request_cache
+        job = db.session.get(Job, int(job_id_to_rate)) if job_id_to_rate else None
         if job and incoming_msg.isdigit() and 1 <= int(incoming_msg) <= 5:
             job.rating = int(incoming_msg)
             db.session.commit()
@@ -769,69 +1003,78 @@ def whatsapp_webhook():
             clear_user_state(user)
 
     elif current_state == 'awaiting_rating_comment':
-        job_id_to_rate_str = get_user_cache(user).get('job_id')
-        job = db.session.get(Job, int(job_id_to_rate_str)) if job_id_to_rate_str else None
+        job_id_to_rate = user.service_request_cache
+        job = db.session.get(Job, int(job_id_to_rate)) if job_id_to_rate else None
         if job:
-            comment_text = incoming_msg
-            job.rating_comment = comment_text
-            sentiment = analyze_feedback_sentiment(comment_text)
-            job.sentiment = sentiment
+            job.rating_comment = incoming_msg
+            job.sentiment = analyze_feedback_sentiment(incoming_msg)
             db.session.commit()
         response_message = "Your feedback has been recorded. We appreciate you helping us improve FixMate-SA!"
         clear_user_state(user)
 
     elif current_state == 'awaiting_service_request':
-        response_message = "Got it. To help us find the nearest fixer, please share your location pin.\n\nTap the paperclip icon 📎, then choose 'Location'."
-        set_user_state(user, 'awaiting_location', data={'service': incoming_msg})
+        call_out_fee = get_quote_for_service(incoming_msg)
+        total_amount = call_out_fee + CLIENT_PLATFORM_FEE
+        job = Job(description=incoming_msg, client_id=user.id, amount=call_out_fee)
+        db.session.add(job); db.session.commit()
+        response_message = (
+            f"Got it: '{incoming_msg}'.\n\n"
+            f"Here's the quote breakdown:\n"
+            f"- Fixer Call-out Fee: R{call_out_fee:.2f}\n"
+            f"- Platform Fee: R{CLIENT_PLATFORM_FEE:.2f}\n"
+            f"--------------------\n"
+            f"**Total Due: R{total_amount:.2f}**\n\n"
+            "Reply *YES* to approve and proceed to payment."
+        )
+        set_user_state(user, 'awaiting_quote_approval', data={'job_id': job.id})
+
+    elif current_state == 'awaiting_quote_approval':
+        job_id = user.service_request_cache
+        job = db.session.get(Job, int(job_id)) if job_id else None
+        if 'yes' in incoming_msg.lower() and job:
+            response_message = "Quote approved. Please share your location pin.\n\nTap 📎, then 'Location'."
+            set_user_state(user, 'awaiting_location', data={'job_id': job.id})
+        else:
+            if job: job.status = 'cancelled'; db.session.commit()
+            response_message = "Job request cancelled. Say 'hello' to start again."; clear_user_state(user)
 
     elif current_state == 'awaiting_location' and latitude and longitude:
-        response_message = "Thank you for sharing your location.\n\nLastly, please provide a contact number (e.g., 082 123 4567) that the fixer can call if needed."
-        set_user_state(user, 'awaiting_contact_number', data={'latitude': str(latitude), 'longitude': str(longitude)})
+        job_id = user.service_request_cache
+        job = db.session.get(Job, int(job_id)) if job_id else None
+        if job:
+            job.latitude = latitude
+            job.longitude = longitude
+            job.area = get_area_from_coords(latitude, longitude)
+            db.session.commit()
+            response_message = "Thank you. What is the best contact number for the fixer to use?"
+            set_user_state(user, 'awaiting_contact_number', data={'job_id': job.id})
 
     elif current_state == 'awaiting_contact_number':
-        potential_number = incoming_msg
-        if any(char.isdigit() for char in potential_number) and len(potential_number) >= 10:
-            terms_url = url_for('terms', _external=True)
-            response_message = (
-                f"Great! We have all the details.\n\n"
-                f"By proceeding, you agree to the FixMate-SA Terms of Service, which states that payment is handled directly between you and the fixer.\n"
-                f"View here: {terms_url}\n\n"
-                "Reply *YES* to confirm and dispatch a fixer."
-            )
-            set_user_state(user, 'awaiting_terms_approval', data={'contact': potential_number})
-        else:
-            response_message = "That doesn't seem to be a valid phone number. Please try again."
+        potential_number, job_id = incoming_msg, user.service_request_cache
+        job = db.session.get(Job, int(job_id)) if job_id else None
+        if job and any(char.isdigit() for char in potential_number) and len(potential_number) >= 10:
+            job.client_contact_number = potential_number; db.session.commit()
+            total_payment_amount = job.amount + CLIENT_PLATFORM_FEE
+            payment_data = {
+                'merchant_id': PAYFAST_MERCHANT_ID, 'merchant_key': PAYFAST_MERCHANT_KEY,
+                'return_url': url_for('payment_success', job_id=job.id, _external=True),
+                'cancel_url': url_for('payment_cancel', job_id=job.id, _external=True),
+                'notify_url': url_for('payment_notify', _external=True),
+                'm_payment_id': str(job.id), 
+                'amount': f"{total_payment_amount:.2f}",
+                'item_name': f"FixMate-SA Job #{job.id}: {job.description}"
+            }
+            payment_url = f"{PAYFAST_URL}?{urlencode(payment_data)}"
+            response_message = f"Thank you! We have all the details.\n\nPlease use the following secure link to complete your payment:\n\n{payment_url}"
+            clear_user_state(user)
+        else: response_message = "That doesn't look like a valid phone number. Please try again."
+    
+    else: # Default state
+        response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'My toilet is blocked and won't flush') or send a voice note."
+        set_user_state(user, 'awaiting_service_request')
 
-    elif current_state == 'awaiting_terms_approval':
-        if 'yes' in incoming_msg.lower():
-            job_data = get_user_cache(user)
-            job_id, fixer_found = create_new_job_in_db(user, job_data)
-            if fixer_found:
-                response_message = f"Perfect! We have logged your request (Job #{job_id}) and have notified a nearby fixer. They will contact you shortly."
-            else:
-                response_message = f"Thank you. We have logged your request (Job #{job_id}), but all our fixers for this skill are currently busy. We will notify you as soon as one becomes available."
-            clear_user_state(user)
-        else:
-            response_message = "Job request cancelled. Please say 'hello' to start a new request."
-            clear_user_state(user)
-    
-    else: # Default state / start of conversation
-        if incoming_msg:
-            # Clear any stale data from previous, unfinished conversations
-            clear_user_state(user)
-            
-            # Check for a simple greeting
-            if incoming_msg.lower() in ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo']:
-                response_message = "Welcome to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe') or send a voice note."
-                set_user_state(user, 'awaiting_service_request')
-            else:
-                # Assume it's a direct service request
-                response_message = "Got it. To help us find the nearest fixer, please share your location pin.\n\nTap the paperclip icon 📎, then choose 'Location'."
-                set_user_state(user, 'awaiting_location', data={'service': incoming_msg})
-    
-    # Send the determined response message, if any
     if response_message:
         send_whatsapp_message(from_number, response_message)
-        
     return Response(status=200)
+
 
