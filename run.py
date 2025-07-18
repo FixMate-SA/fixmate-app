@@ -988,7 +988,6 @@ def get_quote_for_service(service_description):
 
 
 # --- MODIFIED: Main WhatsApp Webhook for 360dialog ---
-# === Main WhatsApp Webhook with Combined Functionality ===
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
     """Endpoint to receive and process incoming WhatsApp messages from 360dialog."""
@@ -1014,30 +1013,61 @@ def whatsapp_webhook():
             location = None
 
             if msg_type == 'text':
-               incoming_msg = message['text']['body'].strip()
-        elif msg_type == 'voice':
-            media_id = message['voice']['id']
-            translated_text = transcribe_audio(media_id)
-            if translated_text:
-               incoming_msg = translated_text
-            else:
-                send_whatsapp_message(
-                    from_number,
-                    "Sorry, I had trouble understanding that audio. "
-                    "Please try sending a text message instead."
-                )
-                return Response(status=200)
-        elif msg_type == 'location':
-            latitude = message['location']['latitude']
-            longitude = message['location']['longitude']
-        else:
-            # Ignore unsupported types (images, stickers, etc.)
-            return Response(status=200)
+                incoming_msg = message['text']['body'].strip()
 
-        # --- The rest of the conversation logic is unchanged ---
-        user = get_or_create_user(from_number)
-        current_state = user.conversation_state
-        response_message = ""
+            elif msg_type == 'audio':
+                audio_id = message['audio']['id']
+                media_url = f"https://waba-v2.360dialog.io/media/{media_id}"
+                headers = {'D360-API-KEY': DIALOG_360_API_KEY}
+                  # --- ADD THIS DEBUG LINE ---
+                print(f"DEBUG: Attempting to fetch audio from URL: {media_url_endpoint}")
+
+            # --- STEP 1: Get Media Info (This part is working) ---
+                media_info_url = fhttps://waba-v2.360dialog.io/{media-id}
+                media_info_response = requests.get(media_info_url, headers=headers)
+                if media_info_response.status_code != 200:
+                    print(f"Error fetching media info: {media_info_response.text}")
+                    send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
+                    return Response(status=200)
+
+            # --- STEP 2: Reconstruct the URL and Download the File ---
+                media_info = media_info_response.json()
+                original_download_url = media_info.get('url')
+
+                if not original_download_url:
+                    print(f"Could not find 'url' key in media info response: {media_info}")
+                    send_whatsapp_message(from_number, "An error occurred while getting the voice note.")
+                    return Response(status=200)
+
+                # Rebuild the URL as required by the documentation
+                parsed_url = urlparse(original_download_url)
+                path_and_query = f"{parsed_url.path}?{parsed_url.query}"
+                reconstructed_url = f"https://waba-v2.360dialog.io{path_and_query}"
+
+                print(f"DEBUG: Reconstructed URL for download: {reconstructed_url}")
+                
+                # Download the file from the RECONSTRUCTED URL
+                audio_content_response = requests.get(reconstructed_url, headers=headers)
+
+            # --- STEP 3: Process the downloaded file ---
+                if audio_content_response.status_code == 200:
+                    audio_bytes = audio_content_response.content
+                    mime_type = message['audio'].get('mime_type', 'audio/ogg')
+                    incoming_msg = transcribe_audio(audio_bytes, mime_type)
+                    if "failed" in incoming_msg.lower():
+                        send_whatsapp_message(from_number, incoming_msg)
+                else:
+                    print(f"Error downloading audio content. Status: {audio_content_response.status_code}")
+                    send_whatsapp_message(from_number, "Sorry, I had trouble downloading the voice note.")
+
+                    return Response(status=200)
+
+            elif msg_type == 'location':
+                 location = message['location']
+
+            # --- Conversation State Machine ---
+            current_state = user.conversation_state
+            response_message = ""
 
         # --- Post-Job States (Rating & Feedback) ---
         if current_state == 'awaiting_rating':
