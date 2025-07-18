@@ -1017,17 +1017,19 @@ def whatsapp_webhook():
 
             elif msg_type == 'audio':
                 audio_id = message['audio']['id']
-                # FIX 1: Use the correct API endpoint for media info
                 media_info_url = f"https://waba-v2.360dialog.io/{audio_id}"
-                
                 headers = {'D360-API-KEY': DIALOG_360_API_KEY}
                 print(f"DEBUG: Fetching media info from: {media_info_url}")
 
-                # --- STEP 1: Get Media Info ---
-                media_info_response = requests.get(media_info_url, headers=headers)
+                try:
+                    media_info_response = requests.get(media_info_url, headers=headers, timeout=10)
+                except requests.RequestException as e:
+                    print(f"Request failed: {e}")
+                    send_whatsapp_message(from_number, "Network issue. Couldn't process voice note.")
+                    return Response(status=200)
+
                 if media_info_response.status_code != 200:
-                    error_msg = f"Error fetching media info: {media_info_response.status_code} - {media_info_response.text}"
-                    print(error_msg)
+                    print(f"Error fetching media info: {media_info_response.status_code} - {media_info_response.text}")
                     send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
                     return Response(status=200)
 
@@ -1038,29 +1040,28 @@ def whatsapp_webhook():
                     send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
                     return Response(status=200)
 
-                # FIX 2: Use the correct key for the download URL
                 original_download_url = media_info.get('url')
-                
                 if not original_download_url:
-                    print(f"Media info missing 'url' field: {media_info}")
+                    print(f"Missing 'url' in media info: {media_info}")
                     send_whatsapp_message(from_number, "An error occurred while getting the voice note.")
                     return Response(status=200)
 
-                # FIX 3: Transform URL according to documentation
-                # Replace Facebook host with 360dialog host while keeping the path
+                # Transform Facebook-hosted CDN URL to 360dialog proxy
                 download_url = original_download_url.replace(
                     'https://lookaside.fbsbx.com',
                     'https://waba-v2.360dialog.io'
                 )
                 print(f"DEBUG: Transformed download URL: {download_url}")
-                
-                # FIX 4: Download using transformed URL with headers
-                audio_content_response = requests.get(download_url, headers=headers)
 
-                # --- Continue with audio processing ---
+                try:
+                    audio_content_response = requests.get(download_url, headers=headers, timeout=15)
+                except requests.RequestException as e:
+                    print(f"Audio download failed: {e}")
+                    send_whatsapp_message(from_number, "Sorry, I had trouble downloading the voice note.")
+                    return Response(status=200)
+
                 if audio_content_response.status_code == 200:
                     audio_bytes = audio_content_response.content
-                    
                     try:
                         incoming_msg = transcribe_audio(audio_bytes)
 
@@ -1075,17 +1076,16 @@ def whatsapp_webhook():
                             )
                             set_user_state(user, 'awaiting_service_request')
                             send_whatsapp_message(from_number, response_message)
-                            
+
                     except Exception as e:
                         print(f"Transcription error: {str(e)}")
                         send_whatsapp_message(from_number, "Sorry, I couldn't process the audio message.")
-                        
                 else:
-                    error_msg = f"Error downloading audio: {audio_content_response.status_code}"
-                    print(error_msg)
+                    print(f"Error downloading audio: {audio_content_response.status_code}")
                     send_whatsapp_message(from_number, "Sorry, I had trouble downloading the voice note.")
 
                 return Response(status=200)
+
             elif msg_type == 'location':
                  location = message['location']
 
