@@ -1117,14 +1117,10 @@ def whatsapp_webhook():
             clear_user_state(user)
 
         # --- Job Request States ---
-        elif current_state == 'awaiting_location' and latitude and longitude:
-            first_name = user.full_name.split(' ')[0] + ', ' if user.full_name else ''
-            response_message = (
-                f"Thanks, {first_name}I've got your location. Lastly, what's "
-                "the best contact number for the fixer to use?"
-            )
-            set_user_state(user, 'awaiting_contact_number',
-                           data={'latitude': str(latitude), 'longitude': str(longitude)})
+        elif current_state == 'awaiting_location' and location:
+                user_name_greet = f"{user.full_name.split(' ')[0]}, " if user.full_name else ""
+                response_message = f"Thanks, {user_name_greet}I've got your location. Lastly, what's the best contact number for the fixer to use?"
+                set_user_state(user, 'awaiting_contact_number', data={'latitude': str(location.get('latitude')), 'longitude': str(location.get('longitude'))})
 
         elif incoming_msg:
             if current_state == 'awaiting_service_request':
