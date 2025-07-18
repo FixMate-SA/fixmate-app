@@ -1072,7 +1072,14 @@ def whatsapp_webhook():
                             # send_whatsapp_message(from_number, response_message) 
                     else:
                         # Handle cases where transcription failed and returned None.
-                        send_whatsapp_message(from_number, "Sorry, I was unable to process your voice note.")
+                        # Transcribe using Generative AI
+                            transcription = genai.speech.recognize(
+                                request_data=audio_bytes,
+                                mime_type=audio.get('mime_type')
+                            )
+                            message_text = transcription.text.strip()
+                            send_whatsapp_message(from_number, "Sorry, I was unable to process your voice note.")
+                
                 else:
                     print(f"Error downloading audio content. Status: {audio_content_response.status_code}")
                     send_whatsapp_message(from_number, "Sorry, I had trouble downloading the voice note.")
@@ -1184,9 +1191,8 @@ def whatsapp_webhook():
                     )
                     set_user_state(user, 'awaiting_service_request')
                 else:
-                    response_message = "Got it. And what is your name?"
-                    set_user_state(user, 'awaiting_name',
-                                   data={'service': incoming_msg})
+                        response_message = "Welcome back to FixMate-SA! To request a service, please describe what you need (e.g., 'leaking pipe,' 'hairdresser,' or 'any service')"
+                        set_user_state(user, 'awaiting_service_request'))
 
         if response_message:
             send_whatsapp_message(from_number, response_message)
