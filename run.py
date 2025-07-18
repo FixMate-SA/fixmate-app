@@ -1053,7 +1053,7 @@ def whatsapp_webhook():
                 if audio_content_response.status_code == 200:
                     audio_bytes = audio_content_response.content
                     mime_type = message['audio'].get('mime_type', 'audio/ogg')
-                    incoming_msg = transcribe_audio(audio_bytes, mime_type)
+                    incoming_msg = transcribe_audio(audio_bytes)
                     if "failed" in incoming_msg.lower():
                         send_whatsapp_message(from_number, incoming_msg)
                 else:
