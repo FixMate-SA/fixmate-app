@@ -1023,7 +1023,7 @@ def whatsapp_webhook():
                 print(f"DEBUG: Attempting to fetch audio from URL: {media_url_endpoint}")
 
             # --- STEP 1: Get Media Info (This part is working) ---
-                media_info_url = f"https://waba-v2.360dialog.io/media/{media_id}"
+                media_info_url = f"https://waba-v2.360dialog.io/media/{audio_id}"
                 media_info_response = requests.get(media_info_url, headers=headers)
                 if media_info_response.status_code != 200:
                     print(f"Error fetching media info: {media_info_response.text}")
