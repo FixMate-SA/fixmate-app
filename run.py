@@ -988,37 +988,38 @@ def get_quote_for_service(service_description):
 
 
 # --- MODIFIED: Main WhatsApp Webhook for 360dialog ---
+# === Main WhatsApp Webhook with Combined Functionality ===
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
-    """
-    Endpoint to receive incoming WhatsApp messages from 360dialog.
-    Processes text, voice, and location messages, then advances the
-    conversation based on the user's state.
-    """
+    """Endpoint to receive and process incoming WhatsApp messages from 360dialog."""
     data = request.json
-    print(f"Received webhook from 360dialog: {json.dumps(data, indent=2)}")
+    print(f"Received 360dialog webhook: {json.dumps(data, indent=2)}")
 
     try:
-        # Only process if there's at least one message
-        if not data.get('messages'):
+        value = data['entry'][0]['changes'][0]['value']
+
+        # Ignore status updates from WhatsApp
+        if 'statuses' in value:
+            print("Received a status update. Ignoring.")
             return Response(status=200)
 
-        message = data['messages'][0]
-        from_number = f"whatsapp:{message['from']}"
+        # Ensure the webhook is a message and not some other event
+        if 'messages' in value:
+            message = value['messages'][0]
+            from_number = f"whatsapp:+{message['from']}"
+            user = get_or_create_user(from_number)
 
-        incoming_msg = ""
-        latitude = None
-        longitude = None
+            msg_type = message.get('type')
+            incoming_msg = ""
+            location = None
 
-        # Determine message type and extract content
-        msg_type = message.get('type')
-        if msg_type == 'text':
-            incoming_msg = message['text']['body']
+            if msg_type == 'text':
+               incoming_msg = message['text']['body'].strip()
         elif msg_type == 'voice':
             media_id = message['voice']['id']
             translated_text = transcribe_audio(media_id)
             if translated_text:
-                incoming_msg = translated_text
+               incoming_msg = translated_text
             else:
                 send_whatsapp_message(
                     from_number,
