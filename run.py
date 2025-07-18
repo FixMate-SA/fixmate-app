@@ -20,6 +20,7 @@ from geopy.distance import geodesic
 from datetime import datetime, timezone
 from app.services import send_whatsapp_message
 import tempfile
+from werkzeug.utils import secure_filename
 
 
 
@@ -64,26 +65,29 @@ def transcribe_audio(media_id):
     Downloads audio from 360dialog using a media ID, transcribes it, 
     and then translates the result to English using Gemini.
     """
-    if not DIALOG_API_KEY:
-        print("ERROR: DIALOG_API_KEY not set. Cannot download media."); return None
+    if not DIALOG_360_API_KEY:
+        print("ERROR: DIALOG_360_API_KEY not set. Cannot download media.")
+        return None
     if not GEMINI_API_KEY:
-        print("ERROR: GEMINI_API_KEY not set. Cannot transcribe/translate."); return None
+        print("ERROR: GEMINI_API_KEY not set. Cannot transcribe/translate.")
+        return None
 
     try:
-        # Step 1: Download the audio file from 360dialog
-        media_info_url = f"https://waba-v2.360dialog.io/{audio_id}"
+        # Step 1: Download the audio file from 360dialog - FIXED URL
+        media_url = f"https://waba-v2.360dialog.io/{media_id}"
         headers = {'D360-API-KEY': DIALOG_360_API_KEY}
         
         print(f"Downloading media with ID: {media_id}")
         r = requests.get(media_url, headers=headers)
-        r.raise_for_status() # Raise an error for bad responses
+        r.raise_for_status()  # Raise an error for bad responses
 
         # The content type is important for Gemini
         content_type = r.headers.get('Content-Type', 'audio/ogg')
         print(f"Downloaded audio with content type: {content_type}")
         
         # Step 2: Upload to Gemini and Transcribe
-        gemini_file = genai.upload_file(io.BytesIO(r.content), mime_type=content_type)
+        audio_file = io.BytesIO(r.content)
+        gemini_file = genai.upload_file(audio_file, mime_type=content_type)
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         
         transcription_prompt = [
@@ -111,9 +115,16 @@ def transcribe_audio(media_id):
         translated_text = translation_response.text.strip()
         print(f"Translated Text: '{translated_text}'")
         return translated_text
+    
+                # Inside transcribe_audio()
+        with tempfile.NamedTemporaryFile(delete=True, suffix=".ogg") as tmp_audio:
+                      tmp_audio.write(r.content)
+                      tmp_audio.flush()
+            # Use tmp_audio.name for processing
 
     except Exception as e:
-        print(f"An error occurred during transcription/translation: {e}"); return None
+        print(f"An error occurred during transcription/translation: {e}")
+        return None
     
 # --- AI Data Analysis & Sentiment Functions ---
 def generate_platform_insights():
