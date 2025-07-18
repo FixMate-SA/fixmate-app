@@ -1017,74 +1017,71 @@ def whatsapp_webhook():
 
             elif msg_type == 'audio':
                 audio_id = message['audio']['id']
-                media_url_endpoint = f"https://waba-v2.360dialog.io/{audio_id}"
-                headers = {'D360-API-KEY': DIALOG_360_API_KEY}
-                  # --- ADD THIS DEBUG LINE ---
-                print(f"DEBUG: Attempting to fetch audio from URL: {media_url_endpoint}")
-
-            # --- STEP 1: Get Media Info (This part is working) ---
+                # FIX 1: Use the correct API endpoint for media info
                 media_info_url = f"https://waba-v2.360dialog.io/{audio_id}"
+                
+                headers = {'D360-API-KEY': DIALOG_360_API_KEY}
+                print(f"DEBUG: Fetching media info from: {media_info_url}")
+
+                # --- STEP 1: Get Media Info ---
                 media_info_response = requests.get(media_info_url, headers=headers)
                 if media_info_response.status_code != 200:
-                    print(f"Error fetching media info: {media_info_response.text}")
+                    error_msg = f"Error fetching media info: {media_info_response.status_code} - {media_info_response.text}"
+                    print(error_msg)
                     send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
                     return Response(status=200)
 
-            # --- STEP 2: Reconstruct the URL and Download the File ---
-                media_info = media_info_response.json()
-                original_download_url = media_info.get('url')
+                try:
+                    media_info = media_info_response.json()
+                except json.JSONDecodeError:
+                    print("Error: Media info response is not valid JSON")
+                    send_whatsapp_message(from_number, "Sorry, I couldn't process the voice note.")
+                    return Response(status=200)
 
+                # FIX 2: Use the correct key for the download URL
+                original_download_url = media_info.get('url')  # WhatsApp uses 'url' not 'URL'
+                
                 if not original_download_url:
-                    print(f"Could not find 'url' key in media info response: {media_info}")
+                    print(f"Media info missing 'url' field: {media_info}")
                     send_whatsapp_message(from_number, "An error occurred while getting the voice note.")
                     return Response(status=200)
 
-                # Rebuild the URL as required by the documentation
-                parsed_url = urlparse(original_download_url)
-                path_and_query = f"{parsed_url.path}?{parsed_url.query}"
-                reconstructed_url = f"https://waba-v2.360dialog.io{path_and_query}"
-
-                print(f"DEBUG: Reconstructed URL for download: {reconstructed_url}")
+                print(f"DEBUG: Downloading media from: {original_download_url}")
                 
-                # Download the file from the RECONSTRUCTED URL
-                audio_content_response = requests.get(reconstructed_url, headers=headers)
+                # FIX 3: Download directly from the provided URL without reconstruction
+                audio_content_response = requests.get(original_download_url, headers=headers)
 
                 # --- STEP 3: Process the downloaded file ---
                 if audio_content_response.status_code == 200:
                     audio_bytes = audio_content_response.content
                     
-                    # Call transcription with the actual audio data, not the mime_type.
-                    incoming_msg = transcribe_audio(audio_bytes)
+                    try:
+                        # FIX 4: Pass audio bytes to transcription function
+                        incoming_msg = transcribe_audio(audio_bytes)
 
-                    # Check if transcription returned a valid string to prevent AttributeError.
-                    if incoming_msg:
-                        if "failed" in incoming_msg.lower():
-                            # Handle cases where transcription returned a specific failure message.
+                        # FIX 5: Handle all possible transcription outcomes safely
+                        if not incoming_msg:
+                            send_whatsapp_message(from_number, "Sorry, I was unable to process your voice note.")
+                        elif "failed" in incoming_msg.lower():
                             send_whatsapp_message(from_number, incoming_msg)
                         else:
-                            # Logic for a successful transcription.
+                            # Handle successful transcription
                             response_message = (
                                 f"Welcome back {first_name} to FixMate-SA! To request a service, "
                                 "please describe what you need (e.g., 'Leaking pipe') or send a voice note."
                             )
                             set_user_state(user, 'awaiting_service_request')
-                            # You likely need to send the message as well.
-                            # send_whatsapp_message(from_number, response_message) 
-                    else:
-                        # Handle cases where transcription failed and returned None.
-                        # Transcribe using Generative AI
-                            transcription = genai.speech.recognize(
-                                request_data=audio_bytes,
-                                mime_type=audio.get('mime_type')
-                            )
-                            message_text = transcription.text.strip()
-                            send_whatsapp_message(from_number, "Sorry, I was unable to process your voice note.")
-                
+                            send_whatsapp_message(from_number, response_message)
+                            
+                    except Exception as e:
+                        print(f"Transcription error: {str(e)}")
+                        send_whatsapp_message(from_number, "Sorry, I couldn't process the audio message.")
+                        
                 else:
-                    print(f"Error downloading audio content. Status: {audio_content_response.status_code}")
+                    error_msg = f"Error downloading audio: {audio_content_response.status_code}"
+                    print(error_msg)
                     send_whatsapp_message(from_number, "Sorry, I had trouble downloading the voice note.")
 
-                # Always return a 200 response to acknowledge the webhook.
                 return Response(status=200)
 
             elif msg_type == 'location':
@@ -1192,7 +1189,7 @@ def whatsapp_webhook():
                     set_user_state(user, 'awaiting_service_request')
                 else:
                         response_message = "Welcome back to FixMate-SA! To request a service, please describe what you need (e.g., 'leaking pipe,' 'hairdresser,' or 'any service')"
-                        set_user_state(user, 'awaiting_service_request'))
+                        set_user_state(user, 'awaiting_service_request')
 
         if response_message:
             send_whatsapp_message(from_number, response_message)
