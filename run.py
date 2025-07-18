@@ -1049,18 +1049,36 @@ def whatsapp_webhook():
                 # Download the file from the RECONSTRUCTED URL
                 audio_content_response = requests.get(reconstructed_url, headers=headers)
 
-            # --- STEP 3: Process the downloaded file ---
+                # --- STEP 3: Process the downloaded file ---
                 if audio_content_response.status_code == 200:
                     audio_bytes = audio_content_response.content
-                    mime_type = message['audio'].get('mime_type', 'audio/ogg')
-                    incoming_msg = transcribe_audio(mime_type)
-                    if "failed" in incoming_msg.lower():
-                        send_whatsapp_message(from_number, incoming_msg)
+                    
+                    # Call transcription with the actual audio data, not the mime_type.
+                    incoming_msg = transcribe_audio(audio_bytes)
+
+                    # Check if transcription returned a valid string to prevent AttributeError.
+                    if incoming_msg:
+                        if "failed" in incoming_msg.lower():
+                            # Handle cases where transcription returned a specific failure message.
+                            send_whatsapp_message(from_number, incoming_msg)
+                        else:
+                            # Logic for a successful transcription.
+                            response_message = (
+                                f"Welcome back {first_name} to FixMate-SA! To request a service, "
+                                "please describe what you need (e.g., 'Leaking pipe') or send a voice note."
+                            )
+                            set_user_state(user, 'awaiting_service_request')
+                            # You likely need to send the message as well.
+                            # send_whatsapp_message(from_number, response_message) 
+                    else:
+                        # Handle cases where transcription failed and returned None.
+                        send_whatsapp_message(from_number, "Sorry, I was unable to process your voice note.")
                 else:
                     print(f"Error downloading audio content. Status: {audio_content_response.status_code}")
                     send_whatsapp_message(from_number, "Sorry, I had trouble downloading the voice note.")
 
-                    return Response(status=200)
+                # Always return a 200 response to acknowledge the webhook.
+                return Response(status=200)
 
             elif msg_type == 'location':
                  location = message['location']
