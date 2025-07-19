@@ -3,6 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timezone
 from flask_login import UserMixin
 from decimal import Decimal # <-- Add this import
+import secrets # For generating secure tokens
+import hashlib
 
 db = SQLAlchemy()
 
@@ -19,6 +21,24 @@ class User(db.Model, UserMixin):
 
     def __repr__(self):
         return f'<User {self.phone_number}>'
+    
+        # --- NEW: Fields for Mobile App Authentication ---
+    api_key = db.Column(db.String(64), unique=True, nullable=True, index=True)
+    otp_hash = db.Column(db.String(128), nullable=True)
+    otp_expiry = db.Column(db.DateTime, nullable=True)
+
+    def generate_api_key(self):
+        self.api_key = secrets.token_hex(32)
+
+    def set_otp(self, otp):
+        self.otp_hash = hashlib.sha256(otp.encode('utf-8')).hexdigest()
+        self.otp_expiry = datetime.now(timezone.utc) + timezone.timedelta(minutes=10)
+
+    def verify_otp(self, otp):
+        if self.otp_expiry and self.otp_expiry > datetime.now(timezone.utc):
+            return self.otp_hash == hashlib.sha256(otp.encode('utf-8')).hexdigest()
+        return False
+
 
     # === FIX: ADDED CASCADE DELETE BEHAVIOR HERE ===
     jobs = db.relationship(
@@ -57,6 +77,23 @@ class Fixer(db.Model, UserMixin):
     last_assigned_at = db.Column(db.DateTime, nullable=True)
 
     jobs = db.relationship('Job', backref='assigned_fixer', lazy=True)
+
+        # --- NEW: Fields for Mobile App Authentication ---
+    api_key = db.Column(db.String(64), unique=True, nullable=True, index=True)
+    otp_hash = db.Column(db.String(128), nullable=True)
+    otp_expiry = db.Column(db.DateTime, nullable=True)
+
+    def generate_api_key(self):
+        self.api_key = secrets.token_hex(32)
+
+    def set_otp(self, otp):
+        self.otp_hash = hashlib.sha256(otp.encode('utf-8')).hexdigest()
+        self.otp_expiry = datetime.now(timezone.utc) + timezone.timedelta(minutes=10)
+
+    def verify_otp(self, otp):
+        if self.otp_expiry and self.otp_expiry > datetime.now(timezone.utc):
+            return self.otp_hash == hashlib.sha256(otp.encode('utf-8')).hexdigest()
+        return False
 
 class Job(db.Model):
     """Represents a service request (a job)."""
