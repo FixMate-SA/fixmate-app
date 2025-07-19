@@ -53,6 +53,12 @@ migrate = Migrate(app, db)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+# --- NEW: Import and register the API blueprint ---
+from app.api_routes import api as api_blueprint, init_api_serializer
+app.register_blueprint(api_blueprint, url_prefix='/api')
+# Initialize the serializer in the API routes file with our app's secret key
+init_api_serializer(app.config['SECRET_KEY'])
+
 @login_manager.user_loader
 def load_user(user_id):
     if session.get('user_type') == 'fixer': return db.session.get(Fixer, int(user_id))
