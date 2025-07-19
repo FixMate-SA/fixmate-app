@@ -1063,8 +1063,18 @@ def whatsapp_webhook():
                 if audio_content_response.status_code == 200:
                     audio_bytes = audio_content_response.content
                     try:
-                        incoming_msg = transcribe_audio(audio_bytes)
+                        # Create a temporary file to store the audio
+                        with tempfile.NamedTemporaryFile(delete=False, suffix='.ogg') as temp_audio:
+                            temp_audio.write(audio_bytes)
+                            temp_audio_path = temp_audio.name
 
+                        # Pass the file path to transcription function
+                        incoming_msg = transcribe_audio(temp_audio_path)
+                        
+                        # Clean up the temporary file
+                        os.unlink(temp_audio_path)
+
+                        incoming_msg = transcribe_audio(audio_bytes)
                         if not incoming_msg:
                             send_whatsapp_message(from_number, "Sorry, I was unable to process your voice note.")
                         elif "failed" in incoming_msg.lower():
