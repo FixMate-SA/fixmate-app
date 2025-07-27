@@ -1,53 +1,108 @@
-import { useEffect } from "react";
+import React from "react";
 import "./App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Header from "./components/Layout/Header";
+import Navigation from "./components/Layout/Navigation";
+import LoginForm from "./components/Auth/LoginForm";
+import Dashboard from "./components/Dashboard/Dashboard";
+import JobList from "./components/Jobs/JobList";
+import CreateJob from "./components/Jobs/CreateJob";
+import FixerList from "./components/Fixers/FixerList";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+// Protected Route component
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+  
+  return isAuthenticated ? children : <Navigate to="/login" />;
+};
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
+// Layout component for authenticated pages
+const Layout = ({ children }) => {
   return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <Navigation />
+      <main className="container mx-auto px-4 py-8">
+        {children}
+      </main>
     </div>
   );
 };
 
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <AuthProvider>
+      <div className="App">
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginForm />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Dashboard />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/jobs"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <JobList />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/jobs/create"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CreateJob />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/fixers"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <FixerList />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <div className="text-center py-12">
+                      <h2 className="text-2xl font-bold text-gray-900">Profile</h2>
+                      <p className="mt-2 text-gray-500">Profile management coming soon...</p>
+                    </div>
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </BrowserRouter>
+      </div>
+    </AuthProvider>
   );
 }
 
