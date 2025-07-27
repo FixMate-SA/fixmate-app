@@ -69,31 +69,131 @@ async def analyze_sentiment(text: str = Form(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Sentiment analysis failed: {str(e)}")
 
-# SMS endpoints
-@api_router.post("/sms/send")
-async def send_sms(to_number: str = Form(...), message: str = Form(...)):
+# Payment endpoints
+@api_router.post("/payment/eft")
+async def create_eft_payment(amount: float = Form(...), description: str = Form(...), user_email: str = Form(...), user_name: str = Form(...)):
     """
-    Send SMS to user.
+    Create EFT payment request
     """
     try:
-        success = sms_service.send_sms(to_number, message)
-        return {"success": success}
+        result = payment_service.create_payment_request(amount, description, user_email, user_name)
+        return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"SMS sending failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"EFT payment creation failed: {str(e)}")
 
-@api_router.post("/sms/webhook")
-async def sms_webhook(From: str = Form(...), Body: str = Form(...)):
+@api_router.post("/payment/airtime")
+async def create_airtime_payment(phone_number: str = Form(...), amount: float = Form(...), description: str = Form(...)):
     """
-    Handle incoming SMS webhook from Twilio.
+    Create airtime payment
     """
     try:
-        response_message = sms_service.handle_incoming_sms(From, Body)
-        # Send response back
-        sms_service.send_sms(From, response_message)
-        return Response(content="OK", media_type="text/plain")
+        result = payment_service.create_airtime_payment(phone_number, amount, description)
+        return result
     except Exception as e:
-        print(f"SMS webhook error: {e}")
-        return Response(content="Error", media_type="text/plain")
+        raise HTTPException(status_code=500, detail=f"Airtime payment creation failed: {str(e)}")
+
+@api_router.post("/payment/cash")
+async def create_cash_payment(location: str = Form(...), amount: float = Form(...), description: str = Form(...)):
+    """
+    Create cash collection point payment
+    """
+    try:
+        result = payment_service.create_cash_collection_point(location, amount, description)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Cash payment creation failed: {str(e)}")
+
+@api_router.post("/payment/stokvel")
+async def create_stokvel_payment(stokvel_name: str = Form(...), amount: float = Form(...), description: str = Form(...)):
+    """
+    Create stokvel payment
+    """
+    try:
+        result = payment_service.create_stokvel_payment(stokvel_name, amount, description)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Stokvel payment creation failed: {str(e)}")
+
+@api_router.post("/payment/layby")
+async def create_layby_payment(total_amount: float = Form(...), deposit_amount: float = Form(...), description: str = Form(...), installments: int = Form(...)):
+    """
+    Create lay-by payment
+    """
+    try:
+        result = payment_service.create_layby_payment(total_amount, deposit_amount, description, installments)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Layby payment creation failed: {str(e)}")
+
+@api_router.post("/payment/verify")
+async def verify_payment(payment_id: str = Form(...), payment_type: str = Form(...)):
+    """
+    Verify payment status
+    """
+    try:
+        result = payment_service.verify_payment(payment_id, payment_type)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Payment verification failed: {str(e)}")
+
+# USSD endpoints
+@api_router.post("/ussd")
+async def handle_ussd(phone_number: str = Form(...), text: str = Form(...), session_id: str = Form(...)):
+    """
+    Handle USSD requests
+    """
+    try:
+        result = ussd_service.handle_ussd_request(phone_number, text, session_id)
+        return Response(content=result['response'], media_type="text/plain")
+    except Exception as e:
+        return Response(content=f"END Service temporarily unavailable. Please try again later.", media_type="text/plain")
+
+@api_router.get("/ussd/stats")
+async def get_ussd_stats():
+    """
+    Get USSD usage statistics
+    """
+    try:
+        stats = ussd_service.get_session_stats()
+        return stats
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get USSD stats: {str(e)}")
+
+# Enhanced offline support endpoints
+@api_router.post("/offline/sync")
+async def sync_offline_data(data: dict):
+    """
+    Sync offline data when connection is restored
+    """
+    try:
+        # Process offline queue data
+        results = []
+        for item in data.get('queue', []):
+            # Process each queued item based on action type
+            if item['action'] == 'CREATE_JOB':
+                job_result = await create_job(JobCreate(**item['data']))
+                results.append({'item_id': item['id'], 'result': job_result})
+            elif item['action'] == 'UPDATE_JOB':
+                job_result = await update_job(item['data']['id'], JobUpdate(**item['data']))
+                results.append({'item_id': item['id'], 'result': job_result})
+            elif item['action'] == 'CREATE_REVIEW':
+                review_result = await create_review(ReviewCreate(**item['data']))
+                results.append({'item_id': item['id'], 'result': review_result})
+        
+        return {'success': True, 'synced_items': len(results), 'results': results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Offline sync failed: {str(e)}")
+
+@api_router.get("/offline/status")
+async def get_offline_status():
+    """
+    Get offline service status
+    """
+    return {
+        'offline_mode_enabled': True,
+        'last_sync': datetime.utcnow().isoformat(),
+        'supported_actions': ['CREATE_JOB', 'UPDATE_JOB', 'CREATE_REVIEW', 'UPDATE_PROFILE']
+    }
 
 # Authentication endpoints
 @api_router.post("/auth/login", response_model=LoginResponse)
