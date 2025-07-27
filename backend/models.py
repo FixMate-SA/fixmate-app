@@ -33,12 +33,15 @@ class Fixer(Base):
     rating = Column(Float, default=0.0)
     total_jobs = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
+    payment_status = Column(String, default="current")  # current, overdue, blocked
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     jobs = relationship("Job", back_populates="fixer")
     reviews = relationship("Review", back_populates="fixer")
+    payments = relationship("FixerPayment", back_populates="fixer")
+    verification = relationship("FixerVerification", back_populates="fixer", uselist=False)
 
 class Job(Base):
     __tablename__ = "jobs"
