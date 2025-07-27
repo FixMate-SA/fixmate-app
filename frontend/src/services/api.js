@@ -165,6 +165,26 @@ export const apiService = {
     });
   },
 
+  // Fixer Payment Management
+  getFixerPaymentStatus: (fixerId) => api.get(`/fixer/${fixerId}/payment-status`),
+  getFixerPaymentHistory: (fixerId) => api.get(`/fixer/${fixerId}/payment-history`),
+  createFixerServiceFee: (fixerId, description) => {
+    const formData = new FormData();
+    formData.append('description', description);
+    return api.post(`/fixer/${fixerId}/create-service-fee`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  settleFixerPayment: (paymentId, paymentMethod, reference) => {
+    const formData = new FormData();
+    formData.append('payment_method', paymentMethod);
+    formData.append('reference', reference);
+    return api.post(`/fixer/payment/${paymentId}/settle`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  updatePaymentStatuses: () => api.post('/admin/update-payment-statuses'),
+
   // Offline Support
   syncOfflineData: (offlineData) => api.post('/offline/sync', offlineData),
   getOfflineStatus: () => api.get('/offline/status'),
