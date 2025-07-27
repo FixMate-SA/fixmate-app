@@ -623,11 +623,11 @@ class FixMateAPITester:
     def run_all_tests(self):
         """Run all tests in sequence"""
         print("=" * 60)
-        print("FIXMATE-SA BACKEND API TESTING")
+        print("FIXMATE-SA BACKEND API TESTING - ENHANCED WITH AI & SMS")
         print("=" * 60)
         print()
         
-        # Test sequence following the main user flow
+        # Test sequence following the main user flow + new AI/SMS features
         tests = [
             ("Health Check", self.test_health_check),
             ("Create User", self.test_create_user),
@@ -645,7 +645,15 @@ class FixMateAPITester:
             ("Create Review", self.test_create_review),
             ("Get All Reviews", self.test_get_reviews),
             ("Get Reviews by Fixer", self.test_get_reviews_by_fixer),
-            ("Dashboard", self.test_dashboard)
+            ("Dashboard with AI Insights", self.test_dashboard),
+            # New AI and SMS feature tests
+            ("AI Service Classification", self.test_ai_classify_service),
+            ("AI Sentiment Analysis", self.test_ai_analyze_sentiment),
+            ("AI Audio Transcription", self.test_ai_transcribe_audio),
+            ("SMS Send", self.test_sms_send),
+            ("SMS Webhook", self.test_sms_webhook),
+            ("Enhanced Job Creation with AI", self.test_enhanced_job_creation_with_ai),
+            ("Enhanced Review Creation with AI", self.test_enhanced_review_creation_with_ai)
         ]
         
         for test_name, test_func in tests:
@@ -666,7 +674,7 @@ class FixMateAPITester:
         
         print()
         if self.results['failed'] == 0:
-            print("🎉 ALL TESTS PASSED! Backend API is working correctly.")
+            print("🎉 ALL TESTS PASSED! Backend API with AI & SMS features is working correctly.")
             return True
         else:
             print("⚠️  Some tests failed. Please check the errors above.")
