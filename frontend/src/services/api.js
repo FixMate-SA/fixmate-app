@@ -183,7 +183,11 @@ export const apiService = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
-  updatePaymentStatuses: () => api.post('/admin/update-payment-statuses'),
+  // Generic methods for easier access
+  get: (url, config = {}) => api.get(url, config).then(response => response.data),
+  post: (url, data, config = {}) => api.post(url, data, config).then(response => response.data),
+  put: (url, data, config = {}) => api.put(url, data, config).then(response => response.data),
+  delete: (url, config = {}) => api.delete(url, config).then(response => response.data),
 
   // Offline Support
   syncOfflineData: (offlineData) => api.post('/offline/sync', offlineData),
