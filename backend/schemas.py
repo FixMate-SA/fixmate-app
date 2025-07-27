@@ -103,3 +103,44 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     user: UserResponse
     token: str
+
+# Payment schemas
+class FixerPaymentCreate(BaseModel):
+    fixer_id: str
+    amount: float
+    payment_type: str
+    description: Optional[str] = None
+
+class FixerPaymentResponse(BaseModel):
+    id: str
+    fixer_id: str
+    amount: float
+    payment_type: str
+    payment_method: Optional[str] = None
+    payment_reference: Optional[str] = None
+    status: str
+    description: Optional[str] = None
+    due_date: Optional[datetime] = None
+    paid_date: Optional[datetime] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# Verification schemas  
+class FixerVerificationCreate(BaseModel):
+    fixer_id: str
+    id_document_url: Optional[str] = None
+
+class FixerVerificationResponse(BaseModel):
+    id: str
+    fixer_id: str
+    id_document_url: Optional[str] = None
+    verification_status: str
+    admin_notes: Optional[str] = None
+    verified_by: Optional[str] = None
+    verified_at: Optional[datetime] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
