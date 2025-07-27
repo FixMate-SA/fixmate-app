@@ -368,6 +368,28 @@ async def update_job(job_id: str, job_update: JobUpdate, db: Session = Depends(g
         raise HTTPException(status_code=404, detail="Job not found")
     
     old_status = job.status
+    old_fixer_id = job.fixer_id
+    
+    # Check if we're assigning a fixer to the job
+    if job_update.fixer_id and job_update.fixer_id != old_fixer_id:
+        # Check fixer payment status
+        payment_status = payment_service.check_fixer_payment_status(job_update.fixer_id, db)
+        
+        if not payment_status.get("can_receive_jobs", False):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Fixer cannot receive jobs due to outstanding payments. Outstanding: R{payment_status.get('total_outstanding', 0):.2f}"
+            )
+        
+        # Create service fee for the fixer when job is assigned
+        if job_update.status == "assigned":
+            service_fee_result = payment_service.create_fixer_service_fee(
+                job_update.fixer_id,
+                f"Service fee for job: {job.service} - {job.description[:50]}",
+                db
+            )
+            if not service_fee_result.get("success"):
+                raise HTTPException(status_code=500, detail="Failed to create service fee")
     
     for key, value in job_update.dict(exclude_unset=True).items():
         setattr(job, key, value)
