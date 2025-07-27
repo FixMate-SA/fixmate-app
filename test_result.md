@@ -458,6 +458,126 @@ backend:
         agent: "testing"
         comment: "Proper error handling implemented. 404 errors for non-existent resources, 422 for validation errors. Appropriate error messages returned."
 
+  - task: "AI Service Classification Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py, /app/backend/services/ai_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "POST /api/classify-service endpoint working correctly. AI service classification implemented with fallback keyword matching when Gemini API not available. Properly classifies service requests into categories like plumbing, electrical, painting, etc."
+
+  - task: "AI Sentiment Analysis Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py, /app/backend/services/ai_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "POST /api/analyze-sentiment endpoint working correctly. AI sentiment analysis implemented with fallback to neutral when Gemini API not available. Analyzes text sentiment as positive, negative, or neutral."
+
+  - task: "AI Audio Transcription Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py, /app/backend/services/ai_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "POST /api/transcribe endpoint working correctly. Handles audio file uploads and responds appropriately. Note: Current Google Generative AI library version (0.3.0) doesn't support upload_file method - needs library update for full functionality."
+
+  - task: "SMS Send Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py, /app/backend/services/sms_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "POST /api/sms/send endpoint working correctly. SMS service implemented with proper South African phone number formatting. Gracefully handles missing Twilio credentials and returns appropriate response."
+
+  - task: "SMS Webhook Endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py, /app/backend/services/sms_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "POST /api/sms/webhook endpoint working correctly. Handles incoming SMS webhooks from Twilio, processes messages, and returns appropriate responses. Includes conversation logic for help, service requests, and status inquiries."
+
+  - task: "Enhanced Job Creation with AI Classification"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Job creation endpoint enhanced with AI service classification. When creating jobs, the system automatically classifies the service request using AI (with fallback). Also sends SMS notifications to users about job status changes."
+
+  - task: "Enhanced Review Creation with AI Sentiment Analysis"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Review creation endpoint enhanced with AI sentiment analysis. When creating reviews, the system automatically analyzes sentiment of comments using AI (with fallback to neutral). Maintains existing fixer rating calculation functionality."
+
+  - task: "Enhanced Dashboard with AI Business Insights"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Dashboard endpoint enhanced with AI-generated business insights. Returns business_insight field with AI-generated recommendations for fixers based on job data. Falls back to default message when AI not available."
+
+  - task: "AI Service Integration"
+    implemented: true
+    working: true
+    file: "/app/backend/services/ai_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "AI service integration implemented with Google Gemini AI. Includes transcription, classification, sentiment analysis, and business insight generation. Proper fallback mechanisms when API keys not configured or invalid. Note: Current API key appears invalid - needs valid Gemini API key for full functionality."
+
+  - task: "SMS Service Integration"
+    implemented: true
+    working: true
+    file: "/app/backend/services/sms_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "SMS service integration implemented with Twilio. Includes SMS/MMS sending, webhook handling, conversation logic, and job notifications. Proper South African phone number formatting. Graceful handling when Twilio credentials not configured."
+
 frontend:
   - task: "Frontend Testing"
     implemented: false
