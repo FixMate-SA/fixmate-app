@@ -2,6 +2,7 @@ import React from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 import Header from "./components/Layout/Header";
 import Navigation from "./components/Layout/Navigation";
 import LoginForm from "./components/Auth/LoginForm";
@@ -11,6 +12,8 @@ import CreateJob from "./components/Jobs/CreateJob";
 import FixerList from "./components/Fixers/FixerList";
 import LearningPlatform from "./components/Learning/LearningPlatform";
 import SMSInterface from "./components/SMS/SMSInterface";
+import B2BPortal from "./components/Enterprise/B2BPortal";
+import PaymentOptions from "./components/Payment/PaymentOptions";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -42,89 +45,116 @@ const Layout = ({ children }) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <div className="App">
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<LoginForm />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Dashboard />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/jobs"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <JobList />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/jobs/create"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <CreateJob />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/fixers"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <FixerList />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/learning"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <LearningPlatform />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/sms"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <SMSInterface />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <div className="text-center py-12">
-                      <h2 className="text-2xl font-bold text-gray-900">Profile</h2>
-                      <p className="mt-2 text-gray-500">Profile management coming soon...</p>
-                    </div>
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </BrowserRouter>
-      </div>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <div className="App">
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<LoginForm />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <JobList />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/create"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CreateJob />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fixers"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <FixerList />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/learning"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <LearningPlatform />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/sms"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <SMSInterface />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/enterprise"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <B2BPortal />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payment"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <PaymentOptions 
+                        amount={500}
+                        description="Sample Payment"
+                        onPaymentSuccess={() => {}}
+                        onPaymentCancel={() => {}}
+                      />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <div className="text-center py-12">
+                        <h2 className="text-2xl font-bold text-gray-900">Profile</h2>
+                        <p className="mt-2 text-gray-500">Profile management coming soon...</p>
+                      </div>
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </BrowserRouter>
+        </div>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 
