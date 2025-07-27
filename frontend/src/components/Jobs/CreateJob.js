@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
+import VoiceRecorder from '../VoiceRecorder/VoiceRecorder';
 
 const CreateJob = () => {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ const CreateJob = () => {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
 
   const serviceOptions = [
     'Plumbing',
@@ -30,12 +32,41 @@ const CreateJob = () => {
     'Roofing',
     'Flooring',
     'HVAC',
+    'Tech Support',
+    'Tutoring',
+    'Beauty Services',
+    'Catering',
+    'Photography',
     'Other'
   ];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleVoiceTranscription = async (transcription) => {
+    try {
+      // Extract service and description from transcription
+      const response = await apiService.classifyService(transcription);
+      const classification = response.data.classification;
+      
+      // Auto-fill form based on transcription
+      setFormData(prev => ({
+        ...prev,
+        service: classification.charAt(0).toUpperCase() + classification.slice(1),
+        description: transcription
+      }));
+      
+      setShowVoiceRecorder(false);
+    } catch (err) {
+      console.error('Error processing voice input:', err);
+      setError('Failed to process voice input. Please try again.');
+    }
+  };
+
+  const handleVoiceError = (errorMessage) => {
+    setError(errorMessage);
   };
 
   const handleSubmit = async (e) => {
@@ -66,6 +97,34 @@ const CreateJob = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Create New Job</h1>
         
+        {/* Voice Input Toggle */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-gray-900">How would you like to describe your service?</h2>
+            <button
+              type="button"
+              onClick={() => setShowVoiceRecorder(!showVoiceRecorder)}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
+                showVoiceRecorder 
+                  ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                  : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+              <span>{showVoiceRecorder ? 'Hide Voice Input' : 'Use Voice Input'}</span>
+            </button>
+          </div>
+          
+          {showVoiceRecorder && (
+            <VoiceRecorder
+              onTranscription={handleVoiceTranscription}
+              onError={handleVoiceError}
+            />
+          )}
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Service */}
           <div>
@@ -104,6 +163,9 @@ const CreateJob = () => {
               placeholder="Describe the work that needs to be done..."
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            <p className="mt-1 text-sm text-gray-500">
+              💡 You can use the voice input above to describe your service needs in any South African language
+            </p>
           </div>
 
           {/* Location */}
