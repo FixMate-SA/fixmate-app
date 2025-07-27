@@ -1,11 +1,12 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, File, UploadFile, Form
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 import os
 import logging
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 import json
 from datetime import datetime
 
@@ -16,6 +17,8 @@ from schemas import (
     JobCreate, JobUpdate, JobResponse, ReviewCreate, ReviewResponse,
     LoginRequest, LoginResponse
 )
+from services.ai_service import ai_service
+from services.sms_service import sms_service
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -28,6 +31,67 @@ app = FastAPI(title="FixMate-SA API", version="1.0.0")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
+
+# Voice and AI endpoints
+@api_router.post("/transcribe")
+async def transcribe_audio(audio: UploadFile = File(...)):
+    """
+    Transcribe audio file using AI service.
+    """
+    try:
+        audio_data = await audio.read()
+        transcription = ai_service.transcribe_audio(audio_data)
+        return {"transcription": transcription}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+
+@api_router.post("/classify-service")
+async def classify_service(description: str = Form(...)):
+    """
+    Classify service request using AI.
+    """
+    try:
+        classification = ai_service.classify_service_request(description)
+        return {"classification": classification}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Classification failed: {str(e)}")
+
+@api_router.post("/analyze-sentiment")
+async def analyze_sentiment(text: str = Form(...)):
+    """
+    Analyze sentiment of text using AI.
+    """
+    try:
+        sentiment = ai_service.analyze_sentiment(text)
+        return {"sentiment": sentiment}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Sentiment analysis failed: {str(e)}")
+
+# SMS endpoints
+@api_router.post("/sms/send")
+async def send_sms(to_number: str = Form(...), message: str = Form(...)):
+    """
+    Send SMS to user.
+    """
+    try:
+        success = sms_service.send_sms(to_number, message)
+        return {"success": success}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"SMS sending failed: {str(e)}")
+
+@api_router.post("/sms/webhook")
+async def sms_webhook(From: str = Form(...), Body: str = Form(...)):
+    """
+    Handle incoming SMS webhook from Twilio.
+    """
+    try:
+        response_message = sms_service.handle_incoming_sms(From, Body)
+        # Send response back
+        sms_service.send_sms(From, response_message)
+        return Response(content="OK", media_type="text/plain")
+    except Exception as e:
+        print(f"SMS webhook error: {e}")
+        return Response(content="Error", media_type="text/plain")
 
 # Authentication endpoints
 @api_router.post("/auth/login", response_model=LoginResponse)
@@ -99,10 +163,25 @@ async def get_fixers_by_service(service: str, db: Session = Depends(get_db)):
 # Job endpoints
 @api_router.post("/jobs", response_model=JobResponse)
 async def create_job(job: JobCreate, db: Session = Depends(get_db)):
+    # AI-powered service classification
+    classification = ai_service.classify_service_request(job.description)
+    
+    # Create job
     db_job = Job(**job.dict())
     db.add(db_job)
     db.commit()
     db.refresh(db_job)
+    
+    # Send SMS notification to user
+    user = db.query(User).filter(User.id == job.user_id).first()
+    if user:
+        sms_service.send_job_notification(
+            user.phone, 
+            str(db_job.id), 
+            job.service, 
+            'created'
+        )
+    
     return db_job
 
 @api_router.get("/jobs", response_model=List[JobResponse])
@@ -130,17 +209,34 @@ async def update_job(job_id: str, job_update: JobUpdate, db: Session = Depends(g
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
+    old_status = job.status
+    
     for key, value in job_update.dict(exclude_unset=True).items():
         setattr(job, key, value)
     
     job.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(job)
+    
+    # Send SMS notification if status changed
+    if old_status != job.status:
+        user = db.query(User).filter(User.id == job.user_id).first()
+        if user:
+            sms_service.send_job_notification(
+                user.phone,
+                str(job.id),
+                job.service,
+                job.status
+            )
+    
     return job
 
 # Review endpoints
 @api_router.post("/reviews", response_model=ReviewResponse)
 async def create_review(review: ReviewCreate, db: Session = Depends(get_db)):
+    # AI-powered sentiment analysis
+    sentiment = ai_service.analyze_sentiment(review.comment or "")
+    
     db_review = Review(**review.dict())
     db.add(db_review)
     db.commit()
@@ -185,6 +281,10 @@ async def get_dashboard(user_id: str, db: Session = Depends(get_db)):
     total_jobs = db.query(Job).filter(Job.user_id == user_id).count()
     completed_jobs = db.query(Job).filter(Job.user_id == user_id, Job.status == "completed").count()
     
+    # Generate AI business insight
+    job_data = [{"id": job.id, "description": job.description, "service": job.service} for job in jobs]
+    business_insight = ai_service.generate_business_insight(job_data)
+    
     return {
         "user": user,
         "recent_jobs": jobs,
@@ -192,7 +292,8 @@ async def get_dashboard(user_id: str, db: Session = Depends(get_db)):
         "stats": {
             "total_jobs": total_jobs,
             "completed_jobs": completed_jobs
-        }
+        },
+        "business_insight": business_insight
     }
 
 # Health check endpoint
