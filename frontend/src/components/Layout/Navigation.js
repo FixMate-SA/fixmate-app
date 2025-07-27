@@ -8,6 +8,8 @@ const Navigation = () => {
     { path: '/', label: 'Dashboard', icon: '📊' },
     { path: '/jobs', label: 'Jobs', icon: '📋' },
     { path: '/fixers', label: 'Fixers', icon: '🔧' },
+    { path: '/learning', label: 'Learning', icon: '🎓' },
+    { path: '/sms', label: 'SMS Portal', icon: '📱' },
     { path: '/profile', label: 'Profile', icon: '👤' },
   ];
 
@@ -18,12 +20,12 @@ const Navigation = () => {
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
       <div className="container mx-auto px-4">
-        <div className="flex space-x-8">
+        <div className="flex space-x-8 overflow-x-auto">
           {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center space-x-2 py-4 px-2 border-b-2 transition-colors ${
+              className={`flex items-center space-x-2 py-4 px-2 border-b-2 transition-colors whitespace-nowrap ${
                 isActive(item.path)
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
