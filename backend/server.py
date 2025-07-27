@@ -1,56 +1,204 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field
 from typing import List
-import uuid
+import json
 from datetime import datetime
 
+from database import get_db, create_tables
+from models import User, Fixer, Job, Review
+from schemas import (
+    UserCreate, UserResponse, FixerCreate, FixerResponse,
+    JobCreate, JobUpdate, JobResponse, ReviewCreate, ReviewResponse,
+    LoginRequest, LoginResponse
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# Create tables
+create_tables()
 
 # Create the main app without a prefix
-app = FastAPI()
+app = FastAPI(title="FixMate-SA API", version="1.0.0")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Authentication endpoints
+@api_router.post("/auth/login", response_model=LoginResponse)
+async def login(request: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.phone == request.phone).first()
+    
+    if not user:
+        # Create new user if doesn't exist
+        user = User(phone=request.phone, name=f"User {request.phone}")
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    
+    # Simple token for now (in production, use JWT)
+    token = f"token_{user.id}"
+    
+    return LoginResponse(user=user, token=token)
 
-# Define Models
-class StatusCheck(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+# User endpoints
+@api_router.post("/users", response_model=UserResponse)
+async def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    db_user = User(**user.dict())
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+@api_router.get("/users/{user_id}", response_model=UserResponse)
+async def get_user(user_id: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
-# Add your routes to the router instead of directly to app
+@api_router.get("/users", response_model=List[UserResponse])
+async def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    users = db.query(User).offset(skip).limit(limit).all()
+    return users
+
+# Fixer endpoints
+@api_router.post("/fixers", response_model=FixerResponse)
+async def create_fixer(fixer: FixerCreate, db: Session = Depends(get_db)):
+    db_fixer = Fixer(**fixer.dict())
+    db.add(db_fixer)
+    db.commit()
+    db.refresh(db_fixer)
+    return db_fixer
+
+@api_router.get("/fixers", response_model=List[FixerResponse])
+async def get_fixers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    fixers = db.query(Fixer).filter(Fixer.is_active == True).offset(skip).limit(limit).all()
+    return fixers
+
+@api_router.get("/fixers/{fixer_id}", response_model=FixerResponse)
+async def get_fixer(fixer_id: str, db: Session = Depends(get_db)):
+    fixer = db.query(Fixer).filter(Fixer.id == fixer_id).first()
+    if not fixer:
+        raise HTTPException(status_code=404, detail="Fixer not found")
+    return fixer
+
+@api_router.get("/fixers/by-service/{service}")
+async def get_fixers_by_service(service: str, db: Session = Depends(get_db)):
+    fixers = db.query(Fixer).filter(
+        Fixer.services.contains(service),
+        Fixer.is_active == True
+    ).all()
+    return fixers
+
+# Job endpoints
+@api_router.post("/jobs", response_model=JobResponse)
+async def create_job(job: JobCreate, db: Session = Depends(get_db)):
+    db_job = Job(**job.dict())
+    db.add(db_job)
+    db.commit()
+    db.refresh(db_job)
+    return db_job
+
+@api_router.get("/jobs", response_model=List[JobResponse])
+async def get_jobs(user_id: str = None, fixer_id: str = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    query = db.query(Job)
+    
+    if user_id:
+        query = query.filter(Job.user_id == user_id)
+    if fixer_id:
+        query = query.filter(Job.fixer_id == fixer_id)
+    
+    jobs = query.offset(skip).limit(limit).all()
+    return jobs
+
+@api_router.get("/jobs/{job_id}", response_model=JobResponse)
+async def get_job(job_id: str, db: Session = Depends(get_db)):
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+@api_router.put("/jobs/{job_id}", response_model=JobResponse)
+async def update_job(job_id: str, job_update: JobUpdate, db: Session = Depends(get_db)):
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    for key, value in job_update.dict(exclude_unset=True).items():
+        setattr(job, key, value)
+    
+    job.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(job)
+    return job
+
+# Review endpoints
+@api_router.post("/reviews", response_model=ReviewResponse)
+async def create_review(review: ReviewCreate, db: Session = Depends(get_db)):
+    db_review = Review(**review.dict())
+    db.add(db_review)
+    db.commit()
+    db.refresh(db_review)
+    
+    # Update fixer rating
+    fixer = db.query(Fixer).filter(Fixer.id == review.fixer_id).first()
+    if fixer:
+        reviews = db.query(Review).filter(Review.fixer_id == review.fixer_id).all()
+        avg_rating = sum(r.rating for r in reviews) / len(reviews)
+        fixer.rating = avg_rating
+        db.commit()
+    
+    return db_review
+
+@api_router.get("/reviews", response_model=List[ReviewResponse])
+async def get_reviews(fixer_id: str = None, user_id: str = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    query = db.query(Review)
+    
+    if fixer_id:
+        query = query.filter(Review.fixer_id == fixer_id)
+    if user_id:
+        query = query.filter(Review.user_id == user_id)
+    
+    reviews = query.offset(skip).limit(limit).all()
+    return reviews
+
+# Dashboard endpoints
+@api_router.get("/dashboard/{user_id}")
+async def get_dashboard(user_id: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get user's jobs
+    jobs = db.query(Job).filter(Job.user_id == user_id).order_by(Job.created_at.desc()).limit(10).all()
+    
+    # Get recent fixers
+    fixers = db.query(Fixer).filter(Fixer.is_active == True).order_by(Fixer.rating.desc()).limit(10).all()
+    
+    # Get stats
+    total_jobs = db.query(Job).filter(Job.user_id == user_id).count()
+    completed_jobs = db.query(Job).filter(Job.user_id == user_id, Job.status == "completed").count()
+    
+    return {
+        "user": user,
+        "recent_jobs": jobs,
+        "top_fixers": fixers,
+        "stats": {
+            "total_jobs": total_jobs,
+            "completed_jobs": completed_jobs
+        }
+    }
+
+# Health check endpoint
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
-
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.dict()
-    status_obj = StatusCheck(**status_dict)
-    _ = await db.status_checks.insert_one(status_obj.dict())
-    return status_obj
-
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    status_checks = await db.status_checks.find().to_list(1000)
-    return [StatusCheck(**status_check) for status_check in status_checks]
+    return {"message": "FixMate-SA API is running"}
 
 # Include the router in the main app
 app.include_router(api_router)
@@ -70,6 +218,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)
