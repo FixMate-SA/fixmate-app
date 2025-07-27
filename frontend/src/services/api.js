@@ -48,6 +48,56 @@ export const apiService = {
 
   // Auth
   login: (phone) => api.post('/auth/login', { phone }),
+
+  // AI Services
+  transcribeAudio: (audioFile) => {
+    const formData = new FormData();
+    formData.append('audio', audioFile);
+    return api.post('/transcribe', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  
+  classifyService: (description) => {
+    const formData = new FormData();
+    formData.append('description', description);
+    return api.post('/classify-service', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  
+  analyzeSentiment: (text) => {
+    const formData = new FormData();
+    formData.append('text', text);
+    return api.post('/analyze-sentiment', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  // SMS Services
+  sendSMS: (toNumber, message) => {
+    const formData = new FormData();
+    formData.append('to_number', toNumber);
+    formData.append('message', message);
+    return api.post('/sms/send', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  // Learning Platform
+  getCourses: () => api.get('/learning/courses'),
+  getCourse: (id) => api.get(`/learning/courses/${id}`),
+  enrollCourse: (courseId) => api.post(`/learning/enroll/${courseId}`),
+  getProgress: (courseId) => api.get(`/learning/progress/${courseId}`),
+  markLessonComplete: (lessonId) => api.post(`/learning/lessons/${lessonId}/complete`),
 };
 
 export default api;
