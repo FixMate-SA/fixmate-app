@@ -11,7 +11,7 @@ import json
 from datetime import datetime
 
 from database import get_db, create_tables
-from models import User, Fixer, Job, Review
+from models import User, Fixer, Job, Review, FixerPayment, FixerVerification
 from schemas import (
     UserCreate, UserResponse, FixerCreate, FixerResponse,
     JobCreate, JobUpdate, JobResponse, ReviewCreate, ReviewResponse,
