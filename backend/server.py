@@ -136,6 +136,62 @@ async def verify_payment(payment_id: str = Form(...), payment_type: str = Form(.
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Payment verification failed: {str(e)}")
 
+# Fixer payment management endpoints
+@api_router.get("/fixer/{fixer_id}/payment-status")
+async def get_fixer_payment_status(fixer_id: str, db: Session = Depends(get_db)):
+    """
+    Check fixer payment status and ability to receive jobs
+    """
+    try:
+        status = payment_service.check_fixer_payment_status(fixer_id, db)
+        return status
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get payment status: {str(e)}")
+
+@api_router.post("/fixer/{fixer_id}/create-service-fee")
+async def create_fixer_service_fee(fixer_id: str, description: str = Form(...), db: Session = Depends(get_db)):
+    """
+    Create R20 service fee for fixer (called when job is assigned)
+    """
+    try:
+        result = payment_service.create_fixer_service_fee(fixer_id, description, db)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create service fee: {str(e)}")
+
+@api_router.post("/fixer/payment/{payment_id}/settle")
+async def settle_fixer_payment(payment_id: str, payment_method: str = Form(...), reference: str = Form(...), db: Session = Depends(get_db)):
+    """
+    Mark fixer payment as settled
+    """
+    try:
+        result = payment_service.settle_payment(payment_id, payment_method, reference, db)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to settle payment: {str(e)}")
+
+@api_router.get("/fixer/{fixer_id}/payment-history")
+async def get_fixer_payment_history(fixer_id: str, db: Session = Depends(get_db)):
+    """
+    Get payment history for fixer
+    """
+    try:
+        history = payment_service.get_fixer_payment_history(fixer_id, db)
+        return {"payments": history}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get payment history: {str(e)}")
+
+@api_router.post("/admin/update-payment-statuses")
+async def update_payment_statuses(db: Session = Depends(get_db)):
+    """
+    Admin endpoint to update overdue payment statuses (should be run daily)
+    """
+    try:
+        result = payment_service.update_fixer_payment_status(db)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update payment statuses: {str(e)}")
+
 # USSD endpoints
 @api_router.post("/ussd")
 async def handle_ussd(phone_number: str = Form(...), text: str = Form(...), session_id: str = Form(...)):
