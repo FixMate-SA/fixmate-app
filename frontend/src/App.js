@@ -9,6 +9,8 @@ import Dashboard from "./components/Dashboard/Dashboard";
 import JobList from "./components/Jobs/JobList";
 import CreateJob from "./components/Jobs/CreateJob";
 import FixerList from "./components/Fixers/FixerList";
+import LearningPlatform from "./components/Learning/LearningPlatform";
+import SMSInterface from "./components/SMS/SMSInterface";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -81,6 +83,26 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <FixerList />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/learning"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <LearningPlatform />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sms"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <SMSInterface />
                   </Layout>
                 </ProtectedRoute>
               }
