@@ -92,12 +92,85 @@ export const apiService = {
     });
   },
 
-  // Learning Platform
-  getCourses: () => api.get('/learning/courses'),
-  getCourse: (id) => api.get(`/learning/courses/${id}`),
-  enrollCourse: (courseId) => api.post(`/learning/enroll/${courseId}`),
-  getProgress: (courseId) => api.get(`/learning/progress/${courseId}`),
-  markLessonComplete: (lessonId) => api.post(`/learning/lessons/${lessonId}/complete`),
+  // Enhanced Payment Services
+  createEFTPayment: (amount, description, userData) => {
+    const formData = new FormData();
+    formData.append('amount', amount);
+    formData.append('description', description);
+    formData.append('user_email', userData.email || '');
+    formData.append('user_name', userData.name || '');
+    return api.post('/payment/eft', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  createCardPayment: (amount, description, userData) => {
+    const formData = new FormData();
+    formData.append('amount', amount);
+    formData.append('description', description);
+    formData.append('user_email', userData.email || '');
+    formData.append('user_name', userData.name || '');
+    return api.post('/payment/eft', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  createAirtimePayment: (phoneNumber, amount, description) => {
+    const formData = new FormData();
+    formData.append('phone_number', phoneNumber);
+    formData.append('amount', amount);
+    formData.append('description', description);
+    return api.post('/payment/airtime', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  createCashPayment: (location, amount, description) => {
+    const formData = new FormData();
+    formData.append('location', location);
+    formData.append('amount', amount);
+    formData.append('description', description);
+    return api.post('/payment/cash', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  createStokvelPayment: (stokvelName, amount, description) => {
+    const formData = new FormData();
+    formData.append('stokvel_name', stokvelName);
+    formData.append('amount', amount);
+    formData.append('description', description);
+    return api.post('/payment/stokvel', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  createLaybyPayment: (totalAmount, depositAmount, description, installments) => {
+    const formData = new FormData();
+    formData.append('total_amount', totalAmount);
+    formData.append('deposit_amount', depositAmount);
+    formData.append('description', description);
+    formData.append('installments', installments);
+    return api.post('/payment/layby', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  verifyPayment: (paymentId, paymentType) => {
+    const formData = new FormData();
+    formData.append('payment_id', paymentId);
+    formData.append('payment_type', paymentType);
+    return api.post('/payment/verify', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  // Offline Support
+  syncOfflineData: (offlineData) => api.post('/offline/sync', offlineData),
+  getOfflineStatus: () => api.get('/offline/status'),
+
+  // USSD Support
+  getUSSDStats: () => api.get('/ussd/stats'),
 };
 
 export default api;
