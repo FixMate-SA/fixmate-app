@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import Header from "./components/Layout/Header";
 import Navigation from "./components/Layout/Navigation";
+import OfflineIndicator from "./components/Common/OfflineIndicator";
 import LoginForm from "./components/Auth/LoginForm";
 import Dashboard from "./components/Dashboard/Dashboard";
 import JobList from "./components/Jobs/JobList";
@@ -36,6 +37,7 @@ const Layout = ({ children }) => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <Navigation />
+      <OfflineIndicator />
       <main className="container mx-auto px-4 py-8">
         {children}
       </main>
