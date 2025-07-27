@@ -1,4 +1,4 @@
-// South African Language Support
+// Complete South African Language Support - All 11 Official Languages
 export const languages = {
   en: {
     name: 'English',
@@ -24,6 +24,7 @@ export const languages = {
       loading: 'Loading...',
       error: 'Error',
       success: 'Success',
+      emergency: 'Emergency',
       
       // Authentication
       phoneNumber: 'Phone Number',
@@ -59,6 +60,8 @@ export const languages = {
       payWithAirtime: 'Pay with Airtime',
       cashCollection: 'Cash Collection',
       stokvelPayment: 'Stokvel Payment',
+      fixerFee: 'Fixer Fee',
+      outstandingBalance: 'Outstanding Balance',
       
       // Learning
       learningAcademy: 'Learning Academy',
@@ -72,18 +75,26 @@ export const languages = {
       sendSMS: 'Send SMS',
       smsCommands: 'SMS Commands',
       
-      // Township & Community
-      communityServices: 'Community Services',
-      township: 'Township',
-      rural: 'Rural',
-      offlineMode: 'Offline Mode',
+      // Verification
+      verification: 'Verification',
+      submitDocuments: 'Submit Documents',
+      idDocument: 'ID Document',
+      verified: 'Verified',
+      pending: 'Pending',
+      
+      // Emergency
+      emergencyButton: 'Emergency Button',
+      callPolice: 'Call Police',
+      sendLocation: 'Send Location',
+      inDanger: 'Press if in danger',
       
       // Status
       pending: 'Pending',
       assigned: 'Assigned',
       inProgress: 'In Progress',
       completed: 'Completed',
-      cancelled: 'Cancelled'
+      cancelled: 'Cancelled',
+      blocked: 'Blocked'
     }
   },
   
@@ -111,6 +122,7 @@ export const languages = {
       loading: 'Laai...',
       error: 'Fout',
       success: 'Sukses',
+      emergency: 'Noodgeval',
       
       // Authentication
       phoneNumber: 'Telefoonnommer',
@@ -146,6 +158,8 @@ export const languages = {
       payWithAirtime: 'Betaal met Lugtyd',
       cashCollection: 'Kontant Insameling',
       stokvelPayment: 'Stokvel Betaling',
+      fixerFee: 'Herstelderfooi',
+      outstandingBalance: 'Uitstaande Balans',
       
       // Learning
       learningAcademy: 'Leer Akademie',
@@ -159,12 +173,26 @@ export const languages = {
       sendSMS: 'Stuur SMS',
       smsCommands: 'SMS Bevele',
       
+      // Verification
+      verification: 'Verifikasie',
+      submitDocuments: 'Dien Dokumente In',
+      idDocument: 'ID Dokument',
+      verified: 'Geverifieer',
+      pending: 'Hangende',
+      
+      // Emergency
+      emergencyButton: 'Noodknoppie',
+      callPolice: 'Roep Polisie',
+      sendLocation: 'Stuur Ligging',
+      inDanger: 'Druk as jy in gevaar is',
+      
       // Status
       pending: 'Hangende',
       assigned: 'Toegewys',
       inProgress: 'In Proses',
       completed: 'Voltooi',
-      cancelled: 'Gekanselleer'
+      cancelled: 'Gekanselleer',
+      blocked: 'Geblokkeer'
     }
   },
   
@@ -192,6 +220,7 @@ export const languages = {
       loading: 'Kulayishwa...',
       error: 'Iphutha',
       success: 'Impumelelo',
+      emergency: 'Isimo Esiphuthumayo',
       
       // Authentication
       phoneNumber: 'Inombolo Yocingo',
@@ -227,6 +256,8 @@ export const languages = {
       payWithAirtime: 'Khokha Nge-Airtime',
       cashCollection: 'Ukuqoqa Imali',
       stokvelPayment: 'Ukukhokha Kwestokvel',
+      fixerFee: 'Imali Yokulungisa',
+      outstandingBalance: 'Isikweletu',
       
       // Learning
       learningAcademy: 'I-Academy Yokufunda',
@@ -240,12 +271,26 @@ export const languages = {
       sendSMS: 'Thumela i-SMS',
       smsCommands: 'Imiyalo ye-SMS',
       
+      // Verification
+      verification: 'Ukuqinisekisa',
+      submitDocuments: 'Thumela Amadokhumenti',
+      idDocument: 'Idokhumenti Yamazisi',
+      verified: 'Kuqinisekisiwe',
+      pending: 'Kulindile',
+      
+      // Emergency
+      emergencyButton: 'Inkinobho Yesimo Esiphuthumayo',
+      callPolice: 'Shayela Amaphoyisa',
+      sendLocation: 'Thumela Indawo',
+      inDanger: 'Cindezela uma usengozini',
+      
       // Status
       pending: 'Kulindile',
       assigned: 'Kwabiwe',
       inProgress: 'Kuyaqhubeka',
       completed: 'Kuqedile',
-      cancelled: 'Kukhanselwe'
+      cancelled: 'Kukhanselwe',
+      blocked: 'Kuvinjiwe'
     }
   },
   
@@ -273,6 +318,7 @@ export const languages = {
       loading: 'Kulayishwa...',
       error: 'Impazamo',
       success: 'Impumelelo',
+      emergency: 'Imeko Engxamisekileyo',
       
       // Authentication
       phoneNumber: 'Inombolo Yomnxeba',
@@ -308,6 +354,8 @@ export const languages = {
       payWithAirtime: 'Hlawula Nge-Airtime',
       cashCollection: 'Ukuqokelela Imali',
       stokvelPayment: 'Intlawulo Yestokvel',
+      fixerFee: 'Imali Yokulungisa',
+      outstandingBalance: 'Isikweleti',
       
       // Learning
       learningAcademy: 'I-Academy Yokufunda',
@@ -321,12 +369,26 @@ export const languages = {
       sendSMS: 'Thumela i-SMS',
       smsCommands: 'Imiyalelo ye-SMS',
       
+      // Verification
+      verification: 'Ukuqinisekisa',
+      submitDocuments: 'Ngenisa Amaxwebhu',
+      idDocument: 'Isazisi',
+      verified: 'Iqinisekisiwe',
+      pending: 'Kulindile',
+      
+      // Emergency
+      emergencyButton: 'Iqhosha Lengxaki',
+      callPolice: 'Biza Amapolisa',
+      sendLocation: 'Thumela Indawo',
+      inDanger: 'Cofa ukuba usengozini',
+      
       // Status
       pending: 'Kulindile',
       assigned: 'Yabiwe',
       inProgress: 'Iyaqhubeka',
       completed: 'Igqityiwe',
-      cancelled: 'Irhoxisiwe'
+      cancelled: 'Irhoxisiwe',
+      blocked: 'Ithinjiwe'
     }
   },
   
@@ -354,6 +416,7 @@ export const languages = {
       loading: 'E laela...',
       error: 'Phoso',
       success: 'Katleho',
+      emergency: 'Tshohanyetso',
       
       // Authentication
       phoneNumber: 'Nomoro ya Mohala',
@@ -389,6 +452,8 @@ export const languages = {
       payWithAirtime: 'Lefa ka Airtime',
       cashCollection: 'Pokello ya Chelete',
       stokvelPayment: 'Tefo ya Stokvel',
+      fixerFee: 'Lekhetho la Mohlweki',
+      outstandingBalance: 'Melato',
       
       // Learning
       learningAcademy: 'Sekolo sa Thuto',
@@ -402,12 +467,516 @@ export const languages = {
       sendSMS: 'Romela SMS',
       smsCommands: 'Litaelo tsa SMS',
       
+      // Verification
+      verification: 'Netefatso',
+      submitDocuments: 'Romela Litokomane',
+      idDocument: 'Bukana ya Boitsebiso',
+      verified: 'E Netefatsoe',
+      pending: 'E leta',
+      
+      // Emergency
+      emergencyButton: 'Konopo ya Tshohanyetso',
+      callPolice: 'Letsetsa Mapodisi',
+      sendLocation: 'Romela Sebaka',
+      inDanger: 'Tobetsa ha u kotsing',
+      
       // Status
       pending: 'E leta',
       assigned: 'E abetsoe',
       inProgress: 'E tsoela pele',
       completed: 'E qetiloe',
-      cancelled: 'E hlakotsoe'
+      cancelled: 'E hlakotsoe',
+      blocked: 'E thibelitsoe'
+    }
+  },
+  
+  tn: {
+    name: 'Setswana',
+    flag: '🇿🇦',
+    translations: {
+      // Navigation
+      dashboard: 'Boto',
+      jobs: 'Ditiro',
+      fixers: 'Babaakanyetsi',
+      learning: 'Thuto',
+      smsPortal: 'Portal ya SMS',
+      profile: 'Profaele',
+      
+      // Common
+      welcome: 'O amogelwa',
+      login: 'Tsena',
+      logout: 'Tswa',
+      cancel: 'Digela',
+      save: 'Boloka',
+      create: 'Dira',
+      edit: 'Baakanya',
+      delete: 'Phimola',
+      loading: 'E laela...',
+      error: 'Phoso',
+      success: 'Katlego',
+      emergency: 'Tshoganetso',
+      
+      // Authentication
+      phoneNumber: 'Nomoro ya Mogala',
+      enterPhone: 'Tsenya nomoro ya gago ya mogala',
+      signIn: 'Tsena',
+      welcomeBack: 'O amogelwa gape',
+      
+      // Jobs
+      createJob: 'Dira Tiro',
+      jobDescription: 'Tlhaloso ya Tiro',
+      location: 'Lefelo',
+      estimatedPrice: 'Tlhwatlhwa e e Lekaneng',
+      serviceName: 'Leina la Tirelo',
+      
+      // Services
+      plumbing: 'Metsi',
+      electrical: 'Motlakase',
+      carpentry: 'Logong',
+      painting: 'Pente',
+      cleaning: 'Phepafatso',
+      gardening: 'Tshimo',
+      
+      // Voice
+      useVoiceInput: 'Dirisa Lentswe',
+      startRecording: 'Simolola go Rekota',
+      stopRecording: 'Emisa go Rekota',
+      voiceTip: 'Bua sentle mme o tlhalose ditlhokego tsa gago',
+      
+      // Payment
+      paymentOptions: 'Dikgetho tsa Dituelo',
+      payWithCard: 'Duela ka Karete',
+      payWithEFT: 'Duela ka EFT',
+      payWithAirtime: 'Duela ka Airtime',
+      cashCollection: 'Pokello ya Madi',
+      stokvelPayment: 'Tuelo ya Stokvel',
+      fixerFee: 'Lekgetho la Mobaakanyetsi',
+      outstandingBalance: 'Dikoloto',
+      
+      // Learning
+      learningAcademy: 'Sekolo sa Thuto',
+      totalCourses: 'Dithuto Tsotlhe',
+      completed: 'Feditswe',
+      certificates: 'Ditifikeiti',
+      enrollNow: 'Ngodisa Jaanong',
+      
+      // SMS
+      smsService: 'Tirelo ya SMS',
+      sendSMS: 'Romela SMS',
+      smsCommands: 'Ditaelo tsa SMS',
+      
+      // Verification
+      verification: 'Netefatso',
+      submitDocuments: 'Romela Dipampiri',
+      idDocument: 'Bukana ya Boitsebiso',
+      verified: 'E Netefaditswe',
+      pending: 'E leta',
+      
+      // Emergency
+      emergencyButton: 'Konopo ya Tshoganetso',
+      callPolice: 'Letsetsa Mapodisi',
+      sendLocation: 'Romela Lefelo',
+      inDanger: 'Tobetsa fa o kotsing',
+      
+      // Status
+      pending: 'E leta',
+      assigned: 'E neetswe',
+      inProgress: 'E tswelela',
+      completed: 'E feditswe',
+      cancelled: 'E digeletswe',
+      blocked: 'E thibeletswe'
+    }
+  },
+  
+  ve: {
+    name: 'Tshivenda',
+    flag: '🇿🇦',
+    translations: {
+      // Navigation
+      dashboard: 'Boto',
+      jobs: 'Mishumo',
+      fixers: 'Vharungi',
+      learning: 'U guda',
+      smsPortal: 'Portal ya SMS',
+      profile: 'Profaele',
+      
+      // Common
+      welcome: 'Ndi a u amukela',
+      login: 'Kena',
+      logout: 'Bva',
+      cancel: 'Kansela',
+      save: 'Dzhenisa',
+      create: 'Vhumba',
+      edit: 'Lungisa',
+      delete: 'Vhulaya',
+      loading: 'Zwo khou laela...',
+      error: 'Vhukuma',
+      success: 'Ndivho',
+      emergency: 'Tshoganedzo',
+      
+      // Authentication
+      phoneNumber: 'Nomboro ya Lutingo',
+      enterPhone: 'Dzhenisani nomboro yanu ya lutingo',
+      signIn: 'Kena',
+      welcomeBack: 'Ndi a u amukela hafhu',
+      
+      // Jobs
+      createJob: 'Vhumba Mushumo',
+      jobDescription: 'Thalutshedzo ya Mushumo',
+      location: 'Fhethu',
+      estimatedPrice: 'Mutengo wa Tshiedziso',
+      serviceName: 'Dzina la Tshumelo',
+      
+      // Services
+      plumbing: 'Madi',
+      electrical: 'Motlakase',
+      carpentry: 'Khuni',
+      painting: 'Pende',
+      cleaning: 'U pefa',
+      gardening: 'Tshimo',
+      
+      // Voice
+      useVoiceInput: 'Shumisani Ipfi',
+      startRecording: 'Thomani u Rekoda',
+      stopRecording: 'Imani u Rekoda',
+      voiceTip: 'Ambarani zwavhudi na u thalutshedze zwiitwa zwanu',
+      
+      // Payment
+      paymentOptions: 'Zwikhethwa zwa Mbuelo',
+      payWithCard: 'Buelelani nga Khadi',
+      payWithEFT: 'Buelelani nga EFT',
+      payWithAirtime: 'Buelelani nga Airtime',
+      cashCollection: 'Kuvhanganyedza ha Mali',
+      stokvelPayment: 'Mbuelo ya Stokvel',
+      fixerFee: 'Mbuelo ya Murungi',
+      outstandingBalance: 'Mulandu',
+      
+      // Learning
+      learningAcademy: 'Tshikolo tsha U guda',
+      totalCourses: 'Kosi dzothe',
+      completed: 'Yo fhelelwa',
+      certificates: 'Tifikiete',
+      enrollNow: 'Andaliselani Zwino',
+      
+      // SMS
+      smsService: 'Tshumelo ya SMS',
+      sendSMS: 'Rumelani SMS',
+      smsCommands: 'Milayo ya SMS',
+      
+      // Verification
+      verification: 'U khwamedza',
+      submitDocuments: 'Rumelani Mabugu',
+      idDocument: 'Bugu ya Zwidodombedzwa',
+      verified: 'Zwo khwamedza',
+      pending: 'Zwo linda',
+      
+      // Emergency
+      emergencyButton: 'Butoni ya Tshoganedzo',
+      callPolice: 'Fonirani Maphodisa',
+      sendLocation: 'Rumelani Fhethu',
+      inDanger: 'Dzhielani arali ni khou kandukanya',
+      
+      // Status
+      pending: 'Zwo linda',
+      assigned: 'Zwo neelwa',
+      inProgress: 'Zwo khou bvela phanada',
+      completed: 'Zwo fhelelwa',
+      cancelled: 'Zwo kansela',
+      blocked: 'Zwo vhiniwa'
+    }
+  },
+  
+  ts: {
+    name: 'Xitsonga',
+    flag: '🇿🇦',
+    translations: {
+      // Navigation
+      dashboard: 'Boto',
+      jobs: 'Mintirho',
+      fixers: 'Valunghisi',
+      learning: 'Ku dyondza',
+      smsPortal: 'Portal ya SMS',
+      profile: 'Profayili',
+      
+      // Common
+      welcome: 'Siya ku amukela',
+      login: 'Nghena',
+      logout: 'Huma',
+      cancel: 'Rhangela',
+      save: 'Hlayisa',
+      create: 'Tumbuluxa',
+      edit: 'Lunghisa',
+      delete: 'Susa',
+      loading: 'Swi karhata...',
+      error: 'Xihoxo',
+      success: 'Ndzhaku',
+      emergency: 'Swiphiqo',
+      
+      // Authentication
+      phoneNumber: 'Nomboro ya Riqingho',
+      enterPhone: 'Nghakanya nomboro ya wena ya riqingho',
+      signIn: 'Nghena',
+      welcomeBack: 'Siya ku amukela nakambe',
+      
+      // Jobs
+      createJob: 'Tumbuluxa Ntirho',
+      jobDescription: 'Nhlamuselo ya Ntirho',
+      location: 'Ndhawu',
+      estimatedPrice: 'Ntsengo wa Xiphakelo',
+      serviceName: 'Vito ra Vukorhokeri',
+      
+      // Services
+      plumbing: 'Mati',
+      electrical: 'Gezi',
+      carpentry: 'Rietsi',
+      painting: 'Ku penda',
+      cleaning: 'Ku basisa',
+      gardening: 'Purashe',
+      
+      // Voice
+      useVoiceInput: 'Tirhisa Rito',
+      startRecording: 'Sungula ku Rekoda',
+      stopRecording: 'Yima ku Rekoda',
+      voiceTip: 'Vulavula hi ku vonakala ni hlamusele swilaveko swa n`wi',
+      
+      // Payment
+      paymentOptions: 'Swihlawulelo swa Hakelo',
+      payWithCard: 'Hakela hi Khadi',
+      payWithEFT: 'Hakela hi EFT',
+      payWithAirtime: 'Hakela hi Airtime',
+      cashCollection: 'Nhlengeleto wa Mali',
+      stokvelPayment: 'Hakelo ya Stokvel',
+      fixerFee: 'Hakelo ya Mulunghisi',
+      outstandingBalance: 'Xikweleti',
+      
+      // Learning
+      learningAcademy: 'Akademi ya ku Dyondza',
+      totalCourses: 'Tikhosi hinkwato',
+      completed: 'Swi hetisiwile',
+      certificates: 'Tifiketi',
+      enrollNow: 'Tsarisa Sweswi',
+      
+      // SMS
+      smsService: 'Vukorhokeri bya SMS',
+      sendSMS: 'Rhumela SMS',
+      smsCommands: 'Swileriso swa SMS',
+      
+      // Verification
+      verification: 'Ku tiyisisa',
+      submitDocuments: 'Rhumela Titokomanti',
+      idDocument: 'Buku ya Vutivi',
+      verified: 'Swi tiyisisiwile',
+      pending: 'Swi rindza',
+      
+      // Emergency
+      emergencyButton: 'Butoni ya Swiphiqo',
+      callPolice: 'Fona Maphorisa',
+      sendLocation: 'Rhumela Ndhawu',
+      inDanger: 'Tsindzaka loko u le exikolweni',
+      
+      // Status
+      pending: 'Swi rindza',
+      assigned: 'Swi nyikiwile',
+      inProgress: 'Swi karhata',
+      completed: 'Swi hetisiwile',
+      cancelled: 'Swi rhangeriwe',
+      blocked: 'Swi siviwile'
+    }
+  },
+  
+  nr: {
+    name: 'isiNdebele',
+    flag: '🇿🇦',
+    translations: {
+      // Navigation
+      dashboard: 'Ibhodi',
+      jobs: 'Imisebenzi',
+      fixers: 'Abasiindisi',
+      learning: 'Ukufunda',
+      smsPortal: 'I-SMS Portal',
+      profile: 'Iphrofayili',
+      
+      // Common
+      welcome: 'Siyagemukela',
+      login: 'Ngena',
+      logout: 'Phuma',
+      cancel: 'Khansela',
+      save: 'Gcina',
+      create: 'Enza',
+      edit: 'Hlela',
+      delete: 'Susa',
+      loading: 'Kulayishwa...',
+      error: 'Iphutho',
+      success: 'Impumelelo',
+      emergency: 'Isimo Esiphuthukayo',
+      
+      // Authentication
+      phoneNumber: 'Inomboro Yocingo',
+      enterPhone: 'Faka inomboro yakho yocingo',
+      signIn: 'Ngena',
+      welcomeBack: 'Siyagemukela futhi',
+      
+      // Jobs
+      createJob: 'Enza Umsebenzi',
+      jobDescription: 'Incazelo Yomsebenzi',
+      location: 'Indawo',
+      estimatedPrice: 'Intengo Elinganisiweyo',
+      serviceName: 'Igama Lesevisi',
+      
+      // Services
+      plumbing: 'Amanzi',
+      electrical: 'Ugesi',
+      carpentry: 'Ukhuni',
+      painting: 'Ukupenda',
+      cleaning: 'Ukuhlanza',
+      gardening: 'Ingadi',
+      
+      // Voice
+      useVoiceInput: 'Sebenzisa Izwi',
+      startRecording: 'Qala Ukurekhoda',
+      stopRecording: 'Yima Ukurekhoda',
+      voiceTip: 'Khuluma ngokucacileyo uchaze izidingo zakho',
+      
+      // Payment
+      paymentOptions: 'Izindlela Zokukhokha',
+      payWithCard: 'Khokha Ngekhadi',
+      payWithEFT: 'Khokha Nge-EFT',
+      payWithAirtime: 'Khokha Nge-Airtime',
+      cashCollection: 'Ukuqoqa Imali',
+      stokvelPayment: 'Ukukhokha Kwestokvel',
+      fixerFee: 'Imali Yokulungisa',
+      outstandingBalance: 'Isikweletu',
+      
+      // Learning
+      learningAcademy: 'I-Academy Yokufunda',
+      totalCourses: 'Izifundo Zonke',
+      completed: 'Kuqedile',
+      certificates: 'Izitifikethi',
+      enrollNow: 'Bhalisa Manje',
+      
+      // SMS
+      smsService: 'Isevisi ye-SMS',
+      sendSMS: 'Thumela i-SMS',
+      smsCommands: 'Imiyalo ye-SMS',
+      
+      // Verification
+      verification: 'Ukuqinisekisa',
+      submitDocuments: 'Thumela Amadokhumenti',
+      idDocument: 'Idokhumenti Yamazisi',
+      verified: 'Kuqinisekisiwe',
+      pending: 'Kulindile',
+      
+      // Emergency
+      emergencyButton: 'Inkinobho Yesimo Esiphuthukayo',
+      callPolice: 'Shayela Amaphoyisa',
+      sendLocation: 'Thumela Indawo',
+      inDanger: 'Cindezela uma usengozini',
+      
+      // Status
+      pending: 'Kulindile',
+      assigned: 'Kwabiwe',
+      inProgress: 'Kuyaqhubeka',
+      completed: 'Kuqedile',
+      cancelled: 'Kukhanseliwe',
+      blocked: 'Kuvinjiwe'
+    }
+  },
+  
+  ss: {
+    name: 'siSwati',
+    flag: '🇿🇦',
+    translations: {
+      // Navigation
+      dashboard: 'Libhodi',
+      jobs: 'Imisebenzi',
+      fixers: 'Basiindzi',
+      learning: 'Kufundza',
+      smsPortal: 'I-SMS Portal',
+      profile: 'Iphrofayili',
+      
+      // Common
+      welcome: 'Siyakwamukela',
+      login: 'Ngena',
+      logout: 'Phuma',
+      cancel: 'Khansela',
+      save: 'Gcina',
+      create: 'Enta',
+      edit: 'Hlela',
+      delete: 'Susa',
+      loading: 'Kulayisheka...',
+      error: 'Liphutho',
+      success: 'Impumelelo',
+      emergency: 'Lesimo Lesiphangalako',
+      
+      // Authentication
+      phoneNumber: 'Linomboro Lelucingo',
+      enterPhone: 'Faka linomboro lakho lelucingo',
+      signIn: 'Ngena',
+      welcomeBack: 'Siyakwamukela futsi',
+      
+      // Jobs
+      createJob: 'Enta Umsebenti',
+      jobDescription: 'Incazelo Yomsebenti',
+      location: 'Indvwenkhulu',
+      estimatedPrice: 'Intengo Lelinganisiweyo',
+      serviceName: 'Ligama Lesevisi',
+      
+      // Services
+      plumbing: 'Emanti',
+      electrical: 'Lugesi',
+      carpentry: 'Luhuni',
+      painting: 'Kupenda',
+      cleaning: 'Kuhlantja',
+      gardening: 'Ligadi',
+      
+      // Voice
+      useVoiceInput: 'Sebentisa Lidzwi',
+      startRecording: 'Cala Kurekhoda',
+      stopRecording: 'Yima Kurekhoda',
+      voiceTip: 'Khuluma ngalokucacileyo uchaze tidzingo takho',
+      
+      // Payment
+      paymentOptions: 'Tindlela Tekukhokhela',
+      payWithCard: 'Khokhela Ngekhadi',
+      payWithEFT: 'Khokhela Nge-EFT',
+      payWithAirtime: 'Khokhela Nge-Airtime',
+      cashCollection: 'Kubutsa Imali',
+      stokvelPayment: 'Kukukhokhela Kwestokvel',
+      fixerFee: 'Imali Yokulungisa',
+      outstandingBalance: 'Sikweletu',
+      
+      // Learning
+      learningAcademy: 'I-Academy Yekufundza',
+      totalCourses: 'Tifundvo Tonkhe',
+      completed: 'Kuphelelwe',
+      certificates: 'Tisitifikethi',
+      enrollNow: 'Bhalisa Manje',
+      
+      // SMS
+      smsService: 'Lisevisi le-SMS',
+      sendSMS: 'Thumela i-SMS',
+      smsCommands: 'Timyalo te-SMS',
+      
+      // Verification
+      verification: 'Kucinisekisa',
+      submitDocuments: 'Thumela Emadokhumenti',
+      idDocument: 'Lidokhumenti Letibuyelo',
+      verified: 'Kucinisekisiwe',
+      pending: 'Kulindile',
+      
+      // Emergency
+      emergencyButton: 'Linkinobho Lesimo Lesiphangalako',
+      callPolice: 'Shayela Emapolisa',
+      sendLocation: 'Thumela Indvwenkhulu',
+      inDanger: 'Cindzetela uma usengcupheni',
+      
+      // Status
+      pending: 'Kulindile',
+      assigned: 'Kuniketiwe',
+      inProgress: 'Kuyachubekela',
+      completed: 'Kuphelelwe',
+      cancelled: 'Kukhansele',
+      blocked: 'Kuvinjelwe'
     }
   }
 };
