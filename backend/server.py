@@ -19,6 +19,8 @@ from schemas import (
 )
 from services.ai_service import ai_service
 from services.sms_service import sms_service
+from services.payment_service import payment_service
+from services.ussd_service import ussd_service
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
