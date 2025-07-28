@@ -4,6 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { apiService } from '../../services/api';
 import FixerPaymentManager from '../Payment/FixerPaymentManager';
 import LanguageSelector from '../Common/LanguageSelector';
+import Logo from '../Common/Logo';
 
 const Profile = () => {
   const { user } = useAuth();
