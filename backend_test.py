@@ -879,7 +879,26 @@ class FixMateAPITester:
             import time
             timestamp2 = str(int(time.time()))[-5:]  # Different timestamp
             
+            # Create user for clean fixer
+            clean_fixer_user_data = {
+                "phone": f"+2782987{timestamp2}",
+                "first_name": "Clean",
+                "last_name": "Fixer",
+                "id_number": f"8001015009{timestamp2[-3:]}",
+                "town": "Cape Town",
+                "email": f"clean.fixer.{timestamp2}@fixmate.com",
+                "address": "123 Clean St, Cape Town"
+            }
+            
+            user_response = self.session.post(f"{API_BASE}/users", json=clean_fixer_user_data)
+            if user_response.status_code != 200:
+                self.log_result("Automatic Service Fee Creation", False, "Failed to create user for clean fixer", user_response)
+                return False
+            
+            clean_fixer_user = user_response.json()
+            
             fixer_data = {
+                "user_id": clean_fixer_user['id'],
                 "phone": f"+2782987{timestamp2}",
                 "name": "Clean Fixer",
                 "email": f"clean.fixer.{timestamp2}@fixmate.com",
