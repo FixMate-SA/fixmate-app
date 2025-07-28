@@ -8,6 +8,7 @@ class UserCreate(BaseModel):
     name: str
     email: Optional[str] = None
     address: Optional[str] = None
+    role: Optional[str] = "client"  # client, fixer, admin, super_admin
 
 class UserResponse(BaseModel):
     id: str
@@ -15,6 +16,8 @@ class UserResponse(BaseModel):
     name: str
     email: Optional[str] = None
     address: Optional[str] = None
+    role: str
+    is_active: bool
     created_at: datetime
 
     class Config:
