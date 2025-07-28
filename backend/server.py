@@ -1,6 +1,7 @@
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, File, UploadFile, Form
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 import os
