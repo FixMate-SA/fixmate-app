@@ -81,6 +81,7 @@ class Job(Base):
     user = relationship("User", back_populates="jobs")
     fixer = relationship("Fixer", back_populates="jobs")
     reviews = relationship("Review", back_populates="job")
+    emergency_alerts = relationship("EmergencyAlert", back_populates="job")
 
 class Review(Base):
     __tablename__ = "reviews"
