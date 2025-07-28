@@ -70,7 +70,10 @@ class FixMateAPITester:
         
         user_data = {
             "phone": f"+2782123{timestamp}",
-            "name": "John Doe",
+            "first_name": "John",
+            "last_name": "Doe",
+            "id_number": f"8001015009{timestamp[-3:]}",  # Valid SA ID format
+            "town": "Cape Town",
             "email": f"john.doe.{timestamp}@example.com",
             "address": "123 Main St, Cape Town"
         }
