@@ -140,10 +140,24 @@ class FixMateAPITester:
             return False
         
         login_data = {
-            "phone": self.test_data['user']['phone']
+            "phone": self.test_data['user']['phone'],
+            "password": "testpass123"  # We need to set a password first
         }
         
         try:
+            # First set a password for the user
+            set_password_data = {
+                "phone": self.test_data['user']['phone'],
+                "password": "testpass123",
+                "confirm_password": "testpass123"
+            }
+            
+            password_response = self.session.post(f"{API_BASE}/auth/set-password", json=set_password_data)
+            if password_response.status_code != 200:
+                self.log_result("Login", False, "Failed to set password for user", password_response)
+                return False
+            
+            # Now try to login
             response = self.session.post(f"{API_BASE}/auth/login", json=login_data)
             if response.status_code == 200:
                 data = response.json()
