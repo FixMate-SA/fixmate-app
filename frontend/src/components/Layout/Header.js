@@ -42,14 +42,11 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                <span className={`${getRoleTextColor(userRole)} font-bold text-lg`}>
-                  {userRole === 'admin' ? 'A' : userRole === 'fixer' ? 'F' : 'C'}
-                </span>
-              </div>
-              <h1 className="text-xl font-bold">FixMate-SA</h1>
-            </div>
+            <Logo 
+              size="medium" 
+              variant="header" 
+              showText={true}
+            />
           </div>
           
           <div className="flex items-center space-x-4">
