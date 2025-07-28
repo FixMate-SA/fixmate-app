@@ -260,15 +260,50 @@ async def get_offline_status():
 @api_router.post("/auth/login", response_model=LoginResponse)
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
     """
-    Enhanced login with role-based authentication
+    Enhanced login with password-based authentication and role detection
     """
     try:
-        # Extract name from phone if provided, otherwise use default
-        name = getattr(request, 'name', f"User {request.phone}")
-        email = getattr(request, 'email', "")
+        # Check if user exists
+        user = db.query(User).filter(User.phone == request.phone).first()
         
-        # Create or update user with role detection
-        user = role_service.create_or_update_user(request.phone, name, email, db)
+        if not user:
+            # Create new user if doesn't exist (first time login)
+            name = getattr(request, 'name', f"User {request.phone}")
+            email = getattr(request, 'email', "")
+            user = role_service.create_or_update_user(request.phone, name, email, db)
+            
+            # New user needs to set password
+            return {
+                "user": {"id": user.id, "phone": user.phone, "name": user.name},
+                "role_info": {"role": "client", "permissions": {}},
+                "display_name": user.name,
+                "welcome_message": f"Welcome {user.name}",
+                "token": "",
+                "requires_password": True
+            }
+        
+        # Existing user - check password if set
+        if user.is_password_set:
+            if not request.password:
+                raise HTTPException(status_code=400, detail="Password required")
+            
+            if not user.check_password(request.password):
+                raise HTTPException(status_code=401, detail="Invalid password")
+        else:
+            # User exists but hasn't set password yet
+            if not request.password:
+                return {
+                    "user": {"id": user.id, "phone": user.phone, "name": user.name},
+                    "role_info": {"role": user.role, "permissions": {}},
+                    "display_name": user.name,
+                    "welcome_message": f"Welcome {user.name}",
+                    "token": "",
+                    "requires_password": True
+                }
+        
+        # Update last login
+        user.last_login = datetime.utcnow()
+        db.commit()
         
         # Get complete profile data with role information
         profile_data = role_service.get_user_profile_data(user, db)
@@ -282,11 +317,71 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
             "role_info": profile_data["role_info"],
             "display_name": profile_data["display_name"],
             "welcome_message": profile_data["welcome_message"],
-            "token": token
+            "token": token,
+            "requires_password": False
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+
+@api_router.post("/auth/set-password")
+async def set_password(request: SetPasswordRequest, db: Session = Depends(get_db)):
+    """
+    Set password for new users or users without passwords
+    """
+    try:
+        if request.password != request.confirm_password:
+            raise HTTPException(status_code=400, detail="Passwords do not match")
+        
+        if len(request.password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        
+        user = db.query(User).filter(User.phone == request.phone).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Set password
+        user.set_password(request.password)
+        db.commit()
+        
+        return {"success": True, "message": "Password set successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to set password: {str(e)}")
+
+@api_router.post("/auth/change-password")
+async def change_password(request: ChangePasswordRequest, user_id: str = Form(...), db: Session = Depends(get_db)):
+    """
+    Change password for existing users
+    """
+    try:
+        if request.new_password != request.confirm_password:
+            raise HTTPException(status_code=400, detail="New passwords do not match")
+        
+        if len(request.new_password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if not user.check_password(request.current_password):
+            raise HTTPException(status_code=401, detail="Current password is incorrect")
+        
+        # Change password
+        user.set_password(request.new_password)
+        db.commit()
+        
+        return {"success": True, "message": "Password changed successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to change password: {str(e)}")
 
 @api_router.get("/auth/profile/{user_id}")
 async def get_user_profile(user_id: str, db: Session = Depends(get_db)):
