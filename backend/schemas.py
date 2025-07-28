@@ -107,12 +107,20 @@ class ReviewResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# Auth schemas
+# Enhanced Auth schemas
+class SignupRequest(BaseModel):
+    phone: str
+    first_name: str
+    last_name: str
+    id_number: str
+    town: str
+    email: Optional[str] = None
+    password: str
+    confirm_password: str
+
 class LoginRequest(BaseModel):
     phone: str
-    password: Optional[str] = None  # Optional for backward compatibility
-    name: Optional[str] = None
-    email: Optional[str] = None
+    password: Optional[str] = None
 
 class SetPasswordRequest(BaseModel):
     phone: str
