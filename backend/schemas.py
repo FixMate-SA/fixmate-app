@@ -102,8 +102,19 @@ class ReviewResponse(BaseModel):
 # Auth schemas
 class LoginRequest(BaseModel):
     phone: str
+    password: Optional[str] = None  # Optional for backward compatibility
     name: Optional[str] = None
     email: Optional[str] = None
+
+class SetPasswordRequest(BaseModel):
+    phone: str
+    password: str
+    confirm_password: str
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_password: str
 
 class LoginResponse(BaseModel):
     user: dict
@@ -111,6 +122,7 @@ class LoginResponse(BaseModel):
     display_name: str
     welcome_message: str
     token: str
+    requires_password: bool = False  # If user needs to set password
 
 # Payment schemas
 class FixerPaymentCreate(BaseModel):
