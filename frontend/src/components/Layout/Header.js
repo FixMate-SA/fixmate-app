@@ -4,7 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 
 const Header = () => {
-  const { user, logout } = useAuth();
+  const { user, roleInfo, displayName, welcomeMessage, logout, getUserRole } = useAuth();
   const { currentLanguage, changeLanguage, getAvailableLanguageOptions } = useLanguage();
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const navigate = useNavigate();
@@ -15,26 +15,62 @@ const Header = () => {
   };
 
   const availableLanguages = getAvailableLanguageOptions();
+  const userRole = getUserRole();
+
+  // Role-specific styling
+  const getRoleColor = (role) => {
+    switch (role) {
+      case 'admin': return 'bg-red-600';
+      case 'fixer': return 'bg-green-600';
+      case 'client': return 'bg-blue-600';
+      default: return 'bg-blue-600';
+    }
+  };
+
+  const getRoleTextColor = (role) => {
+    switch (role) {
+      case 'admin': return 'text-red-600';
+      case 'fixer': return 'text-green-600';  
+      case 'client': return 'text-blue-600';
+      default: return 'text-blue-600';
+    }
+  };
 
   return (
-    <header className="bg-blue-600 text-white shadow-lg">
+    <header className={`${getRoleColor(userRole)} text-white shadow-lg`}>
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                <span className="text-blue-600 font-bold text-lg">F</span>
+                <span className={`${getRoleTextColor(userRole)} font-bold text-lg`}>
+                  {userRole === 'admin' ? 'A' : userRole === 'fixer' ? 'F' : 'C'}
+                </span>
               </div>
               <h1 className="text-xl font-bold">FixMate-SA</h1>
             </div>
           </div>
           
           <div className="flex items-center space-x-4">
+            {/* Welcome Message */}
+            {welcomeMessage && (
+              <div className="hidden md:flex items-center space-x-2">
+                <div className="text-sm font-medium">
+                  {welcomeMessage}
+                </div>
+                {userRole !== 'client' && (
+                  <span className={`px-2 py-1 rounded-full text-xs font-bold bg-white ${getRoleTextColor(userRole)} uppercase`}>
+                    {userRole}
+                  </span>
+                )}
+              </div>
+            )}
+            
             {/* Language Selector */}
             <div className="relative">
               <button
                 onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                className="flex items-center space-x-2 bg-blue-700 hover:bg-blue-800 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                className={`flex items-center space-x-2 ${getRoleColor(userRole)} hover:opacity-80 px-3 py-2 rounded-md text-sm font-medium transition-colors bg-black bg-opacity-20`}
               >
                 <span>{availableLanguages.find(lang => lang.code === currentLanguage)?.flag || '🇿🇦'}</span>
                 <span className="hidden sm:inline">{currentLanguage.toUpperCase()}</span>
@@ -69,16 +105,23 @@ const Header = () => {
             {user && (
               <>
                 <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center">
+                  <div className={`w-8 h-8 ${getRoleColor(userRole)} bg-opacity-80 rounded-full flex items-center justify-center`}>
                     <span className="text-white font-semibold text-sm">
                       {user.name.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <span className="hidden sm:inline-block text-sm">{user.name}</span>
+                  <div className="hidden sm:flex flex-col">
+                    <span className="text-sm font-medium">{displayName || user.name}</span>
+                    {roleInfo?.fixer_data && (
+                      <span className="text-xs opacity-75">
+                        ⭐ {roleInfo.fixer_data.rating.toFixed(1)} • {roleInfo.fixer_data.total_jobs} jobs
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="bg-blue-700 hover:bg-blue-800 px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                  className={`${getRoleColor(userRole)} hover:opacity-80 bg-black bg-opacity-20 px-3 py-1 rounded-md text-sm font-medium transition-colors`}
                 >
                   Logout
                 </button>
