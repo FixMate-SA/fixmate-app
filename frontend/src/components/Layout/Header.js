@@ -65,6 +65,11 @@ const Header = () => {
               </div>
             )}
             
+            {/* Emergency Button */}
+            {user && (
+              <EmergencyButton className="hidden sm:flex" />
+            )}
+            
             {/* Language Selector */}
             <div className="relative">
               <button
