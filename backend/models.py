@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
+from werkzeug.security import generate_password_hash, check_password_hash
 
 Base = declarative_base()
 
@@ -14,14 +15,29 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, nullable=True)
     address = Column(Text, nullable=True)
+    password_hash = Column(String, nullable=True)  # New: Password hash for security
+    is_password_set = Column(Boolean, default=False)  # Track if password is set
     role = Column(String, default="client")  # client, fixer, admin, super_admin
     is_active = Column(Boolean, default=True)
+    last_login = Column(DateTime, nullable=True)  # Track last login
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     jobs = relationship("Job", back_populates="user")
     reviews = relationship("Review", back_populates="user")
+    emergency_alerts = relationship("EmergencyAlert", back_populates="user")
+    
+    def set_password(self, password):
+        """Set password hash"""
+        self.password_hash = generate_password_hash(password)
+        self.is_password_set = True
+    
+    def check_password(self, password):
+        """Check if password matches hash"""
+        if not self.password_hash:
+            return False
+        return check_password_hash(self.password_hash, password)
 
 class Fixer(Base):
     __tablename__ = "fixers"
