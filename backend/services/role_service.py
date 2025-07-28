@@ -171,7 +171,12 @@ class RoleService:
                 "user": {
                     "id": user.id,
                     "phone": user.phone,
-                    "name": user.name,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "full_name": user.full_name,
+                    "display_name": user.display_name,
+                    "id_number": user.id_number,
+                    "town": user.town,
                     "email": user.email,
                     "address": user.address,
                     "role": user.role,
@@ -179,8 +184,8 @@ class RoleService:
                     "created_at": user.created_at.isoformat()
                 },
                 "role_info": role_info,
-                "display_name": self.get_display_name(user.name, user.role),
-                "welcome_message": self.get_welcome_message(user.name, user.role)
+                "display_name": self.get_display_name(user),
+                "welcome_message": self.get_welcome_message(user)
             }
             
             return profile_data
