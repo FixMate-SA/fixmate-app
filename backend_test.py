@@ -106,7 +106,7 @@ class FixMateAPITester:
             if response.status_code == 200:
                 data = response.json()
                 if data['id'] == self.test_data['user_id']:
-                    self.log_result("Get User", True, f"Retrieved user: {data['name']}")
+                    self.log_result("Get User", True, f"Retrieved user: {data.get('full_name', data.get('first_name', 'Unknown'))}")
                     return True
                 else:
                     self.log_result("Get User", False, "User ID mismatch", response)
