@@ -866,9 +866,9 @@ class FixMateAPITester:
     
     def run_all_tests(self):
         """Run all tests in sequence"""
-        print("=" * 60)
-        print("FIXMATE-SA BACKEND API TESTING - ENHANCED WITH AI & SMS")
-        print("=" * 60)
+        print("=" * 70)
+        print("FIXMATE-SA BACKEND API TESTING - WITH FIXER PAYMENT SYSTEM")
+        print("=" * 70)
         print()
         
         # Test sequence following the main user flow + new AI/SMS features + Payment System
