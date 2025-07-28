@@ -39,21 +39,37 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (phone, name = null, email = null) => {
+  const login = async (phone, password = null, name = null, email = null) => {
     try {
-      const response = await axios.post(`${API_BASE}/auth/login`, { 
+      const loginData = { 
         phone, 
         name: name || `User ${phone}`,
         email: email || ''
-      });
+      };
+      
+      if (password) {
+        loginData.password = password;
+      }
+      
+      const response = await axios.post(`${API_BASE}/auth/login`, loginData);
       
       const { 
         user: userData, 
         role_info: roleData,
         display_name: displayNameData,
         welcome_message: welcomeData,
-        token: userToken 
+        token: userToken,
+        requires_password: requiresPassword = false
       } = response.data;
+      
+      if (requiresPassword) {
+        return { 
+          success: true, 
+          requiresPassword: true, 
+          user: userData, 
+          message: "Password setup required" 
+        };
+      }
       
       setUser(userData);
       setRoleInfo(roleData);
@@ -71,7 +87,8 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user: userData, roleInfo: roleData };
     } catch (error) {
       console.error('Login error:', error);
-      return { success: false, error: error.response?.data?.detail || 'Login failed' };
+      const errorMessage = error.response?.data?.detail || 'Login failed';
+      return { success: false, error: errorMessage };
     }
   };
 
