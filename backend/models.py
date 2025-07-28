@@ -14,6 +14,8 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, nullable=True)
     address = Column(Text, nullable=True)
+    role = Column(String, default="client")  # client, fixer, admin, super_admin
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
