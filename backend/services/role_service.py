@@ -114,29 +114,38 @@ class RoleService:
         
         return permissions.get(role, permissions["client"])
     
-    def create_or_update_user(self, phone: str, name: str, email: str, db: Session) -> User:
+    def create_or_update_user(self, user_data: dict, db: Session) -> User:
         """
-        Create or update user with appropriate role
+        Create or update user with comprehensive information
         """
         try:
             # Get role information
-            role_info = self.determine_user_role(phone, db)
+            role_info = self.determine_user_role(user_data["phone"], db)
             
             # Check if user exists
-            user = db.query(User).filter(User.phone == phone).first()
+            user = db.query(User).filter(User.phone == user_data["phone"]).first()
             
             if user:
                 # Update existing user
-                user.name = name
-                user.email = email
+                user.first_name = user_data["first_name"]
+                user.last_name = user_data["last_name"]
+                user.email = user_data.get("email")
                 user.role = role_info["role"]
                 user.is_active = True
+                # Don't update id_number and town if already set (security measure)
+                if not user.id_number:
+                    user.id_number = user_data["id_number"]
+                if not user.town:
+                    user.town = user_data["town"]
             else:
                 # Create new user
                 user = User(
-                    phone=phone,
-                    name=name,
-                    email=email,
+                    phone=user_data["phone"],
+                    first_name=user_data["first_name"],
+                    last_name=user_data["last_name"],
+                    id_number=user_data["id_number"],
+                    town=user_data["town"],
+                    email=user_data.get("email"),
                     role=role_info["role"],
                     is_active=True
                 )
