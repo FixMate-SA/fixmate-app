@@ -135,6 +135,17 @@ class Job(Base):
     estimated_price = Column(Float, nullable=True)
     final_price = Column(Float, nullable=True)
     scheduled_at = Column(DateTime, nullable=True)
+    
+    # WhatsApp integration fields
+    client_contact_number = Column(String, nullable=True)  # Contact number provided by client
+    area = Column(String, nullable=True)  # Area derived from location
+    latitude = Column(Float, nullable=True)  # GPS coordinates
+    longitude = Column(Float, nullable=True)
+    payment_status = Column(String, default="pending")  # pending, paid, failed
+    rating = Column(Integer, nullable=True)  # 1-5 rating from client
+    rating_comment = Column(Text, nullable=True)  # Client's review comment
+    sentiment = Column(String, nullable=True)  # AI-analyzed sentiment of review
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
