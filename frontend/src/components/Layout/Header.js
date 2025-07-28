@@ -111,11 +111,11 @@ const Header = () => {
                 <div className="flex items-center space-x-2">
                   <div className={`w-8 h-8 ${getRoleColor(userRole)} bg-opacity-80 rounded-full flex items-center justify-center`}>
                     <span className="text-white font-semibold text-sm">
-                      {user.name.charAt(0).toUpperCase()}
+                      {user.display_name ? user.display_name.charAt(0).toUpperCase() : user.first_name ? user.first_name.charAt(0).toUpperCase() : 'U'}
                     </span>
                   </div>
                   <div className="hidden sm:flex flex-col">
-                    <span className="text-sm font-medium">{displayName || user.name}</span>
+                    <span className="text-sm font-medium">{displayName || user.full_name || user.display_name || `${user.first_name} ${user.last_name}`}</span>
                     {roleInfo?.fixer_data && (
                       <span className="text-xs opacity-75">
                         ⭐ {roleInfo.fixer_data.rating.toFixed(1)} • {roleInfo.fixer_data.total_jobs} jobs
