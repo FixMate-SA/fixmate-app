@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { apiService } from '../../services/api';
 import FixerPaymentManager from '../Payment/FixerPaymentManager';
+import Logo from '../Common/Logo';
 
 const AdminDashboard = () => {
   const { user, isRole } = useAuth();
