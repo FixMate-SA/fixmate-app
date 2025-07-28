@@ -879,6 +879,366 @@ class FixMateAPITester:
             self.log_result("Automatic Service Fee Creation", False, f"Request error: {str(e)}")
         return False
     
+    # WhatsApp Integration Tests
+    def test_whatsapp_webhook_verify(self):
+        """Test WhatsApp webhook verification endpoint"""
+        try:
+            response = self.session.get(f"{API_BASE}/whatsapp/webhook")
+            if response.status_code == 200:
+                data = response.json()
+                if "status" in data and data["status"] == "webhook verified":
+                    self.log_result("WhatsApp Webhook Verify", True, "Webhook verification endpoint working")
+                    return True
+                else:
+                    self.log_result("WhatsApp Webhook Verify", False, "Invalid response format", response)
+            else:
+                self.log_result("WhatsApp Webhook Verify", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("WhatsApp Webhook Verify", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_whatsapp_webhook_post(self):
+        """Test WhatsApp webhook message processing"""
+        try:
+            # Simulate a WhatsApp webhook message
+            webhook_data = {
+                "entry": [{
+                    "changes": [{
+                        "value": {
+                            "messages": [{
+                                "from": "27821234567",
+                                "type": "text",
+                                "text": {"body": "hello"}
+                            }]
+                        }
+                    }]
+                }]
+            }
+            
+            response = self.session.post(f"{API_BASE}/whatsapp/webhook", json=webhook_data)
+            if response.status_code == 200:
+                data = response.json()
+                if "status" in data and data["status"] in ["processed", "ignored"]:
+                    self.log_result("WhatsApp Webhook POST", True, f"Webhook processed with status: {data['status']}")
+                    return True
+                else:
+                    self.log_result("WhatsApp Webhook POST", False, "Invalid response format", response)
+            else:
+                self.log_result("WhatsApp Webhook POST", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("WhatsApp Webhook POST", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_whatsapp_send_message(self):
+        """Test WhatsApp send message endpoint"""
+        try:
+            data = {
+                'to_number': '+27821234567',
+                'message': 'Test message from FixMate-SA API testing'
+            }
+            response = self.session.post(f"{API_BASE}/whatsapp/send-message", data=data)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "success" in result:
+                    success = result["success"]
+                    if success:
+                        self.log_result("WhatsApp Send Message", True, "WhatsApp message sent successfully")
+                    else:
+                        self.log_result("WhatsApp Send Message", True, "WhatsApp service responded (API key may not be configured)")
+                    return True
+                else:
+                    self.log_result("WhatsApp Send Message", False, "Invalid response format", response)
+            else:
+                self.log_result("WhatsApp Send Message", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("WhatsApp Send Message", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_whatsapp_send_job_notification(self):
+        """Test WhatsApp job notification endpoint"""
+        if 'job_id' not in self.test_data:
+            self.log_result("WhatsApp Job Notification", False, "No job ID available from previous test")
+            return False
+        
+        try:
+            data = {'job_id': self.test_data['job_id']}
+            response = self.session.post(f"{API_BASE}/whatsapp/send-job-notification", data=data)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "success" in result:
+                    success = result["success"]
+                    if success:
+                        self.log_result("WhatsApp Job Notification", True, "Job notification sent successfully")
+                    else:
+                        self.log_result("WhatsApp Job Notification", True, "Job notification service responded (may not be configured)")
+                    return True
+                else:
+                    self.log_result("WhatsApp Job Notification", False, "Invalid response format", response)
+            else:
+                self.log_result("WhatsApp Job Notification", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("WhatsApp Job Notification", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_whatsapp_send_rating_request(self):
+        """Test WhatsApp rating request endpoint"""
+        if 'job_id' not in self.test_data:
+            self.log_result("WhatsApp Rating Request", False, "No job ID available from previous test")
+            return False
+        
+        try:
+            data = {'job_id': self.test_data['job_id']}
+            response = self.session.post(f"{API_BASE}/whatsapp/send-rating-request", data=data)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "success" in result:
+                    success = result["success"]
+                    if success:
+                        self.log_result("WhatsApp Rating Request", True, "Rating request sent successfully")
+                    else:
+                        self.log_result("WhatsApp Rating Request", True, "Rating request service responded (may not be configured)")
+                    return True
+                else:
+                    self.log_result("WhatsApp Rating Request", False, "Invalid response format", response)
+            else:
+                self.log_result("WhatsApp Rating Request", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("WhatsApp Rating Request", False, f"Request error: {str(e)}")
+        return False
+    
+    # PayFast Integration Tests
+    def test_payfast_create_payment(self):
+        """Test PayFast payment creation endpoint"""
+        if 'job_id' not in self.test_data:
+            self.log_result("PayFast Create Payment", False, "No job ID available from previous test")
+            return False
+        
+        try:
+            data = {'job_id': self.test_data['job_id']}
+            response = self.session.post(f"{API_BASE}/payfast/create-payment", data=data)
+            
+            if response.status_code == 200:
+                result = response.json()
+                required_keys = ['success', 'payment_url', 'job_id', 'amount']
+                if all(key in result for key in required_keys):
+                    if result['success']:
+                        self.test_data['payment_url'] = result['payment_url']
+                        self.log_result("PayFast Create Payment", True, f"Payment URL created: {result['payment_url'][:50]}...")
+                        return True
+                    else:
+                        self.log_result("PayFast Create Payment", False, "Payment creation failed", response)
+                else:
+                    missing_keys = [key for key in required_keys if key not in result]
+                    self.log_result("PayFast Create Payment", False, f"Missing keys: {missing_keys}", response)
+            else:
+                self.log_result("PayFast Create Payment", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("PayFast Create Payment", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_payfast_payment_status(self):
+        """Test PayFast payment status endpoint"""
+        if 'job_id' not in self.test_data:
+            self.log_result("PayFast Payment Status", False, "No job ID available from previous test")
+            return False
+        
+        try:
+            response = self.session.get(f"{API_BASE}/payfast/payment-status/{self.test_data['job_id']}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                required_keys = ['job_id', 'payment_status', 'amount', 'status']
+                if all(key in result for key in required_keys):
+                    self.log_result("PayFast Payment Status", True, f"Payment status: {result['payment_status']}, Amount: R{result['amount']}")
+                    return True
+                else:
+                    missing_keys = [key for key in required_keys if key not in result]
+                    self.log_result("PayFast Payment Status", False, f"Missing keys: {missing_keys}", response)
+            else:
+                self.log_result("PayFast Payment Status", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("PayFast Payment Status", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_payfast_fixer_payment(self):
+        """Test PayFast fixer payment endpoint"""
+        if 'fixer_id' not in self.test_data or 'service_fee_payment_id' not in self.test_data:
+            self.log_result("PayFast Fixer Payment", False, "No fixer ID or payment ID available from previous tests")
+            return False
+        
+        try:
+            data = {
+                'fixer_id': self.test_data['fixer_id'],
+                'payment_id': self.test_data['service_fee_payment_id']
+            }
+            response = self.session.post(f"{API_BASE}/payfast/fixer-payment", data=data)
+            
+            if response.status_code == 200:
+                result = response.json()
+                required_keys = ['success', 'payment_url', 'fixer_id', 'amount']
+                if all(key in result for key in required_keys):
+                    if result['success']:
+                        self.log_result("PayFast Fixer Payment", True, f"Fixer payment URL created: R{result['amount']}")
+                        return True
+                    else:
+                        self.log_result("PayFast Fixer Payment", False, "Fixer payment creation failed", response)
+                else:
+                    missing_keys = [key for key in required_keys if key not in result]
+                    self.log_result("PayFast Fixer Payment", False, f"Missing keys: {missing_keys}", response)
+            else:
+                self.log_result("PayFast Fixer Payment", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("PayFast Fixer Payment", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_payfast_notify(self):
+        """Test PayFast notification webhook endpoint"""
+        try:
+            # Simulate a PayFast notification
+            notification_data = {
+                'payment_status': 'COMPLETE',
+                'amount_gross': '250.00',
+                'amount_fee': '5.75',
+                'amount_net': '244.25',
+                'custom_int1': self.test_data.get('job_id', 'test-job-id'),
+                'custom_str1': self.test_data.get('user_id', 'test-user-id'),
+                'custom_str2': 'plumbing',
+                'pf_payment_id': '12345',
+                'm_payment_id': 'test-payment-123'
+            }
+            
+            response = self.session.post(f"{API_BASE}/payfast/notify", json=notification_data)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "status" in result and result["status"] in ["processed", "error"]:
+                    self.log_result("PayFast Notify", True, f"Notification processed with status: {result['status']}")
+                    return True
+                else:
+                    self.log_result("PayFast Notify", False, "Invalid response format", response)
+            else:
+                self.log_result("PayFast Notify", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("PayFast Notify", False, f"Request error: {str(e)}")
+        return False
+    
+    # Enhanced AI Features Tests
+    def test_whatsapp_insights(self):
+        """Test WhatsApp business insights endpoint"""
+        try:
+            response = self.session.get(f"{API_BASE}/whatsapp/insights")
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "insights" in result and isinstance(result["insights"], list):
+                    insight_count = len(result["insights"])
+                    self.log_result("WhatsApp Business Insights", True, f"Retrieved {insight_count} business insights")
+                    return True
+                else:
+                    self.log_result("WhatsApp Business Insights", False, "Invalid response format", response)
+            else:
+                self.log_result("WhatsApp Business Insights", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("WhatsApp Business Insights", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_whatsapp_generate_insight(self):
+        """Test WhatsApp generate insight endpoint"""
+        try:
+            response = self.session.post(f"{API_BASE}/whatsapp/generate-insight")
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "success" in result or "message" in result:
+                    if result.get("success"):
+                        self.log_result("WhatsApp Generate Insight", True, f"Business insight generated successfully")
+                        return True
+                    else:
+                        # Not enough data is also a valid response
+                        self.log_result("WhatsApp Generate Insight", True, f"Service responded: {result.get('message', 'No message')}")
+                        return True
+                else:
+                    self.log_result("WhatsApp Generate Insight", False, "Invalid response format", response)
+            else:
+                self.log_result("WhatsApp Generate Insight", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("WhatsApp Generate Insight", False, f"Request error: {str(e)}")
+        return False
+    
+    # Error Handling Tests
+    def test_whatsapp_send_message_missing_params(self):
+        """Test WhatsApp send message with missing parameters"""
+        try:
+            # Missing message parameter
+            data = {'to_number': '+27821234567'}
+            response = self.session.post(f"{API_BASE}/whatsapp/send-message", data=data)
+            
+            if response.status_code == 422:  # Validation error expected
+                self.log_result("WhatsApp Send Message - Missing Params", True, "Correctly handled missing parameters with 422 error")
+                return True
+            else:
+                self.log_result("WhatsApp Send Message - Missing Params", False, f"Expected 422 but got {response.status_code}", response)
+        except Exception as e:
+            self.log_result("WhatsApp Send Message - Missing Params", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_payfast_create_payment_invalid_job(self):
+        """Test PayFast payment creation with invalid job ID"""
+        try:
+            data = {'job_id': 'invalid-job-id-12345'}
+            response = self.session.post(f"{API_BASE}/payfast/create-payment", data=data)
+            
+            if response.status_code == 404:  # Job not found expected
+                self.log_result("PayFast Create Payment - Invalid Job", True, "Correctly handled invalid job ID with 404 error")
+                return True
+            else:
+                self.log_result("PayFast Create Payment - Invalid Job", False, f"Expected 404 but got {response.status_code}", response)
+        except Exception as e:
+            self.log_result("PayFast Create Payment - Invalid Job", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_whatsapp_job_notification_no_fixer(self):
+        """Test WhatsApp job notification with job that has no fixer assigned"""
+        if 'user_id' not in self.test_data:
+            self.log_result("WhatsApp Job Notification - No Fixer", False, "No user ID available from previous test")
+            return False
+        
+        try:
+            # Create a job without assigning a fixer
+            import time
+            timestamp = str(int(time.time()))[-6:]
+            
+            job_data = {
+                "user_id": self.test_data['user_id'],
+                "service": "carpentry",
+                "description": "Build custom shelves",
+                "location": "456 Test St, Cape Town",
+                "estimated_price": 500.0
+            }
+            
+            response = self.session.post(f"{API_BASE}/jobs", json=job_data)
+            if response.status_code != 200:
+                self.log_result("WhatsApp Job Notification - No Fixer", False, "Failed to create test job", response)
+                return False
+            
+            test_job = response.json()
+            
+            # Try to send notification for job without fixer
+            data = {'job_id': test_job['id']}
+            response = self.session.post(f"{API_BASE}/whatsapp/send-job-notification", data=data)
+            
+            if response.status_code == 400:  # Bad request expected
+                self.log_result("WhatsApp Job Notification - No Fixer", True, "Correctly handled job without fixer with 400 error")
+                return True
+            else:
+                self.log_result("WhatsApp Job Notification - No Fixer", False, f"Expected 400 but got {response.status_code}", response)
+        except Exception as e:
+            self.log_result("WhatsApp Job Notification - No Fixer", False, f"Request error: {str(e)}")
+        return False
+    
     def run_all_tests(self):
         """Run all tests in sequence"""
         print("=" * 70)
