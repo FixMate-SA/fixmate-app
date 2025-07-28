@@ -158,10 +158,13 @@ class FixMateAPITester:
     
     def test_create_fixer(self):
         """Test fixer creation"""
+        import time
+        timestamp = str(int(time.time()))[-6:]  # Last 6 digits of timestamp
+        
         fixer_data = {
-            "phone": "+27829876543",
+            "phone": f"+2782987{timestamp}",
             "name": "Mike Smith",
-            "email": "mike.smith@fixmate.com",
+            "email": f"mike.smith.{timestamp}@fixmate.com",
             "services": '["plumbing", "electrical", "carpentry"]',
             "location": "Cape Town"
         }
