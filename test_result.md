@@ -697,11 +697,13 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Fixer Payment System Implementation - R20 service fee tracking"
-    - "Complete South African Language Support (all 11 languages)"
-    - "Admin Verification Portal for fixer documents"
-    - "Emergency/Panic Button implementation"
-    - "Enhanced AI Job Matching system"
+    - "WhatsApp Integration - 360dialog API implementation"
+    - "Enhanced AI Features - Advanced Gemini integration"
+    - "PayFast Payment Integration"
+    - "Enhanced Job Matching Algorithm"
+    - "Voice Processing and Transcription"
+    - "Conversation State Management"
+    - "Location Services and Reverse Geocoding"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
