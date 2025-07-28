@@ -765,15 +765,34 @@ class FixMateAPITester:
         import time
         timestamp = str(int(time.time()))[-6:]  # Last 6 digits of timestamp
         
-        fixer_data = {
+        # First create a user for the fixer
+        fixer_user_data = {
             "phone": f"+2782987{timestamp}",
-            "name": "Jane Doe",
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "id_number": f"8001015009{timestamp[-3:]}",
+            "town": "Johannesburg",
             "email": f"jane.doe.{timestamp}@fixmate.com",
-            "services": '["electrical", "plumbing"]',
-            "location": "Johannesburg"
+            "address": "789 Fixer Ave, Johannesburg"
         }
         
         try:
+            # Create user first
+            user_response = self.session.post(f"{API_BASE}/users", json=fixer_user_data)
+            if user_response.status_code != 200:
+                self.log_result("Job Assignment Payment Check", False, "Failed to create user for fixer", user_response)
+                return False
+            
+            fixer_user = user_response.json()
+            
+            fixer_data = {
+                "user_id": fixer_user['id'],
+                "phone": f"+2782987{timestamp}",
+                "name": "Jane Doe",
+                "email": f"jane.doe.{timestamp}@fixmate.com",
+                "services": '["electrical", "plumbing"]',
+                "location": "Johannesburg"
+            }
             # Create new fixer
             response = self.session.post(f"{API_BASE}/fixers", json=fixer_data)
             if response.status_code != 200:
