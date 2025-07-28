@@ -144,10 +144,7 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Layout>
-                      <div className="text-center py-12">
-                        <h2 className="text-2xl font-bold text-gray-900">Profile</h2>
-                        <p className="mt-2 text-gray-500">Profile management coming soon...</p>
-                      </div>
+                      <Profile />
                     </Layout>
                   </ProtectedRoute>
                 }
