@@ -259,6 +259,68 @@ async def get_offline_status():
     }
 
 # Authentication endpoints
+@api_router.post("/auth/signup")
+async def signup(request: SignupRequest, db: Session = Depends(get_db)):
+    """
+    Complete user registration with detailed information
+    """
+    try:
+        # Validate passwords match
+        if request.password != request.confirm_password:
+            raise HTTPException(status_code=400, detail="Passwords do not match")
+        
+        if len(request.password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        
+        # Check if user already exists
+        existing_user = db.query(User).filter(
+            or_(User.phone == request.phone, User.id_number == request.id_number)
+        ).first()
+        
+        if existing_user:
+            if existing_user.phone == request.phone:
+                raise HTTPException(status_code=400, detail="Phone number already registered")
+            else:
+                raise HTTPException(status_code=400, detail="ID number already registered")
+        
+        # Create user data
+        user_data = {
+            "phone": request.phone,
+            "first_name": request.first_name.strip(),
+            "last_name": request.last_name.strip(),
+            "id_number": request.id_number.strip(),
+            "town": request.town.strip(),
+            "email": request.email.strip() if request.email else None
+        }
+        
+        # Create user
+        user = role_service.create_or_update_user(user_data, db)
+        
+        # Set password
+        user.set_password(request.password)
+        db.commit()
+        
+        # Get complete profile data
+        profile_data = role_service.get_user_profile_data(user, db)
+        
+        # Generate token
+        token = f"token_{user.id}"
+        
+        return {
+            "user": profile_data["user"],
+            "role_info": profile_data["role_info"],
+            "display_name": profile_data["display_name"],
+            "welcome_message": profile_data["welcome_message"],
+            "token": token,
+            "requires_password": False,
+            "message": "Account created successfully!"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
 @api_router.post("/auth/login", response_model=LoginResponse)
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
     """
@@ -269,39 +331,14 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
         user = db.query(User).filter(User.phone == request.phone).first()
         
         if not user:
-            # Create new user if doesn't exist (first time login)
-            name = getattr(request, 'name', f"User {request.phone}")
-            email = getattr(request, 'email', "")
-            user = role_service.create_or_update_user(request.phone, name, email, db)
-            
-            # New user needs to set password
-            return {
-                "user": {"id": user.id, "phone": user.phone, "name": user.name},
-                "role_info": {"role": "client", "permissions": {}},
-                "display_name": user.name,
-                "welcome_message": f"Welcome {user.name}",
-                "token": "",
-                "requires_password": True
-            }
+            raise HTTPException(status_code=404, detail="Account not found. Please sign up first.")
         
-        # Existing user - check password if set
-        if user.is_password_set:
-            if not request.password:
-                raise HTTPException(status_code=400, detail="Password required")
-            
-            if not user.check_password(request.password):
-                raise HTTPException(status_code=401, detail="Invalid password")
-        else:
-            # User exists but hasn't set password yet
-            if not request.password:
-                return {
-                    "user": {"id": user.id, "phone": user.phone, "name": user.name},
-                    "role_info": {"role": user.role, "permissions": {}},
-                    "display_name": user.name,
-                    "welcome_message": f"Welcome {user.name}",
-                    "token": "",
-                    "requires_password": True
-                }
+        # Check password
+        if not request.password:
+            raise HTTPException(status_code=400, detail="Password is required")
+        
+        if not user.is_password_set or not user.check_password(request.password):
+            raise HTTPException(status_code=401, detail="Invalid password")
         
         # Update last login
         user.last_login = datetime.utcnow()
