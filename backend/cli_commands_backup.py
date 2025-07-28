@@ -12,29 +12,20 @@ from pathlib import Path
 # Add the backend directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from database import get_db, drop_and_recreate_tables
+from database import get_db
 from models import User, Fixer, Job, Review, DataInsight
 from services.whatsapp_service import whatsapp_service
 from services.ai_service import ai_service
 from services.conversation_service import conversation_service
 from sqlalchemy.orm import Session
 
+# Get database session
+db = next(get_db())
+
 @click.group()
 def cli():
     """FixMate-SA Admin Command Line Interface"""
     pass
-
-def get_database_session():
-    """Get database session and ensure tables exist."""
-    try:
-        db = next(get_db())
-        return db
-    except Exception as e:
-        click.echo(f"Database connection error: {e}")
-        click.echo("Attempting to create tables...")
-        drop_and_recreate_tables()
-        db = next(get_db())
-        return db
 
 def format_phone_number(phone: str) -> str:
     """Format phone number to WhatsApp format."""
@@ -52,7 +43,6 @@ def format_phone_number(phone: str) -> str:
 def add_fixer(name, phone, skills):
     """Add a new fixer to the system."""
     try:
-        db = get_database_session()
         formatted_phone = format_phone_number(phone)
         
         # Check if fixer already exists
@@ -103,7 +93,6 @@ def add_fixer(name, phone, skills):
 def promote_admin(phone):
     """Promote a user to admin status."""
     try:
-        db = get_database_session()
         if not (phone.startswith('0') and len(phone) == 10):
             click.echo("Error: Please provide a valid 10-digit SA number (e.g., 0821234567).")
             return
@@ -137,7 +126,6 @@ def promote_admin(phone):
 def demote_admin(phone):
     """Demote an admin to regular client status."""
     try:
-        db = get_database_session()
         if not (phone.startswith('0') and len(phone) == 10):
             click.echo("Error: Please provide a valid 10-digit SA number (e.g., 0821234567).")
             return
@@ -161,7 +149,6 @@ def demote_admin(phone):
 def remove_fixer(phone):
     """Remove a fixer from the system."""
     try:
-        db = get_database_session()
         formatted_phone = format_phone_number(phone)
         
         fixer = db.query(Fixer).filter(Fixer.phone == formatted_phone).first()
@@ -182,7 +169,6 @@ def remove_fixer(phone):
 def remove_client(phone):
     """Remove a client from the system."""
     try:
-        db = get_database_session()
         formatted_phone = format_phone_number(phone)
         
         user = db.query(User).filter(User.phone == formatted_phone).first()
@@ -202,7 +188,6 @@ def remove_client(phone):
 def analyze_data():
     """Analyze job data and generate business insights."""
     try:
-        db = get_database_session()
         click.echo("Starting data analysis...")
         
         # Get completed jobs
@@ -245,7 +230,6 @@ def analyze_data():
 def stats():
     """Display system statistics."""
     try:
-        db = get_database_session()
         user_count = db.query(User).count()
         fixer_count = db.query(Fixer).count()
         job_count = db.query(Job).count()
@@ -265,7 +249,6 @@ def stats():
 def list_admins():
     """List all administrators."""
     try:
-        db = get_database_session()
         admins = db.query(User).filter(User.role == "admin").all()
         
         if not admins:
@@ -285,7 +268,6 @@ def list_admins():
 def toggle_fixer_active(phone):
     """Toggle fixer active status."""
     try:
-        db = get_database_session()
         formatted_phone = format_phone_number(phone)
         
         fixer = db.query(Fixer).filter(Fixer.phone == formatted_phone).first()
@@ -308,7 +290,6 @@ def toggle_fixer_active(phone):
 def list_jobs(status, limit):
     """List jobs with optional status filter."""
     try:
-        db = get_database_session()
         query = db.query(Job)
         
         if status:
@@ -336,7 +317,6 @@ def list_jobs(status, limit):
 def reassign_job(job_id, fixer_phone):
     """Reassign a job to a different fixer."""
     try:
-        db = get_database_session()
         job = db.query(Job).filter(Job.id == job_id).first()
         if not job:
             click.echo(f"Error: Job with ID {job_id} not found.")
@@ -376,7 +356,6 @@ def reassign_job(job_id, fixer_phone):
 def remove_all_clients():
     """Remove all non-admin clients and their associated jobs."""
     try:
-        db = get_database_session()
         clients_to_delete = db.query(User).filter(User.role == "client").all()
         
         if not clients_to_delete:
@@ -420,7 +399,6 @@ def send_whatsapp(phone, message):
 def generate_insight():
     """Generate and display a new business insight."""
     try:
-        db = get_database_session()
         # Get completed jobs
         completed_jobs = db.query(Job).filter(Job.status == 'completed').limit(100).all()
         
@@ -464,7 +442,6 @@ def generate_insight():
 def list_insights(limit):
     """List recent business insights."""
     try:
-        db = get_database_session()
         insights = db.query(DataInsight).order_by(DataInsight.created_at.desc()).limit(limit).all()
         
         if not insights:
@@ -484,7 +461,6 @@ def list_insights(limit):
 def backup_data(output_file):
     """Create a backup of system data."""
     try:
-        db = get_database_session()
         import json
         
         # Get all data
