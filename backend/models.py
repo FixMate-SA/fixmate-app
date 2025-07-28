@@ -23,6 +23,11 @@ class User(Base):
     role = Column(String, default="client")      # client, fixer, admin, super_admin
     is_active = Column(Boolean, default=True)
     last_login = Column(DateTime, nullable=True)
+    
+    # WhatsApp conversation state management
+    conversation_state = Column(String, nullable=True)  # Current conversation state
+    service_request_cache = Column(Text, nullable=True)  # Cached service request data (JSON)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
