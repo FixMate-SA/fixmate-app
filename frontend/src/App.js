@@ -15,6 +15,7 @@ import LearningPlatform from "./components/Learning/LearningPlatform";
 import SMSInterface from "./components/SMS/SMSInterface";
 import B2BPortal from "./components/Enterprise/B2BPortal";
 import PaymentOptions from "./components/Payment/PaymentOptions";
+import Profile from "./components/Profile/Profile";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
