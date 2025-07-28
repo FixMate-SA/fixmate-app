@@ -1317,7 +1317,7 @@ class FixMateAPITester:
         
         print()
         if self.results['failed'] == 0:
-            print("🎉 ALL TESTS PASSED! Backend API with AI & SMS features is working correctly.")
+            print("🎉 ALL TESTS PASSED! Backend API with WhatsApp, PayFast, AI & SMS features is working correctly.")
             return True
         else:
             print("⚠️  Some tests failed. Please check the errors above.")
