@@ -721,32 +721,110 @@ agent_communication:
     message: "Starting WhatsApp integration phase. Analyzed run.py file containing comprehensive WhatsApp-based system with 360dialog API, enhanced AI features, PayFast integration, advanced job matching, voice processing, conversation state management, location services, and admin commands. Planning systematic integration into current FastAPI architecture while preserving existing functionality."
 
 backend:
-  - task: "Fixer Payment System - Core Logic"
+  - task: "WhatsApp Integration - 360dialog API and Webhook Implementation"
+    implemented: true
+    working: false
+    file: "/app/backend/services/whatsapp_service.py, /app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Implemented WhatsApp service with 360dialog API integration, webhook endpoints, conversation state management, and media processing. Added endpoints: /api/whatsapp/webhook (GET/POST), /api/whatsapp/send-message, /api/whatsapp/send-job-notification, /api/whatsapp/send-rating-request. Needs testing with actual API keys."
+
+  - task: "Enhanced AI Features - Advanced Gemini Integration"
+    implemented: true
+    working: false
+    file: "/app/backend/services/ai_service.py, /app/backend/services/conversation_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Enhanced AI service with voice transcription, conversation state management, and advanced job matching algorithm. Added conversation service with complete state machine for WhatsApp conversations. Needs testing with Gemini API keys."
+
+  - task: "PayFast Payment Integration"
+    implemented: true
+    working: false
+    file: "/app/backend/services/payfast_service.py, /app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Implemented PayFast payment integration with signature generation, payment URL creation, webhook handling, and fixer fee processing. Added endpoints: /api/payfast/create-payment, /api/payfast/notify, /api/payfast/fixer-payment, /api/payfast/payment-status. Needs testing with PayFast credentials."
+
+  - task: "Enhanced Job Matching Algorithm"
+    implemented: true
+    working: false
+    file: "/app/backend/services/conversation_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Implemented advanced job matching algorithm with location-based scoring, rating consideration, and fairness distribution. Algorithm considers proximity (geodesic distance), fixer ratings, and time since last assignment for optimal matching. Needs testing with actual job data."
+
+  - task: "Voice Processing and Transcription"
+    implemented: true
+    working: false
+    file: "/app/backend/services/whatsapp_service.py, /app/backend/services/ai_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Implemented voice processing with WhatsApp media download, Gemini transcription, and multi-language support. Added support for South African languages with automatic translation. Needs testing with actual audio files and API keys."
+
+  - task: "Conversation State Management"
+    implemented: true
+    working: false
+    file: "/app/backend/services/conversation_service.py, /app/backend/models.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Implemented comprehensive conversation state management with user state tracking, cached data storage, and multi-turn conversation support. Added conversation_state and service_request_cache fields to User model. Supports service request flow, rating collection, and feedback processing. Needs testing with actual conversations."
+
+  - task: "Location Services and Reverse Geocoding"
+    implemented: true
+    working: false
+    file: "/app/backend/services/whatsapp_service.py, /app/backend/services/conversation_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Implemented location services with reverse geocoding using Nominatim API, location sharing support, and area detection. Added latitude/longitude fields to Job model and location-based fixer matching. Needs testing with actual location data."
+
+  - task: "Database Model Updates"
     implemented: true
     working: true
-    file: "/app/backend/services/payment_service.py, /app/backend/models.py, /app/backend/server.py"
+    file: "/app/backend/models.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
       - working: true
         agent: "main"
-        comment: "Implemented R20 service fee tracking system with FixerPayment model, payment status checking, automatic service fee creation on job assignment, and payment settlement logic. Added endpoints for payment management and modified job assignment to prevent fixers with outstanding payments from receiving jobs."
-      - working: true
-        agent: "testing"
-        comment: "✅ All payment system endpoints tested successfully: GET /api/fixer/{fixer_id}/payment-status returns correct payment status and job eligibility, POST /api/fixer/{fixer_id}/create-service-fee creates R20 service fees, POST /api/fixer/payment/{payment_id}/settle marks payments as settled, GET /api/fixer/{fixer_id}/payment-history retrieves payment records. Job assignment logic correctly prevents fixers with outstanding payments from receiving jobs and automatically creates service fees when jobs are assigned. Database migration completed to add payment_status column and new tables."
+        comment: "Updated database models to support WhatsApp integration: Added conversation_state and service_request_cache to User model, enhanced Job model with WhatsApp fields (client_contact_number, area, latitude, longitude, rating, sentiment), enhanced Fixer model with location and vetting fields, added DataInsight model for business insights. Database schema successfully updated."
 
-  - task: "Database Models Enhancement"
+  - task: "Business Insights Generation"
     implemented: true
-    working: true
-    file: "/app/backend/models.py"
+    working: false
+    file: "/app/backend/services/ai_service.py, /app/backend/server.py"
     stuck_count: 0
-    priority: "high"  
-    needs_retesting: false
+    priority: "medium"
+    needs_retesting: true
     status_history:
-      - working: true
+      - working: false
         agent: "main"
-        comment: "Added FixerPayment and FixerVerification models. Updated Fixer model with payment_status field and relationships. Added proper database relationships for payment tracking and document verification systems."
-      - working: true
-        agent: "testing"
-        comment: "✅ Database models working correctly: FixerPayment model tracks R20 service fees with proper status management (pending, paid, overdue, settled), FixerVerification model ready for document verification system, Fixer model enhanced with payment_status field and relationships. Database migration successfully created new tables and columns. All CRUD operations working with proper data persistence and relationships."
+        comment: "Implemented AI-powered business insights generation with job data analysis, trend identification, and actionable recommendations. Added DataInsight model and endpoints: /api/whatsapp/insights, /api/whatsapp/generate-insight. Needs testing with actual job data and Gemini API."
