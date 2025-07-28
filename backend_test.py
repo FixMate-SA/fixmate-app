@@ -871,7 +871,7 @@ class FixMateAPITester:
         print("=" * 60)
         print()
         
-        # Test sequence following the main user flow + new AI/SMS features
+        # Test sequence following the main user flow + new AI/SMS features + Payment System
         tests = [
             ("Health Check", self.test_health_check),
             ("Create User", self.test_create_user),
@@ -882,10 +882,16 @@ class FixMateAPITester:
             ("Get Fixer", self.test_get_fixer),
             ("Get All Fixers", self.test_get_all_fixers),
             ("Get Fixers by Service", self.test_get_fixers_by_service),
+            ("Fixer Payment Status", self.test_fixer_payment_status),
             ("Create Job", self.test_create_job),
             ("Get Job", self.test_get_job),
             ("Get All Jobs", self.test_get_all_jobs),
             ("Update Job (Assign Fixer)", self.test_update_job),
+            ("Create Service Fee", self.test_create_service_fee),
+            ("Payment History", self.test_payment_history),
+            ("Settle Payment", self.test_settle_payment),
+            ("Job Assignment Payment Check", self.test_job_assignment_with_payment_check),
+            ("Automatic Service Fee Creation", self.test_automatic_service_fee_creation),
             ("Create Review", self.test_create_review),
             ("Get All Reviews", self.test_get_reviews),
             ("Get Reviews by Fixer", self.test_get_reviews_by_fixer),
