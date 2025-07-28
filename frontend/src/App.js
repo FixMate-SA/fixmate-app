@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import Header from "./components/Layout/Header";
 import Navigation from "./components/Layout/Navigation";
+import Footer from "./components/Layout/Footer";
 import OfflineIndicator from "./components/Common/OfflineIndicator";
 import LoginForm from "./components/Auth/LoginForm";
 import Dashboard from "./components/Dashboard/Dashboard";
