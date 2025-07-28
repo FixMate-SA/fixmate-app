@@ -284,6 +284,36 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
 
+@api_router.get("/auth/profile/{user_id}")
+async def get_user_profile(user_id: str, db: Session = Depends(get_db)):
+    """
+    Get complete user profile with role information
+    """
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        profile_data = role_service.get_user_profile_data(user, db)
+        return profile_data
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get profile: {str(e)}")
+
+@api_router.get("/auth/role-check/{phone}")
+async def check_user_role(phone: str, db: Session = Depends(get_db)):
+    """
+    Check user role by phone number (for debugging/admin purposes)
+    """
+    try:
+        role_info = role_service.determine_user_role(phone, db)
+        return role_info
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Role check failed: {str(e)}")
+
 # User endpoints
 @api_router.post("/users", response_model=UserResponse)
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
