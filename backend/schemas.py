@@ -33,6 +33,7 @@ class UserResponse(BaseModel):
 
 # Fixer schemas
 class FixerCreate(BaseModel):
+    user_id: str
     phone: str
     name: str
     email: Optional[str] = None
