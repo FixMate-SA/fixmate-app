@@ -383,6 +383,75 @@ async def change_password(request: ChangePasswordRequest, user_id: str = Form(..
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to change password: {str(e)}")
 
+# Emergency Alert endpoints
+@api_router.post("/emergency/alert")
+async def create_emergency_alert(
+    alert: EmergencyAlertCreate, 
+    user_id: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Trigger emergency alert - notify police and send location
+    """
+    try:
+        alert_data = {
+            "job_id": alert.job_id,
+            "alert_type": alert.alert_type,
+            "latitude": alert.latitude,
+            "longitude": alert.longitude,
+            "address": alert.address,
+            "description": alert.description
+        }
+        
+        result = emergency_service.trigger_emergency_alert(user_id, alert_data, db)
+        
+        if result["success"]:
+            return result
+        else:
+            raise HTTPException(status_code=500, detail=result["error"])
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Emergency alert failed: {str(e)}")
+
+@api_router.get("/emergency/alerts/{user_id}")
+async def get_user_emergency_alerts(user_id: str, db: Session = Depends(get_db)):
+    """
+    Get user's emergency alert history
+    """
+    try:
+        alerts = emergency_service.get_emergency_alerts(user_id, db)
+        return {"alerts": alerts}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get emergency alerts: {str(e)}")
+
+@api_router.post("/emergency/resolve/{alert_id}")
+async def resolve_emergency_alert(
+    alert_id: str, 
+    resolution: str = Form(...), 
+    db: Session = Depends(get_db)
+):
+    """
+    Mark emergency alert as resolved (admin only)
+    """
+    try:
+        result = emergency_service.resolve_emergency_alert(alert_id, resolution, db)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to resolve alert: {str(e)}")
+
+@api_router.get("/emergency/location")
+async def get_location_info(latitude: float, longitude: float):
+    """
+    Get human-readable address from coordinates
+    """
+    try:
+        address = emergency_service.get_location_from_coordinates(latitude, longitude)
+        return {"address": address, "latitude": latitude, "longitude": longitude}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get location info: {str(e)}")
+
 @api_router.get("/auth/profile/{user_id}")
 async def get_user_profile(user_id: str, db: Session = Depends(get_db)):
     """
