@@ -814,10 +814,13 @@ class FixMateAPITester:
             test_job = response.json()
             
             # Create test fixer with no outstanding payments
+            import time
+            timestamp2 = str(int(time.time()))[-5:]  # Different timestamp
+            
             fixer_data = {
-                "phone": "+27829876545",
+                "phone": f"+2782987{timestamp2}",
                 "name": "Clean Fixer",
-                "email": "clean.fixer@fixmate.com",
+                "email": f"clean.fixer.{timestamp2}@fixmate.com",
                 "services": '["electrical", "carpentry"]',
                 "location": "Cape Town"
             }
