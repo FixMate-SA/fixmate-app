@@ -778,10 +778,13 @@ class FixMateAPITester:
     def test_automatic_service_fee_creation(self):
         """Test automatic service fee creation when job is assigned"""
         # Create a new job and fixer to test automatic fee creation
+        import time
+        timestamp = str(int(time.time()))[-6:]  # Last 6 digits of timestamp
+        
         user_data = {
-            "phone": "+27821234568",
+            "phone": f"+2782123{timestamp}",
             "name": "Test User 2",
-            "email": "testuser2@example.com",
+            "email": f"testuser2.{timestamp}@example.com",
             "address": "456 Test St, Cape Town"
         }
         
