@@ -117,8 +117,28 @@ class FixerPayment(Base):
     # Relationships
     fixer = relationship("Fixer", back_populates="payments")
 
-class FixerVerification(Base):
-    __tablename__ = "fixer_verifications"
+class EmergencyAlert(Base):
+    __tablename__ = "emergency_alerts"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    job_id = Column(String, ForeignKey("jobs.id"), nullable=True)  # Optional if during a job
+    alert_type = Column(String, default="emergency")  # emergency, panic, safety
+    latitude = Column(Float, nullable=True)  # User's location
+    longitude = Column(Float, nullable=True)
+    address = Column(Text, nullable=True)  # Human readable address
+    description = Column(Text, nullable=True)  # User's description of emergency
+    status = Column(String, default="active")  # active, resolved, false_alarm
+    police_notified = Column(Boolean, default=False)  # Track if police contacted
+    police_reference = Column(String, nullable=True)  # Police case number if available
+    emergency_contacts_notified = Column(Boolean, default=False)
+    resolved_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="emergency_alerts")
+    job = relationship("Job", back_populates="emergency_alerts")
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     fixer_id = Column(String, ForeignKey("fixers.id"), nullable=False)
