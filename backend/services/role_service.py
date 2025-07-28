@@ -189,9 +189,9 @@ class RoleService:
             print(f"Error getting profile data: {str(e)}")
             return {}
     
-    def get_display_name(self, name: str, role: str) -> str:
+    def get_display_name(self, user) -> str:
         """
-        Get display name with role prefix
+        Get display name with role prefix using first name
         """
         role_prefixes = {
             "admin": "Admin",
@@ -199,19 +199,22 @@ class RoleService:
             "client": ""
         }
         
-        prefix = role_prefixes.get(role, "")
-        return f"{prefix} {name}".strip()
+        prefix = role_prefixes.get(user.role, "")
+        first_name = user.first_name if hasattr(user, 'first_name') else user.display_name
+        return f"{prefix} {first_name}".strip()
     
-    def get_welcome_message(self, name: str, role: str) -> str:
+    def get_welcome_message(self, user) -> str:
         """
-        Get personalized welcome message based on role
+        Get personalized welcome message based on role using first name
         """
-        if role == "admin":
-            return f"Welcome Admin {name}"
-        elif role == "fixer":
-            return f"Welcome Fixer {name}"
+        first_name = user.first_name if hasattr(user, 'first_name') else user.display_name
+        
+        if user.role == "admin":
+            return f"Welcome Admin {first_name}"
+        elif user.role == "fixer":
+            return f"Welcome Fixer {first_name}"
         else:
-            return f"Welcome {name}"
+            return f"Welcome {first_name}"
     
     def has_permission(self, user_role: str, permission: str) -> bool:
         """
