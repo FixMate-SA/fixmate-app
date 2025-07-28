@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../Common/Logo';
+import EmergencyButton from '../Common/EmergencyButton';
 
 const Header = () => {
   const { user, roleInfo, displayName, welcomeMessage, logout, getUserRole } = useAuth();
