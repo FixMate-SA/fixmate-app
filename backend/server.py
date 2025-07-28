@@ -30,6 +30,7 @@ from services.role_service import role_service
 from services.emergency_service import emergency_service
 from services.whatsapp_service import whatsapp_service
 from services.conversation_service import conversation_service
+from services.payfast_service import payfast_service
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
