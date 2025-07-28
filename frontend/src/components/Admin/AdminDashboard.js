@@ -89,9 +89,16 @@ const AdminDashboard = () => {
       {/* Admin Header */}
       <div className="bg-red-600 text-white rounded-lg p-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <p className="opacity-90">Manage FixMate-SA Platform</p>
+          <div className="flex items-center space-x-4">
+            <Logo 
+              size="medium" 
+              variant="header" 
+              showText={false}
+            />
+            <div>
+              <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+              <p className="opacity-90">Manage FixMate-SA Platform</p>
+            </div>
           </div>
           <div className="flex items-center space-x-4">
             <button
