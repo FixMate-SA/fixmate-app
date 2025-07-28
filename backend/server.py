@@ -255,19 +255,34 @@ async def get_offline_status():
 # Authentication endpoints
 @api_router.post("/auth/login", response_model=LoginResponse)
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.phone == request.phone).first()
-    
-    if not user:
-        # Create new user if doesn't exist
-        user = User(phone=request.phone, name=f"User {request.phone}")
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    
-    # Simple token for now (in production, use JWT)
-    token = f"token_{user.id}"
-    
-    return LoginResponse(user=user, token=token)
+    """
+    Enhanced login with role-based authentication
+    """
+    try:
+        # Extract name from phone if provided, otherwise use default
+        name = getattr(request, 'name', f"User {request.phone}")
+        email = getattr(request, 'email', "")
+        
+        # Create or update user with role detection
+        user = role_service.create_or_update_user(request.phone, name, email, db)
+        
+        # Get complete profile data with role information
+        profile_data = role_service.get_user_profile_data(user, db)
+        
+        # Simple token for now (in production, use JWT)
+        token = f"token_{user.id}"
+        
+        # Return enhanced response with role information
+        return {
+            "user": profile_data["user"],
+            "role_info": profile_data["role_info"],
+            "display_name": profile_data["display_name"],
+            "welcome_message": profile_data["welcome_message"],
+            "token": token
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
 
 # User endpoints
 @api_router.post("/users", response_model=UserResponse)
