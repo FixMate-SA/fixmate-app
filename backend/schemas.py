@@ -164,3 +164,30 @@ class FixerVerificationResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# Emergency Alert schemas
+class EmergencyAlertCreate(BaseModel):
+    job_id: Optional[str] = None
+    alert_type: str = "emergency"
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    address: Optional[str] = None
+    description: Optional[str] = None
+
+class EmergencyAlertResponse(BaseModel):
+    id: str
+    user_id: str
+    job_id: Optional[str] = None
+    alert_type: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    address: Optional[str] = None
+    description: Optional[str] = None
+    status: str
+    police_notified: bool
+    police_reference: Optional[str] = None
+    emergency_contacts_notified: bool
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
