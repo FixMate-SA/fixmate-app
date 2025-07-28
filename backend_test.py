@@ -65,10 +65,13 @@ class FixMateAPITester:
     
     def test_create_user(self):
         """Test user creation"""
+        import time
+        timestamp = str(int(time.time()))[-6:]  # Last 6 digits of timestamp
+        
         user_data = {
-            "phone": "+27821234567",
+            "phone": f"+2782123{timestamp}",
             "name": "John Doe",
-            "email": "john.doe@example.com",
+            "email": f"john.doe.{timestamp}@example.com",
             "address": "123 Main St, Cape Town"
         }
         
