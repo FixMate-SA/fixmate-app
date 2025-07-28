@@ -803,7 +803,10 @@ class FixMateAPITester:
         
         user_data = {
             "phone": f"+2782123{timestamp}",
-            "name": "Test User 2",
+            "first_name": "Test",
+            "last_name": "User2",
+            "id_number": f"8001015009{timestamp[-3:]}",
+            "town": "Cape Town",
             "email": f"testuser2.{timestamp}@example.com",
             "address": "456 Test St, Cape Town"
         }
