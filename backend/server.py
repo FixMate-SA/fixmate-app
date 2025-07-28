@@ -885,6 +885,185 @@ async def get_dashboard(user_id: str, db: Session = Depends(get_db)):
 async def root():
     return {"message": "FixMate-SA API is running"}
 
+# PayFast payment endpoints
+@api_router.post("/payfast/create-payment")
+async def create_payfast_payment(
+    job_id: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Create PayFast payment URL for a job.
+    """
+    try:
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        user = job.user
+        
+        # Prepare payment data
+        payment_data = {
+            'job_id': job.id,
+            'client_name': user.full_name,
+            'client_email': user.email or 'client@fixmate-sa.com',
+            'client_phone': user.phone,
+            'amount': str(job.estimated_price or 0.00),
+            'service_type': job.service,
+            'description': job.description,
+            'user_id': user.id,
+        }
+        
+        # Generate payment URL
+        payment_url = payfast_service.generate_payment_url(payment_data)
+        
+        return {
+            "success": True,
+            "payment_url": payment_url,
+            "job_id": job.id,
+            "amount": payment_data['amount']
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create payment: {str(e)}")
+
+@api_router.post("/payfast/notify")
+async def payfast_notification(request: dict, db: Session = Depends(get_db)):
+    """
+    Handle PayFast payment notifications.
+    """
+    try:
+        # Process payment notification
+        result = payfast_service.process_payment_notification(request)
+        
+        if result['status'] == 'error':
+            logger.error(f"PayFast notification error: {result['message']}")
+            return {"status": "error"}
+        
+        # Update job payment status
+        job_id = result.get('job_id')
+        if job_id:
+            job = db.query(Job).filter(Job.id == job_id).first()
+            if job:
+                if result['payment_status'] == 'COMPLETE':
+                    job.payment_status = 'paid'
+                    job.final_price = float(result['amount_gross'])
+                    
+                    # Find and assign fixer if not already assigned
+                    if not job.fixer_id:
+                        matched_fixer = conversation_service.find_fixer_for_job(job, db)
+                        if matched_fixer:
+                            job.fixer_id = matched_fixer.id
+                            job.status = 'assigned'
+                            
+                            # Send WhatsApp notification to fixer
+                            job_data = {
+                                'id': job.id,
+                                'description': job.description,
+                                'area': job.area,
+                                'client_contact': job.client_contact_number
+                            }
+                            whatsapp_service.send_job_notification(matched_fixer.phone, job_data)
+                        else:
+                            job.status = 'paid_unassigned'
+                    
+                    db.commit()
+                    
+                    # Send confirmation to client
+                    client_message = f"""✅ Payment confirmed! 
+
+Job #{job.id} - {job.description}
+Amount: R{result['amount_gross']}
+
+We're finding the best fixer for you and will notify you once assigned.
+
+Thank you for choosing FixMate-SA! 🔧"""
+                    
+                    whatsapp_service.send_whatsapp_message(job.user.phone, client_message)
+                
+                elif result['payment_status'] == 'FAILED':
+                    job.payment_status = 'failed'
+                    job.status = 'cancelled'
+                    db.commit()
+                    
+                    # Notify client of failed payment
+                    failure_message = f"""❌ Payment failed for Job #{job.id}
+
+Please try again or contact support.
+
+FixMate-SA Support"""
+                    
+                    whatsapp_service.send_whatsapp_message(job.user.phone, failure_message)
+        
+        return {"status": "processed"}
+        
+    except Exception as e:
+        logger.error(f"PayFast notification processing error: {e}")
+        return {"status": "error", "error": str(e)}
+
+@api_router.post("/payfast/fixer-payment")
+async def create_fixer_payment(
+    fixer_id: str = Form(...),
+    payment_id: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Create PayFast payment URL for fixer service fee.
+    """
+    try:
+        fixer = db.query(Fixer).filter(Fixer.id == fixer_id).first()
+        if not fixer:
+            raise HTTPException(status_code=404, detail="Fixer not found")
+        
+        user = fixer.user
+        
+        # Prepare payment data
+        payment_data = {
+            'payment_id': payment_id,
+            'fixer_name': fixer.name,
+            'fixer_email': user.email or 'fixer@fixmate-sa.com',
+            'fixer_phone': fixer.phone,
+            'fixer_id': fixer.id,
+        }
+        
+        # Generate payment URL
+        payment_url = payfast_service.generate_fixer_payment_url(payment_data)
+        
+        return {
+            "success": True,
+            "payment_url": payment_url,
+            "fixer_id": fixer.id,
+            "amount": "20.00"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create fixer payment: {str(e)}")
+
+@api_router.get("/payfast/payment-status/{job_id}")
+async def get_payment_status(job_id: str, db: Session = Depends(get_db)):
+    """
+    Get payment status for a job.
+    """
+    try:
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        return {
+            "job_id": job.id,
+            "payment_status": job.payment_status,
+            "amount": job.final_price or job.estimated_price,
+            "status": job.status
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get payment status: {str(e)}")
+
 # WhatsApp webhook endpoints
 @api_router.post("/whatsapp/webhook")
 async def whatsapp_webhook(request: dict, db: Session = Depends(get_db)):
