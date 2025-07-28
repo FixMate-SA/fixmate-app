@@ -10,7 +10,7 @@ from typing import List, Optional
 import json
 from datetime import datetime
 
-from database import get_db, create_tables
+from database import get_db, drop_and_recreate_tables
 from models import User, Fixer, Job, Review, FixerPayment, FixerVerification
 from schemas import (
     UserCreate, UserResponse, FixerCreate, FixerResponse,
@@ -27,7 +27,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 # Create tables
-create_tables()
+drop_and_recreate_tables()
 
 # Create the main app without a prefix
 app = FastAPI(title="FixMate-SA API", version="1.0.0")
