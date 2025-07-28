@@ -12,14 +12,17 @@ class User(Base):
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     phone = Column(String, unique=True, nullable=False, index=True)
-    name = Column(String, nullable=False)
+    first_name = Column(String, nullable=False)  # NEW: First name for personalized welcome
+    last_name = Column(String, nullable=False)   # NEW: Last name for full identification
+    id_number = Column(String, unique=True, nullable=False, index=True)  # NEW: SA ID number
+    town = Column(String, nullable=False)        # NEW: Town/Local municipality
     email = Column(String, nullable=True)
-    address = Column(Text, nullable=True)
-    password_hash = Column(String, nullable=True)  # New: Password hash for security
-    is_password_set = Column(Boolean, default=False)  # Track if password is set
-    role = Column(String, default="client")  # client, fixer, admin, super_admin
+    address = Column(Text, nullable=True)        # Detailed address (optional)
+    password_hash = Column(String, nullable=True)
+    is_password_set = Column(Boolean, default=False)
+    role = Column(String, default="client")      # client, fixer, admin, super_admin
     is_active = Column(Boolean, default=True)
-    last_login = Column(DateTime, nullable=True)  # Track last login
+    last_login = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -27,6 +30,7 @@ class User(Base):
     jobs = relationship("Job", back_populates="user")
     reviews = relationship("Review", back_populates="user")
     emergency_alerts = relationship("EmergencyAlert", back_populates="user")
+    fixer_applications = relationship("FixerApplication", back_populates="user")
     
     def set_password(self, password):
         """Set password hash"""
@@ -38,6 +42,16 @@ class User(Base):
         if not self.password_hash:
             return False
         return check_password_hash(self.password_hash, password)
+    
+    @property
+    def full_name(self):
+        """Get full name for display"""
+        return f"{self.first_name} {self.last_name}"
+    
+    @property
+    def display_name(self):
+        """Get display name (first name for welcome messages)"""
+        return self.first_name
 
 class Fixer(Base):
     __tablename__ = "fixers"
