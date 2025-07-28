@@ -491,6 +491,147 @@ async def get_location_info(latitude: float, longitude: float):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get location info: {str(e)}")
 
+# Fixer Application endpoints
+@api_router.post("/fixer/apply")
+async def submit_fixer_application(
+    application: FixerApplicationCreate,
+    user_id: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Submit fixer application for vetting
+    """
+    try:
+        # Check if user exists
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Check if user already has a pending application
+        existing_application = db.query(FixerApplication).filter(
+            FixerApplication.user_id == user_id,
+            FixerApplication.status.in_(["pending", "under_review", "needs_documents"])
+        ).first()
+        
+        if existing_application:
+            raise HTTPException(status_code=400, detail="You already have a pending fixer application")
+        
+        # Create application
+        fixer_application = FixerApplication(
+            user_id=user_id,
+            services_offered=application.services_offered,
+            experience_years=application.experience_years,
+            qualifications=application.qualifications,
+            previous_work=application.previous_work,
+            why_fixer=application.why_fixer,
+            id_document=application.id_document,
+            proof_of_address=application.proof_of_address,
+            qualifications_cert=application.qualifications_cert,
+            criminal_clearance=application.criminal_clearance,
+            status="pending"
+        )
+        
+        db.add(fixer_application)
+        db.commit()
+        db.refresh(fixer_application)
+        
+        return {
+            "success": True,
+            "application_id": fixer_application.id,
+            "message": "Fixer application submitted successfully. You will be notified once reviewed."
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to submit application: {str(e)}")
+
+@api_router.get("/fixer/applications/{user_id}")
+async def get_user_fixer_applications(user_id: str, db: Session = Depends(get_db)):
+    """
+    Get user's fixer applications
+    """
+    try:
+        applications = db.query(FixerApplication).filter(
+            FixerApplication.user_id == user_id
+        ).order_by(FixerApplication.submitted_at.desc()).all()
+        
+        return {"applications": applications}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get applications: {str(e)}")
+
+@api_router.get("/admin/fixer-applications")
+async def get_all_fixer_applications(db: Session = Depends(get_db)):
+    """
+    Get all fixer applications for admin review
+    """
+    try:
+        applications = db.query(FixerApplication).order_by(
+            FixerApplication.submitted_at.desc()
+        ).all()
+        
+        return {"applications": applications}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get applications: {str(e)}")
+
+@api_router.post("/admin/fixer-applications/{application_id}/review")
+async def review_fixer_application(
+    application_id: str,
+    review: FixerApplicationReview,
+    admin_id: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Admin review of fixer application
+    """
+    try:
+        application = db.query(FixerApplication).filter(
+            FixerApplication.id == application_id
+        ).first()
+        
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        # Update application
+        application.status = review.status
+        application.admin_notes = review.admin_notes
+        application.rejection_reason = review.rejection_reason
+        application.reviewed_by = admin_id
+        application.reviewed_at = datetime.utcnow()
+        
+        if review.status == "approved":
+            application.approved_at = datetime.utcnow()
+            
+            # Create approved fixer record
+            user = db.query(User).filter(User.id == application.user_id).first()
+            
+            fixer = Fixer(
+                user_id=application.user_id,
+                application_id=application.id,
+                phone=user.phone,
+                name=user.full_name,
+                email=user.email,
+                services=application.services_offered,
+                location=user.town,
+                is_active=True,
+                is_approved=True,
+                approval_date=datetime.utcnow()
+            )
+            
+            db.add(fixer)
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": f"Application {review.status} successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to review application: {str(e)}")
+
 @api_router.get("/auth/profile/{user_id}")
 async def get_user_profile(user_id: str, db: Session = Depends(get_db)):
     """
