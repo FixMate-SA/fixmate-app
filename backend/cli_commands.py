@@ -64,11 +64,12 @@ def add_fixer(name, phone, skills):
         # Create or get user
         user = db.query(User).filter(User.phone == formatted_phone).first()
         if not user:
+            import uuid
             user = User(
                 phone=formatted_phone,
                 first_name=name.split()[0] if name.split() else name,
                 last_name=" ".join(name.split()[1:]) if len(name.split()) > 1 else "User",
-                id_number="",
+                id_number=f"CLI_{uuid.uuid4().hex[:8]}",  # Generate unique ID for CLI users
                 town="Unknown",
                 role="fixer"
             )
