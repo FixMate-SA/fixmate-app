@@ -11,14 +11,15 @@ import json
 from datetime import datetime
 
 from database import get_db, drop_and_recreate_tables
-from models import User, Fixer, Job, Review, FixerPayment, FixerVerification, EmergencyAlert
+from models import User, Fixer, Job, Review, FixerPayment, FixerVerification, EmergencyAlert, FixerApplication
 from schemas import (
     UserCreate, UserResponse, FixerCreate, FixerResponse,
     JobCreate, JobUpdate, JobResponse, ReviewCreate, ReviewResponse,
-    LoginRequest, LoginResponse, SetPasswordRequest, ChangePasswordRequest,
+    SignupRequest, LoginRequest, LoginResponse, SetPasswordRequest, ChangePasswordRequest,
     FixerPaymentCreate, FixerPaymentResponse,
     FixerVerificationCreate, FixerVerificationResponse,
-    EmergencyAlertCreate, EmergencyAlertResponse
+    EmergencyAlertCreate, EmergencyAlertResponse,
+    FixerApplicationCreate, FixerApplicationResponse, FixerApplicationReview
 )
 from services.ai_service import ai_service
 from services.sms_service import sms_service
