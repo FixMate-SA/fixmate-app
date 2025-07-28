@@ -8,6 +8,7 @@ import Navigation from "./components/Layout/Navigation";
 import Footer from "./components/Layout/Footer";
 import OfflineIndicator from "./components/Common/OfflineIndicator";
 import LoginForm from "./components/Auth/LoginForm";
+import SignupForm from "./components/Auth/SignupForm";
 import Dashboard from "./components/Dashboard/Dashboard";
 import JobList from "./components/Jobs/JobList";
 import CreateJob from "./components/Jobs/CreateJob";
