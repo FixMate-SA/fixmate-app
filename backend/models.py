@@ -111,6 +111,15 @@ class Fixer(Base):
     is_approved = Column(Boolean, default=False)  # NEW: Approval status from vetting process
     approval_date = Column(DateTime, nullable=True)  # When fixer was approved
     payment_status = Column(String, default="current")  # current, overdue, blocked
+    
+    # WhatsApp integration fields
+    vetting_status = Column(String, default="pending")  # pending, approved, rejected
+    skills = Column(Text, nullable=True)  # Skills for job matching
+    current_latitude = Column(Float, nullable=True)  # Current GPS location
+    current_longitude = Column(Float, nullable=True)
+    last_assigned_at = Column(DateTime, nullable=True)  # For fair job distribution
+    balance = Column(Float, default=0.0)  # For fee management
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
