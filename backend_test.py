@@ -620,6 +620,250 @@ class FixMateAPITester:
             self.log_result("Enhanced Review Creation with AI", False, f"Request error: {str(e)}")
         return False
     
+    def test_fixer_payment_status(self):
+        """Test fixer payment status checking"""
+        if 'fixer_id' not in self.test_data:
+            self.log_result("Fixer Payment Status", False, "No fixer ID available from previous test")
+            return False
+        
+        try:
+            response = self.session.get(f"{API_BASE}/fixer/{self.test_data['fixer_id']}/payment-status")
+            if response.status_code == 200:
+                data = response.json()
+                required_keys = ['fixer_id', 'payment_status', 'total_outstanding', 'can_receive_jobs']
+                if all(key in data for key in required_keys):
+                    self.test_data['payment_status'] = data
+                    self.log_result("Fixer Payment Status", True, f"Payment status: {data['payment_status']}, Outstanding: R{data['total_outstanding']:.2f}, Can receive jobs: {data['can_receive_jobs']}")
+                    return True
+                else:
+                    missing_keys = [key for key in required_keys if key not in data]
+                    self.log_result("Fixer Payment Status", False, f"Missing keys: {missing_keys}", response)
+            else:
+                self.log_result("Fixer Payment Status", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Fixer Payment Status", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_create_service_fee(self):
+        """Test creating R20 service fee for fixer"""
+        if 'fixer_id' not in self.test_data:
+            self.log_result("Create Service Fee", False, "No fixer ID available from previous test")
+            return False
+        
+        try:
+            data = {
+                'description': 'Service fee for plumbing job - Fix leaking kitchen tap'
+            }
+            response = self.session.post(f"{API_BASE}/fixer/{self.test_data['fixer_id']}/create-service-fee", data=data)
+            if response.status_code == 200:
+                result = response.json()
+                if result.get('success') and 'payment_id' in result:
+                    self.test_data['service_fee_payment_id'] = result['payment_id']
+                    self.log_result("Create Service Fee", True, f"Service fee created: R{result.get('amount', 20):.2f}, Payment ID: {result['payment_id']}")
+                    return True
+                else:
+                    self.log_result("Create Service Fee", False, f"Service fee creation failed: {result.get('error', 'Unknown error')}", response)
+            else:
+                self.log_result("Create Service Fee", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Create Service Fee", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_payment_history(self):
+        """Test getting fixer payment history"""
+        if 'fixer_id' not in self.test_data:
+            self.log_result("Payment History", False, "No fixer ID available from previous test")
+            return False
+        
+        try:
+            response = self.session.get(f"{API_BASE}/fixer/{self.test_data['fixer_id']}/payment-history")
+            if response.status_code == 200:
+                data = response.json()
+                if 'payments' in data and isinstance(data['payments'], list):
+                    payment_count = len(data['payments'])
+                    self.log_result("Payment History", True, f"Retrieved {payment_count} payment records")
+                    return True
+                else:
+                    self.log_result("Payment History", False, "Invalid response format", response)
+            else:
+                self.log_result("Payment History", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Payment History", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_settle_payment(self):
+        """Test settling a payment"""
+        if 'service_fee_payment_id' not in self.test_data:
+            self.log_result("Settle Payment", False, "No payment ID available from previous test")
+            return False
+        
+        try:
+            data = {
+                'payment_method': 'bank_transfer',
+                'reference': 'TXN123456789'
+            }
+            response = self.session.post(f"{API_BASE}/fixer/payment/{self.test_data['service_fee_payment_id']}/settle", data=data)
+            if response.status_code == 200:
+                result = response.json()
+                if result.get('success'):
+                    self.log_result("Settle Payment", True, f"Payment settled successfully: {result.get('message', 'Payment settled')}")
+                    return True
+                else:
+                    self.log_result("Settle Payment", False, f"Payment settlement failed: {result.get('error', 'Unknown error')}", response)
+            else:
+                self.log_result("Settle Payment", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Settle Payment", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_job_assignment_with_payment_check(self):
+        """Test job assignment with payment status verification"""
+        # First create a new fixer with outstanding payments to test blocking
+        fixer_data = {
+            "phone": "+27829876544",
+            "name": "Jane Doe",
+            "email": "jane.doe@fixmate.com",
+            "services": '["electrical", "plumbing"]',
+            "location": "Johannesburg"
+        }
+        
+        try:
+            # Create new fixer
+            response = self.session.post(f"{API_BASE}/fixers", json=fixer_data)
+            if response.status_code != 200:
+                self.log_result("Job Assignment Payment Check", False, "Failed to create test fixer", response)
+                return False
+            
+            test_fixer = response.json()
+            test_fixer_id = test_fixer['id']
+            
+            # Create service fee for this fixer to make them have outstanding payment
+            fee_data = {'description': 'Test service fee to block job assignment'}
+            response = self.session.post(f"{API_BASE}/fixer/{test_fixer_id}/create-service-fee", data=fee_data)
+            if response.status_code != 200:
+                self.log_result("Job Assignment Payment Check", False, "Failed to create service fee for test", response)
+                return False
+            
+            # Now try to assign a job to this fixer (should be blocked)
+            if 'job_id' not in self.test_data:
+                self.log_result("Job Assignment Payment Check", False, "No job ID available from previous test")
+                return False
+            
+            update_data = {
+                "fixer_id": test_fixer_id,
+                "status": "assigned"
+            }
+            
+            response = self.session.put(f"{API_BASE}/jobs/{self.test_data['job_id']}", json=update_data)
+            if response.status_code == 400:
+                # This is expected - job assignment should be blocked
+                error_message = response.json().get('detail', '')
+                if 'outstanding payments' in error_message.lower():
+                    self.log_result("Job Assignment Payment Check", True, f"Job assignment correctly blocked due to outstanding payments: {error_message}")
+                    return True
+                else:
+                    self.log_result("Job Assignment Payment Check", False, f"Job blocked but wrong reason: {error_message}", response)
+            else:
+                self.log_result("Job Assignment Payment Check", False, f"Job assignment should have been blocked but wasn't. HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Job Assignment Payment Check", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_automatic_service_fee_creation(self):
+        """Test automatic service fee creation when job is assigned"""
+        # Create a new job and fixer to test automatic fee creation
+        user_data = {
+            "phone": "+27821234568",
+            "name": "Test User 2",
+            "email": "testuser2@example.com",
+            "address": "456 Test St, Cape Town"
+        }
+        
+        try:
+            # Create test user
+            response = self.session.post(f"{API_BASE}/users", json=user_data)
+            if response.status_code != 200:
+                self.log_result("Automatic Service Fee Creation", False, "Failed to create test user", response)
+                return False
+            
+            test_user = response.json()
+            
+            # Create test job
+            job_data = {
+                "user_id": test_user['id'],
+                "service": "electrical",
+                "description": "Install new light fixture",
+                "location": "456 Test St, Cape Town",
+                "estimated_price": 150.0
+            }
+            
+            response = self.session.post(f"{API_BASE}/jobs", json=job_data)
+            if response.status_code != 200:
+                self.log_result("Automatic Service Fee Creation", False, "Failed to create test job", response)
+                return False
+            
+            test_job = response.json()
+            
+            # Create test fixer with no outstanding payments
+            fixer_data = {
+                "phone": "+27829876545",
+                "name": "Clean Fixer",
+                "email": "clean.fixer@fixmate.com",
+                "services": '["electrical", "carpentry"]',
+                "location": "Cape Town"
+            }
+            
+            response = self.session.post(f"{API_BASE}/fixers", json=fixer_data)
+            if response.status_code != 200:
+                self.log_result("Automatic Service Fee Creation", False, "Failed to create clean fixer", response)
+                return False
+            
+            clean_fixer = response.json()
+            
+            # Get initial payment history
+            response = self.session.get(f"{API_BASE}/fixer/{clean_fixer['id']}/payment-history")
+            if response.status_code != 200:
+                self.log_result("Automatic Service Fee Creation", False, "Failed to get initial payment history", response)
+                return False
+            
+            initial_payments = response.json()['payments']
+            initial_count = len(initial_payments)
+            
+            # Assign job to clean fixer (should automatically create service fee)
+            update_data = {
+                "fixer_id": clean_fixer['id'],
+                "status": "assigned"
+            }
+            
+            response = self.session.put(f"{API_BASE}/jobs/{test_job['id']}", json=update_data)
+            if response.status_code != 200:
+                self.log_result("Automatic Service Fee Creation", False, f"Failed to assign job. HTTP {response.status_code}", response)
+                return False
+            
+            # Check if service fee was automatically created
+            response = self.session.get(f"{API_BASE}/fixer/{clean_fixer['id']}/payment-history")
+            if response.status_code != 200:
+                self.log_result("Automatic Service Fee Creation", False, "Failed to get updated payment history", response)
+                return False
+            
+            updated_payments = response.json()['payments']
+            updated_count = len(updated_payments)
+            
+            if updated_count > initial_count:
+                # Check if the new payment is a service fee
+                new_payment = updated_payments[0]  # Most recent payment
+                if new_payment.get('payment_type') == 'service_fee' and new_payment.get('amount') == 20.0:
+                    self.log_result("Automatic Service Fee Creation", True, f"Service fee automatically created when job assigned. Payment ID: {new_payment['id']}")
+                    return True
+                else:
+                    self.log_result("Automatic Service Fee Creation", False, f"New payment created but not a service fee: {new_payment}")
+            else:
+                self.log_result("Automatic Service Fee Creation", False, "No new payment created when job was assigned")
+                
+        except Exception as e:
+            self.log_result("Automatic Service Fee Creation", False, f"Request error: {str(e)}")
+        return False
+    
     def run_all_tests(self):
         """Run all tests in sequence"""
         print("=" * 60)
