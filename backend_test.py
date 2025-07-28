@@ -725,10 +725,13 @@ class FixMateAPITester:
     def test_job_assignment_with_payment_check(self):
         """Test job assignment with payment status verification"""
         # First create a new fixer with outstanding payments to test blocking
+        import time
+        timestamp = str(int(time.time()))[-6:]  # Last 6 digits of timestamp
+        
         fixer_data = {
-            "phone": "+27829876544",
+            "phone": f"+2782987{timestamp}",
             "name": "Jane Doe",
-            "email": "jane.doe@fixmate.com",
+            "email": f"jane.doe.{timestamp}@fixmate.com",
             "services": '["electrical", "plumbing"]',
             "location": "Johannesburg"
         }
