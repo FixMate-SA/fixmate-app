@@ -140,6 +140,22 @@ class EmergencyAlert(Base):
     # Relationships
     user = relationship("User", back_populates="emergency_alerts")
     job = relationship("Job", back_populates="emergency_alerts")
+
+class FixerVerification(Base):
+    __tablename__ = "fixer_verifications"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    fixer_id = Column(String, ForeignKey("fixers.id"), nullable=False)
+    id_document_url = Column(String, nullable=True)  # Base64 or file path
+    verification_status = Column(String, default="pending")  # pending, verified, rejected
+    admin_notes = Column(Text, nullable=True)
+    verified_by = Column(String, nullable=True)  # Admin ID who verified
+    verified_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    fixer = relationship("Fixer", back_populates="verification")
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     fixer_id = Column(String, ForeignKey("fixers.id"), nullable=False)
