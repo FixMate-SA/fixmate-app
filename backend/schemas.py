@@ -102,9 +102,14 @@ class ReviewResponse(BaseModel):
 # Auth schemas
 class LoginRequest(BaseModel):
     phone: str
+    name: Optional[str] = None
+    email: Optional[str] = None
 
 class LoginResponse(BaseModel):
-    user: UserResponse
+    user: dict
+    role_info: dict
+    display_name: str
+    welcome_message: str
     token: str
 
 # Payment schemas
