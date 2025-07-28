@@ -1241,12 +1241,12 @@ class FixMateAPITester:
     
     def run_all_tests(self):
         """Run all tests in sequence"""
-        print("=" * 70)
-        print("FIXMATE-SA BACKEND API TESTING - WITH FIXER PAYMENT SYSTEM")
-        print("=" * 70)
+        print("=" * 80)
+        print("FIXMATE-SA BACKEND API TESTING - WITH WHATSAPP & PAYFAST INTEGRATION")
+        print("=" * 80)
         print()
         
-        # Test sequence following the main user flow + new AI/SMS features + Payment System
+        # Test sequence following the main user flow + new AI/SMS features + Payment System + WhatsApp + PayFast
         tests = [
             ("Health Check", self.test_health_check),
             ("Create User", self.test_create_user),
@@ -1278,7 +1278,25 @@ class FixMateAPITester:
             ("SMS Send", self.test_sms_send),
             ("SMS Webhook", self.test_sms_webhook),
             ("Enhanced Job Creation with AI", self.test_enhanced_job_creation_with_ai),
-            ("Enhanced Review Creation with AI", self.test_enhanced_review_creation_with_ai)
+            ("Enhanced Review Creation with AI", self.test_enhanced_review_creation_with_ai),
+            # WhatsApp Integration Tests
+            ("WhatsApp Webhook Verify", self.test_whatsapp_webhook_verify),
+            ("WhatsApp Webhook POST", self.test_whatsapp_webhook_post),
+            ("WhatsApp Send Message", self.test_whatsapp_send_message),
+            ("WhatsApp Job Notification", self.test_whatsapp_send_job_notification),
+            ("WhatsApp Rating Request", self.test_whatsapp_send_rating_request),
+            # PayFast Integration Tests
+            ("PayFast Create Payment", self.test_payfast_create_payment),
+            ("PayFast Payment Status", self.test_payfast_payment_status),
+            ("PayFast Fixer Payment", self.test_payfast_fixer_payment),
+            ("PayFast Notify", self.test_payfast_notify),
+            # Enhanced AI Features Tests
+            ("WhatsApp Business Insights", self.test_whatsapp_insights),
+            ("WhatsApp Generate Insight", self.test_whatsapp_generate_insight),
+            # Error Handling Tests
+            ("WhatsApp Send Message - Missing Params", self.test_whatsapp_send_message_missing_params),
+            ("PayFast Create Payment - Invalid Job", self.test_payfast_create_payment_invalid_job),
+            ("WhatsApp Job Notification - No Fixer", self.test_whatsapp_job_notification_no_fixer)
         ]
         
         for test_name, test_func in tests:
