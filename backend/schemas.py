@@ -5,15 +5,23 @@ from datetime import datetime
 # User schemas
 class UserCreate(BaseModel):
     phone: str
-    name: str
+    first_name: str
+    last_name: str
+    id_number: str
+    town: str
     email: Optional[str] = None
     address: Optional[str] = None
-    role: Optional[str] = "client"  # client, fixer, admin, super_admin
+    role: Optional[str] = "client"
 
 class UserResponse(BaseModel):
     id: str
     phone: str
-    name: str
+    first_name: str
+    last_name: str
+    full_name: str
+    display_name: str
+    id_number: str
+    town: str
     email: Optional[str] = None
     address: Optional[str] = None
     role: str
