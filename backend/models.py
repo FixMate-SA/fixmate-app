@@ -53,10 +53,48 @@ class User(Base):
         """Get display name (first name for welcome messages)"""
         return self.first_name
 
+class FixerApplication(Base):
+    __tablename__ = "fixer_applications"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    
+    # Application details
+    services_offered = Column(Text, nullable=False)  # JSON string of services
+    experience_years = Column(Integer, nullable=False)
+    qualifications = Column(Text, nullable=True)  # Educational/professional qualifications
+    previous_work = Column(Text, nullable=True)   # Previous work experience
+    why_fixer = Column(Text, nullable=False)      # Why they want to be a fixer
+    
+    # Documents (stored as base64 or file paths)
+    id_document = Column(Text, nullable=False)    # ID document image
+    proof_of_address = Column(Text, nullable=True) # Proof of address
+    qualifications_cert = Column(Text, nullable=True) # Qualification certificates
+    criminal_clearance = Column(Text, nullable=True)  # Criminal clearance certificate
+    
+    # Application status and review
+    status = Column(String, default="pending")    # pending, under_review, approved, rejected, needs_documents
+    admin_notes = Column(Text, nullable=True)     # Admin review notes
+    rejection_reason = Column(Text, nullable=True) # Reason for rejection if applicable
+    reviewed_by = Column(String, nullable=True)   # Admin ID who reviewed
+    reviewed_at = Column(DateTime, nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    
+    # Application dates
+    submitted_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="fixer_applications")
+
 class Fixer(Base):
     __tablename__ = "fixers"
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)  # Link to user account
+    application_id = Column(String, ForeignKey("fixer_applications.id"), nullable=True)  # Link to approved application
+    
     phone = Column(String, unique=True, nullable=False, index=True)
     name = Column(String, nullable=False)
     email = Column(String, nullable=True)
@@ -65,11 +103,15 @@ class Fixer(Base):
     rating = Column(Float, default=0.0)
     total_jobs = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
+    is_approved = Column(Boolean, default=False)  # NEW: Approval status from vetting process
+    approval_date = Column(DateTime, nullable=True)  # When fixer was approved
     payment_status = Column(String, default="current")  # current, overdue, blocked
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
+    user = relationship("User", foreign_keys=[user_id])
+    application = relationship("FixerApplication", foreign_keys=[application_id])
     jobs = relationship("Job", back_populates="fixer")
     reviews = relationship("Review", back_populates="fixer")
     payments = relationship("FixerPayment", back_populates="fixer")
