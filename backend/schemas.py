@@ -207,3 +207,40 @@ class EmergencyAlertResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+# Fixer Application schemas
+class FixerApplicationCreate(BaseModel):
+    services_offered: str  # JSON string of services
+    experience_years: int
+    qualifications: Optional[str] = None
+    previous_work: Optional[str] = None
+    why_fixer: str
+    id_document: str  # Base64 encoded image
+    proof_of_address: Optional[str] = None
+    qualifications_cert: Optional[str] = None
+    criminal_clearance: Optional[str] = None
+
+class FixerApplicationResponse(BaseModel):
+    id: str
+    user_id: str
+    services_offered: str
+    experience_years: int
+    qualifications: Optional[str] = None
+    previous_work: Optional[str] = None
+    why_fixer: str
+    status: str
+    admin_notes: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+    approved_at: Optional[datetime] = None
+    submitted_at: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class FixerApplicationReview(BaseModel):
+    status: str  # approved, rejected, needs_documents
+    admin_notes: Optional[str] = None
+    rejection_reason: Optional[str] = None
