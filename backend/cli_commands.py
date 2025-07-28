@@ -113,12 +113,13 @@ def promote_admin(phone):
         
         user = db.query(User).filter(User.phone == formatted_phone).first()
         if not user:
+            import uuid
             click.echo(f"User not found. Creating new admin user for {formatted_phone}...")
             user = User(
                 phone=formatted_phone,
                 first_name="Admin",
                 last_name="User",
-                id_number="",
+                id_number=f"CLI_{uuid.uuid4().hex[:8]}",  # Generate unique ID for CLI users
                 town="Unknown",
                 role="admin"
             )
