@@ -217,16 +217,14 @@ class FixerVerification(Base):
     
     # Relationships
     fixer = relationship("Fixer", back_populates="verification")
+
+class DataInsight(Base):
+    __tablename__ = "data_insights"
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    fixer_id = Column(String, ForeignKey("fixers.id"), nullable=False)
-    id_document_url = Column(String, nullable=True)  # Base64 or file path
-    verification_status = Column(String, default="pending")  # pending, verified, rejected
-    admin_notes = Column(Text, nullable=True)
-    verified_by = Column(String, nullable=True)  # Admin ID who verified
-    verified_at = Column(DateTime, nullable=True)
+    insight_text = Column(Text, nullable=False)
+    insight_type = Column(String, default="business")  # business, trend, market
+    generated_by = Column(String, default="ai")  # ai, admin, system
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relationships
-    fixer = relationship("Fixer", back_populates="verification")
