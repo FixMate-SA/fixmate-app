@@ -21,6 +21,7 @@ import Profile from "./components/Profile/Profile";
 import AdminDashboard from "./components/Admin/AdminDashboard";
 import TermsOfService from "./components/Legal/TermsOfService";
 import PrivacyPolicy from "./components/Legal/PrivacyPolicy";
+import BusinessCompliance from "./components/Business/BusinessCompliance";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
