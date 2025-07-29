@@ -4,9 +4,9 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 from sqlalchemy.orm import Session
 from models import BusinessComplianceRequest, User
-from .whatsapp_service import WhatsAppService
-from .sms_service import sms_service
-from .ai_service import ai_service
+from services.whatsapp_service import WhatsAppService
+from services.sms_service import sms_service
+from services.ai_service import ai_service
 
 class BusinessComplianceService:
     """
