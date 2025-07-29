@@ -25,14 +25,23 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check for stored auth data on app load
+    console.log('AuthContext: Checking stored auth data...');
     const storedUser = localStorage.getItem('fixmate_user');
     const storedRoleInfo = localStorage.getItem('fixmate_role_info');
     const storedDisplayName = localStorage.getItem('fixmate_display_name');
     const storedWelcomeMessage = localStorage.getItem('fixmate_welcome_message');
     const storedToken = localStorage.getItem('fixmate_token');
     
+    console.log('AuthContext: Stored data found:', {
+      hasUser: !!storedUser,
+      hasToken: !!storedToken,
+      hasRoleInfo: !!storedRoleInfo
+    });
+    
     if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
+      const userData = JSON.parse(storedUser);
+      console.log('AuthContext: Restoring user session:', userData);
+      setUser(userData);
       setRoleInfo(storedRoleInfo ? JSON.parse(storedRoleInfo) : null);
       setDisplayName(storedDisplayName || '');
       setWelcomeMessage(storedWelcomeMessage || '');
