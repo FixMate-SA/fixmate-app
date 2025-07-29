@@ -32,7 +32,32 @@ const ProtectedRoute = ({ children }) => {
     );
   }
   
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  if (!isAuthenticated) {
+    console.log('ProtectedRoute: User not authenticated, redirecting to login');
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+};
+
+// Public Route component (for login/signup pages)
+const PublicRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+  
+  if (isAuthenticated) {
+    console.log('PublicRoute: User authenticated, redirecting to dashboard');
+    return <Navigate to="/" replace />;
+  }
+  
+  return children;
 };
 
 // Layout component for authenticated pages
