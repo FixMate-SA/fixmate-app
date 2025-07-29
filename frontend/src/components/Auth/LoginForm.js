@@ -34,7 +34,8 @@ const LoginForm = () => {
       if (result.requiresPassword) {
         setShowPasswordSetup(true);
       } else {
-        navigate('/');
+        console.log('LoginForm: Login successful, navigating to dashboard');
+        navigate('/', { replace: true });
       }
     } else {
       setError(result.error);
