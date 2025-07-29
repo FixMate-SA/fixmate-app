@@ -12,10 +12,20 @@ class RoleService:
     def determine_user_role(self, phone: str, db: Session) -> Dict[str, Any]:
         """
         Determine user role based on phone number and database records
-        Priority: admin > fixer > client
+        Priority: admin (from database) > fixer > client
         """
         try:
-            # Check if phone is in admin list
+            # First check if user exists in database and has admin role
+            user = db.query(User).filter(User.phone == phone).first()
+            if user and user.role == "admin":
+                return {
+                    "role": "admin",
+                    "is_fixer": False,
+                    "fixer_data": None,
+                    "permissions": self.get_permissions("admin")
+                }
+            
+            # Check if phone is in legacy admin list (for backward compatibility)
             if phone in self.admin_phones:
                 return {
                     "role": "admin",
