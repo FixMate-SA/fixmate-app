@@ -109,7 +109,8 @@ const LoginForm = () => {
         // Now login with password
         const loginResult = await login(phone, password);
         if (loginResult.success) {
-          navigate('/');
+          console.log('LoginForm: Password setup and login successful, navigating to dashboard');
+          navigate('/', { replace: true });
         } else {
           setError('Login failed after setting password');
         }
