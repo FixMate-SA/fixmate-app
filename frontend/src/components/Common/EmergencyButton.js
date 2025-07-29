@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { getApiUrl } from '../../utils/api';
 
 const EmergencyButton = ({ jobId = null, className = '' }) => {
   const { user } = useAuth();
