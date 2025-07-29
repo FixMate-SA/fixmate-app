@@ -1,0 +1,20 @@
+#!/bin/bash
+
+echo "=== FixMate-SA Build Script ==="
+
+# Install Node.js if not available
+if ! command -v node &> /dev/null; then
+    echo "Installing Node.js..."
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    apt-get install -y nodejs
+fi
+
+# Build frontend
+echo "Building React frontend..."
+cd /app/frontend
+npm install
+npm run build
+cd /app
+
+echo "Frontend build complete!"
+echo "Static files are ready in /app/frontend/build"
