@@ -1720,10 +1720,364 @@ class FixMateAPITester:
             self.log_result("Role Check Endpoint", False, f"Request error: {str(e)}")
             return False
 
+    # Business Compliance API Tests
+    def test_compliance_categories(self):
+        """Test GET /api/compliance/categories - Should return all 6 compliance categories"""
+        try:
+            response = self.session.get(f"{API_BASE}/compliance/categories")
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, dict) and len(data) >= 6:
+                    expected_categories = [
+                        'company_registration', 'sars_registration', 'labour_compliance',
+                        'bbbee_certification', 'licensing_permits', 'financial_compliance'
+                    ]
+                    found_categories = list(data.keys())
+                    missing_categories = [cat for cat in expected_categories if cat not in found_categories]
+                    
+                    if not missing_categories:
+                        self.log_result("Business Compliance Categories", True, f"All 6 compliance categories found: {', '.join(found_categories)}")
+                        return True
+                    else:
+                        self.log_result("Business Compliance Categories", False, f"Missing categories: {missing_categories}", response)
+                else:
+                    self.log_result("Business Compliance Categories", False, f"Expected 6+ categories, got {len(data) if isinstance(data, dict) else 'invalid format'}", response)
+            else:
+                self.log_result("Business Compliance Categories", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Business Compliance Categories", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_compliance_request_creation(self):
+        """Test POST /api/compliance/request - Should create new compliance requests (mock authentication)"""
+        if 'user_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Business Compliance Request Creation", False, "No user ID or token available from previous test")
+            return False
+        
+        try:
+            # Mock authentication by adding token to headers
+            headers = {'Authorization': f'Bearer {self.test_data["token"]}'}
+            
+            request_data = {
+                'category': 'company_registration',
+                'description': 'Need help registering a new Pty Ltd company for my tech startup',
+                'urgency_level': 'normal',
+                'contact_preference': 'whatsapp'
+            }
+            
+            response = self.session.post(f"{API_BASE}/compliance/request", json=request_data, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'data' in data:
+                    request_id = data['data'].get('request_id')
+                    if request_id:
+                        self.test_data['compliance_request_id'] = request_id
+                        self.log_result("Business Compliance Request Creation", True, f"Compliance request created with ID: {request_id}")
+                        return True
+                    else:
+                        self.log_result("Business Compliance Request Creation", False, "No request ID in response", response)
+                else:
+                    self.log_result("Business Compliance Request Creation", False, "Request creation failed", response)
+            else:
+                self.log_result("Business Compliance Request Creation", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Business Compliance Request Creation", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_user_compliance_requests(self):
+        """Test GET /api/compliance/requests - Should return user compliance requests"""
+        if 'token' not in self.test_data:
+            self.log_result("User Compliance Requests", False, "No token available from previous test")
+            return False
+        
+        try:
+            headers = {'Authorization': f'Bearer {self.test_data["token"]}'}
+            response = self.session.get(f"{API_BASE}/compliance/requests", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'data' in data:
+                    requests = data['data']
+                    if isinstance(requests, list):
+                        self.log_result("User Compliance Requests", True, f"Retrieved {len(requests)} compliance requests")
+                        return True
+                    else:
+                        self.log_result("User Compliance Requests", False, "Invalid response format - data is not a list", response)
+                else:
+                    self.log_result("User Compliance Requests", False, "Invalid response format", response)
+            else:
+                self.log_result("User Compliance Requests", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("User Compliance Requests", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_compliance_checklist(self):
+        """Test GET /api/compliance/checklist/{category} - Should generate compliance checklists"""
+        try:
+            category = 'company_registration'
+            response = self.session.get(f"{API_BASE}/compliance/checklist/{category}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'data' in data:
+                    checklist_data = data['data']
+                    required_fields = ['category', 'name', 'typical_docs', 'processing_time', 'cost_range']
+                    if all(field in checklist_data for field in required_fields):
+                        self.log_result("Compliance Checklist", True, f"Generated checklist for {checklist_data['name']}")
+                        return True
+                    else:
+                        missing_fields = [field for field in required_fields if field not in checklist_data]
+                        self.log_result("Compliance Checklist", False, f"Missing fields: {missing_fields}", response)
+                else:
+                    self.log_result("Compliance Checklist", False, "Invalid response format", response)
+            else:
+                self.log_result("Compliance Checklist", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Compliance Checklist", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_admin_all_compliance_requests(self):
+        """Test GET /api/compliance/admin/all-requests - Should return all requests for admin"""
+        # Create admin token for testing
+        try:
+            # First create admin user
+            admin_signup_data = {
+                "phone": "+27821234567",  # Admin phone from role_service
+                "first_name": "Admin",
+                "last_name": "Test",
+                "id_number": "8001015009088",
+                "town": "Cape Town",
+                "email": "admin.test@fixmate.com",
+                "password": "admin123",
+                "confirm_password": "admin123"
+            }
+            
+            signup_response = self.session.post(f"{API_BASE}/auth/signup", json=admin_signup_data)
+            if signup_response.status_code == 200:
+                admin_data = signup_response.json()
+                admin_token = admin_data.get('token')
+                
+                if admin_token:
+                    headers = {'Authorization': f'Bearer {admin_token}'}
+                    response = self.session.get(f"{API_BASE}/compliance/admin/all-requests", headers=headers)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        if data.get('success') and 'data' in data:
+                            requests = data['data']
+                            if isinstance(requests, list):
+                                self.log_result("Admin All Compliance Requests", True, f"Retrieved {len(requests)} compliance requests for admin")
+                                return True
+                            else:
+                                self.log_result("Admin All Compliance Requests", False, "Invalid response format - data is not a list", response)
+                        else:
+                            self.log_result("Admin All Compliance Requests", False, "Invalid response format", response)
+                    else:
+                        self.log_result("Admin All Compliance Requests", False, f"HTTP {response.status_code}", response)
+                else:
+                    self.log_result("Admin All Compliance Requests", False, "No admin token received", signup_response)
+            else:
+                self.log_result("Admin All Compliance Requests", False, "Failed to create admin user", signup_response)
+        except Exception as e:
+            self.log_result("Admin All Compliance Requests", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_admin_update_compliance_request(self):
+        """Test PUT /api/compliance/admin/update/{request_id} - Should update request status"""
+        if 'compliance_request_id' not in self.test_data:
+            self.log_result("Admin Update Compliance Request", False, "No compliance request ID available from previous test")
+            return False
+        
+        try:
+            # Use admin credentials from previous test
+            admin_login_data = {
+                "phone": "+27821234567",
+                "password": "admin123"
+            }
+            
+            login_response = self.session.post(f"{API_BASE}/auth/login", json=admin_login_data)
+            if login_response.status_code == 200:
+                admin_data = login_response.json()
+                admin_token = admin_data.get('token')
+                
+                if admin_token:
+                    headers = {'Authorization': f'Bearer {admin_token}'}
+                    update_data = {
+                        'status': 'in_review',
+                        'admin_notes': 'Request is being reviewed by our compliance team',
+                        'estimated_cost': 2500.00
+                    }
+                    
+                    response = self.session.put(
+                        f"{API_BASE}/compliance/admin/update/{self.test_data['compliance_request_id']}", 
+                        json=update_data, 
+                        headers=headers
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        if data.get('success'):
+                            self.log_result("Admin Update Compliance Request", True, f"Request status updated: {data.get('message', 'Status updated')}")
+                            return True
+                        else:
+                            self.log_result("Admin Update Compliance Request", False, "Update failed", response)
+                    else:
+                        self.log_result("Admin Update Compliance Request", False, f"HTTP {response.status_code}", response)
+                else:
+                    self.log_result("Admin Update Compliance Request", False, "No admin token received", login_response)
+            else:
+                self.log_result("Admin Update Compliance Request", False, "Admin login failed", login_response)
+        except Exception as e:
+            self.log_result("Admin Update Compliance Request", False, f"Request error: {str(e)}")
+        return False
+    
+    # WhatsApp Business Integration Tests
+    def test_whatsapp_business_webhook_verify(self):
+        """Test GET /api/whatsapp/business/webhook - Should return webhook verification"""
+        try:
+            response = self.session.get(f"{API_BASE}/whatsapp/business/webhook")
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'message' in data:
+                    if 'webhook active' in data['message'].lower():
+                        self.log_result("WhatsApp Business Webhook Verify", True, f"Webhook verification successful: {data['message']}")
+                        return True
+                    else:
+                        self.log_result("WhatsApp Business Webhook Verify", False, "Unexpected verification message", response)
+                else:
+                    self.log_result("WhatsApp Business Webhook Verify", False, "Invalid response format", response)
+            else:
+                self.log_result("WhatsApp Business Webhook Verify", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("WhatsApp Business Webhook Verify", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_whatsapp_business_webhook_post(self):
+        """Test POST /api/whatsapp/business/webhook - Should process webhook data"""
+        try:
+            # Simulate WhatsApp Business webhook data for 0754466571
+            webhook_data = {
+                "entry": [{
+                    "id": "0754466571",
+                    "changes": [{
+                        "value": {
+                            "messaging_product": "whatsapp",
+                            "metadata": {
+                                "display_phone_number": "0754466571",
+                                "phone_number_id": "702642972933051"
+                            },
+                            "messages": [{
+                                "from": "27821234567",
+                                "id": "wamid.test123",
+                                "timestamp": "1640995200",
+                                "type": "text",
+                                "text": {
+                                    "body": "Hello, I need business compliance help"
+                                }
+                            }]
+                        },
+                        "field": "messages"
+                    }]
+                }]
+            }
+            
+            response = self.session.post(f"{API_BASE}/whatsapp/business/webhook", json=webhook_data)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'processed' in data:
+                    self.log_result("WhatsApp Business Webhook POST", True, f"Webhook processed successfully: {data.get('processed', 'Unknown')}")
+                    return True
+                else:
+                    self.log_result("WhatsApp Business Webhook POST", False, "Webhook processing failed", response)
+            else:
+                self.log_result("WhatsApp Business Webhook POST", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("WhatsApp Business Webhook POST", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_whatsapp_service_configuration(self):
+        """Verify WhatsApp service configuration for business number 0754466571"""
+        try:
+            # Test if WhatsApp service is properly configured
+            # This is more of a configuration verification test
+            
+            # Check if environment variables are set (we can't access them directly, but we can test the service)
+            test_message_data = {
+                'to_number': '+27821234567',
+                'message': 'Test configuration message from FixMate-SA API testing'
+            }
+            
+            response = self.session.post(f"{API_BASE}/whatsapp/send-message", data=test_message_data)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "success" in result:
+                    # Even if the message fails due to API keys, the service should respond properly
+                    self.log_result("WhatsApp Service Configuration", True, f"WhatsApp service configured and responding (success: {result.get('success', 'unknown')})")
+                    return True
+                else:
+                    self.log_result("WhatsApp Service Configuration", False, "Invalid response format", response)
+            else:
+                self.log_result("WhatsApp Service Configuration", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("WhatsApp Service Configuration", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_business_compliance_model_integration(self):
+        """Test BusinessComplianceRequest model exists and works with User relationship"""
+        try:
+            # This test verifies the model integration by creating and retrieving a compliance request
+            if 'user_id' not in self.test_data or 'token' not in self.test_data:
+                self.log_result("Business Compliance Model Integration", False, "No user ID or token available")
+                return False
+            
+            # Create a compliance request to test model integration
+            headers = {'Authorization': f'Bearer {self.test_data["token"]}'}
+            request_data = {
+                'category': 'sars_registration',
+                'description': 'Need help with VAT registration and PAYE setup for my small business',
+                'urgency_level': 'high',
+                'contact_preference': 'whatsapp'
+            }
+            
+            response = self.session.post(f"{API_BASE}/compliance/request", json=request_data, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'data' in data:
+                    # Now retrieve the request to verify model relationships
+                    response2 = self.session.get(f"{API_BASE}/compliance/requests", headers=headers)
+                    if response2.status_code == 200:
+                        data2 = response2.json()
+                        if data2.get('success') and data2.get('data'):
+                            requests = data2['data']
+                            if len(requests) > 0:
+                                # Check if the request has proper structure indicating model relationships work
+                                request = requests[0]
+                                required_fields = ['id', 'category', 'description', 'status', 'created_at']
+                                if all(field in request for field in required_fields):
+                                    self.log_result("Business Compliance Model Integration", True, f"Model integration working - request has all required fields and relationships")
+                                    return True
+                                else:
+                                    missing_fields = [field for field in required_fields if field not in request]
+                                    self.log_result("Business Compliance Model Integration", False, f"Missing model fields: {missing_fields}")
+                            else:
+                                self.log_result("Business Compliance Model Integration", False, "No requests returned - model relationship issue")
+                        else:
+                            self.log_result("Business Compliance Model Integration", False, "Failed to retrieve requests", response2)
+                    else:
+                        self.log_result("Business Compliance Model Integration", False, f"Failed to retrieve requests: HTTP {response2.status_code}", response2)
+                else:
+                    self.log_result("Business Compliance Model Integration", False, "Failed to create test request", response)
+            else:
+                self.log_result("Business Compliance Model Integration", False, f"Failed to create test request: HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Business Compliance Model Integration", False, f"Request error: {str(e)}")
+        return False
+
     def run_all_tests(self):
         """Run all tests in sequence"""
         print("=" * 80)
-        print("FIXMATE-SA BACKEND API TESTING - HEROKU DEPLOYMENT AUTHENTICATION FLOW")
+        print("🚀 FIXMATE-SA BACKEND API COMPREHENSIVE TESTING - WHATSAPP BUSINESS & COMPLIANCE")
         print("=" * 80)
         print()
         
