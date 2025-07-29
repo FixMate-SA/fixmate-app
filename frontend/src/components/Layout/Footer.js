@@ -5,6 +5,7 @@ import Logo from '../Common/Logo';
 
 const Footer = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
 
   return (
     <footer className="bg-gray-800 text-white">
