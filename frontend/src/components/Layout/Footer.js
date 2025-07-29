@@ -66,18 +66,56 @@ const Footer = () => {
           </div>
 
           {/* Bottom Bar */}
-          <div className="border-t border-gray-700 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center">
-            <div className="text-sm text-gray-400">
-              © 2025 FixMate-SA. {t('allRightsReserved', 'All rights reserved.')} {' '}
-              <span className="ml-4">
-                {t('builtForSA', 'Built with ❤️ for South Africa')}
-              </span>
+          <div className="border-t border-gray-700 mt-8 pt-6">
+            {/* Legal Information Block */}
+            <div className="text-center mb-6">
+              <p className="font-semibold text-white mb-2">
+                FixMate-SA is a product of Donald Shai Technologies (Pty) Ltd. All rights reserved
+              </p>
+              <p className="text-sm text-gray-400">
+                Company Registration No: 2019/203656/07
+              </p>
+              <div className="mt-4 flex justify-center space-x-4 text-sm">
+                <button
+                  onClick={() => navigate('/terms')}
+                  className="text-gray-300 hover:text-white transition-colors font-medium"
+                >
+                  Terms of Service
+                </button>
+                <span className="text-gray-500">|</span>
+                <button
+                  onClick={() => navigate('/privacy')}
+                  className="text-gray-300 hover:text-white transition-colors font-medium"
+                >
+                  Privacy Policy
+                </button>
+              </div>
             </div>
             
-            <div className="flex space-x-6 mt-4 md:mt-0 text-sm text-gray-400">
-              <a href="#" className="hover:text-white transition-colors">{t('privacy', 'Privacy Policy')}</a>
-              <a href="#" className="hover:text-white transition-colors">{t('terms', 'Terms of Service')}</a>
-              <a href="#" className="hover:text-white transition-colors">{t('cookies', 'Cookie Policy')}</a>
+            {/* Copyright Bar */}
+            <div className="flex flex-col md:flex-row justify-between items-center border-t border-gray-600 pt-4">
+              <div className="text-sm text-gray-400">
+                © 2025 FixMate-SA. {t('allRightsReserved', 'All rights reserved.')} {' '}
+                <span className="ml-4">
+                  {t('builtForSA', 'Built with ❤️ for South Africa')}
+                </span>
+              </div>
+              
+              <div className="flex space-x-6 mt-4 md:mt-0 text-sm text-gray-400">
+                <button
+                  onClick={() => navigate('/privacy')}
+                  className="hover:text-white transition-colors"
+                >
+                  {t('privacy', 'Privacy Policy')}
+                </button>
+                <button
+                  onClick={() => navigate('/terms')}
+                  className="hover:text-white transition-colors"
+                >
+                  {t('terms', 'Terms of Service')}
+                </button>
+                <a href="#" className="hover:text-white transition-colors">{t('cookies', 'Cookie Policy')}</a>
+              </div>
             </div>
           </div>
         </div>
