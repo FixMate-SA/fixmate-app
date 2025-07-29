@@ -47,6 +47,15 @@ const Navigation = () => {
       permission: 'can_access_learning'
     },
     
+    // Business Compliance available to clients and fixers
+    { 
+      path: '/business-compliance', 
+      label: 'Business Compliance', 
+      icon: '🏢',
+      roles: ['client', 'fixer', 'admin'],
+      permission: 'can_access_compliance'
+    },
+    
     // SMS available to all
     { 
       path: '/sms', 
