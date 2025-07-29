@@ -42,7 +42,7 @@ const EmergencyButton = ({ jobId = null, className = '' }) => {
   const getLocationAddress = async (lat, lng) => {
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/api/emergency/location?latitude=${lat}&longitude=${lng}`
+        getApiUrl(`/emergency/location?latitude=${lat}&longitude=${lng}`)
       );
       const data = await response.json();
       return data.address;
