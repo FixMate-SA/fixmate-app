@@ -46,6 +46,113 @@ def format_phone_number(phone: str) -> str:
         # Try as-is for existing database formats
         return phone
 
+def add_fixer(name, phone, skills):
+    """Add a new fixer to the system."""
+    try:
+        db = get_database_session()
+        formatted_phone = format_phone_number(phone)
+        
+        # Check if fixer already exists
+        existing_fixer = db.query(Fixer).filter(Fixer.phone == formatted_phone).first()
+        if existing_fixer:
+            print(f"❌ Fixer with phone number {formatted_phone} already exists.")
+            return
+        
+        # Create or get user
+        user = db.query(User).filter(User.phone == formatted_phone).first()
+        if not user:
+            name_parts = name.split()
+            first_name = name_parts[0] if name_parts else name
+            last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
+            
+            user = User(
+                phone=formatted_phone,
+                first_name=first_name,
+                last_name=last_name,
+                id_number=f"CLI_{uuid.uuid4().hex[:8]}",
+                town="Unknown",
+                role="fixer",
+                is_active=True
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            print(f"✅ Created new user: {user.first_name} {user.last_name}")
+        else:
+            # Update existing user to fixer role
+            user.role = "fixer"
+            db.commit()
+            print(f"✅ Updated existing user to fixer role: {user.first_name} {user.last_name}")
+        
+        # Create fixer record
+        import json
+        skills_list = [skill.strip() for skill in skills.split(',')]
+        skills_json = json.dumps(skills_list)
+        
+        fixer = Fixer(
+            user_id=user.id,
+            phone=formatted_phone,
+            name=name,
+            email=f"{first_name.lower()}.{last_name.lower().replace(' ', '')}@fixmate.com" if 'first_name' in locals() else None,
+            services=skills_json,
+            location="Unknown",
+            rating=0.0,
+            total_jobs=0,
+            is_active=True
+        )
+        
+        db.add(fixer)
+        db.commit()
+        
+        print(f"✅ Successfully added fixer: '{name}' with phone {formatted_phone}")
+        print(f"   Skills: {skills}")
+        print(f"   Services JSON: {skills_json}")
+        
+        db.close()
+        
+    except Exception as e:
+        print(f"❌ Error adding fixer: {e}")
+
+def set_password(phone, password):
+    """Set password for a user."""
+    try:
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        
+        db = get_database_session()
+        formatted_phone = format_phone_number(phone)
+        
+        # Try different phone formats
+        user = None
+        phone_variations = [
+            formatted_phone,
+            f"whatsapp:{formatted_phone}",
+            phone,
+        ]
+        
+        for phone_var in phone_variations:
+            user = db.query(User).filter(User.phone == phone_var).first()
+            if user:
+                break
+        
+        if not user:
+            print(f"❌ User with phone number {phone} not found.")
+            return
+        
+        # Hash and set password
+        hashed_password = pwd_context.hash(password)
+        user.password_hash = hashed_password
+        db.commit()
+        
+        print(f"✅ Successfully set password for user: {user.first_name} {user.last_name} ({user.phone})")
+        print(f"   Password: {password}")
+        print(f"   Role: {user.role}")
+        
+        db.close()
+        
+    except Exception as e:
+        print(f"❌ Error setting password: {e}")
+
 def promote_admin(phone):
     """Promote a user to admin status."""
     try:
