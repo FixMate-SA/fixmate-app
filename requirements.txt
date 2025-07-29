@@ -32,4 +32,3 @@ twilio>=8.2.0
 flask>=3.0.0
 geopy>=2.3.0
 itsdangerous>=2.1.2
-nodeenv>=1.8.0
