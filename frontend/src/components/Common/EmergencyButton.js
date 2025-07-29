@@ -77,7 +77,7 @@ const EmergencyButton = ({ jobId = null, className = '' }) => {
       formData.append('address', address);
       formData.append('description', description || 'Emergency assistance requested');
 
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/emergency/alert`, {
+      const response = await fetch(getApiUrl('/emergency/alert'), {
         method: 'POST',
         body: formData
       });
