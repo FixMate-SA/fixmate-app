@@ -1,0 +1,23 @@
+{
+  "name": "fixmate-sa",
+  "version": "1.0.0",
+  "description": "FixMate-SA - Connect clients with fixers in South Africa",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "cd frontend && yarn install && yarn build",
+    "heroku-postbuild": "cd frontend && yarn install && yarn build",
+    "dev": "concurrently \"cd backend && python server.py\" \"cd frontend && yarn start\""
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-static-gzip": "^2.1.7"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "engines": {
+    "node": "18.x",
+    "yarn": "1.x"
+  }
+}
