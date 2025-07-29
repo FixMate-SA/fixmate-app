@@ -282,20 +282,29 @@ async def signup(request: SignupRequest, db: Session = Depends(get_db)):
         if len(request.password) < 6:
             raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
         
+        # Format phone number to match database format
+        phone = request.phone
+        if phone.startswith('0') and len(phone) == 10:
+            phone = f"whatsapp:+27{phone[1:]}"
+        elif phone.startswith('+') and len(phone) == 12:
+            phone = f"whatsapp:{phone}"
+        elif not phone.startswith("whatsapp:"):
+            phone = f"whatsapp:{phone}"
+        
         # Check if user already exists
         existing_user = db.query(User).filter(
-            or_(User.phone == request.phone, User.id_number == request.id_number)
+            or_(User.phone == phone, User.id_number == request.id_number)
         ).first()
         
         if existing_user:
-            if existing_user.phone == request.phone:
+            if existing_user.phone == phone:
                 raise HTTPException(status_code=400, detail="Phone number already registered")
             else:
                 raise HTTPException(status_code=400, detail="ID number already registered")
         
         # Create user data
         user_data = {
-            "phone": request.phone,
+            "phone": phone,  # Use formatted phone
             "first_name": request.first_name.strip(),
             "last_name": request.last_name.strip(),
             "id_number": request.id_number.strip(),
