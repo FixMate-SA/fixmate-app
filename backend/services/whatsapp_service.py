@@ -267,26 +267,217 @@ Thank you for choosing FixMate-SA! 🔧
         
         return self.send_whatsapp_message(phone_number, message)
     
-    def send_rating_request(self, phone_number: str, job_data: Dict[str, Any]) -> bool:
+    def process_business_webhook(self, webhook_data: Dict[str, Any], db: Session) -> Dict[str, Any]:
         """
-        Send rating request to client via WhatsApp.
+        Process WhatsApp Business webhook for official FixMate-SA number (0754466571)
         """
-        message = f"""
-✅ Your FixMate-SA job has been completed!
+        try:
+            # Extract webhook data
+            entry = webhook_data.get('entry', [{}])[0]
+            changes = entry.get('changes', [{}])[0]
+            value = changes.get('value', {})
+            
+            # Check if it's a message
+            messages = value.get('messages', [])
+            if not messages:
+                return {'processed': False, 'reason': 'No messages found'}
+            
+            for message in messages:
+                from_number = message.get('from')
+                message_type = message.get('type')
+                message_id = message.get('id')
+                timestamp = message.get('timestamp')
+                
+                # Format phone number
+                if not from_number.startswith('+'):
+                    from_number = f"+{from_number}"
+                
+                # Process different message types
+                if message_type == 'text':
+                    text_body = message.get('text', {}).get('body', '')
+                    self._process_business_text_message(from_number, text_body, db)
+                    
+                elif message_type == 'audio':
+                    audio_id = message.get('audio', {}).get('id')
+                    self._process_business_audio_message(from_number, audio_id, db)
+                    
+                elif message_type == 'location':
+                    location = message.get('location', {})
+                    latitude = location.get('latitude')
+                    longitude = location.get('longitude')
+                    self._process_business_location_message(from_number, latitude, longitude, db)
+                
+                # Log the message
+                print(f"Business WhatsApp message processed: {from_number} - {message_type}")
+            
+            return {'processed': True, 'messages_count': len(messages)}
+            
+        except Exception as e:
+            print(f"Error processing business webhook: {e}")
+            return {'processed': False, 'error': str(e)}
+    
+    def _process_business_text_message(self, from_number: str, text: str, db: Session):
+        """Process text message from business WhatsApp"""
+        try:
+            from ..models import User
+            
+            # Check for business compliance keywords
+            compliance_keywords = [
+                'company registration', 'sars', 'tax', 'compliance', 'license', 
+                'registration', 'business help', 'company help', 'b-bbee', 
+                'labour law', 'permits', 'audit', 'financial compliance'
+            ]
+            
+            text_lower = text.lower()
+            is_compliance_inquiry = any(keyword in text_lower for keyword in compliance_keywords)
+            
+            if is_compliance_inquiry:
+                # Send business compliance information
+                response_message = """🏢 FixMate-SA Business Compliance Services
 
-📋 Job #{job_data.get('id', 'N/A')}
-🔨 Service: {job_data.get('description', 'N/A')}
-👷 Fixer: {job_data.get('fixer_name', 'N/A')}
+I can help you with:
+• Company Registrations (Pty Ltd, CC, etc.)
+• SARS Registration & Tax Compliance
+• Labour Law Compliance
+• B-BBEE Certification
+• Licensing & Permits
+• Financial Compliance & Audits
 
-How would you rate this service?
-Please reply with a number from 1 (poor) to 5 (excellent).
+📱 Visit our app at https://fixmate-sa-app-a448c751e1d2.herokuapp.com
+📋 Or type "COMPLIANCE MENU" for detailed options
 
-Your feedback helps us improve our service quality.
+Our compliance experts are ready to assist you!
+Reply with your specific needs for a personalized quote."""
+                
+                self.send_whatsapp_message(f"whatsapp:{from_number}", response_message)
+            
+            elif 'compliance menu' in text_lower:
+                # Send detailed compliance menu
+                self._send_compliance_menu(from_number)
+            
+            else:
+                # Regular FixMate service inquiry
+                response_message = f"""👋 Hello! Welcome to FixMate-SA!
 
-FixMate-SA Team 🔧
-        """.strip()
+I can help you with:
+🔧 Home & Office Repairs
+🏢 Business Compliance Services
+📱 Emergency Services
+
+Type:
+• "REPAIRS" for fixing services
+• "COMPLIANCE" for business help
+• "EMERGENCY" for urgent assistance
+
+Or visit our app: https://fixmate-sa-app-a448c751e1d2.herokuapp.com"""
+                
+                self.send_whatsapp_message(f"whatsapp:{from_number}", response_message)
         
-        return self.send_whatsapp_message(phone_number, message)
+        except Exception as e:
+            print(f"Error processing business text message: {e}")
+    
+    def _send_compliance_menu(self, from_number: str):
+        """Send detailed compliance services menu"""
+        try:
+            from .business_compliance_service import business_compliance_service
+            
+            categories = business_compliance_service.get_compliance_categories()
+            
+            menu_message = """🏢 FixMate-SA Business Compliance Services
+
+Choose a service:
+
+1️⃣ Company Registration (R1,500-R3,500)
+   • Pty Ltd, CC, NPO registrations
+   • CIPC submissions & approvals
+
+2️⃣ SARS & Tax Compliance (R800-R2,500)
+   • VAT, PAYE, UIF, SDL registration
+   • Tax returns & compliance
+
+3️⃣ Labour Law Compliance (R1,000-R2,000)
+   • Employment contracts
+   • CCMA assistance
+
+4️⃣ B-BBEE Certification (R3,000-R8,000)
+   • B-BBEE certificates
+   • Compliance management
+
+5️⃣ Licensing & Permits (R500-R3,000)
+   • Trading licenses
+   • Municipal permits
+
+6️⃣ Financial Compliance (R2,000-R5,000)
+   • Annual returns
+   • Audit compliance
+
+📱 Visit our app for detailed quotes: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/business-compliance
+
+Reply with the service number or describe your needs for a personalized quote!"""
+            
+            self.send_whatsapp_message(f"whatsapp:{from_number}", menu_message)
+            
+        except Exception as e:
+            print(f"Error sending compliance menu: {e}")
+    
+    def _process_business_audio_message(self, from_number: str, audio_id: str, db: Session):
+        """Process audio message from business WhatsApp"""
+        try:
+            # Transcribe audio using existing transcription service
+            transcription = ai_service.transcribe_audio(audio_id)
+            
+            if transcription:
+                # Process the transcribed text
+                self._process_business_text_message(from_number, transcription, db)
+                
+                # Send confirmation
+                response = f"🎙️ I heard: \"{transcription}\"\n\nLet me help you with that..."
+                self.send_whatsapp_message(f"whatsapp:{from_number}", response)
+            else:
+                error_message = "Sorry, I couldn't understand the audio. Please try typing your message or call us directly."
+                self.send_whatsapp_message(f"whatsapp:{from_number}", error_message)
+                
+        except Exception as e:
+            print(f"Error processing business audio message: {e}")
+    
+    def _process_business_location_message(self, from_number: str, latitude: float, longitude: float, db: Session):
+        """Process location message from business WhatsApp"""
+        try:
+            # Get area from coordinates
+            area = self._get_area_from_coords(latitude, longitude)
+            
+            response_message = f"""📍 Location received: {area}
+
+I can connect you with fixers and compliance experts in your area.
+
+Services available in {area}:
+🔧 Home & Office Repairs
+🏢 Business Compliance Services
+🚨 Emergency Assistance
+
+What do you need help with today?"""
+            
+            self.send_whatsapp_message(f"whatsapp:{from_number}", response_message)
+            
+        except Exception as e:
+            print(f"Error processing business location message: {e}")
+    
+    def _get_area_from_coords(self, latitude: float, longitude: float) -> str:
+        """Get area name from coordinates using reverse geocoding"""
+        try:
+            location = self.geocoder.reverse((latitude, longitude), timeout=10)
+            if location and location.address:
+                # Extract suburb/city from address
+                address_components = location.raw.get('address', {})
+                area = (address_components.get('suburb') or 
+                       address_components.get('city') or 
+                       address_components.get('town') or 
+                       'Unknown Area')
+                return area
+            return 'Unknown Area'
+        except Exception as e:
+            print(f"Error in reverse geocoding: {e}")
+            return 'Unknown Area'
     
     def send_welcome_message(self, phone_number: str, user_name: str = None) -> bool:
         """
