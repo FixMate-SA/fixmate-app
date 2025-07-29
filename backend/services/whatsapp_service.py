@@ -4,6 +4,7 @@ import requests
 import tempfile
 from datetime import datetime
 from typing import Dict, Optional, Any
+from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from geopy.distance import geodesic
 from geopy.geocoders import Nominatim
