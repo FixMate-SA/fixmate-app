@@ -1317,11 +1317,424 @@ class FixMateAPITester:
             self.log_result("WhatsApp Job Notification - No Fixer", False, f"Request error: {str(e)}")
         return False
     
+    def test_role_based_authentication_admin(self):
+        """Test authentication flow for admin role using +27821234567"""
+        try:
+            # Test admin phone number from role_service.py
+            admin_phone = "+27821234567"
+            
+            # First, try to signup as admin
+            signup_data = {
+                "phone": admin_phone,
+                "first_name": "Admin",
+                "last_name": "User",
+                "id_number": "8001015009088",
+                "town": "Cape Town",
+                "email": "admin@fixmate-sa.com",
+                "password": "admin123",
+                "confirm_password": "admin123"
+            }
+            
+            response = self.session.post(f"{API_BASE}/auth/signup", json=signup_data)
+            if response.status_code == 200:
+                data = response.json()
+                # Check if admin role is correctly assigned
+                if (data.get("role_info", {}).get("role") == "admin" and 
+                    "Admin" in data.get("display_name", "") and
+                    "Welcome Admin" in data.get("welcome_message", "")):
+                    self.test_data['admin_user'] = data
+                    self.log_result("Admin Role Authentication - Signup", True, 
+                                  f"Admin role correctly assigned. Display: {data.get('display_name')}, Welcome: {data.get('welcome_message')}")
+                else:
+                    self.log_result("Admin Role Authentication - Signup", False, 
+                                  f"Admin role not correctly assigned. Role: {data.get('role_info', {}).get('role')}", response)
+                    return False
+            else:
+                # Admin might already exist, try login instead
+                login_data = {
+                    "phone": admin_phone,
+                    "password": "admin123"
+                }
+                
+                response = self.session.post(f"{API_BASE}/auth/login", json=login_data)
+                if response.status_code == 200:
+                    data = response.json()
+                    if (data.get("role_info", {}).get("role") == "admin" and 
+                        "Admin" in data.get("display_name", "") and
+                        "Welcome Admin" in data.get("welcome_message", "")):
+                        self.test_data['admin_user'] = data
+                        self.log_result("Admin Role Authentication - Login", True, 
+                                      f"Admin login successful. Display: {data.get('display_name')}, Welcome: {data.get('welcome_message')}")
+                    else:
+                        self.log_result("Admin Role Authentication - Login", False, 
+                                      f"Admin role not correctly assigned on login. Role: {data.get('role_info', {}).get('role')}", response)
+                        return False
+                elif response.status_code == 404:
+                    # User doesn't exist, need to set password first
+                    set_password_data = {
+                        "phone": admin_phone,
+                        "password": "admin123",
+                        "confirm_password": "admin123"
+                    }
+                    
+                    password_response = self.session.post(f"{API_BASE}/auth/set-password", json=set_password_data)
+                    if password_response.status_code == 200:
+                        # Now try login again
+                        response = self.session.post(f"{API_BASE}/auth/login", json=login_data)
+                        if response.status_code == 200:
+                            data = response.json()
+                            if (data.get("role_info", {}).get("role") == "admin" and 
+                                "Admin" in data.get("display_name", "") and
+                                "Welcome Admin" in data.get("welcome_message", "")):
+                                self.test_data['admin_user'] = data
+                                self.log_result("Admin Role Authentication - Set Password & Login", True, 
+                                              f"Admin authentication successful. Display: {data.get('display_name')}, Welcome: {data.get('welcome_message')}")
+                            else:
+                                self.log_result("Admin Role Authentication - Set Password & Login", False, 
+                                              f"Admin role not correctly assigned. Role: {data.get('role_info', {}).get('role')}", response)
+                                return False
+                        else:
+                            self.log_result("Admin Role Authentication - Set Password & Login", False, f"Login failed after setting password. HTTP {response.status_code}", response)
+                            return False
+                    else:
+                        self.log_result("Admin Role Authentication - Set Password", False, f"Failed to set password. HTTP {password_response.status_code}", password_response)
+                        return False
+                else:
+                    self.log_result("Admin Role Authentication - Login", False, f"Login failed. HTTP {response.status_code}", response)
+                    return False
+            
+            # Test admin permissions
+            admin_permissions = self.test_data['admin_user'].get("role_info", {}).get("permissions", {})
+            expected_admin_permissions = ["can_access_admin", "can_verify_fixers", "can_settle_payments", "can_manage_all_users"]
+            
+            missing_permissions = [perm for perm in expected_admin_permissions if not admin_permissions.get(perm, False)]
+            if not missing_permissions:
+                self.log_result("Admin Role Permissions", True, f"All admin permissions correctly assigned: {expected_admin_permissions}")
+                return True
+            else:
+                self.log_result("Admin Role Permissions", False, f"Missing admin permissions: {missing_permissions}")
+                return False
+                
+        except Exception as e:
+            self.log_result("Admin Role Authentication", False, f"Request error: {str(e)}")
+            return False
+    
+    def test_role_based_authentication_fixer(self):
+        """Test authentication flow for fixer role"""
+        try:
+            import time
+            timestamp = str(int(time.time()))[-6:]
+            fixer_phone = f"+2782987{timestamp}"
+            
+            # First create a user for the fixer
+            fixer_user_data = {
+                "phone": fixer_phone,
+                "first_name": "Mike",
+                "last_name": "Fixer",
+                "id_number": f"8001015009{timestamp[-3:]}",
+                "town": "Johannesburg",
+                "email": f"mike.fixer.{timestamp}@fixmate.com",
+                "address": "123 Fixer St, Johannesburg"
+            }
+            
+            # Create user first
+            user_response = self.session.post(f"{API_BASE}/users", json=fixer_user_data)
+            if user_response.status_code != 200:
+                self.log_result("Fixer Role Authentication - Create User", False, "Failed to create user for fixer", user_response)
+                return False
+            
+            fixer_user = user_response.json()
+            
+            # Create fixer record
+            fixer_data = {
+                "user_id": fixer_user['id'],
+                "phone": fixer_phone,
+                "name": "Mike Fixer",
+                "email": f"mike.fixer.{timestamp}@fixmate.com",
+                "services": '["plumbing", "electrical"]',
+                "location": "Johannesburg"
+            }
+            
+            response = self.session.post(f"{API_BASE}/fixers", json=fixer_data)
+            if response.status_code != 200:
+                self.log_result("Fixer Role Authentication - Create Fixer", False, "Failed to create fixer record", response)
+                return False
+            
+            fixer_record = response.json()
+            self.test_data['test_fixer'] = fixer_record
+            
+            # Set password for fixer
+            set_password_data = {
+                "phone": fixer_phone,
+                "password": "fixer123",
+                "confirm_password": "fixer123"
+            }
+            
+            password_response = self.session.post(f"{API_BASE}/auth/set-password", json=set_password_data)
+            if password_response.status_code != 200:
+                self.log_result("Fixer Role Authentication - Set Password", False, "Failed to set password for fixer", password_response)
+                return False
+            
+            # Now test login as fixer
+            login_data = {
+                "phone": fixer_phone,
+                "password": "fixer123"
+            }
+            
+            response = self.session.post(f"{API_BASE}/auth/login", json=login_data)
+            if response.status_code == 200:
+                data = response.json()
+                if (data.get("role_info", {}).get("role") == "fixer" and 
+                    "Fixer" in data.get("display_name", "") and
+                    "Welcome Fixer" in data.get("welcome_message", "")):
+                    self.test_data['fixer_user'] = data
+                    self.log_result("Fixer Role Authentication - Login", True, 
+                                  f"Fixer role correctly assigned. Display: {data.get('display_name')}, Welcome: {data.get('welcome_message')}")
+                else:
+                    self.log_result("Fixer Role Authentication - Login", False, 
+                                  f"Fixer role not correctly assigned. Role: {data.get('role_info', {}).get('role')}", response)
+                    return False
+            else:
+                self.log_result("Fixer Role Authentication - Login", False, f"Fixer login failed. HTTP {response.status_code}", response)
+                return False
+            
+            # Test fixer permissions
+            fixer_permissions = self.test_data['fixer_user'].get("role_info", {}).get("permissions", {})
+            expected_fixer_permissions = ["can_access_payments", "can_view_job_assignments", "can_manage_fixer_profile"]
+            missing_permissions = [perm for perm in expected_fixer_permissions if not fixer_permissions.get(perm, False)]
+            
+            # Check that fixer doesn't have admin permissions
+            admin_only_permissions = ["can_access_admin", "can_verify_fixers", "can_manage_all_users"]
+            has_admin_permissions = [perm for perm in admin_only_permissions if fixer_permissions.get(perm, False)]
+            
+            if not missing_permissions and not has_admin_permissions:
+                self.log_result("Fixer Role Permissions", True, f"Fixer permissions correctly assigned. Has: {expected_fixer_permissions}, Doesn't have admin permissions")
+                return True
+            else:
+                error_msg = ""
+                if missing_permissions:
+                    error_msg += f"Missing fixer permissions: {missing_permissions}. "
+                if has_admin_permissions:
+                    error_msg += f"Incorrectly has admin permissions: {has_admin_permissions}"
+                self.log_result("Fixer Role Permissions", False, error_msg)
+                return False
+                
+        except Exception as e:
+            self.log_result("Fixer Role Authentication", False, f"Request error: {str(e)}")
+            return False
+    
+    def test_role_based_authentication_client(self):
+        """Test authentication flow for client role (new phone number)"""
+        try:
+            import time
+            timestamp = str(int(time.time()))[-6:]
+            client_phone = f"+2781234{timestamp}"
+            
+            # Test signup as new client
+            signup_data = {
+                "phone": client_phone,
+                "first_name": "John",
+                "last_name": "Client",
+                "id_number": f"8001015009{timestamp[-3:]}",
+                "town": "Durban",
+                "email": f"john.client.{timestamp}@example.com",
+                "password": "client123",
+                "confirm_password": "client123"
+            }
+            
+            response = self.session.post(f"{API_BASE}/auth/signup", json=signup_data)
+            if response.status_code == 200:
+                data = response.json()
+                # Check if client role is correctly assigned (no prefix in display name)
+                if (data.get("role_info", {}).get("role") == "client" and 
+                    data.get("display_name", "").strip() == "John" and  # No role prefix for clients
+                    data.get("welcome_message", "") == "Welcome John"):
+                    self.test_data['client_user'] = data
+                    self.log_result("Client Role Authentication - Signup", True, 
+                                  f"Client role correctly assigned. Display: '{data.get('display_name')}', Welcome: '{data.get('welcome_message')}'")
+                else:
+                    self.log_result("Client Role Authentication - Signup", False, 
+                                  f"Client role not correctly assigned. Role: {data.get('role_info', {}).get('role')}, Display: '{data.get('display_name')}', Welcome: '{data.get('welcome_message')}'", response)
+                    return False
+            else:
+                self.log_result("Client Role Authentication - Signup", False, f"Client signup failed. HTTP {response.status_code}", response)
+                return False
+            
+            # Test login as client
+            login_data = {
+                "phone": client_phone,
+                "password": "client123"
+            }
+            
+            response = self.session.post(f"{API_BASE}/auth/login", json=login_data)
+            if response.status_code == 200:
+                data = response.json()
+                if (data.get("role_info", {}).get("role") == "client" and 
+                    data.get("display_name", "").strip() == "John" and
+                    data.get("welcome_message", "") == "Welcome John"):
+                    self.log_result("Client Role Authentication - Login", True, 
+                                  f"Client login successful. Display: '{data.get('display_name')}', Welcome: '{data.get('welcome_message')}'")
+                else:
+                    self.log_result("Client Role Authentication - Login", False, 
+                                  f"Client role not correctly assigned on login. Role: {data.get('role_info', {}).get('role')}", response)
+                    return False
+            else:
+                self.log_result("Client Role Authentication - Login", False, f"Client login failed. HTTP {response.status_code}", response)
+                return False
+            
+            # Test client permissions
+            client_permissions = self.test_data['client_user'].get("role_info", {}).get("permissions", {})
+            expected_client_permissions = ["can_create_jobs", "can_hire_fixers", "can_leave_reviews", "can_view_fixers"]
+            missing_permissions = [perm for perm in expected_client_permissions if not client_permissions.get(perm, False)]
+            
+            # Check that client doesn't have admin or fixer-specific permissions
+            restricted_permissions = ["can_access_admin", "can_verify_fixers", "can_access_payments", "can_view_job_assignments"]
+            has_restricted_permissions = [perm for perm in restricted_permissions if client_permissions.get(perm, False)]
+            
+            if not missing_permissions and not has_restricted_permissions:
+                self.log_result("Client Role Permissions", True, f"Client permissions correctly assigned. Has: {expected_client_permissions}, Doesn't have restricted permissions")
+                return True
+            else:
+                error_msg = ""
+                if missing_permissions:
+                    error_msg += f"Missing client permissions: {missing_permissions}. "
+                if has_restricted_permissions:
+                    error_msg += f"Incorrectly has restricted permissions: {has_restricted_permissions}"
+                self.log_result("Client Role Permissions", False, error_msg)
+                return False
+                
+        except Exception as e:
+            self.log_result("Client Role Authentication", False, f"Request error: {str(e)}")
+            return False
+    
+    def test_dashboard_role_based_access(self):
+        """Test dashboard access for different user roles"""
+        try:
+            success_count = 0
+            total_tests = 0
+            
+            # Test admin dashboard access
+            if 'admin_user' in self.test_data:
+                total_tests += 1
+                admin_user_id = self.test_data['admin_user']['user']['id']
+                response = self.session.get(f"{API_BASE}/dashboard/{admin_user_id}")
+                if response.status_code == 200:
+                    data = response.json()
+                    if all(key in data for key in ['user', 'recent_jobs', 'top_fixers', 'stats']):
+                        self.log_result("Dashboard Access - Admin", True, f"Admin can access dashboard with all data sections")
+                        success_count += 1
+                    else:
+                        self.log_result("Dashboard Access - Admin", False, "Admin dashboard missing required sections", response)
+                else:
+                    self.log_result("Dashboard Access - Admin", False, f"Admin dashboard access failed. HTTP {response.status_code}", response)
+            
+            # Test fixer dashboard access
+            if 'fixer_user' in self.test_data:
+                total_tests += 1
+                fixer_user_id = self.test_data['fixer_user']['user']['id']
+                response = self.session.get(f"{API_BASE}/dashboard/{fixer_user_id}")
+                if response.status_code == 200:
+                    data = response.json()
+                    if all(key in data for key in ['user', 'recent_jobs', 'top_fixers', 'stats']):
+                        self.log_result("Dashboard Access - Fixer", True, f"Fixer can access dashboard with all data sections")
+                        success_count += 1
+                    else:
+                        self.log_result("Dashboard Access - Fixer", False, "Fixer dashboard missing required sections", response)
+                else:
+                    self.log_result("Dashboard Access - Fixer", False, f"Fixer dashboard access failed. HTTP {response.status_code}", response)
+            
+            # Test client dashboard access
+            if 'client_user' in self.test_data:
+                total_tests += 1
+                client_user_id = self.test_data['client_user']['user']['id']
+                response = self.session.get(f"{API_BASE}/dashboard/{client_user_id}")
+                if response.status_code == 200:
+                    data = response.json()
+                    if all(key in data for key in ['user', 'recent_jobs', 'top_fixers', 'stats']):
+                        self.log_result("Dashboard Access - Client", True, f"Client can access dashboard with all data sections")
+                        success_count += 1
+                    else:
+                        self.log_result("Dashboard Access - Client", False, "Client dashboard missing required sections", response)
+                else:
+                    self.log_result("Dashboard Access - Client", False, f"Client dashboard access failed. HTTP {response.status_code}", response)
+            
+            return success_count == total_tests and total_tests > 0
+            
+        except Exception as e:
+            self.log_result("Dashboard Role-Based Access", False, f"Request error: {str(e)}")
+            return False
+    
+    def test_role_check_endpoint(self):
+        """Test role check endpoint for debugging/admin purposes"""
+        try:
+            success_count = 0
+            total_tests = 0
+            
+            # Test admin phone role check
+            total_tests += 1
+            response = self.session.get(f"{API_BASE}/auth/role-check/+27821234567")
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("role") == "admin":
+                    self.log_result("Role Check - Admin Phone", True, f"Admin phone correctly identified as admin role")
+                    success_count += 1
+                else:
+                    self.log_result("Role Check - Admin Phone", False, f"Admin phone not correctly identified. Role: {data.get('role')}", response)
+            else:
+                self.log_result("Role Check - Admin Phone", False, f"Role check failed. HTTP {response.status_code}", response)
+            
+            # Test fixer phone role check (if we have test fixer)
+            if 'test_fixer' in self.test_data:
+                total_tests += 1
+                fixer_phone = self.test_data['test_fixer']['phone']
+                response = self.session.get(f"{API_BASE}/auth/role-check/{fixer_phone}")
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("role") == "fixer":
+                        self.log_result("Role Check - Fixer Phone", True, f"Fixer phone correctly identified as fixer role")
+                        success_count += 1
+                    else:
+                        self.log_result("Role Check - Fixer Phone", False, f"Fixer phone not correctly identified. Role: {data.get('role')}", response)
+                else:
+                    self.log_result("Role Check - Fixer Phone", False, f"Fixer role check failed. HTTP {response.status_code}", response)
+            
+            # Test new phone role check (should be client)
+            total_tests += 1
+            import time
+            timestamp = str(int(time.time()))[-6:]
+            new_phone = f"+2789999{timestamp}"
+            response = self.session.get(f"{API_BASE}/auth/role-check/{new_phone}")
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("role") == "client":
+                    self.log_result("Role Check - New Phone", True, f"New phone correctly identified as client role")
+                    success_count += 1
+                else:
+                    self.log_result("Role Check - New Phone", False, f"New phone not correctly identified. Role: {data.get('role')}", response)
+            else:
+                self.log_result("Role Check - New Phone", False, f"New phone role check failed. HTTP {response.status_code}", response)
+            
+            return success_count == total_tests and total_tests > 0
+            
+        except Exception as e:
+            self.log_result("Role Check Endpoint", False, f"Request error: {str(e)}")
+            return False
+
     def run_all_tests(self):
         """Run all tests in sequence"""
         print("=" * 80)
-        print("FIXMATE-SA BACKEND API TESTING - WITH WHATSAPP & PAYFAST INTEGRATION")
+        print("FIXMATE-SA BACKEND API TESTING - HEROKU DEPLOYMENT AUTHENTICATION FLOW")
         print("=" * 80)
+        print()
+        
+        # CRITICAL TEST - Authentication Flow for Different User Roles (as requested)
+        print("🔐 CRITICAL AUTHENTICATION FLOW TESTS")
+        print("-" * 50)
+        self.test_role_based_authentication_admin()
+        self.test_role_based_authentication_fixer()
+        self.test_role_based_authentication_client()
+        self.test_dashboard_role_based_access()
+        self.test_role_check_endpoint()
         print()
         
         # Test sequence following the main user flow + new AI/SMS features + Payment System + WhatsApp + PayFast
