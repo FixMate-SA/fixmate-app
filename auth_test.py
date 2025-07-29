@@ -193,17 +193,29 @@ class AuthenticationTester:
             self.log_result("Fixer Record Creation", True, f"Created fixer: {fixer_record['name']}")
             
             # Check role determination (use original phone format for role check)
-            response = self.session.get(f"{API_BASE}/auth/role-check/{fixer_phone}")
-            if response.status_code == 200:
-                role_data = response.json()
-                if role_data.get("role") == "fixer":
-                    self.log_result("Fixer Role Check", True, f"Fixer phone correctly identified as fixer role")
+            # Add a small delay to ensure database transaction is committed
+            import time
+            time.sleep(1)
+            
+            # Try role check with retry logic
+            max_retries = 3
+            for attempt in range(max_retries):
+                response = self.session.get(f"{API_BASE}/auth/role-check/{fixer_phone}")
+                if response.status_code == 200:
+                    role_data = response.json()
+                    if role_data.get("role") == "fixer":
+                        self.log_result("Fixer Role Check", True, f"Fixer phone correctly identified as fixer role")
+                        break
+                    elif attempt < max_retries - 1:
+                        # Wait a bit more and retry
+                        time.sleep(1)
+                        continue
+                    else:
+                        self.log_result("Fixer Role Check", False, f"Fixer phone not identified as fixer after {max_retries} attempts. Role: {role_data.get('role')}")
+                        return False
                 else:
-                    self.log_result("Fixer Role Check", False, f"Fixer phone not identified as fixer. Role: {role_data.get('role')}")
+                    self.log_result("Fixer Role Check", False, f"Fixer role check failed. HTTP {response.status_code}", response)
                     return False
-            else:
-                self.log_result("Fixer Role Check", False, f"Fixer role check failed. HTTP {response.status_code}", response)
-                return False
             
             
             # Test fixer login (password already set during signup)
