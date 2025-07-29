@@ -89,7 +89,7 @@ const LoginForm = () => {
     }
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/auth/set-password`, {
+      const response = await fetch(getApiUrl('/auth/set-password'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
