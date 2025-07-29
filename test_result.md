@@ -774,6 +774,42 @@ backend:
         comment: "SMS service integration implemented with Twilio. Includes SMS/MMS sending, webhook handling, conversation logic, and job notifications. Proper South African phone number formatting. Graceful handling when Twilio credentials not configured."
 
 frontend:
+  - task: "Legal Pages Implementation - Terms of Service and Privacy Policy"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/Legal/TermsOfService.js, /app/frontend/src/components/Legal/PrivacyPolicy.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Successfully created professional Terms of Service and Privacy Policy pages with beautiful design, proper company branding (Donald Shai Technologies Pty Ltd, Reg: 2019/203656/07), color-coded sections, responsive layout, and working cross-navigation. Pages are POPIA-compliant and include all required legal information."
+
+  - task: "Enhanced Footer with Legal Information and Links"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/Layout/Footer.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Enhanced footer with prominent legal information block showing company name, registration number, and working navigation links to Terms and Privacy pages. Footer now includes proper company branding and professional legal compliance messaging."
+
+  - task: "Legal Pages Routing Integration"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added proper routing for /terms and /privacy pages as public routes (accessible without authentication). Routes integrated into main App.js with proper imports and navigation flow."
+
   - task: "Enhanced Navigation with Learning and SMS Portal tabs"
     implemented: true
     working: true
