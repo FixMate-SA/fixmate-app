@@ -1433,7 +1433,7 @@ async def get_all_compliance_requests(
         raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
-        from .models import BusinessComplianceRequest
+        from models import BusinessComplianceRequest
         requests = db.query(BusinessComplianceRequest).order_by(
             BusinessComplianceRequest.created_at.desc()
         ).all()
