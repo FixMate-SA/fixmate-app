@@ -19,7 +19,9 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const API_BASE = `${process.env.REACT_APP_BACKEND_URL}/api`;
+  const API_BASE = process.env.REACT_APP_BACKEND_URL 
+    ? `${process.env.REACT_APP_BACKEND_URL}/api`
+    : '/api';
 
   useEffect(() => {
     // Check for stored auth data on app load
