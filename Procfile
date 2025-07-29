@@ -1,2 +1,1 @@
 web: node server.js
-api: cd backend && python -m uvicorn server:app --host 0.0.0.0 --port $PORT
