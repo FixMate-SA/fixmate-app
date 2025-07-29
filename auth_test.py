@@ -205,9 +205,10 @@ class AuthenticationTester:
                 self.log_result("Fixer Role Check", False, f"Fixer role check failed. HTTP {response.status_code}", response)
                 return False
             
-            # Test fixer login
+            
+            # Test fixer login (password already set during signup)
             login_data = {
-                "phone": fixer_phone,
+                "phone": fixer_phone,  # Use original phone format, login endpoint will format it
                 "password": "fixer123"
             }
             
