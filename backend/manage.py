@@ -1,0 +1,394 @@
+#!/usr/bin/env python3
+"""
+FixMate-SA Management Script for Heroku
+Run admin commands on Heroku console with: python backend/manage.py <command>
+"""
+
+import sys
+import os
+from pathlib import Path
+
+# Add the backend directory to the Python path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from database import get_db
+from models import User, Fixer, Job, Review
+from sqlalchemy.orm import Session
+import uuid
+
+def get_database_session():
+    """Get database session."""
+    try:
+        db = next(get_db())
+        return db
+    except Exception as e:
+        print(f"Database connection error: {e}")
+        # Create tables if they don't exist
+        from database import engine
+        from models import Base
+        Base.metadata.create_all(bind=engine)
+        db = next(get_db())
+        return db
+
+def format_phone_number(phone: str) -> str:
+    """Format phone number for database lookup."""
+    # Remove any prefixes and standardize
+    clean_phone = phone.replace('whatsapp:', '').replace(' ', '').replace('-', '')
+    
+    # Handle different formats
+    if clean_phone.startswith('0') and len(clean_phone) == 10:
+        return f"+27{clean_phone[1:]}"
+    elif clean_phone.startswith('+27') and len(clean_phone) == 12:
+        return clean_phone
+    elif clean_phone.startswith('27') and len(clean_phone) == 11:
+        return f"+{clean_phone}"
+    else:
+        # Try as-is for existing database formats
+        return phone
+
+def promote_admin(phone):
+    """Promote a user to admin status."""
+    try:
+        db = get_database_session()
+        formatted_phone = format_phone_number(phone)
+        
+        # Try different phone formats to find user
+        user = None
+        phone_variations = [
+            formatted_phone,
+            f"whatsapp:{formatted_phone}",
+            phone,  # original format
+        ]
+        
+        for phone_var in phone_variations:
+            user = db.query(User).filter(User.phone == phone_var).first()
+            if user:
+                break
+        
+        if not user:
+            print(f"User not found with phone {phone}. Creating new admin user...")
+            user = User(
+                phone=formatted_phone,
+                first_name="Admin",
+                last_name="User", 
+                id_number=f"CLI_{uuid.uuid4().hex[:8]}",
+                town="Unknown",
+                role="admin"
+            )
+            db.add(user)
+            db.commit()
+            print(f"✅ Successfully created and promoted new admin: {user.phone}")
+        else:
+            old_role = user.role
+            user.role = "admin"
+            db.commit()
+            print(f"✅ Successfully promoted user '{user.first_name} {user.last_name}' from {old_role} to admin")
+            
+        db.close()
+        
+    except Exception as e:
+        print(f"❌ Error promoting admin: {e}")
+
+def demote_admin(phone):
+    """Demote an admin to regular client status."""
+    try:
+        db = get_database_session()
+        formatted_phone = format_phone_number(phone)
+        
+        # Try different phone formats
+        user = None
+        phone_variations = [
+            formatted_phone,
+            f"whatsapp:{formatted_phone}",
+            phone,
+        ]
+        
+        for phone_var in phone_variations:
+            user = db.query(User).filter(User.phone == phone_var).first()
+            if user:
+                break
+        
+        if not user:
+            print(f"❌ User with phone number {phone} not found.")
+            return
+        
+        old_role = user.role
+        user.role = "client"
+        db.commit()
+        print(f"✅ Successfully demoted '{user.first_name} {user.last_name}' from {old_role} to client")
+        
+        db.close()
+        
+    except Exception as e:
+        print(f"❌ Error demoting admin: {e}")
+
+def remove_fixer(phone):
+    """Remove a fixer from the system."""
+    try:
+        db = get_database_session()
+        formatted_phone = format_phone_number(phone)
+        
+        # Try different phone formats
+        fixer = None
+        phone_variations = [
+            formatted_phone,
+            f"whatsapp:{formatted_phone}",
+            phone,
+        ]
+        
+        for phone_var in phone_variations:
+            fixer = db.query(Fixer).filter(Fixer.phone == phone_var).first()
+            if fixer:
+                break
+        
+        if not fixer:
+            print(f"❌ Fixer with phone number {phone} not found.")
+            return
+        
+        fixer_name = fixer.name
+        fixer_phone = fixer.phone
+        
+        # Set as inactive instead of deleting to preserve data integrity
+        fixer.is_active = False
+        db.commit()
+        print(f"✅ Successfully deactivated fixer: {fixer_name} ({fixer_phone})")
+        
+        db.close()
+        
+    except Exception as e:
+        print(f"❌ Error removing fixer: {e}")
+
+def remove_client(phone):
+    """Remove a client from the system."""
+    try:
+        db = get_database_session()
+        formatted_phone = format_phone_number(phone)
+        
+        # Try different phone formats
+        user = None
+        phone_variations = [
+            formatted_phone,
+            f"whatsapp:{formatted_phone}", 
+            phone,
+        ]
+        
+        for phone_var in phone_variations:
+            user = db.query(User).filter(User.phone == phone_var).first()
+            if user:
+                break
+        
+        if not user:
+            print(f"❌ Client with phone number {phone} not found.")
+            return
+        
+        user_name = f"{user.first_name} {user.last_name}"
+        user_phone = user.phone
+        
+        # Set as inactive instead of deleting
+        user.is_active = False
+        db.commit()
+        print(f"✅ Successfully deactivated client: {user_name} ({user_phone})")
+        
+        db.close()
+        
+    except Exception as e:
+        print(f"❌ Error removing client: {e}")
+
+def reassign_job(job_id, new_fixer_phone):
+    """Reassign a job to a different fixer."""
+    try:
+        db = get_database_session()
+        
+        # Find the job
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            print(f"❌ Job with ID {job_id} not found.")
+            return
+        
+        # Find the new fixer
+        formatted_phone = format_phone_number(new_fixer_phone)
+        fixer = None
+        phone_variations = [
+            formatted_phone,
+            f"whatsapp:{formatted_phone}",
+            new_fixer_phone,
+        ]
+        
+        for phone_var in phone_variations:
+            fixer = db.query(Fixer).filter(Fixer.phone == phone_var, Fixer.is_active == True).first()
+            if fixer:
+                break
+        
+        if not fixer:
+            print(f"❌ Active fixer with phone number {new_fixer_phone} not found.")
+            return
+        
+        old_fixer_id = job.fixer_id
+        job.fixer_id = fixer.id
+        job.status = "assigned"
+        db.commit()
+        
+        print(f"✅ Successfully reassigned job {job_id} to fixer {fixer.name} ({fixer.phone})")
+        
+        db.close()
+        
+    except Exception as e:
+        print(f"❌ Error reassigning job: {e}")
+
+def list_users():
+    """List all users in the system."""
+    try:
+        db = get_database_session()
+        users = db.query(User).all()
+        
+        print("\n📋 All Users:")
+        print("-" * 80)
+        print(f"{'Name':<20} {'Phone':<20} {'Role':<10} {'Active':<8} {'Town':<15}")
+        print("-" * 80)
+        
+        for user in users:
+            name = f"{user.first_name} {user.last_name}"
+            print(f"{name:<20} {user.phone:<20} {user.role:<10} {'Yes' if user.is_active else 'No':<8} {user.town or 'Unknown':<15}")
+        
+        print(f"\nTotal: {len(users)} users")
+        db.close()
+        
+    except Exception as e:
+        print(f"❌ Error listing users: {e}")
+
+def list_fixers():
+    """List all fixers in the system."""
+    try:
+        db = get_database_session()
+        fixers = db.query(Fixer).all()
+        
+        print("\n🔧 All Fixers:")
+        print("-" * 80)
+        print(f"{'Name':<20} {'Phone':<20} {'Location':<15} {'Rating':<8} {'Active':<8}")
+        print("-" * 80)
+        
+        for fixer in fixers:
+            print(f"{fixer.name:<20} {fixer.phone:<20} {fixer.location:<15} {fixer.rating:<8.1f} {'Yes' if fixer.is_active else 'No':<8}")
+        
+        print(f"\nTotal: {len(fixers)} fixers")
+        db.close()
+        
+    except Exception as e:
+        print(f"❌ Error listing fixers: {e}")
+
+def stats():
+    """Show system statistics."""
+    try:
+        db = get_database_session()
+        
+        total_users = db.query(User).count()
+        active_users = db.query(User).filter(User.is_active == True).count()
+        admins = db.query(User).filter(User.role == "admin").count()
+        clients = db.query(User).filter(User.role == "client").count()
+        
+        total_fixers = db.query(Fixer).count()
+        active_fixers = db.query(Fixer).filter(Fixer.is_active == True).count()
+        
+        total_jobs = db.query(Job).count()
+        completed_jobs = db.query(Job).filter(Job.status == "completed").count()
+        
+        total_reviews = db.query(Review).count()
+        
+        print("\n📊 FixMate-SA System Statistics:")
+        print("=" * 50)
+        print(f"Users:           {total_users} total ({active_users} active)")
+        print(f"  - Admins:      {admins}")
+        print(f"  - Clients:     {clients}")
+        print(f"Fixers:          {total_fixers} total ({active_fixers} active)")
+        print(f"Jobs:            {total_jobs} total ({completed_jobs} completed)")
+        print(f"Reviews:         {total_reviews}")
+        print("=" * 50)
+        
+        db.close()
+        
+    except Exception as e:
+        print(f"❌ Error getting stats: {e}")
+
+def show_help():
+    """Show available commands."""
+    print("\n🛠️  FixMate-SA Management Commands")
+    print("=" * 50)
+    print("User Management:")
+    print("  promote-admin <phone>          - Promote user to admin")
+    print("  demote-admin <phone>           - Demote admin to client")
+    print("  remove-client <phone>          - Deactivate a client")
+    print("")
+    print("Fixer Management:")
+    print("  remove-fixer <phone>           - Deactivate a fixer")
+    print("")
+    print("Job Management:")
+    print("  reassign-job <job_id> <phone>  - Reassign job to different fixer")
+    print("")
+    print("Information:")
+    print("  list-users                     - List all users")
+    print("  list-fixers                    - List all fixers")
+    print("  stats                          - Show system statistics")
+    print("  help                           - Show this help message")
+    print("")
+    print("Usage Examples:")
+    print("  python backend/manage.py promote-admin 0791135003")
+    print("  python backend/manage.py remove-fixer 0821234567")
+    print("  python backend/manage.py reassign-job 123e4567-e89b-12d3-a456-426614174000 0791135003")
+    print("=" * 50)
+
+def main():
+    """Main function to handle command line arguments."""
+    if len(sys.argv) < 2:
+        show_help()
+        return
+    
+    command = sys.argv[1].lower()
+    
+    if command == "promote-admin":
+        if len(sys.argv) != 3:
+            print("❌ Usage: python backend/manage.py promote-admin <phone>")
+            return
+        promote_admin(sys.argv[2])
+    
+    elif command == "demote-admin":
+        if len(sys.argv) != 3:
+            print("❌ Usage: python backend/manage.py demote-admin <phone>")
+            return
+        demote_admin(sys.argv[2])
+    
+    elif command == "remove-fixer":
+        if len(sys.argv) != 3:
+            print("❌ Usage: python backend/manage.py remove-fixer <phone>")
+            return
+        remove_fixer(sys.argv[2])
+    
+    elif command == "remove-client":
+        if len(sys.argv) != 3:
+            print("❌ Usage: python backend/manage.py remove-client <phone>")
+            return
+        remove_client(sys.argv[2])
+    
+    elif command == "reassign-job":
+        if len(sys.argv) != 4:
+            print("❌ Usage: python backend/manage.py reassign-job <job_id> <new_fixer_phone>")
+            return
+        reassign_job(sys.argv[2], sys.argv[3])
+    
+    elif command == "list-users":
+        list_users()
+    
+    elif command == "list-fixers":
+        list_fixers()
+    
+    elif command == "stats":
+        stats()
+    
+    elif command == "help":
+        show_help()
+    
+    else:
+        print(f"❌ Unknown command: {command}")
+        show_help()
+
+if __name__ == "__main__":
+    main()
