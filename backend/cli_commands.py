@@ -31,8 +31,11 @@ def get_database_session():
         return db
     except Exception as e:
         click.echo(f"Database connection error: {e}")
-        click.echo("Attempting to create tables...")
-        drop_and_recreate_tables()
+        click.echo("Creating tables if they don't exist...")
+        # Create tables without dropping existing ones
+        from database import engine
+        from models import Base
+        Base.metadata.create_all(bind=engine)
         db = next(get_db())
         return db
 
