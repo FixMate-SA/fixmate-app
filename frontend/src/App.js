@@ -220,6 +220,14 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/terms"
+                element={<TermsOfService />}
+              />
+              <Route
+                path="/privacy"
+                element={<PrivacyPolicy />}
+              />
               <Route path="*" element={<DefaultRoute />} />
             </Routes>
           </BrowserRouter>
