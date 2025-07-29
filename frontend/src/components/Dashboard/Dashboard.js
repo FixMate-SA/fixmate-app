@@ -13,18 +13,30 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        console.log('Dashboard: Fetching data for user:', user);
         const response = await apiService.getDashboard(user.id);
+        console.log('Dashboard: API response:', response);
         setDashboardData(response.data);
       } catch (err) {
-        console.error('Error fetching dashboard:', err);
-        setError('Failed to load dashboard data');
+        console.error('Dashboard: Error fetching dashboard:', err);
+        console.error('Dashboard: Error details:', {
+          message: err.message,
+          response: err.response?.data,
+          status: err.response?.status
+        });
+        setError(`Failed to load dashboard data: ${err.response?.data?.detail || err.message}`);
       } finally {
         setLoading(false);
       }
     };
 
     if (user?.id) {
+      console.log('Dashboard: User found, fetching data...');
       fetchDashboardData();
+    } else {
+      console.log('Dashboard: No user ID found:', user);
+      setLoading(false);
+      setError('User not found');
     }
   }, [user]);
 
