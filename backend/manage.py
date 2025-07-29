@@ -455,7 +455,20 @@ def main():
     
     command = sys.argv[1].lower()
     
-    if command == "promote-admin":
+    if command == "add-fixer":
+        if len(sys.argv) != 5:
+            print("❌ Usage: python backend/manage.py add-fixer \"Full Name\" \"phone\" \"skill1, skill2, skill3\"")
+            print("   Example: python backend/manage.py add-fixer \"John Smith\" \"0791135003\" \"plumbing, electrical\"")
+            return
+        add_fixer(sys.argv[2], sys.argv[3], sys.argv[4])
+    
+    elif command == "set-password":
+        if len(sys.argv) != 4:
+            print("❌ Usage: python backend/manage.py set-password <phone> <password>")
+            return
+        set_password(sys.argv[2], sys.argv[3])
+    
+    elif command == "promote-admin":
         if len(sys.argv) != 3:
             print("❌ Usage: python backend/manage.py promote-admin <phone>")
             return
