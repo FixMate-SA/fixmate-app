@@ -1286,6 +1286,81 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Build frontend first
+import subprocess
+import sys
+
+def build_frontend():
+    """Build the React frontend"""
+    frontend_path = Path(__file__).parent.parent / "frontend"
+    
+    if not (frontend_path / "build").exists():
+        print("Building React frontend...")
+        try:
+            # Install dependencies
+            subprocess.run([sys.executable, "-m", "pip", "install", "nodeenv"], check=True)
+            
+            # Create a virtual node environment
+            nodeenv_path = frontend_path / "nodeenv"
+            if not nodeenv_path.exists():
+                subprocess.run(["nodeenv", str(nodeenv_path)], check=True)
+            
+            # Activate node environment and build
+            if os.name == 'nt':  # Windows
+                node_bin = nodeenv_path / "Scripts"
+            else:  # Unix/Linux
+                node_bin = nodeenv_path / "bin"
+            
+            npm_path = node_bin / "npm"
+            
+            # Install dependencies
+            subprocess.run([str(npm_path), "install"], cwd=str(frontend_path), check=True)
+            
+            # Build the project
+            subprocess.run([str(npm_path), "run", "build"], cwd=str(frontend_path), check=True)
+            
+            print("✅ Frontend build complete!")
+            
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Frontend build failed: {e}")
+            print("Continuing without frontend build...")
+        except Exception as e:
+            print(f"❌ Frontend build error: {e}")
+            print("Continuing without frontend build...")
+
+# Build frontend on startup
+build_frontend()
+
+# Serve static files from React build
+static_path = Path(__file__).parent.parent / "frontend" / "build"
+if static_path.exists():
+    app.mount("/static", StaticFiles(directory=str(static_path / "static")), name="static")
+    
+    # Serve React app for all non-API routes
+    @app.get("/{full_path:path}")
+    async def serve_react_app(full_path: str):
+        """Serve the React app for all non-API routes"""
+        # Don't serve React app for API routes
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API endpoint not found")
+        
+        # Check if it's a static file request
+        static_file_path = static_path / full_path
+        if static_file_path.is_file():
+            return FileResponse(static_file_path)
+        
+        # For all other routes, serve the React app
+        index_path = static_path / "index.html"
+        if index_path.exists():
+            return FileResponse(index_path)
+        else:
+            return {"message": "FixMate-SA API is running", "status": "ok", "frontend": "not built"}
+
+else:
+    @app.get("/")
+    async def root():
+        return {"message": "FixMate-SA API is running", "status": "ok", "frontend": "not built"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
