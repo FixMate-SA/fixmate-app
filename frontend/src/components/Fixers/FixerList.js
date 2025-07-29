@@ -218,7 +218,7 @@ const FixerList = () => {
                 <div>
                   <p className="text-sm font-medium text-gray-700 mb-2">Services:</p>
                   <div className="flex flex-wrap gap-2">
-                    {JSON.parse(fixer.services).map((service, index) => (
+                    {parseServices(fixer.services).map((service, index) => (
                       <span
                         key={index}
                         className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
