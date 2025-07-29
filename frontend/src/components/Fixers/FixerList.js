@@ -241,7 +241,7 @@ const FixerList = () => {
                   <button
                     onClick={() => {
                       // Create a job with this fixer's service
-                      const services = JSON.parse(fixer.services);
+                      const services = parseServices(fixer.services);
                       const queryParams = new URLSearchParams({
                         service: services[0],
                         fixerId: fixer.id
