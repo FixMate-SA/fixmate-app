@@ -212,15 +212,18 @@ class AuthenticationTester:
             
             self.test_data['fixer_record'] = fixer_record
             
-            # Check role determination (use original phone format for role check)
+            # Check role determination (use the exact phone format from the fixer record)
             # Add a small delay to ensure database transaction is committed
             import time
             time.sleep(1)
             
+            # Get the exact phone format from the fixer record
+            fixer_phone_for_role_check = fixer_record.get('phone', fixer_phone_formatted)
+            
             # Try role check with retry logic
             max_retries = 3
             for attempt in range(max_retries):
-                response = self.session.get(f"{API_BASE}/auth/role-check/{fixer_phone}")
+                response = self.session.get(f"{API_BASE}/auth/role-check/{fixer_phone_for_role_check}")
                 if response.status_code == 200:
                     role_data = response.json()
                     if role_data.get("role") == "fixer":
