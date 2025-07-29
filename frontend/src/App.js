@@ -19,6 +19,8 @@ import B2BPortal from "./components/Enterprise/B2BPortal";
 import PaymentOptions from "./components/Payment/PaymentOptions";
 import Profile from "./components/Profile/Profile";
 import AdminDashboard from "./components/Admin/AdminDashboard";
+import TermsOfService from "./components/Legal/TermsOfService";
+import PrivacyPolicy from "./components/Legal/PrivacyPolicy";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
