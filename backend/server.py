@@ -1286,52 +1286,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Build frontend first
-import subprocess
-import sys
-
-def build_frontend():
-    """Build the React frontend"""
-    frontend_path = Path(__file__).parent.parent / "frontend"
-    
-    if not (frontend_path / "build").exists():
-        print("Building React frontend...")
-        try:
-            # Install dependencies
-            subprocess.run([sys.executable, "-m", "pip", "install", "nodeenv"], check=True)
-            
-            # Create a virtual node environment
-            nodeenv_path = frontend_path / "nodeenv"
-            if not nodeenv_path.exists():
-                subprocess.run(["nodeenv", str(nodeenv_path)], check=True)
-            
-            # Activate node environment and build
-            if os.name == 'nt':  # Windows
-                node_bin = nodeenv_path / "Scripts"
-            else:  # Unix/Linux
-                node_bin = nodeenv_path / "bin"
-            
-            npm_path = node_bin / "npm"
-            
-            # Install dependencies
-            subprocess.run([str(npm_path), "install"], cwd=str(frontend_path), check=True)
-            
-            # Build the project
-            subprocess.run([str(npm_path), "run", "build"], cwd=str(frontend_path), check=True)
-            
-            print("✅ Frontend build complete!")
-            
-        except subprocess.CalledProcessError as e:
-            print(f"❌ Frontend build failed: {e}")
-            print("Continuing without frontend build...")
-        except Exception as e:
-            print(f"❌ Frontend build error: {e}")
-            print("Continuing without frontend build...")
-
-# Build frontend on startup
-build_frontend()
-
-# Serve static files from React build
+# Serve static files from React build if available
 static_path = Path(__file__).parent.parent / "frontend" / "build"
 if static_path.exists():
     app.mount("/static", StaticFiles(directory=str(static_path / "static")), name="static")
