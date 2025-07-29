@@ -337,8 +337,17 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     Enhanced login with password-based authentication and role detection
     """
     try:
+        # Format phone number to match database format
+        phone = request.phone
+        if phone.startswith('0') and len(phone) == 10:
+            phone = f"whatsapp:+27{phone[1:]}"
+        elif phone.startswith('+') and len(phone) == 12:
+            phone = f"whatsapp:{phone}"
+        elif not phone.startswith("whatsapp:"):
+            phone = f"whatsapp:{phone}"
+        
         # Check if user exists
-        user = db.query(User).filter(User.phone == request.phone).first()
+        user = db.query(User).filter(User.phone == phone).first()
         
         if not user:
             raise HTTPException(status_code=404, detail="Account not found. Please sign up first.")
