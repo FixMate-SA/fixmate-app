@@ -42,8 +42,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Create tables
-drop_and_recreate_tables()
+# Create tables (commented out to prevent data loss)
+# drop_and_recreate_tables()
+# Create tables on first run only
+from database import engine
+from models import Base
+Base.metadata.create_all(bind=engine)  # Only create if they don't exist
 
 # Create the main app without a prefix
 app = FastAPI(title="FixMate-SA API", version="1.0.0")
