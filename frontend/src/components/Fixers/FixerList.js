@@ -39,12 +39,40 @@ const FixerList = () => {
     fetchFixers();
   }, []);
 
+  const parseServices = (services) => {
+    try {
+      // If it's already an array, return it
+      if (Array.isArray(services)) return services;
+      
+      // If it's a JSON string, parse it
+      if (typeof services === 'string' && services.startsWith('[')) {
+        return JSON.parse(services);
+      }
+      
+      // If it's comma-separated, split it
+      if (typeof services === 'string' && services.includes(',')) {
+        return services.split(',').map(s => s.trim());
+      }
+      
+      // Single service as string
+      if (typeof services === 'string') {
+        return [services];
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error parsing services:', services, error);
+      return [];
+    }
+  };
+
   const filteredFixers = fixers.filter(fixer => {
     const matchesSearch = fixer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          fixer.location.toLowerCase().includes(searchTerm.toLowerCase());
     
+    const servicesArray = parseServices(fixer.services);
     const matchesService = !selectedService || 
-                          JSON.parse(fixer.services).some(service => 
+                          servicesArray.some(service => 
                             service.toLowerCase().includes(selectedService.toLowerCase())
                           );
     
