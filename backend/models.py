@@ -248,3 +248,28 @@ class DataInsight(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<DataInsight(id='{self.id}', insight='{self.insight_text[:50]}...')>"
+
+class BusinessComplianceRequest(Base):
+    __tablename__ = "business_compliance_requests"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey('users.id'), nullable=False)
+    category = Column(String(100), nullable=False)  # company_registration, sars_registration, etc.
+    description = Column(Text, nullable=False)
+    urgency_level = Column(String(20), default='normal')  # low, normal, high, urgent
+    contact_preference = Column(String(20), default='whatsapp')  # whatsapp, sms, phone, email
+    status = Column(String(50), default='submitted')  # submitted, in_review, quote_sent, in_progress, completed, cancelled
+    admin_notes = Column(Text)
+    estimated_cost = Column(Float)
+    estimated_completion = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="compliance_requests")
+    
+    def __repr__(self):
+        return f"<BusinessComplianceRequest(id='{self.id}', category='{self.category}', status='{self.status}')>"
