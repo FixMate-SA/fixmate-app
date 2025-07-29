@@ -150,29 +150,33 @@ class AuthenticationTester:
             timestamp = str(int(time.time()))[-6:]
             fixer_phone = f"+2782987{timestamp}"
             
-            # Create user for fixer
-            user_data = {
+            # First signup as a regular user (this will create user with proper phone formatting)
+            signup_data = {
                 "phone": fixer_phone,
                 "first_name": "Mike",
                 "last_name": "Fixer",
                 "id_number": f"8001015009{timestamp[-3:]}",
                 "town": "Johannesburg",
                 "email": f"mike.fixer.{timestamp}@fixmate.com",
-                "address": "123 Fixer St, Johannesburg"
+                "password": "fixer123",
+                "confirm_password": "fixer123"
             }
             
-            response = self.session.post(f"{API_BASE}/users", json=user_data)
+            response = self.session.post(f"{API_BASE}/auth/signup", json=signup_data)
             if response.status_code != 200:
-                self.log_result("Fixer User Creation", False, "Failed to create user for fixer", response)
+                self.log_result("Fixer User Signup", False, "Failed to signup fixer user", response)
                 return False
             
-            fixer_user = response.json()
-            self.log_result("Fixer User Creation", True, f"Created user: {fixer_user['full_name']}")
+            fixer_user_data = response.json()
+            fixer_user = fixer_user_data['user']
+            self.log_result("Fixer User Signup", True, f"Signed up user: {fixer_user['full_name']}")
             
-            # Create fixer record
+            # Create fixer record using the properly formatted phone from signup
+            fixer_phone_formatted = fixer_user['phone']  # This will have the correct format
+            
             fixer_data = {
                 "user_id": fixer_user['id'],
-                "phone": fixer_phone,
+                "phone": fixer_phone_formatted,
                 "name": "Mike Fixer",
                 "email": f"mike.fixer.{timestamp}@fixmate.com",
                 "services": '["plumbing", "electrical"]',
@@ -188,7 +192,7 @@ class AuthenticationTester:
             self.test_data['fixer_record'] = fixer_record
             self.log_result("Fixer Record Creation", True, f"Created fixer: {fixer_record['name']}")
             
-            # Check role determination
+            # Check role determination (use original phone format for role check)
             response = self.session.get(f"{API_BASE}/auth/role-check/{fixer_phone}")
             if response.status_code == 200:
                 role_data = response.json()
@@ -200,20 +204,6 @@ class AuthenticationTester:
             else:
                 self.log_result("Fixer Role Check", False, f"Fixer role check failed. HTTP {response.status_code}", response)
                 return False
-            
-            # Set password for fixer
-            password_data = {
-                "phone": fixer_phone,
-                "password": "fixer123",
-                "confirm_password": "fixer123"
-            }
-            
-            response = self.session.post(f"{API_BASE}/auth/set-password", json=password_data)
-            if response.status_code != 200:
-                self.log_result("Fixer Set Password", False, "Failed to set fixer password", response)
-                return False
-            
-            self.log_result("Fixer Set Password", True, "Fixer password set successfully")
             
             # Test fixer login
             login_data = {
