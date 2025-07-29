@@ -440,6 +440,8 @@ def show_help():
     print("  help                           - Show this help message")
     print("")
     print("Usage Examples:")
+    print("  python backend/manage.py add-fixer \"John Smith\" 0791135003 \"plumbing, electrical\"")
+    print("  python backend/manage.py set-password 0821111111 fixer123")
     print("  python backend/manage.py promote-admin 0791135003")
     print("  python backend/manage.py remove-fixer 0821234567")
     print("  python backend/manage.py reassign-job 123e4567-e89b-12d3-a456-426614174000 0791135003")
