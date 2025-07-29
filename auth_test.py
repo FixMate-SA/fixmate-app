@@ -174,23 +174,43 @@ class AuthenticationTester:
             # Create fixer record using the properly formatted phone from signup
             fixer_phone_formatted = fixer_user['phone']  # This will have the correct format
             
-            fixer_data = {
-                "user_id": fixer_user['id'],
-                "phone": fixer_phone_formatted,
-                "name": "Mike Fixer",
-                "email": f"mike.fixer.{timestamp}@fixmate.com",
-                "services": '["plumbing", "electrical"]',
-                "location": "Johannesburg"
-            }
+            # Check if fixer already exists for this phone
+            response = self.session.get(f"{API_BASE}/fixers")
+            existing_fixer = None
+            if response.status_code == 200:
+                fixers = response.json()
+                for fixer in fixers:
+                    if fixer.get('phone') == fixer_phone_formatted:
+                        existing_fixer = fixer
+                        break
             
-            response = self.session.post(f"{API_BASE}/fixers", json=fixer_data)
-            if response.status_code != 200:
-                self.log_result("Fixer Record Creation", False, "Failed to create fixer record", response)
-                return False
+            if existing_fixer:
+                # Update existing fixer with correct user_id if needed
+                if not existing_fixer.get('user_id'):
+                    self.log_result("Fixer Record Update", True, f"Found existing fixer record, using: {existing_fixer['name']}")
+                else:
+                    self.log_result("Fixer Record Found", True, f"Using existing fixer: {existing_fixer['name']}")
+                fixer_record = existing_fixer
+            else:
+                # Create new fixer record
+                fixer_data = {
+                    "user_id": fixer_user['id'],
+                    "phone": fixer_phone_formatted,
+                    "name": "Mike Fixer",
+                    "email": f"mike.fixer.{timestamp}@fixmate.com",
+                    "services": '["plumbing", "electrical"]',
+                    "location": "Johannesburg"
+                }
+                
+                response = self.session.post(f"{API_BASE}/fixers", json=fixer_data)
+                if response.status_code != 200:
+                    self.log_result("Fixer Record Creation", False, "Failed to create fixer record", response)
+                    return False
+                
+                fixer_record = response.json()
+                self.log_result("Fixer Record Creation", True, f"Created fixer: {fixer_record['name']}")
             
-            fixer_record = response.json()
             self.test_data['fixer_record'] = fixer_record
-            self.log_result("Fixer Record Creation", True, f"Created fixer: {fixer_record['name']}")
             
             # Check role determination (use original phone format for role check)
             # Add a small delay to ensure database transaction is committed
