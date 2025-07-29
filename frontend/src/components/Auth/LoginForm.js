@@ -58,7 +58,8 @@ const LoginForm = () => {
     const result = await login(phone, password);
     
     if (result.success) {
-      navigate('/');
+      console.log('LoginForm: Password login successful, navigating to dashboard');
+      navigate('/', { replace: true });
     } else {
       setError(result.error);
     }
