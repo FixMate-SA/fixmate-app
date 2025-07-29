@@ -194,8 +194,8 @@ class RoleService:
                     "created_at": user.created_at.isoformat()
                 },
                 "role_info": role_info,
-                "display_name": self.get_display_name(user),
-                "welcome_message": self.get_welcome_message(user)
+                "display_name": self.get_display_name_with_role(user, role_info["role"]),
+                "welcome_message": self.get_welcome_message_with_role(user, role_info["role"])
             }
             
             return profile_data
@@ -203,6 +203,33 @@ class RoleService:
         except Exception as e:
             print(f"Error getting profile data: {str(e)}")
             return {}
+    
+    def get_display_name_with_role(self, user, dynamic_role: str) -> str:
+        """
+        Get display name with role prefix using dynamic role (not database role)
+        """
+        role_prefixes = {
+            "admin": "Admin",
+            "fixer": "Fixer", 
+            "client": ""
+        }
+        
+        prefix = role_prefixes.get(dynamic_role, "")
+        first_name = user.first_name if hasattr(user, 'first_name') else user.display_name
+        return f"{prefix} {first_name}".strip()
+    
+    def get_welcome_message_with_role(self, user, dynamic_role: str) -> str:
+        """
+        Get personalized welcome message based on dynamic role (not database role)
+        """
+        first_name = user.first_name if hasattr(user, 'first_name') else user.display_name
+        
+        if dynamic_role == "admin":
+            return f"Welcome Admin {first_name}"
+        elif dynamic_role == "fixer":
+            return f"Welcome Fixer {first_name}"
+        else:
+            return f"Welcome {first_name}"
     
     def get_display_name(self, user) -> str:
         """
