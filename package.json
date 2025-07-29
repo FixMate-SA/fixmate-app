@@ -5,9 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "cd frontend && yarn install && yarn build",
-    "heroku-postbuild": "cd frontend && yarn install && yarn build && echo 'Frontend built successfully'",
-    "dev": "concurrently \"cd backend && python server.py\" \"cd frontend && yarn start\""
+    "build": "cd frontend && npm install && npm run build",
+    "heroku-postbuild": "cd frontend && npm install && npm run build && echo 'Frontend built successfully'",
+    "dev": "concurrently \"cd backend && python server.py\" \"cd frontend && npm start\""
   },
   "dependencies": {
     "express": "^4.18.2",
