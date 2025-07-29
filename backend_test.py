@@ -2091,7 +2091,34 @@ class FixMateAPITester:
         self.test_role_check_endpoint()
         print()
         
+        # NEW: Business Compliance API Tests
+        print("🏢 BUSINESS COMPLIANCE API TESTS")
+        print("-" * 50)
+        self.test_compliance_categories()
+        self.test_compliance_request_creation()
+        self.test_user_compliance_requests()
+        self.test_compliance_checklist()
+        self.test_admin_all_compliance_requests()
+        self.test_admin_update_compliance_request()
+        print()
+        
+        # NEW: WhatsApp Business Integration Tests
+        print("📱 WHATSAPP BUSINESS INTEGRATION TESTS")
+        print("-" * 50)
+        self.test_whatsapp_business_webhook_verify()
+        self.test_whatsapp_business_webhook_post()
+        self.test_whatsapp_service_configuration()
+        print()
+        
+        # NEW: Database Model Tests
+        print("🗄️ DATABASE MODEL INTEGRATION TESTS")
+        print("-" * 50)
+        self.test_business_compliance_model_integration()
+        print()
+        
         # Test sequence following the main user flow + new AI/SMS features + Payment System + WhatsApp + PayFast
+        print("🔧 CORE FUNCTIONALITY TESTS")
+        print("-" * 50)
         tests = [
             ("Health Check", self.test_health_check),
             ("Create User", self.test_create_user),
