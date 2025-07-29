@@ -222,6 +222,16 @@ function App() {
                 }
               />
               <Route
+                path="/business-compliance"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BusinessCompliance />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/terms"
                 element={<TermsOfService />}
               />
