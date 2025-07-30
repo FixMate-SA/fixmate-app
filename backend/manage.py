@@ -46,8 +46,8 @@ def format_phone_number(phone: str) -> str:
         # Try as-is for existing database formats
         return phone
 
-def add_fixer(name, phone, skills):
-    """Add a new fixer to the system."""
+def add_fixer(name, phone, skills, password=None):
+    """Add a new fixer to the system with optional password."""
     try:
         db = get_database_session()
         formatted_phone = format_phone_number(phone)
@@ -60,11 +60,11 @@ def add_fixer(name, phone, skills):
         
         # Create or get user
         user = db.query(User).filter(User.phone == formatted_phone).first()
+        name_parts = name.split()
+        first_name = name_parts[0] if name_parts else name
+        last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
+        
         if not user:
-            name_parts = name.split()
-            first_name = name_parts[0] if name_parts else name
-            last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
-            
             user = User(
                 phone=formatted_phone,
                 first_name=first_name,
@@ -72,7 +72,8 @@ def add_fixer(name, phone, skills):
                 id_number=f"CLI_{uuid.uuid4().hex[:8]}",
                 town="Unknown",
                 role="fixer",
-                is_active=True
+                is_active=True,
+                is_verified=True  # Auto-verify CLI created fixers
             )
             db.add(user)
             db.commit()
@@ -81,8 +82,22 @@ def add_fixer(name, phone, skills):
         else:
             # Update existing user to fixer role
             user.role = "fixer"
+            user.first_name = first_name
+            user.last_name = last_name
+            user.is_verified = True
             db.commit()
             print(f"✅ Updated existing user to fixer role: {user.first_name} {user.last_name}")
+        
+        # Set password if provided
+        if password:
+            import bcrypt
+            salt = bcrypt.gensalt()
+            hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+            user.password_hash = hashed_password
+            db.commit()
+            print(f"✅ Password set for user: {password}")
+        else:
+            print(f"⚠️  No password set - user won't be able to login via web/app")
         
         # Create fixer record
         import json
@@ -93,25 +108,47 @@ def add_fixer(name, phone, skills):
             user_id=user.id,
             phone=formatted_phone,
             name=name,
-            email=f"{first_name.lower()}.{last_name.lower().replace(' ', '')}@fixmate.com" if 'first_name' in locals() else None,
+            email=f"{first_name.lower()}.{last_name.lower().replace(' ', '')}@fixmate.com",
             services=skills_json,
             location="Unknown",
-            rating=0.0,
+            rating=5.0,  # Start with good rating
             total_jobs=0,
-            is_active=True
+            is_active=True,
+            is_approved=True,  # Auto-approve CLI created fixers
+            availability_status="available"
         )
         
         db.add(fixer)
         db.commit()
         
+        # Create fixer availability record for workflow system
+        from models import FixerAvailability
+        availability = FixerAvailability(
+            fixer_id=fixer.id,
+            is_available=True,
+            has_outstanding_debt=False,
+            debt_amount=0.0,
+            is_suspended=False,
+            completion_rate=100.0,
+            reliability_score=100.0
+        )
+        db.add(availability)
+        db.commit()
+        
         print(f"✅ Successfully added fixer: '{name}' with phone {formatted_phone}")
         print(f"   Skills: {skills}")
         print(f"   Services JSON: {skills_json}")
+        print(f"   Status: Approved and available for jobs")
+        print(f"   Login: {formatted_phone} / {'***SET***' if password else 'NO PASSWORD'}")
         
         db.close()
         
     except Exception as e:
         print(f"❌ Error adding fixer: {e}")
+
+def add_fixer_with_password(name, phone, skills, password):
+    """Add a new fixer to the system with password - enhanced version."""
+    add_fixer(name, phone, skills, password)
 
 def set_password(phone, password):
     """Set password for a user."""
