@@ -234,7 +234,7 @@ const LoginForm = () => {
           <div className="space-y-4">
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number
+                {t('phoneNumber', 'Phone Number')}
               </label>
               <input
                 id="phone"
@@ -244,7 +244,7 @@ const LoginForm = () => {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Enter your phone number (e.g., +27821234567)"
+                placeholder={t('enterPhone', 'Enter your phone number (e.g., +27821234567)')}
               />
             </div>
             
