@@ -33,8 +33,20 @@ export const languages = {
       // Authentication
       phoneNumber: 'Phone Number',
       enterPhone: 'Enter your phone number',
+      password: 'Password',
+      enterPassword: 'Enter your password',
       signIn: 'Sign In',
+      signUp: 'Sign up',
       welcomeBack: 'Welcome back',
+      welcomeTo: 'Welcome to FixMate-SA',
+      southAfricasPremier: 'South Africa\'s Premier Service Platform',
+      enterPhoneAndPassword: 'Enter your phone number and password to sign in',
+      dontHaveAccount: 'Don\'t have an account? Sign up',
+      secureYourAccount: 'Secure Your Account',
+      setStrongPassword: 'Set a strong password to protect your account',
+      createPassword: 'Create a strong password',
+      confirmPassword: 'Confirm your password',
+      createAccountSignIn: 'Create Account & Sign In',
       
       // Jobs
       createJob: 'Create Job',
