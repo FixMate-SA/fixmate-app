@@ -50,7 +50,7 @@ const Navigation = () => {
     // Business Compliance available to clients and fixers
     { 
       path: '/business-compliance', 
-      label: 'Business Compliance', 
+      label: t('businessCompliance', 'Business Compliance'), 
       icon: '🏢',
       roles: ['client', 'fixer', 'admin'],
       permission: null // Remove permission check to always show for all roles
@@ -59,7 +59,7 @@ const Navigation = () => {
     // SMS available to all
     { 
       path: '/sms', 
-      label: 'SMS Portal', 
+      label: t('smsPortal', 'SMS Portal'), 
       icon: '📱',
       roles: ['client', 'fixer', 'admin'],
       permission: 'can_access_sms'
@@ -68,7 +68,7 @@ const Navigation = () => {
     // Enterprise features
     { 
       path: '/enterprise', 
-      label: 'Enterprise', 
+      label: t('enterprise', 'Enterprise'), 
       icon: '🏢',
       roles: ['admin'],
       permission: 'can_access_admin'
@@ -77,7 +77,7 @@ const Navigation = () => {
     // Payment management (Fixers and Admins)
     { 
       path: '/payment', 
-      label: 'Payments', 
+      label: t('payments', 'Payments'), 
       icon: '💳',
       roles: ['fixer', 'admin'],
       permission: 'can_access_payments'
@@ -86,7 +86,7 @@ const Navigation = () => {
     // Admin Dashboard
     { 
       path: '/admin', 
-      label: 'Admin Panel', 
+      label: t('adminPanel', 'Admin Panel'), 
       icon: '⚙️',
       roles: ['admin'],
       permission: 'can_access_admin'
