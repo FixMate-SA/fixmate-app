@@ -43,17 +43,20 @@ python run_cli.py stats
 python run_cli.py help
 ```
 
-## 🌐 **Heroku Usage**
+## 🌐 **Heroku Usage (FIXED!)**
 
 ```bash
-# On Heroku (production)
-heroku run python backend/run_cli.py add-fixer-pwd "John Smith" "0821111111" "plumbing,electrical,geysers" "fixer123"
+# On Heroku (production) - CORRECTED COMMANDS
+heroku run python run_cli.py add-fixer-pwd "John Smith" "0821111111" "plumbing,electrical,geysers" "fixer123"
 
 # Run migration on Heroku
-heroku run python backend/run_cli.py migrate
+heroku run python run_cli.py migrate
 
 # Check fixers on Heroku
-heroku run python backend/run_cli.py list-fixers
+heroku run python run_cli.py list-fixers
+
+# Add fixer without password on Heroku
+heroku run python run_cli.py add-fixer "John Smith" "0821111111" "plumbing,electrical,geysers"
 ```
 
 ## 📊 **Command Output Example**
