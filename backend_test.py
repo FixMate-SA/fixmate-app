@@ -3398,6 +3398,23 @@ class FixMateAPITester:
         self.test_business_compliance_model_integration()
         print()
         
+        # NEW: FixMate Job Request and Assignment Workflow System Tests
+        print("🔄 FIXMATE JOB REQUEST AND ASSIGNMENT WORKFLOW SYSTEM TESTS")
+        print("-" * 50)
+        self.test_workflow_database_integration()
+        self.test_terms_acceptance_check()
+        self.test_terms_acceptance()
+        self.test_workflow_terms_enforcement()
+        self.test_job_workflow_creation()
+        self.test_fixer_eligible_jobs()
+        self.test_job_acceptance()
+        self.test_fixer_location_update()
+        self.test_job_workflow_status()
+        self.test_job_completion()
+        self.test_fixer_behavior_analysis()
+        self.test_admin_fixer_override()
+        print()
+        
         # Test sequence following the main user flow + new AI/SMS features + Payment System + WhatsApp + PayFast
         print("🔧 CORE FUNCTIONALITY TESTS")
         print("-" * 50)
