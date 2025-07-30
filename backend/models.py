@@ -40,6 +40,7 @@ class User(Base):
     compliance_requests = relationship("BusinessComplianceRequest", back_populates="user")
     emergency_alerts = relationship("EmergencyAlert", back_populates="user")
     fixer_applications = relationship("FixerApplication", back_populates="user")
+    terms_acceptances = relationship("UserTermsAcceptance", back_populates="user")
     
     def set_password(self, password):
         """Set password hash using bcrypt"""
