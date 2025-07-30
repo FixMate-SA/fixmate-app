@@ -88,10 +88,7 @@ def add_fixer(name, phone, skills, password=None):
         
         # Set password if provided
         if password:
-            import bcrypt
-            salt = bcrypt.gensalt()
-            hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
-            user.password_hash = hashed_password
+            user.set_password(password)  # Use the model's set_password method
             db.commit()
             print(f"✅ Password set for user: {password}")
         else:
