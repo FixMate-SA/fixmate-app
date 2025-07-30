@@ -332,6 +332,13 @@ Please log in to your Fixer Portal to accept this job.
         self.set_user_state(user, self.states['AWAITING_NAME'], {'service': message}, db)
         return response
     
+    def _handle_service_request(self, user: User, message: str, db: Session) -> str:
+        """Handle service request message."""
+        response = "Got it. What's your name?"
+        
+        self.set_user_state(user, self.states['AWAITING_NAME'], {'service': message}, db)
+        return response
+
     def _handle_name_message(self, user: User, message: str, db: Session) -> str:
         """Handle name message."""
         # Update user name
