@@ -155,6 +155,18 @@ export const languages = {
       error: 'Fout',
       success: 'Sukses',
       emergency: 'Noodgeval',
+      saveChanges: 'Stoor Veranderings',
+      notProvided: 'Nie verskaf nie',
+      
+      // Profile
+      editProfile: 'Wysig Profiel',
+      personalInfo: 'Persoonlike Inligting',
+      firstName: 'Voornaam',
+      lastName: 'Van',
+      name: 'Naam',
+      idNumber: 'ID Nommer',
+      town: 'Dorp/Munisipaliteit',
+      address: 'Adres',
       
       // Authentication
       phoneNumber: 'Telefoonnommer',
