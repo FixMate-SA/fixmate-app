@@ -213,6 +213,11 @@ const LoginForm = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
+        {/* Language Selector - positioned at top right */}
+        <div className="flex justify-end">
+          <LanguageSelector />
+        </div>
+        
         <div>
           <Logo 
             size="large" 
