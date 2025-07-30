@@ -21,6 +21,16 @@ const Profile = () => {
   });
 
   useEffect(() => {
+    // Initialize edit data with current user data
+    if (user) {
+      setEditData({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        email: user.email || '',
+        address: user.address || ''
+      });
+    }
+
     // Check if user is also a fixer
     const fetchFixerData = async () => {
       try {
