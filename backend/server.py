@@ -1504,6 +1504,29 @@ async def whatsapp_business_webhook_verify(hub_challenge: str = None):
     
     return {"success": True, "message": "FixMate-SA WhatsApp Business webhook active"}
 
+# WhatsApp webhook endpoint WITHOUT /api prefix for Facebook integration
+# Facebook/WhatsApp Business API expects the webhook at /whatsapp not /api/whatsapp
+@app.post("/whatsapp")
+async def whatsapp_webhook(request: dict, db: Session = Depends(get_db)):
+    """
+    Handle incoming WhatsApp messages from Facebook Business API.
+    This endpoint is hit directly by Facebook at /whatsapp (no /api prefix).
+    """
+    try:
+        print(f"🔄 Processing WhatsApp webhook from Facebook at /whatsapp")
+        
+        # Import the unified WhatsApp service
+        from services.unified_whatsapp_service import unified_whatsapp_service
+        
+        # Process webhook using the unified service
+        result = unified_whatsapp_service.process_webhook(request, db)
+        
+        return result
+        
+    except Exception as e:
+        print(f"❌ Error processing WhatsApp webhook: {str(e)}")
+        return {"success": False, "error": str(e)}
+
 # Include the router in the main app
 app.include_router(api_router)
 
