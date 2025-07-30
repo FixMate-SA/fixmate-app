@@ -186,10 +186,28 @@ class Job(Base):
     service = Column(String, nullable=False)
     description = Column(Text, nullable=False)
     location = Column(String, nullable=False)
-    status = Column(String, default="pending")  # pending, assigned, in_progress, completed, cancelled
+    status = Column(String, default="pending")  # pending, notifying_fixers, assigned, in_progress, completed, cancelled, escalated, timeout
     estimated_price = Column(Float, nullable=True)
     final_price = Column(Float, nullable=True)
     scheduled_at = Column(DateTime, nullable=True)
+    
+    # Enhanced Workflow Fields
+    terms_accepted = Column(Boolean, default=False, nullable=False)  # Mandatory terms acceptance
+    terms_accepted_at = Column(DateTime, nullable=True)  # When terms were accepted
+    workflow_stage = Column(String, default="terms_pending")  # terms_pending, eligible_check, notifying, waiting_assignment, assigned, tracking, completed
+    notified_fixers = Column(Text, nullable=True)  # JSON array of fixer IDs notified
+    eligible_fixers = Column(Text, nullable=True)  # JSON array of eligible fixer IDs
+    assignment_timeout = Column(DateTime, nullable=True)  # When assignment expires
+    attendance_timeout = Column(DateTime, nullable=True)  # When fixer must confirm attendance
+    is_emergency_escalated = Column(Boolean, default=False)  # If job was escalated due to timeout
+    priority_level = Column(String, default="normal")  # normal, urgent, emergency
+    
+    # Live Tracking Fields
+    fixer_location_lat = Column(Float, nullable=True)  # Current fixer GPS latitude
+    fixer_location_lng = Column(Float, nullable=True)  # Current fixer GPS longitude
+    fixer_location_updated = Column(DateTime, nullable=True)  # Last location update
+    estimated_arrival = Column(DateTime, nullable=True)  # Estimated arrival time
+    tracking_active = Column(Boolean, default=False)  # If live tracking is active
     
     # WhatsApp integration fields
     client_contact_number = Column(String, nullable=True)  # Contact number provided by client
@@ -201,6 +219,11 @@ class Job(Base):
     rating_comment = Column(Text, nullable=True)  # Client's review comment
     sentiment = Column(String, nullable=True)  # AI-analyzed sentiment of review
     
+    # Assignment tracking
+    assignment_attempts = Column(Integer, default=0)  # Number of assignment attempts
+    last_assignment_attempt = Column(DateTime, nullable=True)  # Last assignment attempt time
+    auto_reassignment_count = Column(Integer, default=0)  # How many times auto-reassigned
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -209,6 +232,8 @@ class Job(Base):
     fixer = relationship("Fixer", back_populates="jobs")
     reviews = relationship("Review", back_populates="job")
     emergency_alerts = relationship("EmergencyAlert", back_populates="job")
+    assignment_history = relationship("JobAssignmentHistory", back_populates="job")
+    notifications = relationship("JobNotification", back_populates="job")
 
 class Review(Base):
     __tablename__ = "reviews"
