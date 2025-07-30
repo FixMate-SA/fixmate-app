@@ -1,103 +1,127 @@
 <analysis>
-The previous AI engineer meticulously developed the FixMate-SA application, progressing through several key phases. Initially, a robust full-stack foundation with React, FastAPI, and PostgreSQL was established, including core CRUD functionalities and authentication. Subsequent work focused on integrating advanced features like AI-powered voice interaction (Gemini), SMS/MMS (Twilio), a learning platform for fixers, and improving UI/UX.
+The previous AI engineer successfully stabilized the FixMate-SA application by addressing critical deployment, branding, and core functionality issues. Initially, the focus was on resolving Heroku deployment challenges, transitioning from a failed multi-buildpack setup to a Python-only buildpack serving React static files. This involved significant  and  modifications, alongside refactoring frontend API calls to use relative paths. Branding elements were meticulously removed from the frontend.
 
-The most recent significant development cycles, immediately prior to this summary request, involved implementing comprehensive South African language support, a fixer payment system to manage service fees, a sophisticated role-based authentication and authorization system (Admin, Fixer, Client), enhanced user registration with ID verification, and critical emergency/panic button functionality. All these features were confirmed working via local testing and screenshots. The current task has just begun the integration of features from a  file, originating from an older WhatsApp-based version of the application, aiming to merge its functionalities into the current FastAPI architecture.
+Subsequent efforts included creating professional Terms of Service and Privacy Policy pages with dynamic routing and footer integration. A major fix involved troubleshooting and resolving a blank fixers list by correcting frontend API URL configuration and handling inconsistent data formats for fixer services. A comprehensive Heroku-compatible CLI management system () was developed for administrative tasks, replacing previous  commands. Most recently, the Admin Dashboard was enhanced to display full user details (name, phone, ID number), and new WhatsApp Business integration and a Business Compliance assistance section were implemented. The final challenge addressed was ensuring these new features appeared post-deployment, identified as a Heroku environment variable mismatch requiring a manual Heroku build trigger.
 </analysis>
 
 <product_requirements>
-The primary goal was to create a mobile/web application, FixMate-SA, to connect service requesters (clients) with service providers (fixers), initially integrating with an existing WhatsApp system's PostgreSQL database. Key initial features included user authentication (phone number), job creation/tracking, fixer management, and a rating/review system.
+FixMate-SA aims to be a mobile/web application connecting clients with fixers, leveraging an existing WhatsApp system's PostgreSQL database. Core features include user authentication (phone/password), job, fixer, and rating management. Future enhancements encompass voice interaction (Google Gemini), PayFast payments, and business insights. Support for non-smartphone users via SMS/MMS (USSD) and a learning platform for fixers are also required, alongside general UI/UX improvements.
 
-Subsequent enhancements focused on:
--   **Voice interaction**: Clients requesting services via voice.
--   **Integration**: Incorporating AI (Google Gemini for voice), WhatsApp integration, PayFast payments, and business insights from an existing .
--   **SMS/MMS service (USSD)**: Support for non-smartphone users.
--   **Learning platform**: Free education for fixers.
--   **UI/UX**: Professional and user-friendly design.
-
-Most recently, the user requested:
--   **Comprehensive language support**: All 11 South African official languages.
--   **Fixer payment logic**: Prevent job allocation to fixers owing R20 service fee.
--   **Admin verification portal**: For fixers to submit ID documents for background checks.
--   **Emergency/Panic Button**: For users/fixers to alert police with location.
--   **Enhanced AI job matching**: Fairness and efficiency in job allocation.
--   **Password-based authentication**: Enable clients/fixers/admins to set passwords.
--   **Enhanced signup**: Collect full name, ID number, and town/local municipality from clients/fixers.
--   **Fixer vetting**: Require fixers to apply, be vetted, and submit documents before getting jobs.
--   **WhatsApp Feature Integration**: Incorporate functionalities from the provided  file (WhatsApp, Gemini, PayFast, advanced job matching, location services, voice transcription, data analytics, fee management, conversation state, admin commands).
+Recent explicit user requests guided development:
+- Full support for all 11 South African official languages.
+- A fixer payment system preventing job allocation for fixers owing a R20 service fee.
+- An Admin verification portal for fixer ID document submission and background checks.
+- An Emergency/Panic Button for users/fixers to alert police with location.
+- Enhanced AI job matching for fairness and efficiency.
+- Password-based authentication for all user roles (client, fixer, admin) and an enhanced signup process for full name, ID number, and town/municipality.
+- A robust fixer vetting process before job allocation.
+- Integration of a legacy  (WhatsApp, Gemini, PayFast, job matching, location, voice transcription, data analytics, fee management, conversation state, admin commands) into the FastAPI architecture.
 </product_requirements>
 
 <key_technical_concepts>
--   **Full-stack architecture**: React.js (frontend), FastAPI (backend), PostgreSQL (database).
--   **API Communication**: REST API endpoints, Axios for frontend calls.
--   **Database Management**: SQLAlchemy ORM for PostgreSQL, schema migrations (manual  in dev).
--   **Authentication & Authorization**: Phone-based, password-based (Werkzeug for hashing), and comprehensive role-based (Client, Fixer, Admin) systems.
--   **AI Integration**: Google Gemini for speech-to-text, service classification.
--   **Messaging**: Twilio for SMS/MMS, USSD service.
--   **UI/UX**: Tailwind CSS for styling, React Context API for state/language management.
--   **Internationalization**: Multi-language support (11 SA official languages).
--   **External Integration**: Imminent integration of 360dialog WhatsApp API, PayFast.
+- **Full-stack architecture**: React.js (frontend), FastAPI (backend), PostgreSQL (database).
+- **API Communication**: REST API endpoints, relative URLs for deployment.
+- **Database Management**: SQLAlchemy ORM, schema migration.
+- **Authentication & Authorization**: Phone/password-based, role-based access.
+- **Cloud Deployment**: Heroku (Python buildpack, static file serving, environment variables).
+- **Messaging**: 360dialog WhatsApp API, Twilio for SMS/MMS.
+- **AI Integration**: Google Gemini for transcription and checklist generation.
+- **CLI Tools**: Python-based management script for admin tasks.
 </key_technical_concepts>
 
 <code_architecture>
-The application follows a standard full-stack architecture with separate  (React) and  (FastAPI) directories.
+The application uses a standard full-stack architecture with  (React) and  (FastAPI) directories.
 
 
 
--   ****: The main FastAPI application. Updated with authentication, user/job/fixer/review management, voice transcription, SMS, USSD, payment processing, role-based logic, emergency alerts, and fixer application endpoints.
--   ****: Defines SQLAlchemy ORM models.
-    -   : Enhanced with , , , , , , .
-    -   : Enhanced with , , .
-    -   **NEW**: : Tracks R20 service fees for fixers.
-    -   **NEW**: : Logs panic button alerts with location.
-    -   **NEW**: : Manages fixer vetting process (documents, status).
--   ****: Defines Pydantic schemas for all API endpoints. Updated to include new fields for User, Fixer, and new schemas for , , and .
--   ****: **NEW**: Created to manage the R20 service fee logic, including tracking outstanding payments and preventing job allocation for non-compliant fixers.
--   ****: **NEW**: Manages role detection (Admin, Fixer, Client) based on phone number and database entries, providing role-specific information.
--   ****: **NEW**: Manages emergency alerts, including location capture, police notification (mock), and logging.
--   ****: Main React component and routing. Extensively modified to include routes for Admin Dashboard, Profile, and Signup. Integrates .
--   ****: Provides authentication context. Updated to handle password-based login and store/provide user role information.
--   ****: Centralized API service. Updated to include new endpoints for payment management, role checking, emergency alerts, and user/fixer application.
--   ****: Defines supported languages and translations. Updated to include all 11 official South African languages.
--   ****: Updated to support password-based login, link to new signup form, and integrate the  component.
--   ****: **NEW**: Implements a 2-step comprehensive registration process capturing full name, ID number, town, and setting a password.
--   ****: **NEW**: Provides an interface for admin users to manage the platform. Integrates the  component.
--   ****: **NEW**: Reusable React component for displaying the FixMate-SA logo with various sizes and styling variants.
--   ****: **NEW**: A prominent button in the header and job-related pages that triggers an emergency alert with location.
--   ****: **NEW**: Component to allow users to switch between the 11 supported languages.
--   ****: **NEW**: Component for fixers to manage their R20 service fees.
--   ****: Updated to display role-based welcome messages, theme colors (red/green/blue), and include the  and .
--   ****: Updated to render role-specific menu items.
--   ****: **NEW**: A professional footer component integrated into the main application layout.
--   ****: **NEW**: Component for user profiles, integrated with the logo.
+-   ****: Core FastAPI app. Serves static React files from  and includes a catch-all route for SPA routing. Added API endpoints for new Business Compliance service.
+-   ****: Defines SQLAlchemy ORM models. Added  model and a relationship to the  model.
+-   ****: Encapsulates 360dialog WhatsApp API interaction. Updated to use the user's official business number  and added webhook processing logic.
+-   ** (NEW)**: Manages logic for business compliance requests.
+-   ****: Defines Pydantic schemas. Confirmed  includes , , , .
+-   ** (NEW)**: A Heroku-compatible Python script replacing  commands for administrative tasks like user/fixer management (, , , , , ) and system info (, , , GNU bash, version 5.2.15(1)-release (aarch64-unknown-linux-gnu)
+These shell commands are defined internally.  Type `help' to see this list.
+Type `help name' to find out more about the function `name'.
+Use `info bash' to find out more about the shell in general.
+Use `man -k' or `info' to find out more about commands not in this list.
+
+A star (*) next to a name means that the command is disabled.
+
+ job_spec [&]                            history [-c] [-d offset] [n] or hist>
+ (( expression ))                        if COMMANDS; then COMMANDS; [ elif C>
+ . filename [arguments]                  jobs [-lnprs] [jobspec ...] or jobs >
+ :                                       kill [-s sigspec | -n signum | -sigs>
+ [ arg... ]                              let arg [arg ...]
+ [[ expression ]]                        local [option] name[=value] ...
+ alias [-p] [name[=value] ... ]          logout [n]
+ bg [job_spec ...]                       mapfile [-d delim] [-n count] [-O or>
+ bind [-lpsvPSVX] [-m keymap] [-f file>  popd [-n] [+N | -N]
+ break [n]                               printf [-v var] format [arguments]
+ builtin [shell-builtin [arg ...]]       pushd [-n] [+N | -N | dir]
+ caller [expr]                           pwd [-LP]
+ case WORD in [PATTERN [| PATTERN]...)>  read [-ers] [-a array] [-d delim] [->
+ cd [-L|[-P [-e]] [-@]] [dir]            readarray [-d delim] [-n count] [-O >
+ command [-pVv] command [arg ...]        readonly [-aAf] [name[=value] ...] o>
+ compgen [-abcdefgjksuv] [-o option] [>  return [n]
+ complete [-abcdefgjksuv] [-pr] [-DEI]>  select NAME [in WORDS ... ;] do COMM>
+ compopt [-o|+o option] [-DEI] [name .>  set [-abefhkmnptuvxBCEHPT] [-o optio>
+ continue [n]                            shift [n]
+ coproc [NAME] command [redirections]    shopt [-pqsu] [-o] [optname ...]
+ declare [-aAfFgiIlnrtux] [name[=value>  source filename [arguments]
+ dirs [-clpv] [+N] [-N]                  suspend [-f]
+ disown [-h] [-ar] [jobspec ... | pid >  test [expr]
+ echo [-neE] [arg ...]                   time [-p] pipeline
+ enable [-a] [-dnps] [-f filename] [na>  times
+ eval [arg ...]                          trap [-lp] [[arg] signal_spec ...]
+ exec [-cl] [-a name] [command [argume>  true
+ exit [n]                                type [-afptP] name [name ...]
+ export [-fn] [name[=value] ...] or ex>  typeset [-aAfFgiIlnrtux] name[=value>
+ false                                   ulimit [-SHabcdefiklmnpqrstuvxPRT] [>
+ fc [-e ename] [-lnr] [first] [last] o>  umask [-p] [-S] [mode]
+ fg [job_spec]                           unalias [-a] name [name ...]
+ for NAME [in WORDS ... ] ; do COMMAND>  unset [-f] [-v] [-n] [name ...]
+ for (( exp1; exp2; exp3 )); do COMMAN>  until COMMANDS; do COMMANDS-2; done
+ function name { COMMANDS ; } or name >  variables - Names and meanings of so>
+ getopts optstring name [arg ...]        wait [-fn] [-p var] [id ...]
+ hash [-lr] [-p pathname] [-dt] [name >  while COMMANDS; do COMMANDS-2; done
+ help [-dms] [pattern ...]               { COMMANDS ; }).
+-   ****: Frontend environment variables.  was emptied to enable relative API calls for Heroku. This needs to be correctly set on Heroku.
+-   ****: Main HTML file. Removed Made with Emergent branding.
+-   ****: Frontend dependencies and scripts.  updated to fixmate-sa-frontend.
+-   ****: Main React component. Enhanced routing with , , . Added routes for , , and .
+-   ****: Utility for consistent API URL generation. Uses  to dynamically determine API base URL (relative for Heroku, absolute for local). All frontend API calls were refactored to use this.
+-   ****: Displays list of fixers. Modified to handle inconsistent  data format (comma-separated vs. JSON array) from the backend.
+-   ****: Display footer. Updated to include legal information block with company details and links to Terms of Service and Privacy Policy.
+-   ****: Main navigation bar. Added Business Compliance link.
+-   ****: Admin panel for user management. Enhanced to display , , and  for all users, including role and status color-coding.
+-   ** (NEW)**: React component for the Terms of Service page.
+-   ** (NEW)**: React component for the Privacy Policy page.
+-   ** (NEW)**: React component for the Business Compliance assistance section, including service catalog and request submission.
+-   ****: Heroku process configuration. Simplified to  for Python-only buildpack.
+-   ****: Specifies Python 3.12 for Heroku.
+-   ****: Python dependencies for Heroku. Moved to root.
+-   ** (NEW)**: Added to ensure only Python buildpack is used on Heroku.
 </code_architecture>
 
 <pending_tasks>
--   **Complete South African Language Support**: While  is updated, full UI translation for all components needs to be verified.
--   **Fixer Payment System**: The core backend logic and frontend component are in place, but full integration into job allocation UI and payment flow needs to be finalized.
--   **Admin Verification System**: The  model and backend endpoints are created, but the frontend UI for fixers to apply and for admins to review applications is pending.
--   **Enhanced AI Job Matching**: The AI algorithm for fairness and efficiency in job allocation is still pending implementation.
--   **WhatsApp Feature Integration**: Integrating all functionalities from the provided  file into the current FastAPI backend and React frontend.
+- Complete South African Language Support: Full UI translation for all components needs verification.
+- Fixer Payment System: Full integration into job allocation UI and payment flow needs finalization.
+- Admin Verification System: Frontend UI for fixers to apply and for admins to review applications is pending.
+- Enhanced AI Job Matching: The AI algorithm for fairness and efficiency in job allocation is still pending implementation.
+- WhatsApp Feature Integration: Ongoing validation and refinement may be needed.
 </pending_tasks>
 
 <current_work>
-Immediately before this summary request, the AI engineer successfully implemented a comprehensive set of critical features, making the FixMate-SA platform enterprise-grade.
+Immediately before this summary request, the AI engineer addressed a critical deployment issue where newly implemented features (WhatsApp Business integration and Business Compliance section) were not visible on the deployed Heroku application.
 
-The key accomplishments include:
-1.  **Role-Based Authentication and Authorization**: A robust system capable of differentiating between Admin, Fixer, and Client roles based on phone numbers and database entries. This includes:
-    *   **Backend**:  model updated with a  field. New  for role detection.  login endpoint modified to return role information and  updated to manage role state.
-    *   **Frontend**:  and  now display personalized welcome messages (Welcome Thabo instead of User +27...), apply role-specific styling (red for Admin, green for Fixer, blue for Client), and render role-specific menu items (e.g., Admin Panel, Payments tab). An  component and route were created.
-2.  **Enhanced User Management & Fixer Vetting**:
-    *   **Comprehensive Signup**:  model updated with , , , and . A new 2-step  was created to collect this detailed information during registration, including SA ID number validation and password setup.
-    *   **Fixer Application Workflow**: A  model was introduced in the backend to manage the vetting process, including fields for services, experience, qualifications, and document uploads (ID, proof of address). Backend endpoints for  and admin review () are implemented, allowing fixers to apply for approval before receiving jobs.
-3.  **Password-Based Authentication**: The system now supports password login. The  model includes ,  was added for secure hashing, and  was updated to handle password input and setup. Existing users can still use phone login until they set a password.
-4.  **Emergency/Panic Button**: A critical safety feature was added.
-    *   **Backend**: An  model and  were created to record alerts, including GPS coordinates, address, and police notification status (mock). New endpoints for  are available.
-    *   **Frontend**: A prominent  component was added to the  and , triggering a modal that collects optional details and confirms location sharing for police alerts.
-5.  **Professional Branding**: The FixMate-SA logo was downloaded and integrated across the application. A reusable  component was created with various sizes and styling variants, used in , , , , , and a new  component.
+The engineer diagnosed the problem as a **frontend environment configuration mismatch**, specifically that the  was incorrectly configured on the Heroku environment, causing the frontend to call the wrong backend URL and consequently fail to render new navigation items and content.
 
-The system was confirmed working on localhost through comprehensive screenshot-based testing for Admin, Fixer, and Client roles, validating UI changes, login flows, and feature accessibility.
+Prior to this diagnosis, comprehensive backend testing confirmed that all 6 Business Compliance API endpoints and WhatsApp Business webhook endpoints were fully functional. The Business Compliance page itself worked perfectly when accessed directly, indicating the issue was frontend deployment related.
+
+The solution proposed involves the user **manually updating the  config variable on the Heroku Dashboard** (or via Heroku CLI) to . After this, a **new Heroku build needs to be triggered** (e.g., via Heroku Dashboard's Manual Deploy or by pushing an empty commit). This will force the React application to rebuild with the correct backend URL, making the new Business Compliance navigation item and WhatsApp features visible and functional. The backend already contains the logic for WhatsApp using the business number .
 </current_work>
 
 <optional_next_step>
-The next step is to begin integrating the WhatsApp features from the  file into the existing application architecture.
+Trigger a new Heroku build after updating the  config var.
+Go ahead and trigger that manual deploy now - your features are ready to go live!
 </optional_next_step>
