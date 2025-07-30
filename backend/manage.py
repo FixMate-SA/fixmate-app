@@ -113,7 +113,8 @@ def add_fixer(name, phone, skills, password=None):
             total_jobs=0,
             is_active=True,
             is_approved=True,  # Auto-approve CLI created fixers
-            availability_status="available"
+            vetting_status="approved",
+            skills=skills_json  # Store skills in both fields
         )
         
         db.add(fixer)
