@@ -25,6 +25,7 @@ FIXMATE_WHATSAPP_BUSINESS_NUMBER = "27754466571"  # Official business number wit
 class WhatsAppService:
     def __init__(self):
         self.api_key = DIALOG_360_API_KEY
+        self.phone_number_id = PHONE_NUMBER_ID
         self.base_url = DIALOG_360_URL
         self.messages_url = DIALOG_360_MESSAGES_URL
         self.geocoder = Nominatim(user_agent="FixMate-SA")
