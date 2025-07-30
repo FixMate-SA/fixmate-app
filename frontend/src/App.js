@@ -22,6 +22,9 @@ import AdminDashboard from "./components/Admin/AdminDashboard";
 import TermsOfService from "./components/Legal/TermsOfService";
 import PrivacyPolicy from "./components/Legal/PrivacyPolicy";
 import BusinessCompliance from "./components/Business/BusinessCompliance";
+import EnhancedJobCreation from "./components/Workflow/EnhancedJobCreation";
+import FixerJobBoard from "./components/Workflow/FixerJobBoard";
+import TermsAcceptance from "./components/Workflow/TermsAcceptance";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
