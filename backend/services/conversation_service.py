@@ -402,10 +402,10 @@ We will notify you as soon as one becomes available."""
             self.set_user_state(user, self.states['AWAITING_SERVICE_REQUEST'], db=db)
             return response
         else:
-            # Treat as service request
-            response = f"""{greeting} To request a service, please describe what you need (e.g., 'Leaking pipe', or any service you may think of)."""
+            # Treat as service request directly
+            response = f"""Got it. What's your name?"""
             
-            self.set_user_state(user, self.states['AWAITING_SERVICE_REQUEST'], db=db)
+            self.set_user_state(user, self.states['AWAITING_NAME'], {'service': message}, db)
             return response
     
     def _get_help_message(self, user: User) -> str:
