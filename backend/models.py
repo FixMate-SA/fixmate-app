@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
-from werkzeug.security import generate_password_hash, check_password_hash
+import bcrypt
 
 Base = declarative_base()
 
@@ -40,14 +40,14 @@ class User(Base):
     
     def set_password(self, password):
         """Set password hash"""
-        self.password_hash = generate_password_hash(password)
+        self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         self.is_password_set = True
     
     def check_password(self, password):
         """Check if password matches hash"""
         if not self.password_hash:
             return False
-        return check_password_hash(self.password_hash, password)
+        return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
     
     @property
     def full_name(self):
