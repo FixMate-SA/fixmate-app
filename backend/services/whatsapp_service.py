@@ -60,10 +60,11 @@ class WhatsAppService:
             
             headers = {
                 'D360-API-KEY': self.api_key,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             }
             
-            # Create message payload
+            # Create message payload (Dialog360 format)
             payload = {
                 "to": to_number,
                 "type": "text",
@@ -71,10 +72,6 @@ class WhatsAppService:
                     "body": message_body
                 }
             }
-            
-            # Add phone number ID if available
-            if self.phone_number_id:
-                payload["from"] = self.phone_number_id
             
             # Add media if provided
             if media_url:
