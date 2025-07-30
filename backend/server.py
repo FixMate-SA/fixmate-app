@@ -1109,6 +1109,29 @@ async def get_payment_status(job_id: str, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get payment status: {str(e)}")
 
+@api_router.post("/whatsapp/test")
+async def test_whatsapp_api():
+    """
+    Test WhatsApp API connectivity and credentials.
+    """
+    try:
+        result = whatsapp_service.send_whatsapp_message("27123456789", "Test message from FixMate-SA API")
+        return {
+            "status": "success" if result else "failed",
+            "api_key_set": bool(whatsapp_service.api_key),
+            "phone_number_id_set": bool(whatsapp_service.phone_number_id),
+            "messages_url": whatsapp_service.messages_url,
+            "result": result
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "api_key_set": bool(whatsapp_service.api_key),
+            "phone_number_id_set": bool(whatsapp_service.phone_number_id),
+            "messages_url": whatsapp_service.messages_url
+        }
+
 # WhatsApp webhook endpoints
 @api_router.post("/whatsapp")
 async def whatsapp_main_webhook(request: dict, db: Session = Depends(get_db)):
