@@ -861,6 +861,183 @@ async def update_job(job_id: str, job_update: JobUpdate, db: Session = Depends(g
     
     return job
 
+# Enhanced Job Workflow Endpoints
+
+@api_router.post("/jobs/workflow", response_model=dict)
+async def create_job_with_workflow(job_data: dict, db: Session = Depends(get_db)):
+    """Create job with comprehensive workflow validation and processing"""
+    user_id = job_data.get('user_id')
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    
+    success, message, job = job_workflow_service.create_job_with_workflow(db, user_id, job_data)
+    
+    if success:
+        return {
+            "success": True,
+            "message": message,
+            "job_id": job.id if job else None,
+            "workflow_status": job_workflow_service.get_job_workflow_status(db, job.id) if job else {}
+        }
+    else:
+        raise HTTPException(status_code=400, detail=message)
+
+@api_router.post("/terms/accept")
+async def accept_platform_terms(request: dict, db: Session = Depends(get_db)):
+    """Accept current platform terms"""
+    user_id = request.get('user_id')
+    ip_address = request.get('ip_address')
+    user_agent = request.get('user_agent', '')
+    method = request.get('method', 'web')
+    
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    
+    success = job_workflow_service.accept_terms(db, user_id, ip_address, user_agent, method)
+    
+    if success:
+        return {"success": True, "message": "Terms accepted successfully"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to accept terms")
+
+@api_router.get("/terms/check/{user_id}")
+async def check_terms_acceptance(user_id: str, db: Session = Depends(get_db)):
+    """Check if user has accepted current platform terms"""
+    has_accepted = job_workflow_service.check_terms_acceptance(db, user_id)
+    return {"has_accepted": has_accepted}
+
+@api_router.post("/jobs/{job_id}/accept")
+async def accept_job(job_id: str, request: dict, db: Session = Depends(get_db)):
+    """Fixer accepts a job (first come, first serve)"""
+    fixer_id = request.get('fixer_id')
+    if not fixer_id:
+        raise HTTPException(status_code=400, detail="fixer_id is required")
+    
+    success, message = job_workflow_service.accept_job(db, job_id, fixer_id)
+    
+    if success:
+        return {"success": True, "message": message}
+    else:
+        raise HTTPException(status_code=400, detail=message)
+
+@api_router.post("/jobs/{job_id}/complete")
+async def complete_job_workflow(job_id: str, request: dict, db: Session = Depends(get_db)):
+    """Complete job and process R20 platform fee"""
+    fixer_id = request.get('fixer_id')
+    if not fixer_id:
+        raise HTTPException(status_code=400, detail="fixer_id is required")
+    
+    completion_data = request.get('completion_data', {})
+    success, message = job_workflow_service.complete_job(db, job_id, fixer_id, completion_data)
+    
+    if success:
+        return {"success": True, "message": message}
+    else:
+        raise HTTPException(status_code=400, detail=message)
+
+@api_router.get("/jobs/{job_id}/workflow-status")
+async def get_job_workflow_status(job_id: str, db: Session = Depends(get_db)):
+    """Get complete workflow status for a job"""
+    status = job_workflow_service.get_job_workflow_status(db, job_id)
+    if not status:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return status
+
+@api_router.post("/fixer/{fixer_id}/location")
+async def update_fixer_location(fixer_id: str, request: dict, db: Session = Depends(get_db)):
+    """Update fixer location for live tracking"""
+    latitude = request.get('latitude')
+    longitude = request.get('longitude')
+    
+    if latitude is None or longitude is None:
+        raise HTTPException(status_code=400, detail="latitude and longitude are required")
+    
+    success = job_workflow_service.update_fixer_location(db, fixer_id, float(latitude), float(longitude))
+    
+    if success:
+        return {"success": True, "message": "Location updated successfully"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to update location")
+
+@api_router.get("/fixer/{fixer_id}/eligible-jobs")
+async def get_eligible_jobs(fixer_id: str, db: Session = Depends(get_db)):
+    """Get jobs available for fixer to accept"""
+    # Get fixer details
+    fixer = db.query(Fixer).filter(Fixer.id == fixer_id).first()
+    if not fixer:
+        raise HTTPException(status_code=404, detail="Fixer not found")
+    
+    # Get jobs in notification stage
+    eligible_jobs = db.query(Job).filter(
+        Job.status == "notifying_fixers",
+        Job.assignment_timeout > datetime.utcnow()
+    ).all()
+    
+    # Filter jobs where this fixer is eligible
+    available_jobs = []
+    for job in eligible_jobs:
+        if job.eligible_fixers:
+            eligible_fixer_ids = json.loads(job.eligible_fixers)
+            if fixer_id in eligible_fixer_ids:
+                available_jobs.append({
+                    "job_id": job.id,
+                    "service": job.service,
+                    "description": job.description,
+                    "location": job.location,
+                    "estimated_price": job.estimated_price,
+                    "assignment_timeout": job.assignment_timeout.isoformat(),
+                    "priority_level": job.priority_level,
+                    "is_emergency": job.is_emergency_escalated
+                })
+    
+    return {"available_jobs": available_jobs}
+
+@api_router.post("/admin/fixer/{fixer_id}/override")
+async def admin_override_fixer_restriction(fixer_id: str, request: dict, db: Session = Depends(get_db)):
+    """Admin override for fixer restrictions"""
+    admin_id = request.get('admin_id')
+    reason = request.get('reason', '')
+    
+    if not admin_id:
+        raise HTTPException(status_code=400, detail="admin_id is required")
+    
+    # Verify admin permissions (you might want to add proper auth check here)
+    admin = db.query(User).filter(User.id == admin_id, User.role.in_(['admin', 'super_admin'])).first()
+    if not admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    success = job_workflow_service.admin_override_fixer_restriction(db, fixer_id, admin_id, reason)
+    
+    if success:
+        return {"success": True, "message": "Override applied successfully"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to apply override")
+
+@api_router.get("/fixer/{fixer_id}/behavior-analysis")
+async def get_fixer_behavior_analysis(fixer_id: str, db: Session = Depends(get_db)):
+    """Get AI behavior analysis for fixer"""
+    from models import FixerBehaviorAnalysis
+    
+    analysis = db.query(FixerBehaviorAnalysis).filter(
+        FixerBehaviorAnalysis.fixer_id == fixer_id
+    ).first()
+    
+    if not analysis:
+        raise HTTPException(status_code=404, detail="No behavior analysis found")
+    
+    return {
+        "fixer_id": analysis.fixer_id,
+        "analysis_period": analysis.analysis_period,
+        "completion_rate": analysis.completion_rate,
+        "cancellation_rate": analysis.cancellation_rate,
+        "reliability_score": analysis.reliability_score,
+        "risk_level": analysis.risk_level,
+        "behavior_flags": json.loads(analysis.behavior_flags) if analysis.behavior_flags else [],
+        "ai_recommendations": json.loads(analysis.ai_recommendations) if analysis.ai_recommendations else [],
+        "admin_attention_required": analysis.admin_attention_required,
+        "last_analyzed_at": analysis.last_analyzed_at.isoformat()
+    }
+
 # Review endpoints
 @api_router.post("/reviews", response_model=ReviewResponse)
 async def create_review(review: ReviewCreate, db: Session = Depends(get_db)):
