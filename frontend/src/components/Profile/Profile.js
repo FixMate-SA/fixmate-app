@@ -12,6 +12,13 @@ const Profile = () => {
   const [fixer, setFixer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('profile');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    address: ''
+  });
 
   useEffect(() => {
     // Check if user is also a fixer
