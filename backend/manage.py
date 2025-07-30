@@ -491,9 +491,51 @@ def check_db():
                 print(f"⚠️  Missing tables: {', '.join(missing_tables)}")
                 print("💡 Run 'python backend/manage.py migrate' to create missing tables")
             
+            # Check for password issues
+            result = conn.execute(text("SELECT COUNT(*) FROM users WHERE password_hash IS NOT NULL AND password_hash != '' AND is_password_set = FALSE"))
+            broken_passwords = result.fetchone()[0]
+            
+            if broken_passwords > 0:
+                print(f"⚠️  Found {broken_passwords} users with password_hash but is_password_set=False")
+                print("💡 Run 'python backend/manage.py fix-passwords' to fix this issue")
+            
         return 0
     except Exception as e:
         print(f"❌ Database connection failed: {str(e)}")
+        return 1
+
+def fix_passwords():
+    """Fix users who have password_hash but is_password_set is False"""
+    try:
+        from database import engine
+        from sqlalchemy import text
+        from sqlalchemy.orm import sessionmaker
+        
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        db = SessionLocal()
+        
+        # Fix users with password issues
+        result = db.execute(text('UPDATE users SET is_password_set = TRUE WHERE password_hash IS NOT NULL AND password_hash != \'\' AND is_password_set = FALSE'))
+        updated_count = result.rowcount
+        db.commit()
+        
+        print(f"✅ Fixed {updated_count} users with password hash issues")
+        
+        # Show fixed users
+        if updated_count > 0:
+            result = db.execute(text('SELECT phone, first_name, last_name FROM users WHERE password_hash IS NOT NULL AND password_hash != \'\''))
+            users = result.fetchall()
+            
+            print("Users who can now login:")
+            for user in users:
+                phone_display = user[0].replace('whatsapp:', '') if user[0].startswith('whatsapp:') else user[0]
+                print(f"  📱 {phone_display} | {user[1]} {user[2]}")
+        
+        db.close()
+        return 0
+        
+    except Exception as e:
+        print(f"❌ Error fixing passwords: {str(e)}")
         return 1
 
 def show_help():
