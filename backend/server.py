@@ -1508,12 +1508,17 @@ async def whatsapp_business_webhook_verify(hub_challenge: str = None):
 # Facebook/WhatsApp Business API expects the webhook at /whatsapp not /api/whatsapp
 
 @app.get("/whatsapp")
-async def whatsapp_webhook_verify(hub_mode: str = None, hub_challenge: str = None, hub_verify_token: str = None):
+async def whatsapp_webhook_verify(request: Request):
     """
     Verify WhatsApp webhook subscription from Facebook.
     Facebook sends GET request with verification parameters.
     """
     try:
+        # Get query parameters from request
+        hub_mode = request.query_params.get('hub.mode')
+        hub_challenge = request.query_params.get('hub.challenge')
+        hub_verify_token = request.query_params.get('hub.verify_token')
+        
         print(f"🔐 WhatsApp webhook verification request: mode={hub_mode}, challenge={hub_challenge}")
         
         # For webhook verification, return the challenge
