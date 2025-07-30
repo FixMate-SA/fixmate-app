@@ -119,9 +119,29 @@ const Profile = () => {
           
           <div className="flex items-center space-x-4">
             <LanguageSelector />
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              {t('editProfile', 'Edit Profile')}
-            </button>
+            {isEditing ? (
+              <div className="flex space-x-2">
+                <button 
+                  onClick={handleSaveProfile}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  {t('saveChanges', 'Save Changes')}
+                </button>
+                <button 
+                  onClick={handleEditToggle}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                >
+                  {t('cancel', 'Cancel')}
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={handleEditToggle}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                {t('editProfile', 'Edit Profile')}
+              </button>
+            )}
           </div>
         </div>
       </div>
