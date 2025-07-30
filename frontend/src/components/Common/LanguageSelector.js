@@ -3,12 +3,12 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { getLanguageNames } from '../../locales/languages';
 
 const LanguageSelector = ({ className = '' }) => {
-  const { currentLanguage, setLanguage } = useLanguage();
+  const { currentLanguage, changeLanguage } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const languages = getLanguageNames();
 
   const handleLanguageSelect = (languageCode) => {
-    setLanguage(languageCode);
+    changeLanguage(languageCode);
     setIsOpen(false);
   };
 
