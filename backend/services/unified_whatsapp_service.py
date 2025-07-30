@@ -132,12 +132,17 @@ class UnifiedWhatsAppService:
         if existing_user:
             return existing_user
         
+        # Generate unique placeholder ID number using phone number
+        import hashlib
+        phone_hash = hashlib.md5(phone_number.encode()).hexdigest()[:10]
+        unique_id_number = f"WA{phone_hash}"  # WhatsApp prefix + unique hash
+        
         # Create new user with WhatsApp defaults
         new_user = User(
             phone=phone_number,
             first_name="WhatsApp",
             last_name="User", 
-            id_number="0000000000000",  # Placeholder - will be updated through conversation
+            id_number=unique_id_number,  # Unique placeholder based on phone
             town="Unknown",
             role="client",
             whatsapp_active=True,
