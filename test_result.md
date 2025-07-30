@@ -914,17 +914,29 @@ frontend:
         agent: "main"
         comment: "Enhanced footer with prominent legal information block showing company name, registration number, and working navigation links to Terms and Privacy pages. Footer now includes proper company branding and professional legal compliance messaging."
 
-  - task: "Legal Pages Routing Integration"
+  - task: "Business Compliance Section Navigation Visibility"
+    implemented: true
+    working: false
+    file: "frontend/src/components/Layout/Navigation.js, frontend/.env"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "CRITICAL DEPLOYMENT ISSUE IDENTIFIED: Business Compliance is implemented in Navigation.js (lines 51-57) but missing from navigation menu in Heroku deployment. Root cause: Frontend environment variable REACT_APP_BACKEND_URL points to wrong backend URL (https://96d268c8-150d-4318-ac91-096ea3aedd44.preview.emergentagent.com) instead of Heroku backend (https://fixmate-sa-app-a448c751e1d2.herokuapp.com). This causes authentication state and permission checks to fail, hiding Business Compliance from navigation menu. Business Compliance page is accessible via direct URL and fully functional."
+
+  - task: "Business Compliance Page Functionality"
     implemented: true
     working: true
-    file: "/app/frontend/src/App.js"
+    file: "frontend/src/components/Business/BusinessCompliance.js"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
       - working: true
-        agent: "main"
-        comment: "Added proper routing for /terms and /privacy pages as public routes (accessible without authentication). Routes integrated into main App.js with proper imports and navigation flow."
+        agent: "testing"
+        comment: "✅ Business Compliance page fully functional when accessed directly via /business-compliance URL. All 6 expected compliance categories present and working: Company Registration, SARS & Tax Compliance, Labour Law Compliance, B-BBEE Certification, Licensing & Permits, Financial Compliance. Page includes proper tabs (Services, New Request, My Requests, Checklists), professional UI design, and complete functionality. Only issue is navigation menu visibility due to environment configuration."
 
   - task: "Enhanced Navigation with Learning and SMS Portal tabs"
     implemented: true
