@@ -204,6 +204,22 @@ Please log in to your Fixer Portal to accept this job.
         
         return self._get_help_message(user)
     
+    def _handle_location_text(self, user: User, message: str, db: Session) -> str:
+        """Handle location provided as text."""
+        location_text = message.strip()
+        
+        user_name = user.first_name if user.first_name != "Unknown" else ""
+        greeting = f"Thanks, {user_name}! " if user_name else "Thanks! "
+        
+        response = f"{greeting}I've got your location. Lastly, what's the best contact number for the fixer to use?"
+        
+        self.set_user_state(user, self.states['AWAITING_CONTACT_NUMBER'], {
+            'area': location_text,
+            'location_text': location_text
+        }, db)
+        
+        return response
+
     def _handle_location_message(self, user: User, location_data: Dict[str, Any], db: Session) -> str:
         """Handle location sharing."""
         latitude = location_data.get('latitude')
