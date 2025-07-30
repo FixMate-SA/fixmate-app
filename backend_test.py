@@ -3039,6 +3039,13 @@ class FixMateAPITester:
             ("WhatsApp Send Message", self.test_whatsapp_send_message),
             ("WhatsApp Job Notification", self.test_whatsapp_send_job_notification),
             ("WhatsApp Rating Request", self.test_whatsapp_send_rating_request),
+            # NEW: WhatsApp Webhook Tests (No /api prefix) - CRITICAL FOR 405 ERROR FIX
+            ("WhatsApp GET /whatsapp - Facebook Verification", self.test_whatsapp_webhook_get_facebook_verification),
+            ("WhatsApp GET /whatsapp - No Params", self.test_whatsapp_webhook_get_without_params),
+            ("WhatsApp POST /whatsapp - Facebook Message", self.test_whatsapp_webhook_post_facebook_message),
+            ("WhatsApp POST /whatsapp - Unified System", self.test_whatsapp_webhook_post_unified_system),
+            ("WhatsApp POST /whatsapp - Conversation Flow", self.test_whatsapp_webhook_post_conversation_flow),
+            ("WhatsApp 405 Error Resolution", self.test_whatsapp_webhook_405_error_resolution),
             # PayFast Integration Tests
             ("PayFast Create Payment", self.test_payfast_create_payment),
             ("PayFast Payment Status", self.test_payfast_payment_status),
