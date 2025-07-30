@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 import bcrypt
+import json
 
 Base = declarative_base()
 
@@ -12,10 +13,10 @@ class User(Base):
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     phone = Column(String, unique=True, nullable=False, index=True)
-    first_name = Column(String, nullable=False)  # NEW: First name for personalized welcome
-    last_name = Column(String, nullable=False)   # NEW: Last name for full identification
-    id_number = Column(String, unique=True, nullable=False, index=True)  # NEW: SA ID number
-    town = Column(String, nullable=False)        # NEW: Town/Local municipality
+    first_name = Column(String, nullable=False)  # First name for personalized welcome
+    last_name = Column(String, nullable=False)   # Last name for full identification
+    id_number = Column(String, unique=True, nullable=False, index=True)  # SA ID number
+    town = Column(String, nullable=False)        # Town/Local municipality
     email = Column(String, nullable=True)
     address = Column(Text, nullable=True)        # Detailed address (optional)
     password_hash = Column(String, nullable=True)
@@ -24,9 +25,11 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     last_login = Column(DateTime, nullable=True)
     
-    # WhatsApp conversation state management
+    # WhatsApp conversation state management - UNIFIED FROM run.py
     conversation_state = Column(String, nullable=True)  # Current conversation state
     service_request_cache = Column(Text, nullable=True)  # Cached service request data (JSON)
+    whatsapp_active = Column(Boolean, default=False)    # Whether user accessed via WhatsApp
+    last_whatsapp_message = Column(DateTime, nullable=True)  # Last WhatsApp interaction
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -34,12 +37,13 @@ class User(Base):
     # Relationships
     jobs = relationship("Job", back_populates="user")
     reviews = relationship("Review", back_populates="user")
+    fixer_payments = relationship("FixerPayment", back_populates="user")
     compliance_requests = relationship("BusinessComplianceRequest", back_populates="user")
     emergency_alerts = relationship("EmergencyAlert", back_populates="user")
     fixer_applications = relationship("FixerApplication", back_populates="user")
     
     def set_password(self, password):
-        """Set password hash"""
+        """Set password hash using bcrypt"""
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         self.is_password_set = True
     
@@ -48,6 +52,48 @@ class User(Base):
         if not self.password_hash:
             return False
         return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
+    
+    # WhatsApp conversation management methods - FROM run.py integration
+    def set_conversation_cache(self, data):
+        """Set conversation cache data"""
+        self.service_request_cache = json.dumps(data) if data else None
+    
+    def get_conversation_cache(self):
+        """Get conversation cache data"""
+        if self.service_request_cache:
+            try:
+                return json.loads(self.service_request_cache)
+            except json.JSONDecodeError:
+                return {}
+        return {}
+    
+    def clear_conversation_cache(self):
+        """Clear conversation cache and state"""
+        self.service_request_cache = None
+        self.conversation_state = None
+    
+    def update_whatsapp_activity(self):
+        """Update WhatsApp activity timestamp"""
+        self.whatsapp_active = True
+        self.last_whatsapp_message = datetime.utcnow()
+    
+    @property
+    def full_name(self):
+        """Get full name"""
+        return f"{self.first_name} {self.last_name}".strip()
+    
+    @property 
+    def display_name(self):
+        """Get display name based on role and context"""
+        if self.role == 'admin' or self.role == 'super_admin':
+            return f"Admin {self.first_name}"
+        elif self.role == 'fixer':
+            return f"Fixer {self.first_name}"
+        else:
+            return self.first_name
+    
+    def __repr__(self):
+        return f'<User {self.phone}>'
     
     @property
     def full_name(self):
