@@ -3558,8 +3558,19 @@ class FixMateAPITester:
     def run_all_tests(self):
         """Run all tests in sequence"""
         print("=" * 80)
-        print("🚀 FIXMATE-SA BACKEND API COMPREHENSIVE TESTING - WHATSAPP BUSINESS & COMPLIANCE")
+        print("🚀 FIXMATE-SA BACKEND API COMPREHENSIVE TESTING - AI SMART MATCHING SYSTEM")
         print("=" * 80)
+        print()
+        
+        # NEW: AI-Powered Smart Matching System Tests (PRIORITY)
+        print("🤖 AI-POWERED SMART MATCHING SYSTEM TESTS")
+        print("-" * 50)
+        self.test_smart_match_for_job()
+        self.test_job_match_insights()
+        self.test_fixer_match_history()
+        self.test_fixer_match_test()
+        self.test_admin_matching_performance()
+        self.test_admin_improve_matching()
         print()
         
         # CRITICAL TEST - Authentication Flow for Different User Roles (as requested)
