@@ -326,9 +326,7 @@ Please log in to your Fixer Portal to accept this job.
         
         db.commit()
         
-        response = f"""Thanks, {user.first_name}! To help us find the nearest fixer, please share your location.
-
-Tap the paperclip icon 📎, then choose 'Location'."""
+        response = f'Thanks, {user.first_name}. To help us find the nearest fixer, please share your location address: "Town/Village/township name and house number."'
         
         self.set_user_state(user, self.states['AWAITING_LOCATION'], db=db)
         return response
