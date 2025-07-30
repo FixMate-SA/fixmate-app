@@ -209,12 +209,44 @@ const Profile = () => {
                     {t('personalInfo', 'Personal Information')}
                   </h3>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        {t('name', 'Name')}
-                      </label>
-                      <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-md">
-                        {user?.name}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          {t('firstName', 'First Name')}
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name="first_name"
+                            value={editData.first_name}
+                            onChange={handleInputChange}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            required
+                          />
+                        ) : (
+                          <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                            {user?.first_name || t('notProvided', 'Not provided')}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          {t('lastName', 'Last Name')}
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name="last_name"
+                            value={editData.last_name}
+                            onChange={handleInputChange}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            required
+                          />
+                        ) : (
+                          <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                            {user?.last_name || t('notProvided', 'Not provided')}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div>
@@ -227,11 +259,55 @@ const Profile = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700">
-                        {t('email', 'Email')}
+                        {t('idNumber', 'ID Number')}
                       </label>
                       <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-md">
-                        {user?.email || t('notProvided', 'Not provided')}
+                        {user?.id_number || t('notProvided', 'Not provided')}
                       </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        {t('town', 'Town/Municipality')}
+                      </label>
+                      <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                        {user?.town || t('notProvided', 'Not provided')}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        {t('email', 'Email')}
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="email"
+                          name="email"
+                          value={editData.email}
+                          onChange={handleInputChange}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      ) : (
+                        <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                          {user?.email || t('notProvided', 'Not provided')}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        {t('address', 'Address')}
+                      </label>
+                      {isEditing ? (
+                        <textarea
+                          name="address"
+                          value={editData.address}
+                          onChange={handleInputChange}
+                          rows={3}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      ) : (
+                        <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                          {user?.address || t('notProvided', 'Not provided')}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
