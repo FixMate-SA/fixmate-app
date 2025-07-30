@@ -101,11 +101,13 @@ const Profile = () => {
           <div className="flex items-center space-x-4">
             <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
               <span className="text-white text-2xl font-bold">
-                {user?.name?.charAt(0)?.toUpperCase()}
+                {user?.first_name?.charAt(0)?.toUpperCase() || user?.name?.charAt(0)?.toUpperCase()}
               </span>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{user?.name}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {user?.full_name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.name}
+              </h1>
               <p className="text-gray-600">{user?.phone}</p>
               {fixer && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
