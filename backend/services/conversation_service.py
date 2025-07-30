@@ -350,19 +350,13 @@ Please log in to your Fixer Portal to accept this job.
         return response
 
     def _handle_name_message(self, user: User, message: str, db: Session) -> str:
-        """Handle name message."""
+        """Handle name message - ADAPTED FROM run.py."""
         # Update user name
-        names = message.strip().split()
-        if len(names) >= 2:
-            user.first_name = names[0]
-            user.last_name = " ".join(names[1:])
-        else:
-            user.first_name = names[0] if names else "Unknown"
-            user.last_name = "User"
-        
+        user.first_name = message.strip()
         db.commit()
         
-        response = f'Thanks, {user.first_name}. To help us find the nearest fixer, please share your location address: "Town/Village/township name and house number."'
+        first_name = user.first_name.split(' ')[0] if user.first_name else "User"
+        response = f"Thanks, {first_name}. To help us find the nearest fixer, please share your location address: \"Town/Village/township name and house number.\""
         
         self.set_user_state(user, self.states['AWAITING_LOCATION'], db=db)
         return response
