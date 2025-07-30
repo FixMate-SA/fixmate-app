@@ -3347,6 +3347,214 @@ class FixMateAPITester:
             self.log_result("Workflow Database Integration", False, f"Request error: {str(e)}")
         return False
 
+    # AI-Powered Smart Matching System Tests
+    def test_smart_match_for_job(self):
+        """Test AI-powered smart matching for jobs"""
+        if 'job_id' not in self.test_data:
+            self.log_result("Smart Match for Job", False, "No job ID available from previous test")
+            return False
+        
+        try:
+            # Test smart matching endpoint
+            match_request = {
+                'limit': 5,
+                'auto_notify': False
+            }
+            
+            response = self.session.post(f"{API_BASE}/jobs/{self.test_data['job_id']}/smart-match", json=match_request)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'matches' in data:
+                    matches = data['matches']
+                    self.log_result("Smart Match for Job", True, f"Found {len(matches)} smart matches for job")
+                    
+                    # Store first match for further testing
+                    if matches:
+                        self.test_data['smart_match'] = matches[0]
+                        match_score = matches[0].get('match_score', 0)
+                        self.log_result("Smart Match Quality", True, f"Best match score: {match_score}/110 ({matches[0].get('match_percentage', 0)}%)")
+                    
+                    return True
+                else:
+                    self.log_result("Smart Match for Job", False, "Invalid response format", response)
+            else:
+                self.log_result("Smart Match for Job", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Smart Match for Job", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_job_match_insights(self):
+        """Test job matching insights generation"""
+        if 'job_id' not in self.test_data:
+            self.log_result("Job Match Insights", False, "No job ID available from previous test")
+            return False
+        
+        try:
+            response = self.session.get(f"{API_BASE}/jobs/{self.test_data['job_id']}/match-insights")
+            if response.status_code == 200:
+                data = response.json()
+                if 'insights' in data and 'job_id' in data:
+                    insights = data['insights']
+                    self.log_result("Job Match Insights", True, f"Generated insights: {insights.get('status', 'unknown')}")
+                    
+                    # Check for key insight metrics
+                    if 'total_eligible_fixers' in insights:
+                        eligible_count = insights['total_eligible_fixers']
+                        self.log_result("Eligible Fixers Count", True, f"Found {eligible_count} eligible fixers")
+                    
+                    return True
+                else:
+                    self.log_result("Job Match Insights", False, "Invalid response format", response)
+            else:
+                self.log_result("Job Match Insights", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Job Match Insights", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_fixer_match_history(self):
+        """Test fixer matching performance history"""
+        if 'fixer_id' not in self.test_data:
+            self.log_result("Fixer Match History", False, "No fixer ID available from previous test")
+            return False
+        
+        try:
+            response = self.session.get(f"{API_BASE}/fixer/{self.test_data['fixer_id']}/match-history?days=30")
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'match_history' in data:
+                    history = data['match_history']
+                    notifications = history.get('total_notifications', 0)
+                    acceptance_rate = history.get('acceptance_rate', 0)
+                    self.log_result("Fixer Match History", True, f"History: {notifications} notifications, {acceptance_rate}% acceptance rate")
+                    return True
+                else:
+                    self.log_result("Fixer Match History", False, "Invalid response format", response)
+            else:
+                self.log_result("Fixer Match History", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Fixer Match History", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_fixer_match_test(self):
+        """Test fixer matching against hypothetical job"""
+        if 'fixer_id' not in self.test_data:
+            self.log_result("Fixer Match Test", False, "No fixer ID available from previous test")
+            return False
+        
+        try:
+            # Create mock job data for testing
+            mock_job = {
+                'service': 'plumbing',
+                'description': 'Fix leaking bathroom tap urgently',
+                'location': 'Cape Town CBD',
+                'latitude': -33.9249,
+                'longitude': 18.4241,
+                'estimated_price': 300.0,
+                'priority_level': 'high',
+                'client_language': 'english'
+            }
+            
+            response = self.session.post(f"{API_BASE}/fixer/{self.test_data['fixer_id']}/match-test", json=mock_job)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'match_result' in data:
+                    match_result = data['match_result']
+                    score = match_result.get('total_score', 0)
+                    recommendation = match_result.get('recommendation', 'unknown')
+                    self.log_result("Fixer Match Test", True, f"Mock job match: {score}/110 ({recommendation})")
+                    return True
+                else:
+                    self.log_result("Fixer Match Test", False, "Invalid response format", response)
+            else:
+                self.log_result("Fixer Match Test", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Fixer Match Test", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_admin_matching_performance(self):
+        """Test admin matching performance analytics (requires admin auth)"""
+        try:
+            # First login as admin
+            admin_login = {
+                "phone": "+27821234567",
+                "password": "admin123"
+            }
+            
+            login_response = self.session.post(f"{API_BASE}/auth/login", json=admin_login)
+            if login_response.status_code != 200:
+                self.log_result("Admin Matching Performance", False, "Failed to login as admin", login_response)
+                return False
+            
+            admin_data = login_response.json()
+            admin_token = admin_data.get('token')
+            
+            if not admin_token:
+                self.log_result("Admin Matching Performance", False, "No admin token received")
+                return False
+            
+            # Test matching performance endpoint with admin token
+            headers = {'Authorization': f'Bearer {admin_token}'}
+            response = self.session.get(f"{API_BASE}/admin/matching-performance?days=7", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'performance_analysis' in data:
+                    performance = data['performance_analysis']
+                    assignment_rate = performance.get('assignment_rate', 0)
+                    completion_rate = performance.get('completion_rate', 0)
+                    self.log_result("Admin Matching Performance", True, f"Performance: {assignment_rate}% assignment, {completion_rate}% completion")
+                    return True
+                else:
+                    self.log_result("Admin Matching Performance", False, "Invalid response format", response)
+            else:
+                self.log_result("Admin Matching Performance", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Admin Matching Performance", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_admin_improve_matching(self):
+        """Test admin matching improvement suggestions (requires admin auth)"""
+        try:
+            # First login as admin
+            admin_login = {
+                "phone": "+27821234567",
+                "password": "admin123"
+            }
+            
+            login_response = self.session.post(f"{API_BASE}/auth/login", json=admin_login)
+            if login_response.status_code != 200:
+                self.log_result("Admin Improve Matching", False, "Failed to login as admin", login_response)
+                return False
+            
+            admin_data = login_response.json()
+            admin_token = admin_data.get('token')
+            
+            if not admin_token:
+                self.log_result("Admin Improve Matching", False, "No admin token received")
+                return False
+            
+            # Test improvement suggestions endpoint
+            headers = {'Authorization': f'Bearer {admin_token}'}
+            improvement_request = {
+                'analysis_days': 14
+            }
+            
+            response = self.session.post(f"{API_BASE}/admin/improve-matching", json=improvement_request, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'ai_recommendations' in data:
+                    recommendations = data['ai_recommendations']
+                    self.log_result("Admin Improve Matching", True, f"AI recommendations generated: {len(str(recommendations))} chars")
+                    return True
+                else:
+                    self.log_result("Admin Improve Matching", False, "Invalid response format", response)
+            else:
+                self.log_result("Admin Improve Matching", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Admin Improve Matching", False, f"Request error: {str(e)}")
+        return False
+
     def run_all_tests(self):
         """Run all tests in sequence"""
         print("=" * 80)
