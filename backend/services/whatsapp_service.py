@@ -17,6 +17,7 @@ load_dotenv()
 DIALOG_360_API_KEY = os.getenv("DIALOG_360_API_KEY")
 DIALOG_360_URL = "https://waba-v2.360dialog.io"
 DIALOG_360_MESSAGES_URL = f"{DIALOG_360_URL}/messages"
+PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
 
 # Official FixMate-SA WhatsApp Business Number
 FIXMATE_WHATSAPP_BUSINESS_NUMBER = "27754466571"  # Official business number without +
