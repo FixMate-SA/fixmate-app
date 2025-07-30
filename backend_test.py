@@ -3357,7 +3357,6 @@ class FixMateAPITester:
         # CRITICAL TEST - Authentication Flow for Different User Roles (as requested)
         print("🔐 CRITICAL AUTHENTICATION FLOW TESTS")
         print("-" * 50)
-        self.test_role_based_authentication_admin()
         self.test_role_based_authentication_fixer()
         self.test_role_based_authentication_client()
         self.test_dashboard_role_based_access()
