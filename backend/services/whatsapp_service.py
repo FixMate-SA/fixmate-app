@@ -43,67 +43,67 @@ class WhatsAppService:
     
     def send_whatsapp_message(self, to_number: str, message_body: str, media_url: str = None) -> bool:
         """
-        Send WhatsApp message via 360dialog API.
+        Send WhatsApp message via 360dialog API using the proven working implementation.
         """
+        print("--- Attempting to send WhatsApp message ---")
+        
         if not self.api_key:
-            print("WhatsApp service not configured. Please set DIALOG_360_API_KEY.")
+            print("❌ API key not set.")
             print(f"MOCK: Would send WhatsApp message to {to_number}: {message_body}")
             return True  # Return True for development
         
+        headers = {
+            "D360-API-KEY": self.api_key,
+            "Content-Type": "application/json"
+        }
+
+        # Format recipient number (remove whatsapp: prefix and +)
+        recipient_number = to_number.replace("whatsapp:+", "").replace("whatsapp:", "").replace("+", "").strip()
+
+        payload = {
+            "messaging_product": "whatsapp",
+            "recipient_type": "individual",
+            "to": recipient_number
+        }
+
+        if message_body:
+            payload["type"] = "text"
+            payload["text"] = {"body": message_body}
+        elif media_url:
+            payload["type"] = "image"
+            payload["image"] = {"link": media_url}
+        else:
+            print("❌ ERROR: No valid content provided.")
+            return False
+
+        print(f"🔁 Payload: {json.dumps(payload)}")
+
         try:
-            # Format phone number (remove whatsapp: prefix if present)
-            if to_number.startswith("whatsapp:"):
-                to_number = to_number.replace("whatsapp:", "")
-            
-            # Remove + prefix for 360dialog
-            if to_number.startswith("+"):
-                to_number = to_number[1:]
-            
-            headers = {
-                'D360-API-KEY': self.api_key,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            }
-            
-            # Create message payload (Dialog360 format)
-            payload = {
-                "to": to_number,
-                "type": "text",
-                "text": {
-                    "body": message_body
-                }
-            }
-            
-            # Add media if provided
-            if media_url:
-                payload["type"] = "image"
-                payload["image"] = {
-                    "link": media_url,
-                    "caption": message_body
-                }
-                del payload["text"]
-            
-            response = requests.post(
-                self.messages_url,
-                headers=headers,
-                json=payload,
-                timeout=30
-            )
-            
+            response = requests.post(self.messages_url, headers=headers, json=payload)
+            print(f"✅ HTTP Status Code: {response.status_code}")
+            print(f"🔽 Response: {response.text}")
+
             if response.status_code == 200:
-                print(f"WhatsApp message sent successfully to {to_number}")
+                data = response.json()
+                message_id = data.get("messages", [{}])[0].get("id", "N/A")
+                print(f"✅ Message sent! ID: {message_id}")
                 return True
             elif response.status_code == 401:
                 print(f"WhatsApp API authentication failed. Using mock mode.")
                 print(f"MOCK: Would send WhatsApp message to {to_number}: {message_body}")
                 return True  # Return True for development to allow testing conversation flow
             else:
-                print(f"Failed to send WhatsApp message: {response.status_code} - {response.text}")
+                print(f"❌ ERROR sending WhatsApp message: {response.status_code} - {response.text}")
                 print(f"MOCK: Would send WhatsApp message to {to_number}: {message_body}")
                 return True  # Return True for development
-                
-        except Exception as e:
-            print(f"Error sending WhatsApp message: {e}")
+
+        except requests.exceptions.RequestException as e:
+            print(f"❌ ERROR sending WhatsApp message: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    print("🔽 Error Details:", e.response.json())
+                except:
+                    pass
             print(f"MOCK: Would send WhatsApp message to {to_number}: {message_body}")
             return True  # Return True for development
     
