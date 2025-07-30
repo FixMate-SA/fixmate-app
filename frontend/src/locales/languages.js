@@ -122,7 +122,7 @@ export const languages = {
       expired: 'Expired',
       jobAcceptedSuccess: 'Job accepted successfully! You can now start working on this job.',
       jobAcceptError: 'Failed to accept job. It may have been taken by another fixer.',
-      jobAcceptErrorGeneric: 'An error occurred while accepting the job. Please try again.'
+      jobAcceptErrorGeneric: 'An error occurred while accepting the job. Please try again.',
       
       // Authentication
       phoneNumber: 'Phone Number',
