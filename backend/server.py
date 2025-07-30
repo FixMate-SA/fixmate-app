@@ -374,17 +374,41 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     Enhanced login with password-based authentication and role detection
     """
     try:
-        # Format phone number to match database format
-        phone = request.phone
-        if phone.startswith('0') and len(phone) == 10:
-            phone = f"whatsapp:+27{phone[1:]}"
-        elif phone.startswith('+') and len(phone) == 12:
-            phone = f"whatsapp:{phone}"
-        elif not phone.startswith("whatsapp:"):
-            phone = f"whatsapp:{phone}"
+        # Format phone number and try multiple formats to find user
+        original_phone = request.phone
         
-        # Check if user exists
-        user = db.query(User).filter(User.phone == phone).first()
+        # Generate possible phone number formats
+        phone_formats = []
+        
+        # Clean the input phone
+        clean_phone = original_phone.replace('whatsapp:', '').replace(' ', '').replace('-', '')
+        
+        # Format 1: Standard +27 format (CLI created users)
+        if clean_phone.startswith('0') and len(clean_phone) == 10:
+            standard_format = f"+27{clean_phone[1:]}"
+            phone_formats.append(standard_format)
+            phone_formats.append(f"whatsapp:{standard_format}")
+        elif clean_phone.startswith('+27') and len(clean_phone) == 12:
+            phone_formats.append(clean_phone)
+            phone_formats.append(f"whatsapp:{clean_phone}")
+        elif clean_phone.startswith('27') and len(clean_phone) == 11:
+            standard_format = f"+{clean_phone}"
+            phone_formats.append(standard_format)
+            phone_formats.append(f"whatsapp:{standard_format}")
+        else:
+            # Add original formats
+            phone_formats.append(clean_phone)
+            phone_formats.append(f"whatsapp:{clean_phone}")
+            if not clean_phone.startswith('whatsapp:'):
+                phone_formats.append(f"whatsapp:{original_phone}")
+        
+        # Try to find user with any of the phone formats
+        user = None
+        for phone_format in phone_formats:
+            user = db.query(User).filter(User.phone == phone_format).first()
+            if user:
+                print(f"✅ Found user with phone format: {phone_format}")
+                break
         
         if not user:
             raise HTTPException(status_code=404, detail="Account not found. Please sign up first.")
