@@ -25,6 +25,7 @@ import BusinessCompliance from "./components/Business/BusinessCompliance";
 import EnhancedJobCreation from "./components/Workflow/EnhancedJobCreation";
 import FixerJobBoard from "./components/Workflow/FixerJobBoard";
 import TermsAcceptance from "./components/Workflow/TermsAcceptance";
+import SmartMatchingDashboard from "./components/Admin/SmartMatchingDashboard";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
