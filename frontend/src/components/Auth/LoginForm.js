@@ -250,7 +250,7 @@ const LoginForm = () => {
             
             <div>
               <label htmlFor="loginPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
+                {t('password', 'Password')}
               </label>
               <input
                 id="loginPassword"
@@ -260,7 +260,7 @@ const LoginForm = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Enter your password"
+                placeholder={t('enterPassword', 'Enter your password')}
               />
             </div>
           </div>
