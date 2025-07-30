@@ -266,6 +266,16 @@ function App() {
                 }
               />
               <Route
+                path="/admin/smart-matching"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <SmartMatchingDashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/terms"
                 element={<TermsOfService />}
               />
