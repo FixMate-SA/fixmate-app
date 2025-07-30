@@ -3678,6 +3678,13 @@ class FixMateAPITester:
             # Enhanced AI Features Tests
             ("WhatsApp Business Insights", self.test_whatsapp_insights),
             ("WhatsApp Generate Insight", self.test_whatsapp_generate_insight),
+            # AI-Powered Smart Matching System Tests
+            ("Smart Match for Job", self.test_smart_match_for_job),
+            ("Job Match Insights", self.test_job_match_insights),
+            ("Fixer Match History", self.test_fixer_match_history),
+            ("Fixer Match Test", self.test_fixer_match_test),
+            ("Admin Matching Performance", self.test_admin_matching_performance),
+            ("Admin Improve Matching", self.test_admin_improve_matching),
             # Error Handling Tests
             ("WhatsApp Send Message - Missing Params", self.test_whatsapp_send_message_missing_params),
             ("PayFast Create Payment - Invalid Job", self.test_payfast_create_payment_invalid_job),
