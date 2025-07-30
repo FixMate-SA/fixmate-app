@@ -176,6 +176,11 @@ class Fixer(Base):
     reviews = relationship("Review", back_populates="fixer")
     payments = relationship("FixerPayment", back_populates="fixer")
     verification = relationship("FixerVerification", back_populates="fixer", uselist=False)
+    # New workflow relationships
+    availability = relationship("FixerAvailability", back_populates="fixer", uselist=False)
+    behavior_analysis = relationship("FixerBehaviorAnalysis", back_populates="fixer")
+    assignment_history = relationship("JobAssignmentHistory", back_populates="fixer")
+    notifications = relationship("JobNotification", back_populates="fixer")
 
 # New models for enhanced job workflow system
 
