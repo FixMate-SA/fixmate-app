@@ -1132,26 +1132,33 @@ async def test_whatsapp_api():
             "messages_url": whatsapp_service.messages_url
         }
 
-# Import the complete WhatsApp integration
-from services.fixmate_whatsapp_integration import fixmate_whatsapp_integration
+# Import the unified WhatsApp service
+from services.unified_whatsapp_service import unified_whatsapp_service
 
-# WhatsApp webhook endpoints - COMPLETE INTEGRATION WITH WORKING SYSTEM
+# WhatsApp webhook endpoints - UNIFIED SYSTEM
 @api_router.post("/whatsapp")
-async def whatsapp_main_webhook(request: dict, db: Session = Depends(get_db)):
+async def whatsapp_unified_webhook(request: dict, db: Session = Depends(get_db)):
     """
-    Handle incoming WhatsApp messages using the complete integrated working system.
-    This uses the proven fixmate_whatsapp system including run.py logic.
+    Handle incoming WhatsApp messages using the unified system.
+    This combines the proven working fixmate_whatsapp/run.py logic
+    with the main FastAPI app's unified database models.
+    
+    Benefits:
+    - Single database for all users (web + WhatsApp)
+    - Unified models and relationships
+    - Proven conversation logic from run.py
+    - Complete data integration
     """
     try:
-        print(f"🔄 Processing WhatsApp webhook with complete integration")
+        print(f"🔄 Processing WhatsApp webhook with unified system")
         
-        # Process webhook using the complete integrated system
-        result = fixmate_whatsapp_integration.process_webhook(request)
+        # Process webhook using the unified service
+        result = unified_whatsapp_service.process_webhook(request, db)
         
         return result
         
     except Exception as e:
-        logger.error(f"WhatsApp webhook integration error: {e}")
+        logger.error(f"Unified WhatsApp webhook error: {e}")
         return {"status": "error", "error": str(e)}
 
 @api_router.post("/whatsapp/webhook")
