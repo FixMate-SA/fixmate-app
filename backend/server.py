@@ -1110,6 +1110,42 @@ async def get_payment_status(job_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Failed to get payment status: {str(e)}")
 
 # WhatsApp webhook endpoints
+@api_router.post("/whatsapp")
+async def whatsapp_main_webhook(request: dict, db: Session = Depends(get_db)):
+    """
+    Handle incoming WhatsApp messages from 360dialog (main webhook endpoint).
+    """
+    try:
+        # Process webhook message
+        message_data = whatsapp_service.process_webhook_message(request)
+        
+        if message_data['status'] == 'ignored':
+            return {"status": "ignored"}
+        
+        if message_data['status'] == 'error':
+            logger.error(f"WhatsApp webhook error: {message_data.get('error')}")
+            return {"status": "error"}
+        
+        # Process conversation
+        from_number = message_data['from_number']
+        content = message_data['content']
+        msg_type = message_data['message_type']
+        location_data = message_data.get('location')
+        
+        response_message = conversation_service.process_message(
+            from_number, content, msg_type, location_data, db
+        )
+        
+        # Send response
+        if response_message:
+            whatsapp_service.send_whatsapp_message(from_number, response_message)
+        
+        return {"status": "processed"}
+        
+    except Exception as e:
+        logger.error(f"WhatsApp webhook processing error: {e}")
+        return {"status": "error", "error": str(e)}
+
 @api_router.post("/whatsapp/webhook")
 async def whatsapp_webhook(request: dict, db: Session = Depends(get_db)):
     """
