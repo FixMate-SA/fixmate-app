@@ -545,6 +545,7 @@ def show_help():
     print("Database Management:")
     print("  migrate                        - Run database migration (like flask db upgrade)")
     print("  check-db                       - Check database connection and tables")
+    print("  fix-passwords                  - Fix users with password hash but login issues")
     print("")
     print("Fixer Management:")
     print("  add-fixer <name> <phone> <skills> [password]     - Add a new fixer (optionally with password)")
