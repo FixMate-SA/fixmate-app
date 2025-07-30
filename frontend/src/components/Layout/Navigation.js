@@ -22,13 +22,31 @@ const Navigation = () => {
 
   // Role-specific navigation items
   const roleBasedNavItems = [
-    // Client-specific items
+    // Jobs available to clients and fixers
     { 
       path: '/jobs', 
       label: t('jobs', 'Jobs'), 
-      icon: '📋',
+      icon: '🔧',
       roles: ['client', 'fixer', 'admin'],
+      permission: 'can_view_jobs'
+    },
+    
+    // Enhanced job creation for clients
+    { 
+      path: '/jobs/create-workflow', 
+      label: t('createJobWorkflow', 'Create Job (Enhanced)'), 
+      icon: '✨',
+      roles: ['client'],
       permission: 'can_create_jobs'
+    },
+    
+    // Fixer job board
+    { 
+      path: '/fixer/jobs', 
+      label: t('availableJobs', 'Available Jobs'), 
+      icon: '🎯',
+      roles: ['fixer'],
+      permission: 'can_view_jobs'
     },
     { 
       path: '/fixers', 
