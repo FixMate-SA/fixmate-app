@@ -33,6 +33,7 @@ from services.whatsapp_service import whatsapp_service
 from services.business_compliance_service import business_compliance_service
 from services.conversation_service import conversation_service
 from services.payfast_service import payfast_service
+from services.job_workflow_service import job_workflow_service
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
