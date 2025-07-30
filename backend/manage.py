@@ -72,8 +72,7 @@ def add_fixer(name, phone, skills, password=None):
                 id_number=f"CLI_{uuid.uuid4().hex[:8]}",
                 town="Unknown",
                 role="fixer",
-                is_active=True,
-                is_verified=True  # Auto-verify CLI created fixers
+                is_active=True
             )
             db.add(user)
             db.commit()
@@ -84,7 +83,6 @@ def add_fixer(name, phone, skills, password=None):
             user.role = "fixer"
             user.first_name = first_name
             user.last_name = last_name
-            user.is_verified = True
             db.commit()
             print(f"✅ Updated existing user to fixer role: {user.first_name} {user.last_name}")
         
