@@ -373,26 +373,20 @@ We will notify you as soon as one becomes available."""
         self.clear_user_state(user, db)
         
         first_name = user.first_name if user.first_name != "Unknown" else ""
-        greeting = f"Welcome back {first_name}!" if first_name else "Welcome to FixMate-SA!"
+        greeting = f"Welcome back to FixMate-SA!" if first_name else "Welcome back to FixMate-SA!"
         
         greetings = ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo', 'avuxeni', 'ndaa']
         
         if message.lower() in greetings:
-            response = f"""{greeting}
-
-To request a service, please describe what you need (e.g., 'Leaking pipe') or send a voice note."""
+            response = f"""{greeting} To request a service, please describe what you need (e.g., 'Leaking pipe', or any service you may think of)."""
             
             self.set_user_state(user, self.states['AWAITING_SERVICE_REQUEST'], db=db)
             return response
         else:
             # Treat as service request
-            response = f"""{greeting}
-
-I understand you need: {message}
-
-What's your name?"""
+            response = f"""{greeting} To request a service, please describe what you need (e.g., 'Leaking pipe', or any service you may think of)."""
             
-            self.set_user_state(user, self.states['AWAITING_NAME'], {'service': message}, db)
+            self.set_user_state(user, self.states['AWAITING_SERVICE_REQUEST'], db=db)
             return response
     
     def _get_help_message(self, user: User) -> str:
