@@ -32,7 +32,7 @@ export const languages = {
       
       // Authentication
       phoneNumber: 'Phone Number',
-      enterPhone: 'Enter your phone number',
+      enterPhone: 'Enter your phone number (e.g., +27821234567)',
       password: 'Password',
       enterPassword: 'Enter your password',
       signIn: 'Sign In',
@@ -124,6 +124,10 @@ export const languages = {
       fixers: 'Herstellers',
       learning: 'Leer',
       smsPortal: 'SMS Portaal',
+      businessCompliance: 'Besigheidsvoldoening',
+      enterprise: 'Onderneming',
+      payments: 'Betalings',
+      adminPanel: 'Admin Paneel',
       profile: 'Profiel',
       
       // Common
@@ -142,9 +146,21 @@ export const languages = {
       
       // Authentication
       phoneNumber: 'Telefoonnommer',
-      enterPhone: 'Voer jou telefoonnommer in',
+      enterPhone: 'Voer jou telefoonnommer in (bv., +27821234567)',
+      password: 'Wagwoord',
+      enterPassword: 'Voer jou wagwoord in',
       signIn: 'Teken In',
+      signUp: 'Teken op',
       welcomeBack: 'Welkom terug',
+      welcomeTo: 'Welkom by FixMate-SA',
+      southAfricasPremier: 'Suid-Afrika se Premier Diens Platform',
+      enterPhoneAndPassword: 'Voer jou telefoonnommer en wagwoord in om aan te meld',
+      dontHaveAccount: 'Het jy nie \'n rekening nie? Teken op',
+      secureYourAccount: 'Beveilig Jou Rekening',
+      setStrongPassword: 'Stel \'n sterk wagwoord in om jou rekening te beskerm',
+      createPassword: 'Skep \'n sterk wagwoord',
+      confirmPassword: 'Bevestig jou wagwoord',
+      createAccountSignIn: 'Skep Rekening & Meld Aan',
       
       // Jobs
       createJob: 'Skep Werk',
@@ -222,6 +238,10 @@ export const languages = {
       fixers: 'Abalungisi',
       learning: 'Ukufunda',
       smsPortal: 'I-SMS Portal',
+      businessCompliance: 'Ukuthobela Kwebhizinisi',
+      enterprise: 'Inkampani',
+      payments: 'Izinkokhelo',
+      adminPanel: 'Ibhodi Yokupatha',
       profile: 'Iphrofayili',
       
       // Common
@@ -240,9 +260,21 @@ export const languages = {
       
       // Authentication
       phoneNumber: 'Inombolo Yocingo',
-      enterPhone: 'Faka inombolo yakho yocingo',
+      enterPhone: 'Faka inombolo yakho yocingo (isb., +27821234567)',
+      password: 'Iphasiwedi',
+      enterPassword: 'Faka iphasiwedi yakho',
       signIn: 'Ngena',
+      signUp: 'Bhalisa',
       welcomeBack: 'Siyakwamukela futhi',
+      welcomeTo: 'Siyakwamukela ku-FixMate-SA',
+      southAfricasPremier: 'Inkundla Yesevisi Ehamba Phambili eNingizimu Afrika',
+      enterPhoneAndPassword: 'Faka inombolo yakho yocingo nephasiwedi ukuze ungene',
+      dontHaveAccount: 'Awunayo i-akhawunti? Bhalisa',
+      secureYourAccount: 'Vikela I-akhawunti Yakho',
+      setStrongPassword: 'Setha iphasiwedi eqinile ukuvikela i-akhawunti yakho',
+      createPassword: 'Dala iphasiwedi eqinile',
+      confirmPassword: 'Qinisekisa iphasiwedi yakho',
+      createAccountSignIn: 'Dala I-akhawunti & Ngena',
       
       // Jobs
       createJob: 'Dala Umsebenzi',
@@ -320,6 +352,10 @@ export const languages = {
       fixers: 'Abalungisi',
       learning: 'Ukufunda',
       smsPortal: 'I-SMS Portal',
+      businessCompliance: 'Ukuthobela Kweshishini',
+      enterprise: 'Inkampani',
+      payments: 'Iintlawulo',
+      adminPanel: 'Iphaneli Yolawulo',
       profile: 'Iprofayile',
       
       // Common
@@ -338,9 +374,21 @@ export const languages = {
       
       // Authentication
       phoneNumber: 'Inombolo Yomnxeba',
-      enterPhone: 'Faka inombolo yakho yomnxeba',
+      enterPhone: 'Faka inombolo yakho yomnxeba (umz., +27821234567)',
+      password: 'Igama lokugqitha',
+      enterPassword: 'Faka igama lakho lokugqitha',
       signIn: 'Ngena',
+      signUp: 'Bhalisa',
       welcomeBack: 'Wamkelekile kwakhona',
+      welcomeTo: 'Wamkelekile ku-FixMate-SA',
+      southAfricasPremier: 'Iqonga leeNkonzo eliKhokelelayo eMzantsi Afrika',
+      enterPhoneAndPassword: 'Faka inombolo yakho yomnxeba negama lokugqitha ukuze ungene',
+      dontHaveAccount: 'Awunayo i-akhawunti? Bhalisa',
+      secureYourAccount: 'Khuseleka i-Akhawunti Yakho',
+      setStrongPassword: 'Seta igama lokugqitha elomeleleyo ukukhusela i-akhawunti yakho',
+      createPassword: 'Yenza igama lokugqitha elomeleleyo',
+      confirmPassword: 'Qinisekisa igama lakho lokugqitha',
+      createAccountSignIn: 'Yenza i-Akhawunti & Ngena',
       
       // Jobs
       createJob: 'Yenza Umsebenzi',
@@ -418,6 +466,10 @@ export const languages = {
       fixers: 'Bahlweki',
       learning: 'Thuto',
       smsPortal: 'Portal ya SMS',
+      businessCompliance: 'Khotsofalo ya Kgwebo',
+      enterprise: 'Kgwebo',
+      payments: 'Ditefo',
+      adminPanel: 'Phanele ya Tsamaiso',
       profile: 'Profaele',
       
       // Common
@@ -436,11 +488,23 @@ export const languages = {
       
       // Authentication
       phoneNumber: 'Nomoro ya Mohala',
-      enterPhone: 'Kenya nomoro ya hao ya mohala',
+      enterPhone: 'Kenya nomoro ya hao ya mohala (mohlala, +27821234567)',
+      password: 'Khoutu',
+      enterPassword: 'Kenya khoutu ya hao',
       signIn: 'Kena',
+      signUp: 'Ngodisa',
       welcomeBack: 'Rea u amohela hape',
+      welcomeTo: 'Rea u amohela ho FixMate-SA',
+      southAfricasPremier: 'Sethala sa Litshebeletso se Hloahloa Afrika Boroa',
+      enterPhoneAndPassword: 'Kenya nomoro ya hao ya mohala le khoutu ho kena',
+      dontHaveAccount: 'Ha u na akhaonte? Ngodisa',
+      secureYourAccount: 'Sirelletsa Akhaonte ya Hao',
+      setStrongPassword: 'Beha khoutu e matla ho sireletsa akhaonte ya hao',
+      createPassword: 'Etsa khoutu e matla',
+      confirmPassword: 'Netefatsa khoutu ya hao',
+      createAccountSignIn: 'Etsa Akhaonte & Kena',
       
-      // Jobs
+      // Jobs  
       createJob: 'Etsa Mosebetsi',
       jobDescription: 'Tlhaloso ya Mosebetsi',
       location: 'Sebaka',
@@ -516,6 +580,10 @@ export const languages = {
       fixers: 'Babaakanyetsi',
       learning: 'Thuto',
       smsPortal: 'Portal ya SMS',
+      businessCompliance: 'Kgotsofalo ya Kgwebo',
+      enterprise: 'Kgwebo',
+      payments: 'Dituelo',
+      adminPanel: 'Phanele ya Taolo',
       profile: 'Profaele',
       
       // Common
@@ -534,9 +602,21 @@ export const languages = {
       
       // Authentication
       phoneNumber: 'Nomoro ya Mogala',
-      enterPhone: 'Tsenya nomoro ya gago ya mogala',
+      enterPhone: 'Tsenya nomoro ya gago ya mogala (sekai, +27821234567)',
+      password: 'Khoutu',
+      enterPassword: 'Tsenya khoutu ya gago',
       signIn: 'Tsena',
+      signUp: 'Ngodisa',
       welcomeBack: 'O amogelwa gape',
+      welcomeTo: 'O amogelwa go FixMate-SA',
+      southAfricasPremier: 'Sethala sa Ditirelo se se Kwa Pele mo Afrika Borwa',
+      enterPhoneAndPassword: 'Tsenya nomoro ya gago ya mogala le khoutu go tsena',
+      dontHaveAccount: 'Ga o na akhaonte? Ngodisa',
+      secureYourAccount: 'Sireletsa Akhaonte ya Gago',
+      setStrongPassword: 'Bea khoutu e e tiileng go sireletsa akhaonte ya gago',
+      createPassword: 'Dira khoutu e e tiileng',
+      confirmPassword: 'Netefatsa khoutu ya gago',
+      createAccountSignIn: 'Dira Akhaonte & Tsena',
       
       // Jobs
       createJob: 'Dira Tiro',
@@ -614,6 +694,10 @@ export const languages = {
       fixers: 'Vharungi',
       learning: 'U guda',
       smsPortal: 'Portal ya SMS',
+      businessCompliance: 'U tevhedzana ha Bindu',
+      enterprise: 'Bindu',
+      payments: 'Mbuelo',
+      adminPanel: 'Phanele ya Vhulanguli',
       profile: 'Profaele',
       
       // Common
@@ -632,9 +716,21 @@ export const languages = {
       
       // Authentication
       phoneNumber: 'Nomboro ya Lutingo',
-      enterPhone: 'Dzhenisani nomboro yanu ya lutingo',
+      enterPhone: 'Dzhenisani nomboro yanu ya lutingo (tshi., +27821234567)',
+      password: 'Phasiwede',
+      enterPassword: 'Dzhenisani phasiwede yanu',
       signIn: 'Kena',
+      signUp: 'Andalisela',
       welcomeBack: 'Ndi a u amukela hafhu',
+      welcomeTo: 'Ndi a u amukela kha FixMate-SA',
+      southAfricasPremier: 'Tshitatamende tsha Tshumelo tsha u thoma kha Afrika Tshipembe',
+      enterPhoneAndPassword: 'Dzhenisani nomboro yanu ya lutingo na phasiwede u kona u kena',
+      dontHaveAccount: 'A ni na akhawunti? Andalisela',
+      secureYourAccount: 'Dzudzanyani Akhawunti Yanu',
+      setStrongPassword: 'Vhekani phasiwede yo tikaho u dzudzanya akhawunti yanu',
+      createPassword: 'Vhumbani phasiwede yo tikaho',
+      confirmPassword: 'Khwamedzani phasiwede yanu',
+      createAccountSignIn: 'Vhumba Akhawunti & Kena',
       
       // Jobs
       createJob: 'Vhumba Mushumo',
@@ -712,6 +808,10 @@ export const languages = {
       fixers: 'Valunghisi',
       learning: 'Ku dyondza',
       smsPortal: 'Portal ya SMS',
+      businessCompliance: 'Ku hundzelela ka Bindzu',
+      enterprise: 'Bindzu',
+      payments: 'Mahakelo',
+      adminPanel: 'Panele ya Vulawuri',
       profile: 'Profayili',
       
       // Common
@@ -730,9 +830,21 @@ export const languages = {
       
       // Authentication
       phoneNumber: 'Nomboro ya Riqingho',
-      enterPhone: 'Nghakanya nomboro ya wena ya riqingho',
+      enterPhone: 'Nghakanya nomboro ya wena ya riqingho (xik., +27821234567)',
+      password: 'Phasiwedi',
+      enterPassword: 'Nghakanya phasiwedi ya wena',
       signIn: 'Nghena',
+      signUp: 'Tsarisa',
       welcomeBack: 'Siya ku amukela nakambe',
+      welcomeTo: 'Siya ku amukela eka FixMate-SA',
+      southAfricasPremier: 'Xifunengeto xa Vukorhokeri xo sungula eka Afrika Dzonga',
+      enterPhoneAndPassword: 'Nghakanya nomboro ya wena ya riqingho na phasiwedi ku nghena',
+      dontHaveAccount: 'A wu na akhawunti? Tsarisa',
+      secureYourAccount: 'Sirhelela Akhawunti ya Wena',
+      setStrongPassword: 'Veka phasiwedi yo tiya ku sirhelela akhawunti ya wena',
+      createPassword: 'Tumbuluxa phasiwedi yo tiya',
+      confirmPassword: 'Tiyisisa phasiwedi ya wena',
+      createAccountSignIn: 'Tumbuluxa Akhawunti & Nghena',
       
       // Jobs
       createJob: 'Tumbuluxa Ntirho',
@@ -810,6 +922,10 @@ export const languages = {
       fixers: 'Abasiindisi',
       learning: 'Ukufunda',
       smsPortal: 'I-SMS Portal',
+      businessCompliance: 'Ukuthobela Kwebhizinisi',
+      enterprise: 'Ibhizinisi',
+      payments: 'Iinkokhelo',
+      adminPanel: 'Iphaneli Yokupatha',
       profile: 'Iphrofayili',
       
       // Common
@@ -828,9 +944,21 @@ export const languages = {
       
       // Authentication
       phoneNumber: 'Inomboro Yocingo',
-      enterPhone: 'Faka inomboro yakho yocingo',
+      enterPhone: 'Faka inomboro yakho yocingo (isb., +27821234567)',
+      password: 'Iphasiwedi',
+      enterPassword: 'Faka iphasiwedi yakho',
       signIn: 'Ngena',
+      signUp: 'Bhalisa',
       welcomeBack: 'Siyagemukela futhi',
+      welcomeTo: 'Siyagemukela ku-FixMate-SA',
+      southAfricasPremier: 'Iqonga lesevisi elihamba phambili eNingizimu Afrika',
+      enterPhoneAndPassword: 'Faka inomboro yakho yocingo nephasiwedi ukuze ungene',
+      dontHaveAccount: 'Awunayo i-akhawunti? Bhalisa',
+      secureYourAccount: 'Vikela I-akhawunti Yakho',
+      setStrongPassword: 'Setha iphasiwedi eqinile ukuvikela i-akhawunti yakho',
+      createPassword: 'Enza iphasiwedi eqinile',
+      confirmPassword: 'Qinisekisa iphasiwedi yakho',
+      createAccountSignIn: 'Enza I-akhawunti & Ngena',
       
       // Jobs
       createJob: 'Enza Umsebenzi',
@@ -908,6 +1036,10 @@ export const languages = {
       fixers: 'Basiindzi',
       learning: 'Kufundza',
       smsPortal: 'I-SMS Portal',
+      businessCompliance: 'Kuthobela Kwebhizinisi',
+      enterprise: 'Libhizinisi',
+      payments: 'Tikhokhelo',
+      adminPanel: 'Liphaneli Lekuphatha',
       profile: 'Iphrofayili',
       
       // Common
@@ -926,9 +1058,21 @@ export const languages = {
       
       // Authentication
       phoneNumber: 'Linomboro Lelucingo',
-      enterPhone: 'Faka linomboro lakho lelucingo',
+      enterPhone: 'Faka linomboro lakho lelucingo (sibonelo, +27821234567)',
+      password: 'Liphasiwedi',
+      enterPassword: 'Faka liphasiwedi lakho',
       signIn: 'Ngena',
+      signUp: 'Bhalisa',
       welcomeBack: 'Siyakwamukela futsi',
+      welcomeTo: 'Siyakwamukela ku-FixMate-SA',
+      southAfricasPremier: 'Inkundla yetisevisi lehamba embili eNingizimu Afrika',
+      enterPhoneAndPassword: 'Faka linomboro lakho lelucingo neliphasiwedi ku ngena',
+      dontHaveAccount: 'Awunalo li-akhawunti? Bhalisa',
+      secureYourAccount: 'Vikela Li-akhawunti Lakho',
+      setStrongPassword: 'Beka liphasiwedi lelinamandla kuvikela li-akhawunti lakho',
+      createPassword: 'Enta liphasiwedi lelinamandla',
+      confirmPassword: 'Cinisekisa liphasiwedi lakho',
+      createAccountSignIn: 'Enta Li-akhawunti & Ngena',
       
       // Jobs
       createJob: 'Enta Umsebenti',
