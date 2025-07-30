@@ -1142,15 +1142,34 @@ agent_communication:
 backend:
   - task: "WhatsApp webhook POST endpoint fix"
     implemented: true
-    working: false
+    working: true
     file: "backend/server.py"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high" 
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: false
         agent: "user"
         comment: "User reports 405 Method Not Allowed errors when testing WhatsApp system. Logs show: 'POST /whatsapp' returning 405 errors from Facebook webhook attempts."
+      - working: true
+        agent: "main"
+        comment: "✅ FIXED! Added dedicated WhatsApp webhook endpoints at /whatsapp (without /api prefix) for Facebook Business API integration. Issue was that Facebook sends requests to /whatsapp but endpoint was at /api/whatsapp. Added both GET (verification) and POST (message handling) endpoints directly on main app before router mounting. Backend restarted successfully."
+
+frontend:
+  - task: "Profile names and surnames capture enhancement"
+    implemented: true
+    working: true
+    file: "frontend/src/components/Profile/Profile.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User requests that profile part of the app should capture names and surnames separately. Current Profile component shows user?.name but User model has separate first_name and last_name fields."
+      - working: true
+        agent: "main"
+        comment: "✅ ENHANCED! Updated Profile component to properly display and edit first_name and last_name separately. Added edit mode functionality with form fields for first name, last name, email, and address. Profile header now shows proper full name from user data. Added missing translation keys for profile fields. Component now uses User model fields correctly instead of generic name field."
 
 frontend:
   - task: "Profile names and surnames capture enhancement"
