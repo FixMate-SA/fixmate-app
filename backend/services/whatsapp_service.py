@@ -89,6 +89,13 @@ class WhatsAppService:
                 timeout=30
             )
             
+            print(f"WhatsApp API Request:")
+            print(f"URL: {self.messages_url}")
+            print(f"Headers: {headers}")
+            print(f"Payload: {payload}")
+            print(f"Response Status: {response.status_code}")
+            print(f"Response Text: {response.text}")
+            
             if response.status_code == 200:
                 print(f"WhatsApp message sent successfully to {to_number}")
                 return True
