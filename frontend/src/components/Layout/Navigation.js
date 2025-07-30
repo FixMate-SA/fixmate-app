@@ -53,7 +53,7 @@ const Navigation = () => {
       label: 'Business Compliance', 
       icon: '🏢',
       roles: ['client', 'fixer', 'admin'],
-      permission: 'can_access_compliance'
+      permission: null // Remove permission check to always show for all roles
     },
     
     // SMS available to all
