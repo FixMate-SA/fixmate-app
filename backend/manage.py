@@ -528,12 +528,12 @@ def show_help():
     print("  help                           - Show this help message")
     print("")
     print("Heroku Usage Examples:")
-    print("  heroku run python backend/manage.py migrate")
-    print("  heroku run python backend/manage.py check-db")
-    print("  heroku run python backend/manage.py add-fixer \"John Smith\" 0791135003 \"plumbing,electrical\"")
-    print("  heroku run python backend/manage.py add-fixer-pwd \"John Smith\" 0791135003 \"plumbing,electrical\" fixer123")
-    print("  heroku run python backend/manage.py set-password 0821111111 fixer123")
-    print("  heroku run python backend/manage.py promote-admin 0791135003")
+    print("  heroku run python run_cli.py migrate")
+    print("  heroku run python run_cli.py check-db")
+    print("  heroku run python run_cli.py add-fixer \"John Smith\" 0791135003 \"plumbing,electrical\"")
+    print("  heroku run python run_cli.py add-fixer-pwd \"John Smith\" 0791135003 \"plumbing,electrical\" fixer123")
+    print("  heroku run python run_cli.py set-password 0821111111 fixer123")
+    print("  heroku run python run_cli.py promote-admin 0791135003")
     print("=" * 50)
 
 def main():
