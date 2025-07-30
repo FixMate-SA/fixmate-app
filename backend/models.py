@@ -37,7 +37,6 @@ class User(Base):
     # Relationships
     jobs = relationship("Job", back_populates="user")
     reviews = relationship("Review", back_populates="user")
-    fixer_payments = relationship("FixerPayment", back_populates="user")
     compliance_requests = relationship("BusinessComplianceRequest", back_populates="user")
     emergency_alerts = relationship("EmergencyAlert", back_populates="user")
     fixer_applications = relationship("FixerApplication", back_populates="user")
