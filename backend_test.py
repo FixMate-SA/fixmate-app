@@ -2468,6 +2468,15 @@ class FixMateAPITester:
         self.test_whatsapp_service_configuration()
         print()
         
+        # NEW: WhatsApp Conversation Flow Tests (As Requested)
+        print("💬 WHATSAPP CONVERSATION FLOW TESTS")
+        print("-" * 50)
+        self.test_whatsapp_conversation_flow_complete()
+        self.test_whatsapp_direct_service_request()
+        self.test_whatsapp_conversation_state_management()
+        self.test_whatsapp_user_data_persistence()
+        print()
+        
         # NEW: Database Model Tests
         print("🗄️ DATABASE MODEL INTEGRATION TESTS")
         print("-" * 50)
