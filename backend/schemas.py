@@ -245,3 +245,73 @@ class FixerApplicationReview(BaseModel):
     status: str  # approved, rejected, needs_documents
     admin_notes: Optional[str] = None
     rejection_reason: Optional[str] = None
+
+# Enhanced Job Workflow schemas
+class JobWorkflowCreate(BaseModel):
+    user_id: str
+    service: str
+    description: str
+    location: str
+    estimated_price: Optional[float] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    contact_number: Optional[str] = None
+
+class JobWorkflowResponse(BaseModel):
+    success: bool
+    message: str
+    job_id: Optional[str] = None
+    workflow_status: dict = {}
+
+class TermsAcceptanceRequest(BaseModel):
+    user_id: str
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    method: str = "web"
+
+class JobAcceptanceRequest(BaseModel):
+    fixer_id: str
+
+class JobCompletionRequest(BaseModel):
+    fixer_id: str
+    completion_data: dict = {}
+
+class FixerLocationUpdate(BaseModel):
+    latitude: float
+    longitude: float
+
+class AdminOverrideRequest(BaseModel):
+    admin_id: str
+    reason: str = ""
+
+class FixerBehaviorAnalysisResponse(BaseModel):
+    fixer_id: str
+    analysis_period: str
+    completion_rate: float
+    cancellation_rate: float
+    reliability_score: float
+    risk_level: str
+    behavior_flags: List[str] = []
+    ai_recommendations: List[str] = []
+    admin_attention_required: bool
+    last_analyzed_at: str
+
+class JobWorkflowStatusResponse(BaseModel):
+    job_id: str
+    status: str
+    workflow_stage: str
+    terms_accepted: bool
+    eligible_fixers_count: int
+    notified_fixers_count: int
+    assignment_attempts: int
+    auto_reassignment_count: int
+    is_emergency_escalated: bool
+    priority_level: str
+    tracking_active: bool
+    assignment_timeout: Optional[str] = None
+    attendance_timeout: Optional[str] = None
+    fixer_assigned: bool
+    estimated_arrival: Optional[str] = None
+
+class AvailableJobsResponse(BaseModel):
+    available_jobs: List[dict] = []
