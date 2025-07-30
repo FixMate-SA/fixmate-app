@@ -416,6 +416,53 @@ def stats():
     except Exception as e:
         print(f"❌ Error getting stats: {e}")
 
+def migrate():
+    """Run database migration - equivalent to flask db upgrade"""
+    try:
+        from migrate_db import main as migrate_main
+        print("🚀 Running FixMate database migration...")
+        return migrate_main()
+    except ImportError:
+        print("❌ Migration module not found")
+        return 1
+
+def check_db():
+    """Check database connection and table status"""
+    try:
+        from database import engine
+        from sqlalchemy import text
+        
+        print("🔍 Checking database connection...")
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT 1"))
+            print("✅ Database connection successful")
+            
+            # Check workflow tables
+            workflow_tables = [
+                'users', 'fixers', 'jobs', 'platform_terms', 
+                'fixer_availability', 'job_assignment_history'
+            ]
+            
+            existing_tables = []
+            missing_tables = []
+            
+            for table in workflow_tables:
+                try:
+                    conn.execute(text(f"SELECT 1 FROM {table} LIMIT 1"))
+                    existing_tables.append(table)
+                except:
+                    missing_tables.append(table)
+            
+            print(f"✅ Found {len(existing_tables)} core tables")
+            if missing_tables:
+                print(f"⚠️  Missing tables: {', '.join(missing_tables)}")
+                print("💡 Run 'python backend/manage.py migrate' to create missing tables")
+            
+        return 0
+    except Exception as e:
+        print(f"❌ Database connection failed: {str(e)}")
+        return 1
+
 def show_help():
     """Show available commands."""
     print("\n🛠️  FixMate-SA Management Commands")
