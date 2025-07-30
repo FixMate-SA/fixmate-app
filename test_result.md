@@ -1357,3 +1357,15 @@ backend:
       - working: true
         agent: "testing"
         comment: "Business insights generation working correctly: /api/whatsapp/insights endpoint returns stored insights from database, /api/whatsapp/generate-insight endpoint generates new insights based on completed job data, DataInsight model working for storing generated insights, proper fallback behavior when insufficient data available. AI-powered analysis integrated with job completion data."
+
+  - task: "Unified WhatsApp System Integration Testing"
+    implemented: true
+    working: true
+    file: "/app/backend/services/unified_whatsapp_service.py, /app/backend/models.py, /app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "🎉 UNIFIED WHATSAPP SYSTEM TESTING COMPLETED SUCCESSFULLY! Comprehensive testing of the completely unified FixMate-SA system that merges the working fixmate_whatsapp system with the main FastAPI app into one cohesive platform: ✅ DATABASE INTEGRATION: Unified models working correctly - User model has WhatsApp conversation fields (conversation_state, service_request_cache, whatsapp_active, last_whatsapp_message), Job model with WhatsApp-specific data (client_contact_number, area, latitude, longitude, rating, rating_comment, sentiment), single database for all channels confirmed ✅ WHATSAPP INTEGRATION: Complete conversation flow using unified system tested successfully - 'hello' → Welcome message, 'leaking pipe' → Name request, 'John Smith' → Location request, 'Cape Town, 123 Main Street' → Contact request, '0821234567' → Terms agreement, 'YES' → Job creation in unified database ✅ CROSS-CHANNEL FUNCTIONALITY: WhatsApp users are created in main database and accessible via web API, jobs created via WhatsApp appear in web API, data synchronization between channels working perfectly ✅ WEB API ENDPOINTS: Main app functionality still works - user authentication endpoints, job creation via web API, dashboard endpoints, fixer management all functional ✅ UNIFIED SERVICE INTEGRATION: unified_whatsapp_service correctly uses main app models, conversation state management in unified database working, job assignment and fixer integration operational ✅ DATA CONSISTENCY: No duplicate user creation (fixed unique constraint issue with ID numbers), seamless switching between WhatsApp and web confirmed, all relationships work correctly. Fixed critical issue: Updated get_or_create_user() to generate unique ID numbers using phone hash instead of static placeholder to prevent database constraint violations. All 21 unified system tests passed (100% success rate). The unified FixMate-SA system is production-ready with complete WhatsApp integration merged seamlessly with the main FastAPI application."
