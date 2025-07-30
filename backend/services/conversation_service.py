@@ -234,7 +234,7 @@ Please log in to your Fixer Portal to accept this job.
         user_name = user.first_name if user.first_name != "Unknown" else ""
         greeting = f"Thanks, {user_name}! " if user_name else "Thanks! "
         
-        response = f"{greeting}I've got your location in {area}. What's the best contact number for the fixer to reach you?"
+        response = f"{greeting}I've got your location in {area}. Lastly, what's the best contact number for the fixer to use?"
         
         self.set_user_state(user, self.states['AWAITING_CONTACT_NUMBER'], {
             'latitude': str(latitude),
