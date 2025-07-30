@@ -29,6 +29,18 @@ export const languages = {
       error: 'Error',
       success: 'Success',
       emergency: 'Emergency',
+      saveChanges: 'Save Changes',
+      notProvided: 'Not provided',
+      
+      // Profile
+      editProfile: 'Edit Profile',
+      personalInfo: 'Personal Information',
+      firstName: 'First Name',
+      lastName: 'Last Name',
+      name: 'Name',
+      idNumber: 'ID Number',
+      town: 'Town/Municipality',
+      address: 'Address',
       
       // Authentication
       phoneNumber: 'Phone Number',
