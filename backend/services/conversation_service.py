@@ -272,8 +272,19 @@ Please log in to your Fixer Portal to accept this job.
             return self._handle_terms_approval(user, message, db)
         
         else:
-            # Default/new conversation
-            return self._handle_initial_message(user, message, db)
+            # Default/new conversation - EXACT FLOW FROM run.py
+            self.clear_user_state(user, db)
+            first_name = f" {user.first_name}" if user.first_name and user.first_name != "Unknown" else ""
+            
+            if message.lower() in ['hi', 'hello', 'hallo', 'dumela', 'sawubona', 'molo', 'avuxeni', 'ndaa']:
+                response = f"Welcome back{first_name} to FixMate-SA! To request a service, please describe what you need (e.g., 'Leaking pipe', or any service you may think of)."
+                self.set_user_state(user, self.states['AWAITING_SERVICE_REQUEST'], db=db)
+                return response
+            else:
+                # Direct service request
+                response = "Got it. What's your name?"
+                self.set_user_state(user, self.states['AWAITING_NAME'], {'service': message}, db)
+                return response
     
     def _handle_audio_message(self, user: User, transcribed_text: str, current_state: str, db: Session) -> str:
         """Handle transcribed audio message."""
