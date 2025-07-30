@@ -150,6 +150,36 @@ function App() {
                 }
               />
               <Route
+                path="/jobs/create-workflow"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <EnhancedJobCreation />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fixer/jobs"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <FixerJobBoard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/terms"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <TermsAcceptance showModal={false} />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/fixers"
                 element={
                   <ProtectedRoute>
