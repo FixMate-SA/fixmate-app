@@ -220,13 +220,13 @@ const LoginForm = () => {
             className="mb-8"
           />
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Welcome to FixMate-SA
+            {t('welcomeTo', 'Welcome to FixMate-SA')}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            South Africa's Premier Service Platform
+            {t('southAfricasPremier', 'South Africa\'s Premier Service Platform')}
           </p>
           <p className="mt-1 text-center text-xs text-gray-500">
-            Enter your phone number and password to sign in
+            {t('enterPhoneAndPassword', 'Enter your phone number and password to sign in')}
           </p>
         </div>
         
