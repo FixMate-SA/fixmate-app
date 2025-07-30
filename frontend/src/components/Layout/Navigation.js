@@ -110,6 +110,15 @@ const Navigation = () => {
       permission: 'can_access_admin'
     },
     
+    // Smart Matching Dashboard (Admin Only)
+    { 
+      path: '/admin/smart-matching', 
+      label: t('smartMatching', 'Smart Matching'), 
+      icon: '🎯',
+      roles: ['admin'],
+      permission: 'can_access_admin'
+    },
+    
     // Profile - available to all
     { 
       path: '/profile', 
