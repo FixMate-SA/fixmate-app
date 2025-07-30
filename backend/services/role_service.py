@@ -82,6 +82,7 @@ class RoleService:
                 "can_manage_profile": True,
                 "can_access_sms": True,
                 "can_access_learning": True,
+                "can_access_compliance": True,
                 "can_access_payments": False,
                 "can_access_admin": False,
                 "can_verify_fixers": False,
