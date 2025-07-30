@@ -49,6 +49,42 @@ const Profile = () => {
     fetchFixerData();
   }, [user]);
 
+  const handleEditToggle = () => {
+    setIsEditing(!isEditing);
+    if (!isEditing && user) {
+      // Reset edit data when entering edit mode
+      setEditData({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        email: user.email || '',
+        address: user.address || ''
+      });
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      setLoading(true);
+      // API call to update user profile would go here
+      // For now, just toggle edit mode off
+      setIsEditing(false);
+      // TODO: Add actual API call to update user profile
+      console.log('Profile update data:', editData);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
