@@ -246,6 +246,9 @@ Please log in to your Fixer Portal to accept this job.
         elif current_state == self.states['AWAITING_NAME']:
             return self._handle_name_message(user, message, db)
         
+        elif current_state == self.states['AWAITING_LOCATION']:
+            return self._handle_location_text(user, message, db)
+        
         elif current_state == self.states['AWAITING_CONTACT_NUMBER']:
             return self._handle_contact_number(user, message, db)
         
