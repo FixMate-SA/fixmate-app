@@ -1504,8 +1504,29 @@ async def whatsapp_business_webhook_verify(hub_challenge: str = None):
     
     return {"success": True, "message": "FixMate-SA WhatsApp Business webhook active"}
 
-# WhatsApp webhook endpoint WITHOUT /api prefix for Facebook integration
+# WhatsApp webhook endpoints WITHOUT /api prefix for Facebook integration
 # Facebook/WhatsApp Business API expects the webhook at /whatsapp not /api/whatsapp
+
+@app.get("/whatsapp")
+async def whatsapp_webhook_verify(hub_mode: str = None, hub_challenge: str = None, hub_verify_token: str = None):
+    """
+    Verify WhatsApp webhook subscription from Facebook.
+    Facebook sends GET request with verification parameters.
+    """
+    try:
+        print(f"🔐 WhatsApp webhook verification request: mode={hub_mode}, challenge={hub_challenge}")
+        
+        # For webhook verification, return the challenge
+        if hub_mode == "subscribe" and hub_challenge:
+            print("✅ WhatsApp webhook verification successful")
+            return Response(content=hub_challenge, media_type="text/plain")
+            
+        return {"success": True, "message": "FixMate-SA WhatsApp webhook endpoint"}
+        
+    except Exception as e:
+        print(f"❌ Error in WhatsApp webhook verification: {str(e)}")
+        return {"success": False, "error": str(e)}
+
 @app.post("/whatsapp")
 async def whatsapp_webhook(request: dict, db: Session = Depends(get_db)):
     """
