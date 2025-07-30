@@ -33,8 +33,9 @@ def show_help():
     print("  python run_cli.py add-fixer-pwd \"John Smith\" \"0821111111\" \"plumbing,electrical,geysers\" \"fixer123\"")
     print("  python run_cli.py set-password \"0821111111\" \"fixer123\"")
     print()
-    print("Heroku Usage:")
-    print("  heroku run python backend/run_cli.py add-fixer-pwd \"John Smith\" \"0821111111\" \"plumbing,electrical,geysers\" \"fixer123\"")
+    print("Heroku Usage (CORRECTED):")
+    print("  heroku run python run_cli.py add-fixer-pwd \"John Smith\" \"0821111111\" \"plumbing,electrical,geysers\" \"fixer123\"")
+    print("  heroku run python run_cli.py migrate")
     print("=" * 45)
 
 def main():
