@@ -552,11 +552,20 @@ def main():
         check_db()
     
     elif command == "add-fixer":
-        if len(sys.argv) != 5:
-            print("❌ Usage: python backend/manage.py add-fixer \"Full Name\" \"phone\" \"skill1, skill2, skill3\"")
-            print("   Example: python backend/manage.py add-fixer \"John Smith\" \"0791135003\" \"plumbing, electrical\"")
+        if len(sys.argv) < 5 or len(sys.argv) > 6:
+            print("❌ Usage: python backend/manage.py add-fixer \"Full Name\" \"phone\" \"skill1,skill2,skill3\" [password]")
+            print("   Example: python backend/manage.py add-fixer \"John Smith\" \"0791135003\" \"plumbing,electrical\"")
+            print("   With password: python backend/manage.py add-fixer \"John Smith\" \"0791135003\" \"plumbing,electrical\" fixer123")
             return
-        add_fixer(sys.argv[2], sys.argv[3], sys.argv[4])
+        password = sys.argv[5] if len(sys.argv) == 6 else None
+        add_fixer(sys.argv[2], sys.argv[3], sys.argv[4], password)
+    
+    elif command == "add-fixer-pwd":
+        if len(sys.argv) != 6:
+            print("❌ Usage: python backend/manage.py add-fixer-pwd \"Full Name\" \"phone\" \"skill1,skill2,skill3\" \"password\"")
+            print("   Example: python backend/manage.py add-fixer-pwd \"John Smith\" \"0791135003\" \"plumbing,electrical\" fixer123")
+            return
+        add_fixer_with_password(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
     
     elif command == "set-password":
         if len(sys.argv) != 4:
