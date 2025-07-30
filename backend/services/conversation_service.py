@@ -337,8 +337,9 @@ Please log in to your Fixer Portal to accept this job.
             response = """Great! We have all the details.
 
 By proceeding, you agree to the FixMate-SA Terms of Service.
+View here: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/terms
 
-Reply *YES* to confirm and dispatch a fixer."""
+Reply YES to confirm and dispatch a fixer."""
             
             self.set_user_state(user, self.states['AWAITING_TERMS_APPROVAL'], 
                                {'contact': message}, db)
