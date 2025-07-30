@@ -506,7 +506,13 @@ def main():
     
     command = sys.argv[1].lower()
     
-    if command == "add-fixer":
+    if command == "migrate":
+        migrate()
+    
+    elif command == "check-db":
+        check_db()
+    
+    elif command == "add-fixer":
         if len(sys.argv) != 5:
             print("❌ Usage: python backend/manage.py add-fixer \"Full Name\" \"phone\" \"skill1, skill2, skill3\"")
             print("   Example: python backend/manage.py add-fixer \"John Smith\" \"0791135003\" \"plumbing, electrical\"")
