@@ -177,6 +177,192 @@ class Fixer(Base):
     payments = relationship("FixerPayment", back_populates="fixer")
     verification = relationship("FixerVerification", back_populates="fixer", uselist=False)
 
+# New models for enhanced job workflow system
+
+class JobAssignmentHistory(Base):
+    """Track all assignment attempts and fixer responses"""
+    __tablename__ = "job_assignment_history"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    job_id = Column(String, ForeignKey("jobs.id"), nullable=False)
+    fixer_id = Column(String, ForeignKey("fixers.id"), nullable=False)
+    
+    # Assignment details
+    assignment_type = Column(String, nullable=False)  # initial, reassignment, escalation
+    notified_at = Column(DateTime, default=datetime.utcnow)
+    responded_at = Column(DateTime, nullable=True)
+    response_type = Column(String, nullable=True)  # accepted, declined, timeout, cancelled
+    response_reason = Column(Text, nullable=True)  # Reason for decline/cancellation
+    
+    # Tracking
+    accepted_at = Column(DateTime, nullable=True)
+    cancelled_at = Column(DateTime, nullable=True)
+    completion_status = Column(String, nullable=True)  # completed, incomplete, cancelled
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    job = relationship("Job", back_populates="assignment_history")
+    fixer = relationship("Fixer", back_populates="assignment_history")
+
+class JobNotification(Base):
+    """Track all notifications sent to fixers"""
+    __tablename__ = "job_notifications"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    job_id = Column(String, ForeignKey("jobs.id"), nullable=False)
+    fixer_id = Column(String, ForeignKey("fixers.id"), nullable=False)
+    
+    # Notification details
+    notification_type = Column(String, nullable=False)  # job_available, assignment, reminder, escalation
+    channel = Column(String, nullable=False)  # app, whatsapp, sms
+    message_content = Column(Text, nullable=False)
+    
+    # Status tracking
+    sent_at = Column(DateTime, default=datetime.utcnow)
+    delivered_at = Column(DateTime, nullable=True)
+    read_at = Column(DateTime, nullable=True)
+    responded_at = Column(DateTime, nullable=True)
+    status = Column(String, default="pending")  # pending, sent, delivered, read, failed
+    
+    # Response tracking
+    response_action = Column(String, nullable=True)  # accept, decline, ignore
+    response_data = Column(Text, nullable=True)  # JSON response data
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    job = relationship("Job", back_populates="notifications")
+    fixer = relationship("Fixer", back_populates="notifications")
+
+class FixerAvailability(Base):
+    """Track fixer availability and current job status"""
+    __tablename__ = "fixer_availability"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    fixer_id = Column(String, ForeignKey("fixers.id"), nullable=False, unique=True)
+    
+    # Availability status
+    is_available = Column(Boolean, default=True)  # Overall availability
+    current_job_id = Column(String, ForeignKey("jobs.id"), nullable=True)  # Current active job
+    is_on_break = Column(Boolean, default=False)  # Manual break status
+    break_until = Column(DateTime, nullable=True)  # When break ends
+    
+    # Location for proximity matching
+    current_latitude = Column(Float, nullable=True)
+    current_longitude = Column(Float, nullable=True)
+    location_updated_at = Column(DateTime, nullable=True)
+    service_radius = Column(Integer, default=20)  # Service radius in km
+    
+    # Performance metrics for AI matching
+    average_response_time = Column(Integer, nullable=True)  # Minutes
+    completion_rate = Column(Float, default=100.0)  # Percentage
+    reliability_score = Column(Float, default=100.0)  # AI-calculated reliability
+    last_job_completed_at = Column(DateTime, nullable=True)
+    
+    # Restriction tracking
+    has_outstanding_debt = Column(Boolean, default=False)
+    debt_amount = Column(Float, default=0.0)
+    is_suspended = Column(Boolean, default=False)  # Admin suspension
+    suspension_reason = Column(Text, nullable=True)
+    suspension_until = Column(DateTime, nullable=True)
+    
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    fixer = relationship("Fixer", back_populates="availability")
+    current_job = relationship("Job", foreign_keys=[current_job_id])
+
+class FixerBehaviorAnalysis(Base):
+    """AI monitoring and behavior analysis for fixers"""
+    __tablename__ = "fixer_behavior_analysis"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    fixer_id = Column(String, ForeignKey("fixers.id"), nullable=False)
+    
+    # Behavior patterns
+    analysis_period = Column(String, default="30_days")  # 7_days, 30_days, 90_days, all_time
+    total_jobs_assigned = Column(Integer, default=0)
+    total_jobs_completed = Column(Integer, default=0)
+    total_jobs_cancelled = Column(Integer, default=0)
+    total_jobs_incomplete = Column(Integer, default=0)
+    
+    # Performance metrics
+    completion_rate = Column(Float, default=0.0)  # Percentage
+    cancellation_rate = Column(Float, default=0.0)  # Percentage
+    average_response_time = Column(Integer, default=0)  # Minutes
+    average_job_duration = Column(Integer, default=0)  # Minutes
+    client_satisfaction_avg = Column(Float, default=0.0)  # Average rating
+    
+    # AI flags and alerts
+    reliability_score = Column(Float, default=100.0)  # AI-calculated score
+    risk_level = Column(String, default="low")  # low, medium, high, critical
+    behavior_flags = Column(Text, nullable=True)  # JSON array of behavior flags
+    ai_recommendations = Column(Text, nullable=True)  # AI-generated recommendations
+    admin_attention_required = Column(Boolean, default=False)
+    
+    # Pattern detection
+    frequent_cancellation_pattern = Column(Boolean, default=False)
+    dishonesty_indicators = Column(Text, nullable=True)  # JSON array of indicators
+    quality_decline_trend = Column(Boolean, default=False)
+    improvement_trend = Column(Boolean, default=False)
+    
+    # Analysis metadata
+    last_analyzed_at = Column(DateTime, default=datetime.utcnow)
+    next_analysis_due = Column(DateTime, nullable=True)
+    analysis_version = Column(String, default="1.0")  # AI model version used
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    fixer = relationship("Fixer", back_populates="behavior_analysis")
+
+class PlatformTerms(Base):
+    """Track platform terms and client acceptance"""
+    __tablename__ = "platform_terms"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    version = Column(String, nullable=False)  # Terms version (e.g., "1.0", "2.1")
+    title = Column(String, nullable=False)
+    content = Column(Text, nullable=False)  # Full terms content
+    effective_date = Column(DateTime, nullable=False)
+    is_current = Column(Boolean, default=True)  # If this is the current version
+    
+    # Usage tracking
+    acceptance_count = Column(Integer, default=0)  # How many users accepted
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    created_by = Column(String, nullable=True)  # Admin who created/updated
+    
+    # Relationships
+    user_acceptances = relationship("UserTermsAcceptance", back_populates="terms")
+
+class UserTermsAcceptance(Base):
+    """Track individual user acceptance of platform terms"""
+    __tablename__ = "user_terms_acceptance"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    terms_id = Column(String, ForeignKey("platform_terms.id"), nullable=False)
+    
+    # Acceptance details
+    accepted_at = Column(DateTime, default=datetime.utcnow)
+    ip_address = Column(String, nullable=True)  # For record keeping
+    user_agent = Column(Text, nullable=True)  # Browser/app info
+    acceptance_method = Column(String, nullable=False)  # web, app, whatsapp
+    
+    # Status
+    is_current = Column(Boolean, default=True)  # If this is current acceptance
+    revoked_at = Column(DateTime, nullable=True)  # If user revoked acceptance
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="terms_acceptances")
+    terms = relationship("PlatformTerms", back_populates="user_acceptances")
+
 class Job(Base):
     __tablename__ = "jobs"
     
