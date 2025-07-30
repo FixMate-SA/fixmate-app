@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../../services/api';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import FixerMatchTester from '../Admin/FixerMatchTester';
 
 const FixerList = () => {
+  const { user } = useAuth();
   const [fixers, setFixers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedService, setSelectedService] = useState('');
+  const [showMatchTester, setShowMatchTester] = useState(false);
+  const [selectedFixerForTest, setSelectedFixerForTest] = useState(null);
+  const [fixerMatchHistory, setFixerMatchHistory] = useState({});
 
   const serviceOptions = [
     'Plumbing',
@@ -23,11 +29,18 @@ const FixerList = () => {
     'HVAC',
   ];
 
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+
   useEffect(() => {
     const fetchFixers = async () => {
       try {
         const response = await apiService.getFixers();
         setFixers(response.data);
+        
+        // If admin, fetch match history for each fixer
+        if (isAdmin) {
+          fetchFixersMatchHistory(response.data);
+        }
       } catch (err) {
         console.error('Error fetching fixers:', err);
         setError('Failed to load fixers');
@@ -37,7 +50,39 @@ const FixerList = () => {
     };
 
     fetchFixers();
-  }, []);
+  }, [isAdmin]);
+
+  const fetchFixersMatchHistory = async (fixersList) => {
+    const historyData = {};
+    
+    // Fetch match history for each fixer (limit to first 10 to avoid too many requests)
+    const promises = fixersList.slice(0, 10).map(async (fixer) => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.REACT_APP_BACKEND_URL}/api/fixer/${fixer.id}/match-history?days=30`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          historyData[fixer.id] = data.match_history;
+        }
+      } catch (err) {
+        console.error(`Error fetching match history for fixer ${fixer.id}:`, err);
+      }
+    });
+
+    await Promise.all(promises);
+    setFixerMatchHistory(historyData);
+  };
+
+  const handleTestMatch = (fixer) => {
+    setSelectedFixerForTest(fixer);
+    setShowMatchTester(true);
+  };
+
+  const closeMatchTester = () => {
+    setShowMatchTester(false);
+    setSelectedFixerForTest(null);
+  };
 
   const parseServices = (services) => {
     try {
@@ -100,6 +145,28 @@ const FixerList = () => {
     return stars;
   };
 
+  const getMatchHistoryBadge = (history) => {
+    if (!history) return null;
+    
+    const { acceptance_rate, total_notifications } = history;
+    
+    if (total_notifications === 0) {
+      return <span className="text-xs text-gray-500">No matches yet</span>;
+    }
+    
+    let color = 'bg-gray-100 text-gray-800';
+    if (acceptance_rate >= 80) color = 'bg-green-100 text-green-800';
+    else if (acceptance_rate >= 60) color = 'bg-blue-100 text-blue-800';
+    else if (acceptance_rate >= 40) color = 'bg-yellow-100 text-yellow-800';
+    else color = 'bg-red-100 text-red-800';
+    
+    return (
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${color}`}>
+        {acceptance_rate}% acceptance ({total_notifications} notified)
+      </span>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -120,7 +187,15 @@ const FixerList = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Find Fixers</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
+            <span>Find Fixers</span>
+            {isAdmin && <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">✨ AI-Powered</span>}
+          </h1>
+          {isAdmin && (
+            <p className="text-sm text-gray-600 mt-1">AI-powered matching insights available for testing</p>
+          )}
+        </div>
         <div className="text-sm text-gray-500">
           {filteredFixers.length} fixers available
         </div>
@@ -199,6 +274,14 @@ const FixerList = () => {
                 </div>
               </div>
 
+              {/* Admin: Match History */}
+              {isAdmin && fixerMatchHistory[fixer.id] && (
+                <div className="mb-3 p-2 bg-blue-50 rounded-md">
+                  <p className="text-xs font-medium text-blue-900 mb-1">🎯 Match Performance (30 days)</p>
+                  {getMatchHistoryBadge(fixerMatchHistory[fixer.id])}
+                </div>
+              )}
+
               <div className="space-y-3">
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <span>📍</span>
@@ -231,32 +314,54 @@ const FixerList = () => {
               </div>
 
               <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between space-x-2">
                   <Link
                     to={`/fixers/${fixer.id}`}
                     className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                   >
                     View Profile
                   </Link>
-                  <button
-                    onClick={() => {
-                      // Create a job with this fixer's service
-                      const services = parseServices(fixer.services);
-                      const queryParams = new URLSearchParams({
-                        service: services[0],
-                        fixerId: fixer.id
-                      });
-                      window.location.href = `/jobs/create?${queryParams}`;
-                    }}
-                    className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
-                  >
-                    Hire Now
-                  </button>
+                  
+                  <div className="flex space-x-2">
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleTestMatch(fixer)}
+                        className="px-2 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs"
+                        title="Test AI matching for this fixer"
+                      >
+                        🧪 Test Match
+                      </button>
+                    )}
+                    
+                    <button
+                      onClick={() => {
+                        // Create a job with this fixer's service
+                        const services = parseServices(fixer.services);
+                        const queryParams = new URLSearchParams({
+                          service: services[0],
+                          fixerId: fixer.id
+                        });
+                        window.location.href = `/jobs/create?${queryParams}`;
+                      }}
+                      className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                    >
+                      Hire Now
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {/* Match Tester Modal */}
+      {showMatchTester && selectedFixerForTest && (
+        <FixerMatchTester
+          fixerId={selectedFixerForTest.id}
+          fixerName={selectedFixerForTest.name}
+          onClose={closeMatchTester}
+        />
       )}
     </div>
   );
