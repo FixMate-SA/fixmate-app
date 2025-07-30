@@ -1132,38 +1132,23 @@ async def test_whatsapp_api():
             "messages_url": whatsapp_service.messages_url
         }
 
-# WhatsApp webhook endpoints
+# Import WhatsApp integration service
+from services.whatsapp_integration_service import whatsapp_integration_service
+
+# WhatsApp webhook endpoints - INTEGRATED WITH WORKING SYSTEM
 @api_router.post("/whatsapp")
 async def whatsapp_main_webhook(request: dict, db: Session = Depends(get_db)):
     """
-    Handle incoming WhatsApp messages from 360dialog (main webhook endpoint).
+    Handle incoming WhatsApp messages using the integrated working system.
+    This connects the proven fixmate_whatsapp system with the main FastAPI app.
     """
     try:
-        # Process webhook message
-        message_data = whatsapp_service.process_webhook_message(request)
+        print(f"🔄 Received WhatsApp webhook request")
         
-        if message_data['status'] == 'ignored':
-            return {"status": "ignored"}
+        # Process webhook using the integrated service
+        result = whatsapp_integration_service.process_whatsapp_webhook(request)
         
-        if message_data['status'] == 'error':
-            logger.error(f"WhatsApp webhook error: {message_data.get('error')}")
-            return {"status": "error"}
-        
-        # Process conversation
-        from_number = message_data['from_number']
-        content = message_data['content']
-        msg_type = message_data['message_type']
-        location_data = message_data.get('location')
-        
-        response_message = conversation_service.process_message(
-            from_number, content, msg_type, location_data, db
-        )
-        
-        # Send response
-        if response_message:
-            whatsapp_service.send_whatsapp_message(from_number, response_message)
-        
-        return {"status": "processed"}
+        return result
         
     except Exception as e:
         logger.error(f"WhatsApp webhook processing error: {e}")
