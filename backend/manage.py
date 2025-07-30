@@ -590,6 +590,9 @@ def main():
     elif command == "check-db":
         check_db()
     
+    elif command == "fix-passwords":
+        fix_passwords()
+    
     elif command == "add-fixer":
         if len(sys.argv) < 5 or len(sys.argv) > 6:
             print("❌ Usage: python backend/manage.py add-fixer \"Full Name\" \"phone\" \"skill1,skill2,skill3\" [password]")
