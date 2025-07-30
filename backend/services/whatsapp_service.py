@@ -72,6 +72,10 @@ class WhatsAppService:
                 }
             }
             
+            # Add phone number ID if available
+            if self.phone_number_id:
+                payload["from"] = self.phone_number_id
+            
             # Add media if provided
             if media_url:
                 payload["type"] = "image"
