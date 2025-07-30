@@ -1063,6 +1063,301 @@ async def get_fixer_behavior_analysis(fixer_id: str, db: Session = Depends(get_d
         "last_analyzed_at": analysis.last_analyzed_at.isoformat()
     }
 
+# AI-Powered Smart Matching Endpoints
+
+@api_router.post("/jobs/{job_id}/smart-match")
+async def find_smart_matches_for_job(job_id: str, request: dict, db: Session = Depends(get_db)):
+    """
+    Find best fixer matches for a job using AI-powered smart matching.
+    Returns ranked list of fixers with match scores and explanations.
+    """
+    try:
+        # Get the job
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Get matching parameters
+        limit = request.get('limit', 10)
+        auto_notify = request.get('auto_notify', False)
+        
+        # Find best matches using AI
+        matches = smart_matching_service.find_best_fixers_for_job(db, job, limit)
+        
+        if not matches:
+            return {
+                'success': True,
+                'message': 'No suitable fixers found for this job',
+                'matches': [],
+                'job_id': job_id,
+                'search_performed': True
+            }
+        
+        # Auto-notify fixers if requested
+        notification_result = None
+        if auto_notify and matches:
+            # Select top matches for notification (max 5)
+            top_matches = matches[:5]
+            notification_result = smart_matching_service.notify_selected_fixers(db, job, top_matches)
+        
+        return {
+            'success': True,
+            'message': f'Found {len(matches)} suitable fixers',
+            'matches': matches,
+            'job_id': job_id,
+            'search_performed': True,
+            'notification_result': notification_result
+        }
+        
+    except Exception as e:
+        logger.error(f"Smart matching error for job {job_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Smart matching failed: {str(e)}")
+
+@api_router.get("/jobs/{job_id}/match-insights")
+async def get_job_match_insights(job_id: str, db: Session = Depends(get_db)):
+    """
+    Get AI insights about matching opportunities for a specific job.
+    """
+    try:
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Get potential matches (without full scoring)
+        potential_fixers = smart_matching_service._get_eligible_fixers(db, job)
+        
+        if not potential_fixers:
+            return {
+                'job_id': job_id,
+                'insights': {
+                    'status': 'no_fixers',
+                    'message': 'No eligible fixers found in the system',
+                    'recommendations': [
+                        'Consider expanding service categories',
+                        'Review location coverage',
+                        'Check if more fixers need approval'
+                    ]
+                }
+            }
+        
+        # Prepare data for analysis
+        job_data = smart_matching_service._prepare_job_data(job)
+        fixer_data = [smart_matching_service._enrich_fixer_data(db, fixer, job) for fixer in potential_fixers]
+        
+        # Get AI insights
+        insights = ai_service.generate_matching_insights(job_data, [])
+        
+        # Add additional statistics
+        insights.update({
+            'total_eligible_fixers': len(potential_fixers),
+            'avg_distance': sum(f['distance_km'] for f in fixer_data if f['distance_km'] != float('inf')) / max(1, len([f for f in fixer_data if f['distance_km'] != float('inf')])),
+            'available_now': sum(1 for f in fixer_data if f['is_available']),
+            'highly_rated': sum(1 for f in fixer_data if f['rating'] >= 4.0),
+            'service_area_coverage': len([f for f in fixer_data if f['distance_km'] <= 20])
+        })
+        
+        return {
+            'job_id': job_id,
+            'insights': insights
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting match insights for job {job_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get insights: {str(e)}")
+
+@api_router.get("/fixer/{fixer_id}/match-history")
+async def get_fixer_match_history(fixer_id: str, days: int = 30, db: Session = Depends(get_db)):
+    """
+    Get fixer's matching performance history and statistics.
+    """
+    try:
+        # Verify fixer exists
+        fixer = db.query(Fixer).filter(Fixer.id == fixer_id).first()
+        if not fixer:
+            raise HTTPException(status_code=404, detail="Fixer not found")
+        
+        # Get match history
+        history = smart_matching_service.get_fixer_match_history(db, fixer_id, days)
+        
+        if 'error' in history:
+            raise HTTPException(status_code=500, detail=history['error'])
+        
+        return {
+            'success': True,
+            'fixer_id': fixer_id,
+            'fixer_name': fixer.name,
+            'match_history': history
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting match history for fixer {fixer_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get match history: {str(e)}")
+
+@api_router.post("/fixer/{fixer_id}/match-test")
+async def test_fixer_matching(fixer_id: str, request: dict, db: Session = Depends(get_db)):
+    """
+    Test how well a fixer would match against a hypothetical job.
+    Useful for fixer onboarding and skill assessment.
+    """
+    try:
+        # Verify fixer exists
+        fixer = db.query(Fixer).filter(Fixer.id == fixer_id).first()
+        if not fixer:
+            raise HTTPException(status_code=404, detail="Fixer not found")
+        
+        # Create mock job from request
+        mock_job_data = {
+            'id': 'test-job',
+            'service': request.get('service', 'handyman'),
+            'description': request.get('description', 'Test job description'),
+            'location': request.get('location', 'Cape Town'),
+            'latitude': request.get('latitude'),
+            'longitude': request.get('longitude'),
+            'estimated_price': request.get('estimated_price', 500.0),
+            'priority_level': request.get('priority_level', 'normal'),
+            'is_emergency': False,
+            'client_language': request.get('client_language', 'english')
+        }
+        
+        # Create mock job object for distance calculation
+        class MockJob:
+            def __init__(self, data):
+                for key, value in data.items():
+                    setattr(self, key, value)
+        
+        mock_job = MockJob(mock_job_data)
+        
+        # Enrich fixer data
+        fixer_data = smart_matching_service._enrich_fixer_data(db, fixer, mock_job)
+        
+        # Calculate match score
+        match_result = ai_service.calculate_smart_match_score(fixer_data, mock_job_data)
+        
+        return {
+            'success': True,
+            'fixer_id': fixer_id,
+            'fixer_name': fixer.name,
+            'test_job': mock_job_data,
+            'match_result': match_result,
+            'recommendation': match_result['recommendation'],
+            'explanation': match_result['explanation']
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error testing match for fixer {fixer_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Match test failed: {str(e)}")
+
+@api_router.get("/admin/matching-performance")
+async def get_matching_performance(days: int = 7, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Get overall matching performance analytics (Admin only).
+    """
+    # Check admin permissions
+    if current_user.role not in ['admin', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        performance = smart_matching_service.analyze_matching_performance(db, days)
+        
+        if 'error' in performance:
+            raise HTTPException(status_code=500, detail=performance['error'])
+        
+        return {
+            'success': True,
+            'performance_analysis': performance,
+            'analyzed_by': current_user.display_name,
+            'generated_at': datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting matching performance: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get performance data: {str(e)}")
+
+@api_router.post("/admin/improve-matching")
+async def get_matching_improvement_suggestions(request: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Get AI-powered suggestions for improving matching performance (Admin only).
+    """
+    # Check admin permissions
+    if current_user.role not in ['admin', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        days = request.get('analysis_days', 30)
+        
+        # Get performance data
+        performance = smart_matching_service.analyze_matching_performance(db, days)
+        
+        # Get recent problematic jobs
+        cutoff_date = datetime.utcnow() - timedelta(days=days)
+        unassigned_jobs = db.query(Job).filter(
+            Job.created_at >= cutoff_date,
+            Job.fixer_id == None,
+            Job.status != 'cancelled'
+        ).limit(10).all()
+        
+        # Prepare data for AI analysis
+        problem_data = {
+            'performance': performance,
+            'unassigned_jobs': [
+                {
+                    'service': job.service,
+                    'description': job.description,
+                    'location': job.location,
+                    'created_hours_ago': (datetime.utcnow() - job.created_at).total_seconds() / 3600
+                }
+                for job in unassigned_jobs
+            ]
+        }
+        
+        # Generate AI recommendations
+        if ai_service.model:
+            prompt = f"""
+            Analyze this FixMate-SA matching performance data and provide specific improvement recommendations:
+            
+            Performance Data: {json.dumps(problem_data, indent=2)}
+            
+            Provide 3-5 specific, actionable recommendations to improve job-to-fixer matching success rates.
+            Focus on:
+            1. Geographic coverage gaps
+            2. Service category imbalances
+            3. Fixer availability optimization
+            4. Quality threshold adjustments
+            5. Notification strategy improvements
+            
+            Format as a JSON array of recommendation objects with 'category', 'recommendation', and 'impact' fields.
+            """
+            
+            try:
+                response = ai_service.model.generate_content(prompt)
+                ai_recommendations = response.text.strip()
+            except:
+                ai_recommendations = "AI recommendations unavailable - please review performance data manually"
+        else:
+            ai_recommendations = "AI service not configured"
+        
+        return {
+            'success': True,
+            'analysis_period_days': days,
+            'performance_summary': performance,
+            'problematic_jobs_count': len(unassigned_jobs),
+            'ai_recommendations': ai_recommendations,
+            'analyzed_by': current_user.display_name,
+            'generated_at': datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating matching improvements: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate recommendations: {str(e)}")
+
 # Review endpoints
 @api_router.post("/reviews", response_model=ReviewResponse)
 async def create_review(review: ReviewCreate, db: Session = Depends(get_db)):
