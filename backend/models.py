@@ -730,3 +730,188 @@ class DisputeMessage(Base):
     
     def __repr__(self):
         return f"<DisputeMessage(id='{self.id}', dispute_id='{self.dispute_id}', sender_type='{self.sender_type}')>"
+
+# ======= PHASE 3 ENHANCEMENTS: AUTOMATION & ENGAGEMENT MODELS =======
+
+class FixerReputationTier(Base):
+    """
+    Model for fixer reputation tiers and gamification system.
+    Manages badges, levels, and performance-based incentives.
+    """
+    __tablename__ = "fixer_reputation_tiers"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    fixer_id = Column(String, ForeignKey("fixers.id"), nullable=False, unique=True)
+    
+    # Current Tier Status
+    current_tier = Column(String, default='apprentice')  # 'apprentice', 'skilled', 'expert', 'master', 'legend'
+    tier_points = Column(Integer, default=0)  # Total points accumulated
+    tier_level = Column(Integer, default=1)  # Numeric level within tier
+    
+    # Performance Metrics
+    jobs_completed = Column(Integer, default=0)
+    client_satisfaction_avg = Column(Float, default=0.0)
+    response_time_avg = Column(Float, default=0.0)  # Average response time in minutes
+    completion_rate = Column(Float, default=100.0)  # Percentage of jobs completed
+    reliability_score = Column(Float, default=100.0)  # Overall reliability
+    
+    # Achievements & Badges
+    badges_earned = Column(Text, nullable=True)  # JSON array of badge IDs
+    achievements = Column(Text, nullable=True)  # JSON array of achievement data
+    milestones_reached = Column(Text, nullable=True)  # JSON array of milestone data
+    
+    # Tier Benefits
+    priority_access = Column(Boolean, default=False)  # Early access to high-value jobs
+    lower_platform_fees = Column(Float, default=0.0)  # Percentage fee reduction
+    verified_status = Column(Boolean, default=False)  # Verified professional status
+    featured_listing = Column(Boolean, default=False)  # Featured in search results
+    
+    # Gamification Elements
+    streak_count = Column(Integer, default=0)  # Current success streak
+    best_streak = Column(Integer, default=0)  # Best streak achieved
+    monthly_goals = Column(Text, nullable=True)  # JSON with monthly targets
+    rewards_claimed = Column(Text, nullable=True)  # JSON array of claimed rewards
+    
+    # Progress Tracking
+    last_tier_promotion = Column(DateTime, nullable=True)
+    next_tier_requirements = Column(Text, nullable=True)  # JSON with requirements
+    progress_to_next_tier = Column(Float, default=0.0)  # Percentage progress
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    fixer = relationship("Fixer")
+    
+    def __repr__(self):
+        return f"<FixerReputationTier(fixer_id='{self.fixer_id}', tier='{self.current_tier}', level={self.tier_level})>"
+
+class BadgeDefinition(Base):
+    """
+    Model for defining available badges and achievements.
+    Centralizes badge criteria and rewards.
+    """
+    __tablename__ = "badge_definitions"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    
+    # Badge Information
+    badge_code = Column(String, unique=True, nullable=False)  # Unique identifier
+    name = Column(String, nullable=False)  # Display name
+    description = Column(Text, nullable=False)  # Badge description
+    icon = Column(String, nullable=True)  # Emoji or icon code
+    category = Column(String, nullable=False)  # 'performance', 'milestone', 'special', 'seasonal'
+    
+    # Requirements
+    criteria = Column(Text, nullable=False)  # JSON with badge criteria
+    difficulty = Column(String, default='easy')  # 'easy', 'medium', 'hard', 'legendary'
+    
+    # Rewards
+    points_reward = Column(Integer, default=0)  # Points awarded
+    tier_boost = Column(Float, default=0.0)  # Tier progress boost
+    special_benefits = Column(Text, nullable=True)  # JSON with special benefits
+    
+    # Status
+    is_active = Column(Boolean, default=True)
+    is_visible = Column(Boolean, default=True)  # If visible to fixers
+    launch_date = Column(DateTime, default=datetime.utcnow)
+    expiry_date = Column(DateTime, nullable=True)  # For seasonal badges
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<BadgeDefinition(code='{self.badge_code}', name='{self.name}', category='{self.category}')>"
+
+class AIConversation(Base):
+    """
+    Model for tracking AI chat assistant conversations.
+    Supports multilingual conversations and context tracking.
+    """
+    __tablename__ = "ai_conversations"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=True)  # Nullable for anonymous chats
+    session_id = Column(String, nullable=False)  # Session identifier
+    
+    # Conversation Details
+    language = Column(String, default='english')  # Conversation language
+    user_type = Column(String, nullable=False)  # 'client', 'fixer', 'anonymous'
+    conversation_context = Column(Text, nullable=True)  # JSON with conversation context
+    
+    # Message Content
+    messages = Column(Text, nullable=True)  # JSON array of conversation messages
+    total_messages = Column(Integer, default=0)
+    user_messages = Column(Integer, default=0)
+    ai_responses = Column(Integer, default=0)
+    
+    # Conversation Status
+    status = Column(String, default='active')  # 'active', 'completed', 'escalated', 'abandoned'
+    satisfaction_rating = Column(Integer, nullable=True)  # 1-5 rating from user
+    resolved_query = Column(Boolean, default=False)  # If user's query was resolved
+    escalated_to_human = Column(Boolean, default=False)  # If escalated to human support
+    
+    # AI Performance
+    avg_response_confidence = Column(Float, default=0.0)  # Average AI confidence
+    topics_discussed = Column(Text, nullable=True)  # JSON array of topics
+    actions_performed = Column(Text, nullable=True)  # JSON array of actions taken
+    
+    # Session Timing
+    started_at = Column(DateTime, default=datetime.utcnow)
+    last_message_at = Column(DateTime, default=datetime.utcnow)
+    ended_at = Column(DateTime, nullable=True)
+    duration_minutes = Column(Float, nullable=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User")
+    
+    def __repr__(self):
+        return f"<AIConversation(id='{self.id}', user_type='{self.user_type}', language='{self.language}', status='{self.status}')>"
+
+class NotificationQueue(Base):
+    """
+    Model for managing automated notifications and updates.
+    Handles SMS, WhatsApp, and in-app notifications.
+    """
+    __tablename__ = "notification_queue"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    recipient_id = Column(String, ForeignKey("users.id"), nullable=False)
+    
+    # Notification Details
+    notification_type = Column(String, nullable=False)  # 'sms', 'whatsapp', 'in_app', 'email'
+    category = Column(String, nullable=False)  # 'job_update', 'eta_update', 'promotion', 'achievement'
+    priority = Column(String, default='normal')  # 'low', 'normal', 'high', 'urgent'
+    
+    # Content
+    title = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    action_url = Column(String, nullable=True)  # Deep link or URL
+    action_label = Column(String, nullable=True)  # Button text
+    
+    # Delivery
+    scheduled_for = Column(DateTime, default=datetime.utcnow)
+    sent_at = Column(DateTime, nullable=True)
+    delivery_status = Column(String, default='pending')  # 'pending', 'sent', 'delivered', 'failed', 'cancelled'
+    delivery_attempts = Column(Integer, default=0)
+    error_message = Column(Text, nullable=True)
+    
+    # Tracking
+    opened_at = Column(DateTime, nullable=True)
+    clicked_at = Column(DateTime, nullable=True)
+    
+    # Context
+    related_job_id = Column(String, ForeignKey("jobs.id"), nullable=True)
+    context_data = Column(Text, nullable=True)  # JSON with additional data
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    recipient = relationship("User")
+    related_job = relationship("Job")
+    
+    def __repr__(self):
+        return f"<NotificationQueue(id='{self.id}', type='{self.notification_type}', status='{self.delivery_status}')>"
