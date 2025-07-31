@@ -857,23 +857,136 @@ async def create_job(job: JobCreate, db: Session = Depends(get_db)):
     return db_job
 
 @api_router.get("/jobs", response_model=List[JobResponse])
-async def get_jobs(user_id: str = None, fixer_id: str = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+@cache_job_data(ttl=120)  # Cache for 2 minutes
+@PerformanceMonitor.time_function("get_jobs")
+async def get_jobs(
+    user_id: str = None, 
+    fixer_id: str = None, 
+    service: str = None,
+    status: str = None,
+    location: str = None,
+    skip: int = 0, 
+    limit: int = 20, 
+    db: Session = Depends(get_db)
+):
+    """
+    Get jobs with optimized queries, caching, and pagination
+    """
+    # Build query with filters
     query = db.query(Job)
     
     if user_id:
         query = query.filter(Job.user_id == user_id)
     if fixer_id:
         query = query.filter(Job.fixer_id == fixer_id)
+    if service:
+        query = query.filter(Job.service.ilike(f"%{service}%"))
+    if status:
+        query = query.filter(Job.status == status)
+    if location:
+        query = query.filter(Job.location.ilike(f"%{location}%"))
     
-    jobs = query.offset(skip).limit(limit).all()
-    return jobs
+    # Add eager loading for relationships
+    query = DatabaseOptimizer.add_eager_loading(query, Job.user, Job.fixer)
+    
+    # Apply pagination with optimization
+    query = DatabaseOptimizer.optimize_query_with_pagination(query, skip, limit, max_limit=100)
+    
+    # Order by most recent first
+    query = query.order_by(Job.created_at.desc())
+    
+    jobs = query.all()
+    
+    # Get total count for pagination (cached separately)
+    total_count = db.query(func.count(Job.id)).scalar()
+    
+    # Format response with optimized data
+    job_responses = []
+    for job in jobs:
+        job_data = {
+            "id": job.id,
+            "user_id": job.user_id,
+            "fixer_id": job.fixer_id,
+            "service": job.service,
+            "description": job.description,
+            "location": job.location,
+            "status": job.status,
+            "estimated_price": job.estimated_price,
+            "created_at": job.created_at.isoformat() if job.created_at else None,
+            "updated_at": job.updated_at.isoformat() if job.updated_at else None,
+            "user": {
+                "id": job.user.id,
+                "phone": job.user.phone,
+                "first_name": job.user.first_name,
+                "last_name": job.user.last_name
+            } if job.user else None,
+            "fixer": {
+                "id": job.fixer.id,
+                "phone": job.fixer.phone,
+                "service": job.fixer.service,
+                "rating": job.fixer.rating
+            } if job.fixer else None
+        }
+        job_responses.append(job_data)
+    
+    return ResponseOptimizer.paginate_response(
+        data=job_responses,
+        total=total_count,
+        skip=skip,
+        limit=limit
+    )
 
 @api_router.get("/jobs/{job_id}", response_model=JobResponse)
+@cache_job_data(ttl=300)  # Cache individual jobs for 5 minutes
+@PerformanceMonitor.time_function("get_job")
 async def get_job(job_id: str, db: Session = Depends(get_db)):
-    job = db.query(Job).filter(Job.id == job_id).first()
+    """
+    Get single job with caching and eager loading
+    """
+    query = db.query(Job).filter(Job.id == job_id)
+    query = DatabaseOptimizer.add_eager_loading(query, Job.user, Job.fixer, Job.reviews)
+    
+    job = query.first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    return job
+    
+    # Format optimized response
+    job_data = {
+        "id": job.id,
+        "user_id": job.user_id,
+        "fixer_id": job.fixer_id,
+        "service": job.service,
+        "description": job.description,
+        "location": job.location,
+        "status": job.status,
+        "estimated_price": job.estimated_price,
+        "created_at": job.created_at.isoformat() if job.created_at else None,
+        "updated_at": job.updated_at.isoformat() if job.updated_at else None,
+        "user": {
+            "id": job.user.id,
+            "phone": job.user.phone,
+            "first_name": job.user.first_name,
+            "last_name": job.user.last_name
+        } if job.user else None,
+        "fixer": {
+            "id": job.fixer.id,
+            "phone": job.fixer.phone,
+            "service": job.fixer.service,
+            "rating": job.fixer.rating,
+            "location": job.fixer.location
+        } if job.fixer else None,
+        "reviews": [
+            {
+                "id": review.id,
+                "rating": review.rating,
+                "comment": review.comment,
+                "created_at": review.created_at.isoformat()
+            }
+            for review in job.reviews
+        ] if job.reviews else []
+    }
+    
+    return ResponseOptimizer.compress_json_response(job_data)
 
 @api_router.put("/jobs/{job_id}", response_model=JobResponse)
 async def update_job(job_id: str, job_update: JobUpdate, db: Session = Depends(get_db)):
