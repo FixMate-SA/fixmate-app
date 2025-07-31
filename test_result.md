@@ -1732,7 +1732,7 @@ backend:
   - agent: "testing"
     message: "🚀 PHASE 3: AUTOMATION & ENGAGEMENT SYSTEM TESTING COMPLETED! Comprehensive testing of Phase 3 advanced features with 64.3% success rate (9/14 tests passed): ✅ AI MULTILINGUAL ASSISTANT: All 5 AI chat features working perfectly - conversation start/end, message processing with intent recognition (greeting, 0.9 confidence), conversation history retrieval, anonymous chat support. Session management and context tracking fully functional. ✅ ADMIN ANALYTICS: Both admin analytics endpoints working correctly - gamification stats retrieval (tier distribution, top performers), AI chat analytics with completion rates (40% completion rate from 5 conversations). Admin authentication and permission controls operational. ✅ REAL-TIME TRACKING STATUS: Job tracking status retrieval working correctly, properly returns tracking information when available. ❌ CRITICAL ISSUES IDENTIFIED: Real-time tracking endpoints (start/location/complete) failing with HTTP 400 errors due to authentication design flaw - endpoints expect user_id to match fixer_id but these are different entities (User.id vs Fixer.id). Server passes current_user.id as fixer_id but should find fixer record by user_id first. ❌ Gamification reputation endpoints failing with HTTP 403 errors due to same authentication issue - permission check compares user_id with fixer_id incorrectly. TECHNICAL ROOT CAUSE: Phase 3 endpoints incorrectly assume user_id equals fixer_id, but Fixer model has separate user_id field linking to User table. Server should query Fixer table by user_id to get actual fixer_id for service calls. RECOMMENDATION: Fix authentication logic in Phase 3 endpoints to properly handle User-Fixer relationship before production deployment."
 
-user_problem_statement: "Test the newly implemented Phase 3: Automation & Engagement systems in FixMate-SA backend. Focus on Real-Time Tracking, Gamification, and AI Assistant functionality."
+user_problem_statement: "Test the newly implemented Phase 3: Automation & Engagement systems in FixMate-SA backend after fixing critical authentication issues. Focus on Real-Time Tracking, Gamification, and AI Assistant functionality."
 
 backend:
   - task: "Real-Time Job Tracking - Start Tracking"
@@ -1746,6 +1746,9 @@ backend:
       - working: false
         agent: "testing"
         comment: "❌ CRITICAL: POST /api/jobs/{job_id}/tracking/start returns HTTP 400. Root cause: Authentication design flaw - endpoint passes current_user.id as fixer_id to tracking service, but current_user.id is User.id while service expects Fixer.id. These are different entities. Fixer model has user_id field linking to User table. Server should query Fixer by user_id first to get actual fixer_id."
+      - working: "NEEDS_TESTING"
+        agent: "main"
+        comment: "🔧 AUTHENTICATION FIX APPLIED: Modified endpoint to find fixer record by current_user.id using Fixer.user_id relationship, then use actual fixer.id for service calls. Added proper access control - only registered fixers can start tracking. Fix addresses core authentication design flaw identified in testing."
 
   - task: "Real-Time Job Tracking - Location Updates"
     implemented: true
@@ -1758,6 +1761,9 @@ backend:
       - working: false
         agent: "testing"
         comment: "❌ CRITICAL: POST /api/jobs/{job_id}/tracking/location returns HTTP 400. Same authentication design flaw as start tracking - current_user.id passed as fixer_id but service expects actual Fixer.id. Need to resolve User-Fixer relationship in endpoint logic."
+      - working: "NEEDS_TESTING"
+        agent: "main"
+        comment: "🔧 AUTHENTICATION FIX APPLIED: Modified endpoint to find fixer record by current_user.id using Fixer.user_id relationship, then use actual fixer.id for service calls. Added proper access control and validation. Same fix pattern as start tracking endpoint."
 
   - task: "Real-Time Job Tracking - Complete Tracking"
     implemented: true
@@ -1770,6 +1776,9 @@ backend:
       - working: false
         agent: "testing"
         comment: "❌ CRITICAL: POST /api/jobs/{job_id}/tracking/complete returns HTTP 400. Same authentication design flaw - endpoint authentication logic needs to find fixer record by current_user.id (user_id) to get proper fixer_id for service calls."
+      - working: "NEEDS_TESTING"
+        agent: "main"
+        comment: "🔧 AUTHENTICATION FIX APPLIED: Modified endpoint to find fixer record by current_user.id using Fixer.user_id relationship, then use actual fixer.id for service calls. Consistent with other tracking endpoint fixes."
 
   - task: "Real-Time Job Tracking - Status Retrieval"
     implemented: true
