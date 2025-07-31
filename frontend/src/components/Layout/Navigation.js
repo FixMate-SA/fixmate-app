@@ -128,6 +128,15 @@ const Navigation = () => {
       permission: 'can_access_admin'
     },
     
+    // Phase 3: Automation & Engagement
+    { 
+      path: '/phase3', 
+      label: t('phase3Dashboard', 'Phase 3: Auto & Engage'), 
+      icon: '🚀',
+      roles: ['client', 'fixer', 'admin'],
+      permission: null
+    },
+    
     // Profile - available to all
     { 
       path: '/profile', 
