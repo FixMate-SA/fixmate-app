@@ -1287,30 +1287,31 @@ class FixMateAPITester:
         
         try:
             headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
-            update_data = {
+            # Send as form data since the endpoint expects individual parameters
+            data = {
                 "job_id": self.test_data['job_id'],
                 "fixer_id": self.test_data['fixer_id'],
-                "success": True,
-                "completion_time_hours": 2.5,
-                "satisfaction_rating": 4.8
+                "success": "true",
+                "completion_time_hours": "2.5",
+                "satisfaction_rating": "4.8"
             }
             
             response = self.session.post(
                 f"{API_BASE}/matching/update-success",
-                json=update_data,
+                data=data,
                 headers=headers
             )
             
             if response.status_code == 200:
                 data = response.json()
                 if data.get('success'):
-                    learning_applied = data.get('learning_applied', False)
-                    pattern_updates = data.get('pattern_updates', 0)
+                    updated_by = data.get('updated_by', 'unknown')
+                    timestamp = data.get('timestamp', 'unknown')
                     
                     self.log_result("Matching Update Success", True, 
                                   f"Reinforcement learning update successful: "
-                                  f"Learning applied: {learning_applied}, "
-                                  f"Pattern updates: {pattern_updates}")
+                                  f"Updated by: {updated_by}, "
+                                  f"Timestamp: {timestamp}")
                     return True
                 else:
                     self.log_result("Matching Update Success", False, "Update failed", response)
