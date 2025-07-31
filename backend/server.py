@@ -75,11 +75,8 @@ async def startup_event():
         # Initialize cache
         await performance_service.initialize_cache(app)
         
-        # Setup compression
-        performance_service.setup_compression(app)
-        
-        # Setup caching headers
-        performance_service.setup_caching_headers(app)
+        # Note: Compression and caching headers middleware should be added before startup
+        # They are now added after app creation but before startup
         
         logger.info("Performance optimizations initialized successfully")
     except Exception as e:
