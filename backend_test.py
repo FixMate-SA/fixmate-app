@@ -1178,7 +1178,196 @@ class FixMateAPITester:
             self.log_result("Get Offline Actions", False, f"Request error: {str(e)}")
         return False
     
-    # ======= PHASE 4B: PERFORMANCE OPTIMIZATION TESTING =======
+    # ======= ENHANCED AI SMART MATCHING TESTING =======
+    
+    def test_enhanced_smart_match(self):
+        """Test enhanced AI-powered smart matching endpoint"""
+        if 'job_id' not in self.test_data:
+            self.log_result("Enhanced Smart Match", False, "No job ID available from previous tests")
+            return False
+        
+        if 'token' not in self.test_data:
+            self.log_result("Enhanced Smart Match", False, "No user token available from previous tests")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            params = {"limit": 10}
+            
+            response = self.session.post(
+                f"{API_BASE}/jobs/{self.test_data['job_id']}/enhanced-match",
+                params=params,
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'matches' in data:
+                    matches = data['matches']
+                    algorithm_version = data.get('algorithm_version', 'unknown')
+                    notifications_sent = data.get('notifications_sent', [])
+                    
+                    self.log_result("Enhanced Smart Match", True, 
+                                  f"Enhanced matching successful: {len(matches)} matches found, "
+                                  f"Algorithm: {algorithm_version}, "
+                                  f"Notifications: {len(notifications_sent)} sent")
+                    return True
+                else:
+                    self.log_result("Enhanced Smart Match", False, "Invalid response format", response)
+            else:
+                self.log_result("Enhanced Smart Match", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Enhanced Smart Match", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_enhanced_match_insights(self):
+        """Test enhanced matching insights endpoint"""
+        if 'job_id' not in self.test_data:
+            self.log_result("Enhanced Match Insights", False, "No job ID available from previous tests")
+            return False
+        
+        if 'token' not in self.test_data:
+            self.log_result("Enhanced Match Insights", False, "No user token available from previous tests")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            
+            response = self.session.get(
+                f"{API_BASE}/jobs/{self.test_data['job_id']}/enhanced-insights",
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'insights' in data:
+                    insights = data['insights']
+                    job_details = insights.get('job_details', {})
+                    market_analysis = insights.get('market_analysis', {})
+                    
+                    self.log_result("Enhanced Match Insights", True, 
+                                  f"Enhanced insights retrieved: Service: {job_details.get('service', 'unknown')}, "
+                                  f"Eligible fixers: {market_analysis.get('eligible_fixers', 0)}, "
+                                  f"Location demand: {market_analysis.get('location_demand', 'unknown')}")
+                    return True
+                else:
+                    self.log_result("Enhanced Match Insights", False, "Invalid response format", response)
+            else:
+                self.log_result("Enhanced Match Insights", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Enhanced Match Insights", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_update_matching_success_admin_only(self):
+        """Test updating matching success for reinforcement learning (Admin only)"""
+        if 'admin_token' not in self.test_data:
+            self.log_result("Update Matching Success (Admin Only)", False, "No admin token available from previous tests")
+            return False
+        
+        if 'job_id' not in self.test_data or 'fixer_id' not in self.test_data:
+            self.log_result("Update Matching Success (Admin Only)", False, "No job ID or fixer ID available from previous tests")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
+            update_data = {
+                "job_id": self.test_data['job_id'],
+                "fixer_id": self.test_data['fixer_id'],
+                "success": True,
+                "completion_time_hours": 2.5,
+                "satisfaction_rating": 4.8
+            }
+            
+            response = self.session.post(
+                f"{API_BASE}/matching/update-success",
+                json=update_data,
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    updated_by = data.get('updated_by', 'unknown')
+                    self.log_result("Update Matching Success (Admin Only)", True, 
+                                  f"Matching success updated successfully by {updated_by}")
+                    return True
+                else:
+                    self.log_result("Update Matching Success (Admin Only)", False, "Update failed", response)
+            else:
+                self.log_result("Update Matching Success (Admin Only)", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Update Matching Success (Admin Only)", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_enhanced_matching_analytics_admin_only(self):
+        """Test enhanced matching analytics endpoint (Admin only)"""
+        if 'admin_token' not in self.test_data:
+            self.log_result("Enhanced Matching Analytics (Admin Only)", False, "No admin token available from previous tests")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
+            params = {"timeframe_days": 30}
+            
+            response = self.session.get(
+                f"{API_BASE}/admin/enhanced-matching-analytics",
+                params=params,
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'analytics' in data:
+                    analytics = data['analytics']
+                    
+                    # Check for expected analytics fields
+                    expected_fields = ['total_matches', 'success_rate', 'avg_response_time', 'top_performing_fixers']
+                    present_fields = [field for field in expected_fields if field in analytics]
+                    
+                    self.log_result("Enhanced Matching Analytics (Admin Only)", True, 
+                                  f"Enhanced analytics retrieved: {len(present_fields)}/{len(expected_fields)} key metrics available")
+                    return True
+                else:
+                    self.log_result("Enhanced Matching Analytics (Admin Only)", False, "Invalid response format", response)
+            else:
+                self.log_result("Enhanced Matching Analytics (Admin Only)", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Enhanced Matching Analytics (Admin Only)", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_matching_algorithm_retrain_admin_only(self):
+        """Test matching algorithm retraining endpoint (Admin only)"""
+        if 'admin_token' not in self.test_data:
+            self.log_result("Matching Algorithm Retrain (Admin Only)", False, "No admin token available from previous tests")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
+            
+            response = self.session.post(
+                f"{API_BASE}/admin/matching/retrain",
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    training_samples = data.get('training_samples', 0)
+                    estimated_completion = data.get('estimated_completion', 'unknown')
+                    initiated_by = data.get('initiated_by', 'unknown')
+                    
+                    self.log_result("Matching Algorithm Retrain (Admin Only)", True, 
+                                  f"Algorithm retraining initiated: {training_samples} samples, "
+                                  f"ETA: {estimated_completion}, "
+                                  f"By: {initiated_by}")
+                    return True
+                else:
+                    self.log_result("Matching Algorithm Retrain (Admin Only)", False, "Retraining initiation failed", response)
+            else:
+                self.log_result("Matching Algorithm Retrain (Admin Only)", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Matching Algorithm Retrain (Admin Only)", False, f"Request error: {str(e)}")
+        return False
     
     def test_performance_cache_status(self):
         """Test getting cache status and statistics"""
