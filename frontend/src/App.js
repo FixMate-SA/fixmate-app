@@ -35,6 +35,7 @@ import JobTrackingControls from "./components/Tracking/JobTrackingControls";
 import JobTrackingStatus from "./components/Tracking/JobTrackingStatus";
 import FixerReputationDashboard from "./components/Gamification/FixerReputationDashboard";
 import AIChatAssistant from "./components/AI/AIChatAssistant";
+import PWAStatusDashboard from "./components/PWA/PWAStatusDashboard";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
