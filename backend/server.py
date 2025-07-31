@@ -857,7 +857,7 @@ async def create_job(job: JobCreate, db: Session = Depends(get_db)):
     
     return db_job
 
-@api_router.get("/jobs", response_model=List[JobResponse])
+@api_router.get("/jobs")
 @cache_job_data(ttl=120)  # Cache for 2 minutes
 @PerformanceMonitor.time_function("get_jobs")
 async def get_jobs(
