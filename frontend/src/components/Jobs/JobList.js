@@ -6,7 +6,7 @@ import EmergencyButton from '../Common/EmergencyButton';
 
 const JobList = () => {
   const { user } = useAuth();
-  const [jobs, setJobs] = useState([]);
+  const [jobs, setJobs] = useState([]); // Initialize as empty array
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
