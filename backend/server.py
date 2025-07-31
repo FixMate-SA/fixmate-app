@@ -37,6 +37,9 @@ from services.job_workflow_service import job_workflow_service
 from services.smart_matching_service import smart_matching_service
 from services.photo_verification_service import photo_verification_service
 from services.dispute_resolution_service import dispute_resolution_service
+from services.real_time_tracking_service import real_time_tracking_service
+from services.gamification_service import gamification_service
+from services.ai_multilingual_assistant import ai_assistant
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
