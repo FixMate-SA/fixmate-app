@@ -890,11 +890,11 @@ async def get_jobs(
     # Add eager loading for relationships
     query = DatabaseOptimizer.add_eager_loading(query, Job.user, Job.fixer)
     
+    # Order by most recent first (must be before pagination)
+    query = query.order_by(Job.created_at.desc())
+    
     # Apply pagination with optimization
     query = DatabaseOptimizer.optimize_query_with_pagination(query, skip, limit, max_limit=100)
-    
-    # Order by most recent first
-    query = query.order_by(Job.created_at.desc())
     
     jobs = query.all()
     
