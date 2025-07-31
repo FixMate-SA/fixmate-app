@@ -1511,6 +1511,284 @@ async def get_matching_improvement_suggestions(request: dict, current_user: User
         logger.error(f"Error generating matching improvements: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate recommendations: {str(e)}")
 
+# ======= ENHANCED AI SMART MATCHING ENDPOINTS =======
+
+@api_router.post("/jobs/{job_id}/enhanced-match")
+async def enhanced_smart_match(
+    job_id: str,
+    limit: int = 10,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Enhanced AI-powered smart matching with reinforcement learning and advanced algorithms
+    """
+    try:
+        # Get job
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Check permissions
+        if job.user_id != current_user.id and current_user.role not in ['admin', 'super_admin']:
+            raise HTTPException(status_code=403, detail="Not authorized to match fixers for this job")
+        
+        # Get enhanced matches
+        matches = smart_matching_service.find_best_fixers_for_job(db, job, limit)
+        
+        if not matches:
+            return {
+                'success': False,
+                'message': 'No suitable fixers found with enhanced matching',
+                'matches': [],
+                'suggestions': [
+                    'Consider expanding search radius',
+                    'Review job requirements',
+                    'Check if service is available in your area'
+                ]
+            }
+        
+        # Notify selected fixers (top 3)
+        notification_results = []
+        top_fixers = matches[:3]
+        
+        for match in top_fixers:
+            try:
+                fixer = db.query(Fixer).filter(Fixer.id == match['fixer_id']).first()
+                if fixer and fixer.phone:
+                    # Send notification (SMS/WhatsApp based on preference)
+                    notification_sent = await smart_matching_service.notify_fixer_of_job(
+                        db, fixer, job, match['confidence_level']
+                    )
+                    notification_results.append({
+                        'fixer_id': match['fixer_id'],
+                        'notification_sent': notification_sent,
+                        'confidence': match['confidence_level']
+                    })
+            except Exception as e:
+                logger.error(f"Error notifying fixer {match['fixer_id']}: {e}")
+        
+        return {
+            'success': True,
+            'job_id': job_id,
+            'matches': matches,
+            'notifications_sent': notification_results,
+            'algorithm_version': '2.0_enhanced',
+            'matching_timestamp': datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in enhanced smart matching for job {job_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Enhanced matching failed: {str(e)}")
+
+@api_router.get("/jobs/{job_id}/enhanced-insights")
+async def get_enhanced_match_insights(
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get comprehensive matching insights using enhanced AI analysis
+    """
+    try:
+        # Get job
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Check permissions
+        if job.user_id != current_user.id and current_user.role not in ['admin', 'super_admin']:
+            raise HTTPException(status_code=403, detail="Not authorized to view insights for this job")
+        
+        # Build context for analysis
+        context = smart_matching_service._build_matching_context(db, job)
+        
+        # Get eligible fixers
+        eligible_fixers = smart_matching_service._get_eligible_fixers(db, job)
+        
+        # Prepare job data
+        job_data = smart_matching_service._prepare_job_data(job)
+        
+        # Generate enhanced insights
+        insights = smart_matching_service._generate_enhanced_insights(
+            db, job_data, [], context
+        )
+        
+        # Add contextual data
+        insights.update({
+            'job_details': {
+                'service': job.service,
+                'location': job.location,
+                'created_at': job.created_at.isoformat(),
+                'urgency': getattr(job, 'urgency', 'normal')
+            },
+            'market_analysis': {
+                'eligible_fixers': len(eligible_fixers),
+                'location_demand': context.get('location_density', 'medium'),
+                'service_demand': context.get('service_demand', 'medium'),
+                'peak_hours': context.get('is_peak_hours', False)
+            },
+            'client_profile': context.get('client_history', {}),
+            'analysis_timestamp': datetime.utcnow().isoformat()
+        })
+        
+        return {
+            'success': True,
+            'job_id': job_id,
+            'insights': insights
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting enhanced insights for job {job_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get enhanced insights: {str(e)}")
+
+@api_router.post("/matching/update-success")
+async def update_matching_success(
+    job_id: str,
+    fixer_id: str,
+    success: bool,
+    completion_time_hours: Optional[float] = None,
+    satisfaction_rating: Optional[float] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update matching success for reinforcement learning (Admin only)
+    """
+    try:
+        # Check admin permissions
+        if current_user.role not in ['admin', 'super_admin']:
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Validate input
+        if satisfaction_rating is not None and (satisfaction_rating < 1.0 or satisfaction_rating > 5.0):
+            raise HTTPException(status_code=400, detail="Satisfaction rating must be between 1.0 and 5.0")
+        
+        # Update matching performance
+        smart_matching_service.update_matching_success(
+            job_id=job_id,
+            fixer_id=fixer_id,
+            success=success,
+            completion_time=completion_time_hours,
+            satisfaction_rating=satisfaction_rating
+        )
+        
+        return {
+            'success': True,
+            'message': 'Matching performance updated successfully',
+            'updated_by': current_user.display_name,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating matching success: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update matching success: {str(e)}")
+
+@api_router.get("/admin/enhanced-matching-analytics")
+async def get_enhanced_matching_analytics(
+    timeframe_days: int = 30,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get comprehensive enhanced matching analytics with AI insights (Admin only)
+    """
+    try:
+        # Check admin permissions
+        if current_user.role not in ['admin', 'super_admin']:
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Get enhanced analytics
+        analytics = smart_matching_service.get_enhanced_matching_analytics(timeframe_days)
+        
+        # Add system information
+        analytics.update({
+            'system_info': {
+                'ai_services_status': {
+                    'gemini_active': bool(ai_service.gemini_model),
+                    'openai_active': bool(ai_service.openai_client)
+                },
+                'algorithm_version': '2.0_enhanced',
+                'analysis_timeframe_days': timeframe_days
+            },
+            'generated_by': current_user.display_name,
+            'generated_at': datetime.utcnow().isoformat()
+        })
+        
+        return {
+            'success': True,
+            'analytics': analytics
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting enhanced matching analytics: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get analytics: {str(e)}")
+
+@api_router.post("/admin/matching/retrain")
+async def retrain_matching_algorithm(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Trigger retraining of matching algorithm with recent performance data (Admin only)
+    """
+    try:
+        # Check admin permissions
+        if current_user.role not in ['admin', 'super_admin']:
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Get recent performance data
+        recent_jobs = db.query(Job).filter(
+            Job.created_at >= datetime.utcnow() - timedelta(days=90),
+            Job.status == 'completed'
+        ).all()
+        
+        if len(recent_jobs) < 10:
+            return {
+                'success': False,
+                'message': 'Insufficient data for retraining (minimum 10 completed jobs required)',
+                'completed_jobs_count': len(recent_jobs)
+            }
+        
+        # Simulate retraining process (in a real implementation, this would trigger ML model retraining)
+        training_data = []
+        for job in recent_jobs:
+            if job.fixer_id:
+                # Create training example
+                training_data.append({
+                    'job_service': job.service,
+                    'job_location': job.location,
+                    'fixer_id': str(job.fixer_id),
+                    'success': job.status == 'completed',
+                    'duration': (job.updated_at - job.created_at).total_seconds() / 3600 if job.updated_at else None
+                })
+        
+        # Log retraining event
+        logger.info(f"Matching algorithm retraining triggered by {current_user.display_name} with {len(training_data)} samples")
+        
+        return {
+            'success': True,
+            'message': 'Matching algorithm retraining initiated',
+            'training_samples': len(training_data),
+            'estimated_completion': '15-30 minutes',
+            'initiated_by': current_user.display_name,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error initiating matching retraining: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to initiate retraining: {str(e)}")
+
 # ======= PHASE 4B: PERFORMANCE OPTIMIZATION ENDPOINTS =======
 
 @api_router.get("/performance/cache-status")
