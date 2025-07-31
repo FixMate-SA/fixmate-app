@@ -15,9 +15,22 @@ const JobList = () => {
     const fetchJobs = async () => {
       try {
         const response = await apiService.getJobs({ user_id: user.id });
+        console.log('Jobs API Response:', response); // Debug log
+        
         // Ensure jobs is always an array
-        const jobsData = Array.isArray(response.data) ? response.data : 
-                         Array.isArray(response) ? response : [];
+        let jobsData = [];
+        if (response && response.data && Array.isArray(response.data)) {
+          jobsData = response.data;
+        } else if (response && Array.isArray(response)) {
+          jobsData = response;
+        } else if (response && response.data && response.data.jobs && Array.isArray(response.data.jobs)) {
+          jobsData = response.data.jobs;
+        } else {
+          console.warn('Unexpected API response format:', response);
+          jobsData = [];
+        }
+        
+        console.log('Processed jobs data:', jobsData); // Debug log
         setJobs(jobsData);
       } catch (err) {
         console.error('Error fetching jobs:', err);
