@@ -56,22 +56,23 @@ class SmartMatchingService:
                 fixer_data = self._enrich_fixer_data(db, fixer, job)
                 enriched_fixers.append(fixer_data)
             
-            # Step 4: Use AI to rank fixers
-            ranked_matches = ai_service.rank_fixers_for_job(enriched_fixers, job_data)
+            # Step 4: Use Enhanced AI to rank fixers with advanced algorithms
+            context = self._build_matching_context(db, job)
+            ranked_matches = self._enhanced_fixer_ranking(enriched_fixers, job_data, context)
             
             # Step 5: Filter by minimum threshold and limit results
             quality_matches = [
                 match for match in ranked_matches 
-                if match['match_score'] >= self.min_match_threshold
+                if match.get('total_score', match.get('match_score', 0)) >= self.min_match_threshold
             ]
             
             # Step 6: Apply fair distribution adjustments
             fair_matches = self._apply_fair_distribution(db, quality_matches, job)
             
-            # Step 7: Generate matching insights
-            insights = ai_service.generate_matching_insights(job_data, fair_matches)
+            # Step 7: Generate enhanced matching insights
+            insights = self._generate_enhanced_insights(db, job_data, fair_matches, context)
             
-            logger.info(f"Smart matching completed for job {job.id}: {len(fair_matches)} quality matches")
+            logger.info(f"Enhanced smart matching completed for job {job.id}: {len(fair_matches)} quality matches")
             
             # Return top matches with insights
             result = fair_matches[:limit]
