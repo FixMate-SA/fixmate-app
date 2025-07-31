@@ -452,19 +452,21 @@ class Phase3APITester:
     # ======= PHASE 3: AI MULTILINGUAL ASSISTANT TESTS (SHOULD REMAIN STABLE) =======
     
     def test_ai_assistant_start_conversation(self):
-        """Test POST /api/ai-assistant/conversation/start"""
+        """Test POST /api/ai-chat/start"""
         try:
             conversation_data = {
-                "user_language": "english",
-                "initial_message": "Hello, I need help with a plumbing issue"
+                "language": "english",
+                "user_type": "client"
             }
             
-            response = self.session.post(f"{API_BASE}/ai-assistant/conversation/start", json=conversation_data)
+            headers = {"Authorization": f"Bearer {self.test_data.get('fixer_token', '')}"}
+            response = self.session.post(f"{API_BASE}/ai-chat/start", json=conversation_data, headers=headers)
             
             if response.status_code == 200:
                 data = response.json()
                 if data.get('success') and 'conversation_id' in data:
                     self.test_data['conversation_id'] = data['conversation_id']
+                    self.test_data['session_id'] = data.get('session_id')
                     self.log_result("AI Assistant Start Conversation", True, 
                                   f"Conversation started. ID: {data['conversation_id']}")
                     return True
