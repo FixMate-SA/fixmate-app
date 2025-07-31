@@ -1,11 +1,9 @@
 {
   "name": "fixmate-sa",
   "version": "1.0.0",
-  "description": "FixMate-SA - South Africa's Premier Service Platform",
   "scripts": {
-    "build": "cd frontend && yarn install && yarn build",
-    "start": "cd backend && python -m uvicorn server:app --host 0.0.0.0 --port $PORT",
-    "heroku-postbuild": "cd frontend && npm install && npm run build"
+    "heroku-postbuild": "cd frontend && npm install && npm run build",
+    "start": "cd backend && python -m uvicorn server:app --host 0.0.0.0 --port $PORT"
   },
   "engines": {
     "node": "18.x",
