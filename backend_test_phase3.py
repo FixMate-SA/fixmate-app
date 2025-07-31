@@ -563,14 +563,14 @@ class Phase3APITester:
         return False
     
     def test_ai_assistant_anonymous_chat(self):
-        """Test POST /api/ai-assistant/anonymous-chat"""
+        """Test POST /api/ai-chat/anonymous"""
         try:
             chat_data = {
                 "message": "What are common causes of leaking taps?",
                 "language": "english"
             }
             
-            response = self.session.post(f"{API_BASE}/ai-assistant/anonymous-chat", json=chat_data)
+            response = self.session.post(f"{API_BASE}/ai-chat/anonymous", json=chat_data)
             
             if response.status_code == 200:
                 data = response.json()
