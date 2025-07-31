@@ -319,6 +319,16 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Layout>
+                      <Phase3Test />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/phase3-full"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
                       <Phase3Dashboard />
                     </Layout>
                   </ProtectedRoute>
