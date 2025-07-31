@@ -731,6 +731,118 @@ class DisputeMessage(Base):
     def __repr__(self):
         return f"<DisputeMessage(id='{self.id}', dispute_id='{self.dispute_id}', sender_type='{self.sender_type}')>"
 
+# ======= PHASE 4: MOBILE & PWA MODELS =======
+
+class PushSubscription(Base):
+    """
+    Model for managing push notification subscriptions for PWA functionality.
+    Stores device subscription information for real-time notifications.
+    """
+    __tablename__ = "push_subscriptions"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    
+    # Push Subscription Details
+    endpoint = Column(String, nullable=False)  # Push service endpoint URL
+    keys = Column(Text, nullable=False)  # JSON string containing p256dh and auth keys
+    user_agent = Column(String, nullable=True)  # Device/browser info
+    
+    # Subscription Status
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_used = Column(DateTime, nullable=True)  # Last successful notification
+    
+    # Notification Preferences
+    enable_job_notifications = Column(Boolean, default=True)
+    enable_payment_notifications = Column(Boolean, default=True)
+    enable_system_notifications = Column(Boolean, default=True)
+    enable_marketing_notifications = Column(Boolean, default=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="push_subscriptions")
+    
+    def __repr__(self):
+        return f"<PushSubscription(id='{self.id}', user_id='{self.user_id}', active='{self.is_active}')>"
+
+class AppSession(Base):
+    """
+    Model for tracking PWA app sessions and usage analytics.
+    Helps understand user engagement and offline usage patterns.
+    """
+    __tablename__ = "app_sessions"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=True)  # Nullable for anonymous sessions
+    
+    # Session Details
+    session_id = Column(String, nullable=False, unique=True)  # Frontend-generated session ID
+    session_start = Column(DateTime, default=datetime.utcnow)
+    session_end = Column(DateTime, nullable=True)
+    duration_seconds = Column(Integer, nullable=True)
+    
+    # Device and Environment
+    user_agent = Column(String, nullable=True)
+    device_type = Column(String, nullable=True)  # 'mobile', 'tablet', 'desktop'
+    platform = Column(String, nullable=True)  # 'android', 'ios', 'windows', etc.
+    is_pwa = Column(Boolean, default=False)  # If accessed as installed PWA
+    is_offline_capable = Column(Boolean, default=False)  # If service worker is active
+    
+    # Usage Analytics
+    pages_visited = Column(Text, nullable=True)  # JSON array of page routes
+    actions_performed = Column(Text, nullable=True)  # JSON array of key actions
+    offline_actions_queued = Column(Integer, default=0)  # Number of actions queued offline
+    cache_hits = Column(Integer, default=0)  # Number of successful cache responses
+    
+    # Performance Metrics
+    initial_load_time = Column(Float, nullable=True)  # Initial app load time in seconds
+    average_page_load_time = Column(Float, nullable=True)  # Average page load time
+    network_failures = Column(Integer, default=0)  # Network request failures during session
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="app_sessions")
+    
+    def __repr__(self):
+        return f"<AppSession(id='{self.id}', user_id='{self.user_id}', is_pwa='{self.is_pwa}')>"
+
+class OfflineAction(Base):
+    """
+    Model for tracking actions performed while offline that need to be synced.
+    Ensures data consistency when users work offline.
+    """
+    __tablename__ = "offline_actions"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    session_id = Column(String, nullable=False)  # Links to AppSession
+    
+    # Action Details
+    action_type = Column(String, nullable=False)  # 'create_job', 'update_profile', 'submit_review', etc.
+    action_data = Column(Text, nullable=False)  # JSON data for the action
+    priority = Column(String, default='normal')  # 'high', 'normal', 'low'
+    
+    # Sync Status
+    sync_status = Column(String, default='pending')  # 'pending', 'synced', 'failed', 'cancelled'
+    sync_attempts = Column(Integer, default=0)
+    last_sync_attempt = Column(DateTime, nullable=True)
+    sync_error = Column(Text, nullable=True)  # Error message if sync failed
+    
+    # Timestamps
+    created_offline_at = Column(DateTime, nullable=False)  # When action was performed offline
+    synced_at = Column(DateTime, nullable=True)  # When successfully synced
+    expires_at = Column(DateTime, nullable=True)  # When to give up syncing
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="offline_actions")
+    
+    def __repr__(self):
+        return f"<OfflineAction(id='{self.id}', action_type='{self.action_type}', sync_status='{self.sync_status}')>"
+
 # ======= PHASE 3 ENHANCEMENTS: AUTOMATION & ENGAGEMENT MODELS =======
 
 class FixerReputationTier(Base):
