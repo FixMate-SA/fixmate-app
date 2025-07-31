@@ -32,6 +32,11 @@ class PerformanceOptimizationService:
         
     async def initialize_cache(self, app: FastAPI):
         """Initialize Redis cache for FastAPI"""
+        if not REDIS_AVAILABLE:
+            logger.warning("Redis not available - running without cache")
+            self.cache_enabled = False
+            return
+            
         try:
             # Try to connect to Redis (will fail gracefully if not available)
             redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
