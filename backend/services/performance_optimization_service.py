@@ -40,6 +40,11 @@ class PerformanceOptimizationService:
             return
             
         try:
+            # Try to import aioredis only when needed
+            global aioredis
+            if aioredis is None:
+                import aioredis
+            
             # Try to connect to Redis (will fail gracefully if not available)
             redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
             
