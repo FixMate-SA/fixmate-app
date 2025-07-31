@@ -15,7 +15,6 @@ const JobList = () => {
     const fetchJobs = async () => {
       try {
         const response = await apiService.getJobs({ user_id: user.id });
-        console.log('Jobs API Response:', response); // Debug log
         
         // Handle paginated response structure
         let jobsData = [];
@@ -29,11 +28,9 @@ const JobList = () => {
           // Direct array response: [...]
           jobsData = response;
         } else {
-          console.warn('Unexpected API response format:', response);
           jobsData = [];
         }
         
-        console.log('Processed jobs data:', jobsData); // Debug log
         setJobs(jobsData);
       } catch (err) {
         console.error('Error fetching jobs:', err);
