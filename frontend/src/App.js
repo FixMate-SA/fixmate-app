@@ -356,6 +356,16 @@ function App() {
                 }
               />
               <Route
+                path="/pwa-status"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <PWAStatusDashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/terms"
                 element={<TermsOfService />}
               />
