@@ -1,111 +1,200 @@
 <analysis>
-The previous AI engineer meticulously advanced the FixMate-SA application, addressing critical deployment, functionality, and integration challenges. Initial efforts focused on stabilizing Heroku deployment, removing branding, and creating legal pages. Subsequent work involved troubleshooting frontend API calls for fixer lists and developing a Heroku-compatible CLI. Key recent achievements include enhancing the Admin Dashboard, implementing WhatsApp Business integration, and adding a Business Compliance section. The AI engineer resolved issues with these new features not appearing post-deployment (environment variable mismatch), incomplete language translations, and a non-functional WhatsApp bot. A significant architectural decision was the complete unification of the  Flask system with the main FastAPI application, resolving complex database and deployment conflicts by merging both into a single, cohesive codebase on the  branch.
+The AI engineer successfully progressed the FixMate-SA application through several significant development phases. Initially, the focus was on stabilizing the MVP by resolving critical deployment issues, unifying a separate WhatsApp Flask app into the FastAPI backend, and enhancing core user and job management functionalities. A major effort involved implementing a multi-step job request and assignment workflow, which required new database models, backend services, and frontend components. Following this, the engineer tackled Heroku-specific challenges by developing robust database migration and CLI commands, including an  command. The most recent critical fix involved troubleshooting and resolving login issues for CLI-created fixers, stemming from inconsistent phone number formats and an  flag error. The engineer then proposed and started implementing a multi-phase feature roadmap, completing Phase 1 (AI-Powered Smart Matching) and Phase 2 (Trust & Reliability) both backend and frontend, and beginning backend implementation for Phase 3 (Automation & Engagement). The process was iterative, involving frequent testing and user confirmation.
 </analysis>
 
 <product_requirements>
-FixMate-SA is designed as a mobile/web application connecting clients with fixers, utilizing an existing PostgreSQL database. It features user authentication (phone/password), job, fixer, and rating management. Planned enhancements include Google Gemini voice interaction, PayFast payments, and business insights. The application also needs to support non-smartphone users via SMS/MMS (USSD) and offer a learning platform for fixers, alongside general UI/UX improvements.
+FixMate-SA is a mobile/web application connecting clients with fixers using PostgreSQL. It features user authentication (phone/password), job management, fixer listings, and rating systems, aiming to support non-smartphone users via SMS/MMS (USSD) and offering a learning platform.
 
-Recent explicit requests include:
-- Full support for all 11 South African official languages.
-- A fixer payment system with job allocation restrictions.
-- An Admin verification portal for fixer ID and background checks.
-- An Emergency/Panic Button with location alerts.
-- Enhanced AI job matching for fairness.
-- Password authentication for all roles and enhanced signup (full name, ID, town).
-- Robust fixer vetting.
-- Integration of a legacy  (WhatsApp, Gemini, PayFast, job matching, location, voice transcription, data analytics, fee management, conversation state, admin commands) into the FastAPI architecture.
+Recent requirements included:
+*   Full support for all 11 South African official languages.
+*   A fixer payment system with job allocation restrictions.
+*   An Admin verification portal for fixer ID and background checks.
+*   An Emergency/Panic Button with location alerts.
+*   Enhanced AI job matching for fairness.
+*   Password authentication for all roles and enhanced signup (full name, ID, town).
+*   Robust fixer vetting.
+*   Integration of a legacy WhatsApp/Gemini/PayFast/job matching/voice transcription/analytics Flask application into the FastAPI backend.
+*   Specific latest requests involved: separate names/surnames capture, fixing a 405 WhatsApp webhook error, implementing a FixMate Job Request and Assignment Workflow (terms, location matching, debt checks, simultaneous notifications, FCFS, timeouts, completion/ratings, admin overrides, AI monitoring, single job limit), creating Heroku-compatible DB migrations, CLI commands to add fixers with passwords, and resolving login issues for CLI-created fixers (phone format, password flag).
 </product_requirements>
 
 <key_technical_concepts>
-- **Full-stack architecture**: React.js (frontend), FastAPI (backend), PostgreSQL (database).
-- **API Communication**: REST API endpoints, relative URLs.
-- **Database Management**: SQLAlchemy ORM, Flask-Migrate/Alembic (for WhatsApp module).
-- **Authentication**: Phone/password, bcrypt hashing.
-- **Cloud Deployment**: Heroku (Python buildpack, environment variables, Supervisor).
-- **Messaging**: Dialog360 WhatsApp API.
-- **I18n**: React Context for multi-language support.
-- **CLI Tools**: Python-based  for admin tasks.
+-   **Full-stack architecture**: React.js (frontend), FastAPI (backend), PostgreSQL (database).
+-   **API Communication**: REST API endpoints, relative URLs, Kubernetes ingress with  prefix.
+-   **Database Management**: SQLAlchemy ORM, Database migrations (Alembic-like functionality).
+-   **Authentication**: Phone/password, bcrypt hashing, JWT, flexible phone number parsing.
+-   **Cloud Deployment**: Heroku, Supervisor process management, environment variables.
+-   **Messaging**: Dialog360 WhatsApp API, SMS/USSD via .
+-   **Internationalization (I18n)**: React Context for multi-language support (11 SA languages).
+-   **CLI Tools**: Python-based  for admin/utility tasks (, , ).
+-   **Job Workflow**: Multi-step state management, real-time notifications, location-based matching, AI integration.
+-   **Payment Integration**: PayFast.
+-   **AI/NLP**: Used for job classification and smart matching, potentially voice transcription.
+-   **Geospatial**:  library for distance calculations in matching.
+-   **Image Handling**: Storing images in base64 format for verification.
 </key_technical_concepts>
 
 <code_architecture>
-The application uses a standard full-stack architecture with  (React) and  (FastAPI) directories. The recent work involved unifying a separate  Flask application into this primary structure.
+The application uses a standard full-stack architecture with  (React) and  (FastAPI) directories. The  Flask application has been completely unified into the primary backend structure.
 
 
 
--   ****: Core FastAPI app.
-    -   Importance: Defines all API routes and serves static frontend files.
-    -   Changes: Updated to include routes for new Business Compliance service, WhatsApp webhook (), and integrated . Authentication logic now uses .
--   ****: Defines SQLAlchemy ORM models.
-    -   Importance: Centralizes database schema definitions.
-    -   Changes: Switched password hashing from  to . Enhanced user and job models to include WhatsApp conversation-related fields and relationships, ensuring a unified database schema.
--   ****: Manages user roles and permissions.
-    -   Importance: Controls access to various features based on user roles.
-    -   Changes: Added  permission to all user roles to enable visibility of the Business Compliance tab.
--   ****: Encapsulates Dialog360 WhatsApp API interaction.
-    -   Importance: Handles sending and receiving WhatsApp messages.
-    -   Changes: Updated to use cloud API endpoint (), adapted message sending format, and incorporated logic from the previously separate  for robustness.
--   ****: Manages multi-step WhatsApp conversation logic.
-    -   Importance: Orchestrates the user interaction flow over WhatsApp.
-    -   Changes: Refined to match the user's specified 6-step flow (service description, name, location, contact, confirmation). Improved handling of text-based location and service request state.
--   ** (NEW)**: Centralized WhatsApp integration service.
-    -   Importance: Acts as the primary interface between the FastAPI app and the  logic.
-    -   Changes: Created to import and adapt the working WhatsApp logic from  into the FastAPI context.
--   ** (NEW)**: Module to directly incorporate  logic.
-    -   Importance: Ensures that the proven conversation and message handling from the original Flask app are utilized.
-    -   Changes: Created to wrap and integrate key functions from .
--   ** (NEW)**: Placeholder for future database synchronization.
-    -   Importance: Intended to ensure data consistency between different database systems if separate databases were maintained. (Note: Current merge makes this less critical for operational data, but might be useful for legacy or specific syncs).
-    -   Changes: Created as part of the initial integration strategy.
--   ****: Frontend environment variables.
-    -   Importance: Configures the frontend with backend URL.
-    -   Changes: Updated  to point to the correct Heroku deployment URL.
--   ****: Main React component.
-    -   Importance: Defines application routing.
-    -   Changes: Enhanced routing for legal pages and Business Compliance.
--   ****: Main React navigation bar.
-    -   Importance: Provides primary navigation links.
-    -   Changes: Initially modified permission check for Business Compliance tab; later temporarily removed permission check for broader visibility. Wrapped navigation labels with translation functions.
--   ****: User login form.
-    -   Importance: Handles user authentication UI.
-    -   Changes: Internationalized all hardcoded text using  translation functions. Integrated  component.
--   ****: Language selection component.
-    -   Importance: Allows users to switch languages.
-    -   Changes: Fixed internal logic to correctly use  function from .
--   ****: Stores translation keys and values.
-    -   Importance: Central repository for all language-specific text.
-    -   Changes: Added numerous missing translation keys for newly internationalized UI elements across all 11 South African languages.
--   ****: Python dependencies for Heroku.
-    -   Importance: Ensures all necessary Python packages are installed on deployment.
-    -   Changes: Added  and all dependencies from  to enable the unified system on Heroku.
--   ****: Heroku process configuration.
-    -   Importance: Specifies how the application processes run on Heroku.
-    -   Changes: Maintained a simple  process for FastAPI serving static files.
--   ****: (OLD, now integrated) Previously separate Flask application.
-    -   Importance: Contained the original, working WhatsApp bot logic.
-    -   Changes: Its core components (, , ) have been adapted and integrated into the main  structure.
+-   ****: Core FastAPI application, defining API routes.
+    -   Importance: Centralizes all backend logic, routing, and serves frontend static files.
+    -   Changes: Added dedicated  GET/POST routes (without  prefix); integrated new job workflow endpoints; updated authentication logic for various phone number formats; added , , , , , ,  endpoints.
+-   ****: Defines SQLAlchemy ORM database models.
+    -   Importance: Centralizes the application's data schema.
+    -   Changes: Enhanced  and  models (relationships, , job counts); added new models for job workflow (, , , ); added new models for Phase 2 (, ) and Phase 3 (, , ).
+-   ****: Defines Pydantic schemas for data validation and serialization.
+    -   Importance: Ensures data consistency across API requests and responses.
+    -   Changes: Added schemas for job workflow (, , etc.);  updated for /; new schemas for smart matching, photo verification, disputes, and tracking implicitly added to support new models/endpoints.
+-   ** (NEW)**: Manages job request and assignment.
+    -   Importance: Encapsulates business logic for the multi-step job workflow.
+    -   Changes: New file created, responsible for matching, notifications, assignment, and status updates.
+-   ****: Core AI classification service.
+    -   Importance: Provides AI capabilities for job classification.
+    -   Changes:  function implemented for initial job categorization.
+-   ** (NEW)**: Manages AI-powered job matching.
+    -   Importance: Centralizes logic for intelligent fixer-job assignments.
+    -   Changes: New file created, implementing , , , , . Leverages  for distance.
+-   ** (NEW)**: Handles job photo uploads and verification.
+    -   Importance: Manages before/after photos for job completion and fraud prevention.
+    -   Changes: New file created, including , , , .
+-   ** (NEW)**: Manages job dispute processes.
+    -   Importance: Provides a formal system for clients/fixers to report and resolve job-related issues.
+    -   Changes: New file created, including , , , , .
+-   ** (NEW)**: Manages live job tracking.
+    -   Importance: Provides real-time updates on fixer location and ETA.
+    -   Changes: New file created for tracking.
+-   ** (NEW)**: Manages fixer gamification.
+    -   Importance: Implements badges and tier progression for fixers.
+    -   Changes: New file created for gamification logic.
+-   ** (NEW)**: Provides AI chat assistant functionality.
+    -   Importance: Offers automated, multilingual support and guidance.
+    -   Changes: New file created for the AI chat assistant.
+-   ****: Python CLI for administrative tasks.
+    -   Importance: Provides command-line utilities for database management, user creation, and system diagnostics.
+    -   Changes: Enhanced with , , , and new / commands.
+-   ****: Main React component defining application routes.
+    -   Importance: Controls the overall navigation flow of the frontend application.
+    -   Changes: Added new routes for , , , , , , , , .
+-   ****: User profile display and editing component.
+    -   Importance: Allows users to view and update their personal information.
+    -   Changes: Modified to display and allow editing of  and  separately.
+-   ****: Main navigation bar.
+    -   Importance: Provides links to various sections of the application.
+    -   Changes: Added new navigation links for job workflow features,  (for admin),  (for client/fixer/admin),  (for admin).
+-   ****: Job creation component.
+    -   Importance: Provides UI for clients to submit job requests.
+    -   Changes: Enhanced to include smart matching capabilities, allowing clients to get instant insights into eligible fixers.
+-   ** (NEW)**: Admin dashboard for smart matching.
+    -   Importance: Provides administrators with an overview and tools for the smart matching system.
+    -   Changes: New file created.
+-   ** (NEW)**: Component for testing individual fixer matches.
+    -   Importance: Allows admins to test the smart matching algorithm for specific fixers.
+    -   Changes: New file created.
+-   ****: Component to list fixers.
+    -   Importance: Displays available fixers and their details.
+    -   Changes: Enhanced to include smart matching testing capabilities for admin users.
+-   ** (NEW)**: Generic photo upload component.
+    -   Importance: Reusable component for uploading images (e.g., job before/after photos).
+    -   Changes: New file created to handle base64 image uploads.
+-   ** (NEW)**: Job completion with photo verification.
+    -   Importance: Integrates photo upload into the job completion process.
+    -   Changes: New file created to allow fixers to upload before/after photos upon job completion.
+-   ** (NEW)**: Component for creating new disputes.
+    -   Importance: Provides UI for users to report issues with jobs.
+    -   Changes: New file created.
+-   ** (NEW)**: Admin dashboard for photo verification.
+    -   Importance: Allows admins to review and verify job completion photos.
+    -   Changes: New file created.
+-   ****: Central repository for all language translations.
+    -   Importance: Supports the application's internationalization (I18n) efforts.
+    -   Changes: Added numerous new translation keys for updated profile fields and new job workflow, smart matching, photo verification, and dispute resolution components.
+-   **🔧 Forwarding to backend CLI: 
+--------------------------------------------------
+FixMate-SA CLI Runner - Enhanced Version
+=============================================
+Fixer Management (NEW - with password support):
+  add-fixer "Name" "phone" "skill1,skill2,skill3" [password]
+  add-fixer-pwd "Name" "phone" "skill1,skill2,skill3" "password"
 
+Database Management:
+  migrate                    - Run database migration
+  check-db                   - Check database status
+
+User Management:
+  set-password "phone" "password"
+  promote-admin "phone"
+  list-users
+  list-fixers
+  stats
+
+Examples (EXACTLY what you requested):
+  python run_cli.py add-fixer "John Smith" "0821111111" "plumbing,electrical,geysers"
+  python run_cli.py add-fixer-pwd "John Smith" "0821111111" "plumbing,electrical,geysers" "fixer123"
+  python run_cli.py set-password "0821111111" "fixer123"
+
+Heroku Usage (CORRECTED):
+  heroku run python run_cli.py add-fixer-pwd "John Smith" "0821111111" "plumbing,electrical,geysers" "fixer123"
+  heroku run python run_cli.py migrate
+=============================================
+FixMate-SA CLI Runner - Enhanced Version
+=============================================
+Fixer Management (NEW - with password support):
+  add-fixer "Name" "phone" "skill1,skill2,skill3" [password]
+  add-fixer-pwd "Name" "phone" "skill1,skill2,skill3" "password"
+
+Database Management:
+  migrate                    - Run database migration
+  check-db                   - Check database status
+
+User Management:
+  set-password "phone" "password"
+  promote-admin "phone"
+  list-users
+  list-fixers
+  stats
+
+Examples (EXACTLY what you requested):
+  python run_cli.py add-fixer "John Smith" "0821111111" "plumbing,electrical,geysers"
+  python run_cli.py add-fixer-pwd "John Smith" "0821111111" "plumbing,electrical,geysers" "fixer123"
+  python run_cli.py set-password "0821111111" "fixer123"
+
+Heroku Usage (CORRECTED):
+  heroku run python run_cli.py add-fixer-pwd "John Smith" "0821111111" "plumbing,electrical,geysers" "fixer123"
+  heroku run python run_cli.py migrate
+============================================= (NEW - root wrapper)**: Root-level Python script for running backend CLI commands on Heroku.
+    -   Importance: Addresses Heroku's specific working directory behavior by forwarding commands to the actual backend CLI.
+    -   Changes: New file created as a simple wrapper.
 </code_architecture>
 
 <pending_tasks>
-- Fixer Payment System: Full integration into job allocation UI and payment flow needs finalization.
-- Admin Verification System: Frontend UI for fixers to apply and for admins to review applications is pending.
-- Enhanced AI Job Matching: The AI algorithm for fairness and efficiency in job allocation is still pending implementation.
+-   **Fixer Payment System**: Full integration into job allocation UI and payment flow needs finalization.
+-   **Admin Verification System**: Frontend UI for fixers to apply and for admins to review applications is pending (beyond basic photo verification).
+-   **Enhanced AI Job Matching**: Full implementation of advanced fairness algorithms and reinforcement learning.
+-   **Real-Time Job Tracking with ETA**: Frontend integration for live GPS tracking and notifications.
+-   **Gamification & Fixer Reputation Tiers**: Full frontend/backend implementation of badges, levels, and performance incentives.
+-   **AI Chat Assistant (Multilingual)**: Full frontend/backend implementation for automated support.
 </pending_tasks>
 
 <current_work>
-Immediately before this summary request, the AI engineer completed the full unification of the  Flask application into the main FastAPI application. This was a critical step to resolve ongoing deployment and functional issues related to the WhatsApp bot and to streamline the codebase.
+Immediately before this summary request, the AI engineer was actively implementing **Phase 3: Automation & Engagement** of the feature roadmap, specifically focusing on the backend components. This phase includes **Real-Time Job Tracking with ETA**, **Gamification & Fixer Reputation Tiers**, and **AI Chat Assistant (Multilingual)**.
 
-The process involved:
-1.  **Consolidating Database Models**: Ensuring the main  included all necessary fields for WhatsApp conversations, users, and jobs, effectively creating a single source of truth for the database schema.
-2.  **Integrating WhatsApp Logic**: Creating new services (, ) within the  directory to import and adapt the proven conversation flow and message sending logic directly from  and . This ensures the full WhatsApp bot functionality is now handled by the FastAPI backend.
-3.  **Updating Main Server**: Modifying  to route WhatsApp webhook requests to the new unified WhatsApp service, replacing previous, less robust implementations.
-4.  **Database Synchronization**: Initially, a  was created, but the final solution for unification involved dropping and recreating tables via  to ensure the unified schema was applied.
-5.  **Dependency Management**: Ensuring all necessary Python packages from both the main app and the integrated WhatsApp system were present in the root  for Heroku deployment.
-6.  **Branch Consolidation**: Explicitly confirming that all development and future deployments should now occur from the  branch, as it contains the fully unified and tested system, eliminating confusion caused by the previously separate  branch.
+The following backend services and related database models have been created or modified:
+*   ** model**: Implicitly confirmed as already defined in  (Chat Message 133). This model likely stores data related to real-time job progression, location updates, and ETA.
+*   ** and  models**: New models were added to  to support the gamification system (Chat Message 135).
+*   ****: A new service was created to handle the logic for real-time job tracking, including GPS updates and ETA calculations (Chat Message 137).
+*   ****: A new service was created to manage the gamification logic, including assigning badges, tracking fixer tiers, and managing performance incentives (Chat Message 139).
+*   ****: A new service was created to implement the AI chat assistant, which will provide automated, multilingual support (Chat Message 141).
+*   ****: API endpoints related to these new Phase 3 features (, , ) have been added to the main FastAPI application (Chat Message 143, 145).
 
-The result is a single, unified FixMate-SA system where the React frontend and WhatsApp interactions seamlessly share the same FastAPI backend and PostgreSQL database. The 405 Method Not Allowed errors for the WhatsApp webhook on Heroku were diagnosed as deployment issues (old code on Heroku) and the solution now awaits the user's manual deployment of the unified  branch.
+The current work state is that the backend infrastructure for Phase 3 (Real-Time Job Tracking, Gamification, and AI Chat Assistant) has been set up, including new database models, dedicated services, and API endpoints. The AI engineer was about to initiate backend testing for these newly integrated features (Chat Message 146).
+
+This builds upon the successful completion of:
+*   **Phase 1 (AI-Powered Smart Matching)**: Backend (new ,  enhancements,  endpoints,  installation) and Frontend ( enhancement, , ,  enhancements,  and  updates) have been fully implemented and tested.
+*   **Phase 2 (Trust & Reliability - Photo Verification & Dispute Resolution)**: Backend (new ,  models, , ,  endpoints) and Frontend (, , , ,  and  updates) have been fully implemented and tested.
 </current_work>
 
 <optional_next_step>
-Confirm with the user to deploy the updated  branch to Heroku and then run the database migration command.
+The immediate next step is to test the backend implementation of Phase 3 features (Real-Time Job Tracking, Gamification, and AI Chat Assistant).
 </optional_next_step>
