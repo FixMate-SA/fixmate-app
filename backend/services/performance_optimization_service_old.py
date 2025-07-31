@@ -8,28 +8,60 @@ import asyncio
 from functools import wraps
 import hashlib
 import os
-import time
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Simple in-memory cache for development
-MEMORY_CACHE = {}
-CACHE_TTL = {}
+# Try to import Redis-related modules
+try:
+    from fastapi_cache import FastAPICache
+    from fastapi_cache.backends.redis import RedisBackend
+    from fastapi_cache.decorator import cache
+    import redis
+    REDIS_AVAILABLE = True
+    # Import aioredis only when needed
+    aioredis = None
+except ImportError as e:
+    logger.warning(f"Redis modules not available: {e}. Running without Redis cache.")
+    REDIS_AVAILABLE = False
+    aioredis = None
 
 class PerformanceOptimizationService:
     def __init__(self):
         self.redis_client = None
-        self.cache_enabled = True  # Use memory cache
+        self.cache_enabled = False
         self.compression_enabled = True
         
     async def initialize_cache(self, app: FastAPI):
-        """Initialize cache for FastAPI (using memory cache for now)"""
+        """Initialize Redis cache for FastAPI"""
+        if not REDIS_AVAILABLE:
+            logger.warning("Redis not available - running without cache")
+            self.cache_enabled = False
+            return
+            
         try:
+            # Try to import aioredis only when needed
+            global aioredis
+            if aioredis is None:
+                import aioredis
+            
+            # Try to connect to Redis (will fail gracefully if not available)
+            redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
+            
+            # Initialize Redis connection
+            self.redis_client = aioredis.from_url(redis_url, decode_responses=True)
+            
+            # Test connection
+            await self.redis_client.ping()
+            
+            # Initialize FastAPI Cache
+            FastAPICache.init(RedisBackend(self.redis_client), prefix="fixmate-cache")
+            
             self.cache_enabled = True
-            logger.info("Memory cache initialized successfully")
+            logger.info("Redis cache initialized successfully")
+            
         except Exception as e:
-            logger.warning(f"Cache initialization failed: {e}. Running without cache.")
+            logger.warning(f"Redis cache initialization failed: {e}. Running without cache.")
             self.cache_enabled = False
             
     def setup_compression(self, app: FastAPI):
@@ -86,55 +118,39 @@ class PerformanceOptimizationService:
         return f"func:{hashlib.md5(key_string.encode()).hexdigest()}"
     
     async def get_cached_response(self, key: str) -> Optional[Any]:
-        """Get cached response from memory cache"""
-        if not self.cache_enabled:
+        """Get cached response"""
+        if not self.cache_enabled or not self.redis_client or not REDIS_AVAILABLE:
             return None
             
         try:
-            # Check if key exists and hasn't expired
-            if key in MEMORY_CACHE and key in CACHE_TTL:
-                if time.time() < CACHE_TTL[key]:
-                    return MEMORY_CACHE[key]
-                else:
-                    # Expired, remove from cache
-                    del MEMORY_CACHE[key]
-                    del CACHE_TTL[key]
+            cached_data = await self.redis_client.get(key)
+            if cached_data:
+                return json.loads(cached_data)
         except Exception as e:
             logger.error(f"Cache read error: {e}")
         
         return None
     
     async def set_cached_response(self, key: str, data: Any, ttl: int = 300):
-        """Set cached response in memory cache"""
-        if not self.cache_enabled:
+        """Set cached response"""
+        if not self.cache_enabled or not self.redis_client or not REDIS_AVAILABLE:
             return
             
         try:
-            MEMORY_CACHE[key] = data
-            CACHE_TTL[key] = time.time() + ttl
-            
-            # Simple cache cleanup - remove expired entries if cache gets too large
-            if len(MEMORY_CACHE) > 1000:
-                current_time = time.time()
-                expired_keys = [k for k, expiry in CACHE_TTL.items() if current_time > expiry]
-                for k in expired_keys:
-                    MEMORY_CACHE.pop(k, None)
-                    CACHE_TTL.pop(k, None)
-                    
+            await self.redis_client.setex(key, ttl, json.dumps(data, default=str))
         except Exception as e:
             logger.error(f"Cache write error: {e}")
     
     async def invalidate_cache_pattern(self, pattern: str):
         """Invalidate cache keys matching pattern"""
-        if not self.cache_enabled:
+        if not self.cache_enabled or not self.redis_client or not REDIS_AVAILABLE:
             return
             
         try:
-            keys_to_remove = [k for k in MEMORY_CACHE.keys() if pattern in k]
-            for k in keys_to_remove:
-                MEMORY_CACHE.pop(k, None)
-                CACHE_TTL.pop(k, None)
-            logger.info(f"Invalidated {len(keys_to_remove)} cache keys matching pattern: {pattern}")
+            keys = await self.redis_client.keys(f"fixmate-cache:{pattern}")
+            if keys:
+                await self.redis_client.delete(*keys)
+                logger.info(f"Invalidated {len(keys)} cache keys matching pattern: {pattern}")
         except Exception as e:
             logger.error(f"Cache invalidation error: {e}")
     
@@ -231,6 +247,7 @@ class PerformanceMonitor:
         def decorator(func):
             @wraps(func)
             async def async_wrapper(*args, **kwargs):
+                import time
                 start_time = time.time()
                 
                 try:
@@ -250,6 +267,7 @@ class PerformanceMonitor:
                     
             @wraps(func)
             def sync_wrapper(*args, **kwargs):
+                import time
                 start_time = time.time()
                 
                 try:
