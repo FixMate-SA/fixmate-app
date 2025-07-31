@@ -555,3 +555,178 @@ class BusinessComplianceRequest(Base):
     
     def __repr__(self):
         return f"<BusinessComplianceRequest(id='{self.id}', category='{self.category}', status='{self.status}')>"
+
+# ======= PHASE 2 ENHANCEMENTS: TRUST & RELIABILITY MODELS =======
+
+class JobDispute(Base):
+    """
+    Model for handling job disputes and escalations.
+    Supports formal dispute resolution with admin mediation.
+    """
+    __tablename__ = "job_disputes"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    job_id = Column(String, ForeignKey("jobs.id"), nullable=False)
+    reporter_id = Column(String, ForeignKey("users.id"), nullable=False)  # Who reported the dispute
+    reporter_type = Column(String, nullable=False)  # 'client' or 'fixer'
+    
+    # Dispute Details
+    dispute_type = Column(String, nullable=False)  # 'quality', 'no_show', 'payment', 'behavior', 'other'
+    description = Column(Text, nullable=False)  # Detailed description of the issue
+    priority_level = Column(String, default='normal')  # 'low', 'normal', 'high', 'urgent'
+    
+    # Evidence
+    evidence_photos = Column(Text, nullable=True)  # JSON array of base64 photos
+    evidence_description = Column(Text, nullable=True)  # Description of evidence
+    chat_logs = Column(Text, nullable=True)  # Relevant chat/communication logs
+    
+    # Status and Resolution
+    status = Column(String, default='open')  # 'open', 'investigating', 'resolved', 'escalated', 'closed'
+    resolution = Column(Text, nullable=True)  # Admin's resolution decision
+    resolution_action = Column(String, nullable=True)  # 'refund', 'redo_job', 'warning', 'suspension', 'no_action'
+    
+    # Admin Management
+    assigned_admin_id = Column(String, ForeignKey("users.id"), nullable=True)
+    admin_notes = Column(Text, nullable=True)  # Internal admin notes
+    reviewed_at = Column(DateTime, nullable=True)
+    resolved_at = Column(DateTime, nullable=True)
+    
+    # Payment Management
+    payment_hold = Column(Boolean, default=False)  # If payment is on hold
+    payment_released = Column(Boolean, default=False)  # If payment was released
+    refund_amount = Column(Float, nullable=True)  # Partial or full refund amount
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    job = relationship("Job", back_populates="disputes")
+    reporter = relationship("User", foreign_keys=[reporter_id])
+    assigned_admin = relationship("User", foreign_keys=[assigned_admin_id])
+    
+    def __repr__(self):
+        return f"<JobDispute(id='{self.id}', type='{self.dispute_type}', status='{self.status}')>"
+
+class JobPhotoVerification(Base):
+    """
+    Model for managing job photo verification process.
+    Stores before/after photos and verification status.
+    """
+    __tablename__ = "job_photo_verifications"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    job_id = Column(String, ForeignKey("jobs.id"), nullable=False)
+    
+    # Photo Data (stored as base64 strings)
+    before_photos = Column(Text, nullable=True)  # JSON array of base64 images
+    after_photos = Column(Text, nullable=True)   # JSON array of base64 images
+    work_progress_photos = Column(Text, nullable=True)  # JSON array of progress photos
+    
+    # Verification Process
+    verification_status = Column(String, default='pending')  # 'pending', 'approved', 'rejected', 'needs_more'
+    verified_by = Column(String, ForeignKey("users.id"), nullable=True)  # Admin who verified
+    verified_at = Column(DateTime, nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+    
+    # Photo Quality Assessment
+    photo_quality_score = Column(Float, nullable=True)  # AI-assessed photo quality (0-100)
+    has_clear_before_after = Column(Boolean, default=False)  # If before/after comparison is clear
+    shows_completed_work = Column(Boolean, default=False)  # If after photos show completed work
+    
+    # Requirements
+    is_required = Column(Boolean, default=False)  # If photos are mandatory for this job
+    requirement_reason = Column(String, nullable=True)  # 'high_value', 'dispute_history', 'job_type'
+    
+    # AI Analysis
+    ai_analysis = Column(Text, nullable=True)  # JSON with AI analysis results
+    ai_confidence = Column(Float, nullable=True)  # AI confidence in verification (0-100)
+    flagged_issues = Column(Text, nullable=True)  # JSON array of potential issues found
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    job = relationship("Job")
+    verifier = relationship("User", foreign_keys=[verified_by])
+    
+    def __repr__(self):
+        return f"<JobPhotoVerification(id='{self.id}', job_id='{self.job_id}', status='{self.verification_status}')>"
+
+class JobTracking(Base):
+    """
+    Model for real-time job tracking and ETA management.
+    Tracks fixer location and provides arrival estimates.
+    """
+    __tablename__ = "job_tracking"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    job_id = Column(String, ForeignKey("jobs.id"), nullable=False)
+    fixer_id = Column(String, ForeignKey("fixers.id"), nullable=False)
+    
+    # Live Location Data
+    current_latitude = Column(Float, nullable=True)
+    current_longitude = Column(Float, nullable=True)
+    location_updated_at = Column(DateTime, nullable=True)
+    location_accuracy = Column(Float, nullable=True)  # GPS accuracy in meters
+    
+    # Journey Tracking
+    departure_time = Column(DateTime, nullable=True)  # When fixer left for job
+    estimated_arrival = Column(DateTime, nullable=True)  # Current ETA
+    actual_arrival = Column(DateTime, nullable=True)  # When fixer actually arrived
+    
+    # Status Updates
+    tracking_status = Column(String, default='inactive')  # 'inactive', 'en_route', 'arrived', 'completed'
+    last_status_update = Column(DateTime, nullable=True)
+    client_notified = Column(Boolean, default=False)  # If client was notified of updates
+    
+    # Route Information  
+    estimated_distance = Column(Float, nullable=True)  # Distance to job in km
+    estimated_duration = Column(Integer, nullable=True)  # Estimated travel time in minutes
+    route_data = Column(Text, nullable=True)  # JSON with route information
+    traffic_conditions = Column(String, nullable=True)  # 'light', 'moderate', 'heavy'
+    
+    # Efficiency Metrics
+    arrival_accuracy = Column(Float, nullable=True)  # How accurate was the ETA (minutes difference)
+    route_efficiency = Column(Float, nullable=True)  # How efficient was the route taken
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    job = relationship("Job")
+    fixer = relationship("Fixer")
+    
+    def __repr__(self):
+        return f"<JobTracking(id='{self.id}', job_id='{self.job_id}', status='{self.tracking_status}')>"
+
+class DisputeMessage(Base):
+    """
+    Model for managing communication within dispute resolution.
+    Tracks messages between all parties during dispute resolution.
+    """
+    __tablename__ = "dispute_messages"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    dispute_id = Column(String, ForeignKey("job_disputes.id"), nullable=False)
+    sender_id = Column(String, ForeignKey("users.id"), nullable=False)
+    sender_type = Column(String, nullable=False)  # 'client', 'fixer', 'admin'
+    
+    # Message Content
+    message = Column(Text, nullable=False)
+    message_type = Column(String, default='text')  # 'text', 'photo', 'document', 'status_update'
+    attachments = Column(Text, nullable=True)  # JSON array of attachments (base64 or URLs)
+    
+    # Message Status
+    is_internal = Column(Boolean, default=False)  # If this is an internal admin note
+    read_by_client = Column(Boolean, default=False)
+    read_by_fixer = Column(Boolean, default=False) 
+    read_by_admin = Column(Boolean, default=False)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    dispute = relationship("JobDispute")
+    sender = relationship("User")
+    
+    def __repr__(self):
+        return f"<DisputeMessage(id='{self.id}', dispute_id='{self.dispute_id}', sender_type='{self.sender_type}')>"
