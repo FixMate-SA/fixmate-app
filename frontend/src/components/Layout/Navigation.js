@@ -191,6 +191,15 @@ const Navigation = () => {
   };
 
   const navItems = getVisibleNavItems();
+  
+  // Debug logging to see what items are being filtered
+  console.log('Navigation Debug:', {
+    userRole: userRole,
+    totalBaseItems: baseNavItems.length,
+    totalRoleBasedItems: roleBasedNavItems.length,
+    filteredItems: navItems.length,
+    itemTitles: navItems.map(item => item.label)
+  });
 
   const isActive = (path) => {
     return location.pathname === path;
