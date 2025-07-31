@@ -1224,9 +1224,8 @@ class FixMateAPITester:
     def test_performance_clear_cache_pattern(self):
         """Test clearing cache by pattern"""
         try:
-            # Clear cache with specific pattern
-            data = {"pattern": "job"}
-            response = self.session.post(f"{API_BASE}/performance/clear-cache", json=data)
+            # Clear cache with specific pattern using query parameter
+            response = self.session.post(f"{API_BASE}/performance/clear-cache?pattern=job")
             
             if response.status_code == 200:
                 result = response.json()
