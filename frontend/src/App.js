@@ -26,6 +26,9 @@ import EnhancedJobCreation from "./components/Workflow/EnhancedJobCreation";
 import FixerJobBoard from "./components/Workflow/FixerJobBoard";
 import TermsAcceptance from "./components/Workflow/TermsAcceptance";
 import SmartMatchingDashboard from "./components/Admin/SmartMatchingDashboard";
+import EnhancedJobCompletion from "./components/Jobs/EnhancedJobCompletion";
+import DisputeCreation from "./components/Disputes/DisputeCreation";
+import AdminPhotoVerificationDashboard from "./components/Admin/AdminPhotoVerificationDashboard";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
