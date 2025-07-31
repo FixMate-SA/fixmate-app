@@ -176,6 +176,11 @@ const Navigation = () => {
       // Check if user's role is in allowed roles
       if (!item.roles.includes(userRole)) return false;
       
+      // For admin users, show all admin items regardless of permission checks
+      if (userRole === 'admin' && item.roles.includes('admin')) {
+        return true;
+      }
+      
       // Check permission if specified
       if (item.permission) {
         return hasPermission(item.permission);
