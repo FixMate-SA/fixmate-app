@@ -179,6 +179,11 @@ export const languages = {
       offline: 'Offline',
       synced: 'Synced',
       pending: 'Pending',
+      
+      // Phase 4B: Performance Optimization
+      performanceDashboard: 'Performance',
+      performanceDescription: 'Monitor Core Web Vitals and app performance metrics',
+      performanceScore: 'Performance Score',
       acceptTermsCheckbox: 'I have read, understood, and agree to the FixMate-SA Platform Terms and Conditions',
       acceptAndContinue: 'Accept & Continue',
       accepting: 'Accepting...',
