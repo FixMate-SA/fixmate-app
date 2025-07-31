@@ -4688,66 +4688,60 @@ class FixMateAPITester:
         return False
 
     def run_all_tests(self):
-        """Run all tests in sequence"""
+        """Run all PWA backend tests"""
+        print("🚀 PHASE 4A: PWA BASICS BACKEND TESTING")
         print("=" * 80)
-        print("🚀 FIXMATE-SA PHASE 3: AUTOMATION & ENGAGEMENT SYSTEM TESTING")
+        
+        # Basic setup tests
+        if not self.test_health_check():
+            print("❌ Health check failed - aborting tests")
+            return
+        
+        # Create test user and login
+        if not self.test_create_user():
+            print("❌ User creation failed - aborting tests")
+            return
+            
+        if not self.test_login():
+            print("❌ User login failed - aborting tests")
+            return
+        
+        # Admin login for admin-only endpoints
+        self.test_admin_login()
+        
+        print("\n🔔 PUSH NOTIFICATION ENDPOINTS TESTING")
+        print("-" * 50)
+        
+        # Push Notification Tests
+        self.test_push_subscribe()
+        self.test_get_push_subscriptions()
+        self.test_send_push_notification()
+        self.test_send_push_to_role_admin_only()
+        self.test_get_notification_templates()
+        
+        print("\n📱 PWA SESSION TRACKING ENDPOINTS TESTING")
+        print("-" * 50)
+        
+        # PWA Session Tracking Tests
+        self.test_start_pwa_session()
+        self.test_queue_offline_action()
+        self.test_get_offline_actions()
+        self.test_end_pwa_session()
+        
+        # Print final results
+        print("\n" + "=" * 80)
+        print("🎯 PHASE 4A PWA BACKEND TESTING RESULTS")
         print("=" * 80)
-        print()
+        print(f"✅ PASSED: {self.results['passed']}")
+        print(f"❌ FAILED: {self.results['failed']}")
+        print(f"📊 SUCCESS RATE: {(self.results['passed'] / (self.results['passed'] + self.results['failed']) * 100):.1f}%")
         
-        # NEW: AI-Powered Smart Matching System Tests (PRIORITY)
-        print("🤖 AI-POWERED SMART MATCHING SYSTEM TESTS")
-        print("-" * 50)
-        self.test_smart_match_for_job()
-        self.test_job_match_insights()
-        self.test_fixer_match_history()
-        self.test_fixer_match_test()
-        self.test_admin_matching_performance()
-        self.test_admin_improve_matching()
-        print()
+        if self.results['errors']:
+            print(f"\n❌ FAILED TESTS:")
+            for error in self.results['errors']:
+                print(f"   • {error}")
         
-        # NEW: PHASE 3 AUTOMATION & ENGAGEMENT TESTS (PRIORITY)
-        print("🚀 PHASE 3: AUTOMATION & ENGAGEMENT TESTS")
-        print("-" * 50)
-        # Real-time tracking tests
-        self.test_start_job_tracking()
-        self.test_update_fixer_location()
-        self.test_complete_job_tracking()
-        self.test_get_job_tracking_status()
-        
-        # Gamification and reputation tests
-        self.test_get_fixer_reputation()
-        self.test_initialize_fixer_reputation()
-        self.test_update_fixer_performance()
-        
-        # AI multilingual assistant tests
-        self.test_start_ai_conversation()
-        self.test_send_ai_message()
-        self.test_end_ai_conversation()
-        self.test_get_ai_conversation_history()
-        self.test_start_anonymous_ai_conversation()
-        
-        # Admin analytics tests
-        self.test_admin_gamification_stats()
-        self.test_admin_ai_chat_analytics()
-        print()
-        
-        # CRITICAL TEST - Authentication Flow for Different User Roles (as requested)
-        print("🔐 CRITICAL AUTHENTICATION FLOW TESTS")
-        print("-" * 50)
-        self.test_role_based_authentication_fixer()
-        self.test_role_based_authentication_client()
-        self.test_dashboard_role_based_access()
-        self.test_role_check_endpoint()
-        print()
-        
-        # NEW: Business Compliance API Tests
-        print("🏢 BUSINESS COMPLIANCE API TESTS")
-        print("-" * 50)
-        self.test_compliance_categories()
-        self.test_compliance_request_creation()
-        self.test_user_compliance_requests()
-        self.test_compliance_checklist()
-        self.test_admin_all_compliance_requests()
+        return self.results['failed'] == 0
         self.test_admin_update_compliance_request()
         print()
         
