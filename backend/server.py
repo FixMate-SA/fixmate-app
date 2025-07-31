@@ -2000,8 +2000,13 @@ async def initialize_fixer_reputation(fixer_id: str, current_user: User = Depend
     Initialize reputation tier for a new fixer.
     """
     try:
-        # Check if current user is the fixer or admin
-        if current_user.id != fixer_id and current_user.role not in ['admin', 'super_admin']:
+        # Find the fixer record to check ownership
+        fixer = db.query(Fixer).filter(Fixer.id == fixer_id).first()
+        if not fixer:
+            raise HTTPException(status_code=404, detail="Fixer not found")
+        
+        # Check if current user owns this fixer record or is admin
+        if current_user.id != fixer.user_id and current_user.role not in ['admin', 'super_admin']:
             raise HTTPException(status_code=403, detail="Access denied")
         
         result = gamification_service.initialize_fixer_reputation(db, fixer_id)
