@@ -1510,6 +1510,80 @@ async def get_matching_improvement_suggestions(request: dict, current_user: User
         logger.error(f"Error generating matching improvements: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate recommendations: {str(e)}")
 
+# ======= PHASE 4B: PERFORMANCE OPTIMIZATION ENDPOINTS =======
+
+@api_router.get("/performance/cache-status")
+async def get_cache_status():
+    """
+    Get cache statistics and status for performance monitoring
+    """
+    try:
+        from services.performance_optimization_service import MEMORY_CACHE, CACHE_TTL
+        import time
+        
+        current_time = time.time()
+        total_keys = len(MEMORY_CACHE)
+        expired_keys = sum(1 for expiry in CACHE_TTL.values() if current_time > expiry)
+        active_keys = total_keys - expired_keys
+        
+        # Calculate cache size (approximate)
+        cache_size_bytes = sum(len(str(value)) for value in MEMORY_CACHE.values())
+        cache_size_mb = cache_size_bytes / (1024 * 1024)
+        
+        # Get cache hit/miss statistics (simplified)
+        cache_stats = {
+            "cache_enabled": performance_service.cache_enabled,
+            "total_keys": total_keys,
+            "active_keys": active_keys,
+            "expired_keys": expired_keys,
+            "cache_size_mb": round(cache_size_mb, 2),
+            "cache_type": "memory",
+            "compression_enabled": performance_service.compression_enabled,
+            "status": "healthy" if performance_service.cache_enabled else "disabled"
+        }
+        
+        return {
+            "success": True,
+            "cache_stats": cache_stats,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting cache status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get cache status: {str(e)}")
+
+@api_router.post("/performance/clear-cache")
+async def clear_cache(pattern: str = None):
+    """
+    Clear cache entries, optionally by pattern
+    """
+    try:
+        from services.performance_optimization_service import MEMORY_CACHE, CACHE_TTL
+        
+        if pattern:
+            # Clear cache entries matching pattern
+            await performance_service.invalidate_cache_pattern(pattern)
+            return {
+                "success": True,
+                "message": f"Cache cleared for pattern: {pattern}",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        else:
+            # Clear all cache
+            initial_count = len(MEMORY_CACHE)
+            MEMORY_CACHE.clear()
+            CACHE_TTL.clear()
+            
+            return {
+                "success": True,
+                "message": f"All cache cleared. Removed {initial_count} entries.",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        
+    except Exception as e:
+        logger.error(f"Error clearing cache: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to clear cache: {str(e)}")
+
 # ======= PHASE 2: TRUST & RELIABILITY ENDPOINTS =======
 
 # Photo Verification Endpoints
