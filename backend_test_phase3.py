@@ -274,10 +274,11 @@ class Phase3APITester:
         
         try:
             location_data = {
-                "latitude": -33.9250,
-                "longitude": 18.4242,
-                "timestamp": datetime.utcnow().isoformat(),
-                "notes": "Updated location during job"
+                "location": {
+                    "lat": -33.9250,
+                    "lng": 18.4242
+                },
+                "accuracy": 5.0
             }
             
             headers = {"Authorization": f"Bearer {self.test_data['fixer_token']}"}
@@ -288,7 +289,7 @@ class Phase3APITester:
                 data = response.json()
                 if data.get('success'):
                     self.log_result("Job Tracking Location", True, 
-                                  f"Location updated successfully. Tracking ID: {data.get('tracking_id', 'unknown')}")
+                                  f"Location updated successfully. Status: {data.get('tracking_status', 'unknown')}")
                     return True
                 else:
                     self.log_result("Job Tracking Location", False, "Location update failed", response)
