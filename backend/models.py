@@ -416,6 +416,24 @@ class Job(Base):
     last_assignment_attempt = Column(DateTime, nullable=True)  # Last assignment attempt time
     auto_reassignment_count = Column(Integer, default=0)  # How many times auto-reassigned
     
+    # Photo Verification Fields - Phase 2 Enhancement
+    before_photos = Column(Text, nullable=True)  # JSON array of base64 before photos
+    after_photos = Column(Text, nullable=True)   # JSON array of base64 after photos
+    photo_verification_status = Column(String, default="not_required")  # not_required, pending, verified, rejected
+    photo_verified_at = Column(DateTime, nullable=True)  # When photos were verified
+    photo_verified_by = Column(String, nullable=True)   # Admin ID who verified
+    photo_rejection_reason = Column(Text, nullable=True)  # Reason for photo rejection
+    requires_photo_verification = Column(Boolean, default=False)  # If this job type requires photos
+    
+    # ETA and Live Tracking Fields - Phase 2 Enhancement  
+    fixer_departure_time = Column(DateTime, nullable=True)  # When fixer left for job
+    fixer_arrival_time = Column(DateTime, nullable=True)    # When fixer arrived at job
+    job_start_time = Column(DateTime, nullable=True)        # When work actually started
+    job_completion_time = Column(DateTime, nullable=True)   # When work was completed
+    estimated_duration = Column(Integer, nullable=True)     # Estimated job duration in minutes
+    actual_duration = Column(Integer, nullable=True)        # Actual job duration in minutes
+    live_tracking_enabled = Column(Boolean, default=False)  # If client enabled live tracking
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -426,6 +444,7 @@ class Job(Base):
     emergency_alerts = relationship("EmergencyAlert", back_populates="job")
     assignment_history = relationship("JobAssignmentHistory", back_populates="job")
     notifications = relationship("JobNotification", back_populates="job")
+    disputes = relationship("JobDispute", back_populates="job")  # New relationship
 
 class Review(Base):
     __tablename__ = "reviews"
