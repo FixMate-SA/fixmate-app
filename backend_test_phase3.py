@@ -479,18 +479,18 @@ class Phase3APITester:
         return False
     
     def test_ai_assistant_send_message(self):
-        """Test POST /api/ai-assistant/conversation/{conversation_id}/message"""
-        if 'conversation_id' not in self.test_data:
-            self.log_result("AI Assistant Send Message", False, "No conversation ID available")
+        """Test POST /api/ai-chat/{session_id}/message"""
+        if 'session_id' not in self.test_data:
+            self.log_result("AI Assistant Send Message", False, "No session ID available")
             return False
         
         try:
             message_data = {
                 "message": "My kitchen tap is leaking water constantly",
-                "user_language": "english"
+                "language": "english"
             }
             
-            response = self.session.post(f"{API_BASE}/ai-assistant/conversation/{self.test_data['conversation_id']}/message", 
+            response = self.session.post(f"{API_BASE}/ai-chat/{self.test_data['session_id']}/message", 
                                        json=message_data)
             
             if response.status_code == 200:
