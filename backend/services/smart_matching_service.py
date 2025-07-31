@@ -669,5 +669,46 @@ class SmartMatchingService:
             logger.error(f"Error calculating performance summary: {e}")
             return {}
 
+    async def notify_fixer_of_job(self, db: Session, fixer: Fixer, job: Job, confidence_level: str) -> bool:
+        """
+        Notify fixer about job opportunity with enhanced matching info
+        """
+        try:
+            # Prepare enhanced notification message
+            message = f"""
+🔧 FixMate Job Match ({confidence_level.upper()} Confidence)
+
+Service: {job.service}
+Location: {job.location}
+Description: {job.description[:100]}...
+
+Match Score: {confidence_level}
+Estimated Pay: R{job.estimated_price or 'TBD'}
+
+Reply ACCEPT to take this job or PASS to skip.
+Job ID: {job.id}
+            """
+            
+            # Send via SMS service
+            from services.sms_service import sms_service
+            
+            # Format phone number
+            phone = fixer.phone
+            if not phone.startswith('+'):
+                phone = f"+27{phone.lstrip('0')}" if phone.startswith('0') else f"+27{phone}"
+            
+            success = sms_service.send_sms(phone, message)
+            
+            if success:
+                logger.info(f"Enhanced match notification sent to fixer {fixer.id} for job {job.id}")
+            else:
+                logger.warning(f"Failed to send enhanced match notification to fixer {fixer.id}")
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Error sending enhanced match notification: {e}")
+            return False
+
 # Global instance
 smart_matching_service = SmartMatchingService()
