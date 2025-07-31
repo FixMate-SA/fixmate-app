@@ -112,7 +112,7 @@ class PerformanceOptimizationService:
     
     async def get_cached_response(self, key: str) -> Optional[Any]:
         """Get cached response"""
-        if not self.cache_enabled or not self.redis_client:
+        if not self.cache_enabled or not self.redis_client or not REDIS_AVAILABLE:
             return None
             
         try:
@@ -126,7 +126,7 @@ class PerformanceOptimizationService:
     
     async def set_cached_response(self, key: str, data: Any, ttl: int = 300):
         """Set cached response"""
-        if not self.cache_enabled or not self.redis_client:
+        if not self.cache_enabled or not self.redis_client or not REDIS_AVAILABLE:
             return
             
         try:
@@ -136,7 +136,7 @@ class PerformanceOptimizationService:
     
     async def invalidate_cache_pattern(self, pattern: str):
         """Invalidate cache keys matching pattern"""
-        if not self.cache_enabled or not self.redis_client:
+        if not self.cache_enabled or not self.redis_client or not REDIS_AVAILABLE:
             return
             
         try:
