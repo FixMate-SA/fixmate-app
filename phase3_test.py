@@ -40,7 +40,11 @@ class Phase3Tester:
         if message:
             print(f"   {message}")
         if response and not success:
-            print(f"   Response: {response.status_code} - {response.text[:200]}")
+            try:
+                error_data = response.json()
+                print(f"   Response: {response.status_code} - {error_data}")
+            except:
+                print(f"   Response: {response.status_code} - {response.text[:200]}")
         
         if success:
             self.results['passed'] += 1
