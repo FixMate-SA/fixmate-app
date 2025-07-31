@@ -29,6 +29,11 @@ import SmartMatchingDashboard from "./components/Admin/SmartMatchingDashboard";
 import EnhancedJobCompletion from "./components/Jobs/EnhancedJobCompletion";
 import DisputeCreation from "./components/Disputes/DisputeCreation";
 import AdminPhotoVerificationDashboard from "./components/Admin/AdminPhotoVerificationDashboard";
+import Phase3Dashboard from "./components/Phase3/Phase3Dashboard";
+import JobTrackingControls from "./components/Tracking/JobTrackingControls";
+import JobTrackingStatus from "./components/Tracking/JobTrackingStatus";
+import FixerReputationDashboard from "./components/Gamification/FixerReputationDashboard";
+import AIChatAssistant from "./components/AI/AIChatAssistant";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
