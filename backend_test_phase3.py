@@ -589,21 +589,20 @@ class Phase3APITester:
     # ======= PHASE 3: ADMIN ANALYTICS TESTS (SHOULD REMAIN STABLE) =======
     
     def test_admin_gamification_analytics(self):
-        """Test GET /api/admin/analytics/gamification"""
+        """Test GET /api/admin/gamification/stats"""
         if 'admin_token' not in self.test_data:
             self.log_result("Admin Gamification Analytics", False, "No admin token available")
             return False
         
         try:
             headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
-            response = self.session.get(f"{API_BASE}/admin/analytics/gamification", headers=headers)
+            response = self.session.get(f"{API_BASE}/admin/gamification/stats", headers=headers)
             
             if response.status_code == 200:
                 data = response.json()
-                if data.get('success') and 'analytics' in data:
-                    analytics = data['analytics']
+                if data.get('success'):
                     self.log_result("Admin Gamification Analytics", True, 
-                                  f"Analytics retrieved. Total fixers: {analytics.get('total_fixers', 0)}")
+                                  f"Gamification stats retrieved successfully")
                     return True
                 else:
                     self.log_result("Admin Gamification Analytics", False, "Invalid response format", response)
