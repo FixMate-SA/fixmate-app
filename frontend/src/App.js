@@ -6,11 +6,47 @@ import "./App.css";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
-// Core Components - Direct imports for now
+// Core Components - Direct imports (no lazy loading for stability)
 import LoginForm from "./components/Auth/LoginForm";
 import SignupForm from "./components/Auth/SignupForm";
 import Dashboard from "./components/Dashboard/Dashboard";
 import Layout from "./components/Layout/Layout";
+
+// Job Management Components
+import CreateJob from "./components/Jobs/CreateJob";
+import JobList from "./components/Jobs/JobList";
+import FixerList from "./components/Fixers/FixerList";
+import Profile from "./components/Profile/Profile";
+
+// Admin Components  
+import AdminDashboard from "./components/Admin/AdminDashboard";
+import SmartMatchingDashboard from "./components/Admin/SmartMatchingDashboard";
+import AdminPhotoVerificationDashboard from "./components/Admin/AdminPhotoVerificationDashboard";
+
+// Business & Enterprise Components
+import BusinessCompliance from "./components/Business/BusinessCompliance";
+import B2BPortal from "./components/Enterprise/B2BPortal";
+import LearningPlatform from "./components/Learning/LearningPlatform";
+
+// Advanced Workflow Components
+import TermsAcceptance from "./components/Workflow/TermsAcceptance";
+import EnhancedJobCreation from "./components/Workflow/EnhancedJobCreation";
+import JobWorkflowStatus from "./components/Workflow/JobWorkflowStatus";
+import FixerJobBoard from "./components/Workflow/FixerJobBoard";
+import EnhancedJobCompletion from "./components/Jobs/EnhancedJobCompletion";
+import DisputeCreation from "./components/Disputes/DisputeCreation";
+
+// Communication Components
+import SMSInterface from "./components/SMS/SMSInterface";
+import VoiceRecorder from "./components/VoiceRecorder/VoiceRecorder";
+
+// Payment Components
+import PaymentOptions from "./components/Payment/PaymentOptions";
+import FixerPaymentManager from "./components/Payment/FixerPaymentManager";
+
+// Legal Components
+import TermsOfService from "./components/Legal/TermsOfService";
+import PrivacyPolicy from "./components/Legal/PrivacyPolicy";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -45,7 +81,7 @@ const DefaultRoute = () => {
   return <Navigate to="/login" replace />;
 };
 
-// Main App Component - Simplified for deployment
+// Main App Component with Full Routing
 function App() {
   return (
     <LanguageProvider>
@@ -67,6 +103,226 @@ function App() {
                     </Layout>
                   </ProtectedRoute>
                 }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Profile />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Job Management Routes */}
+              <Route
+                path="/jobs/create"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CreateJob />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <JobList />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fixers"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <FixerList />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Enhanced Workflow Routes */}
+              <Route
+                path="/jobs/workflow/terms"
+                element={
+                  <ProtectedRoute>
+                    <TermsAcceptance />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/enhanced-create"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <EnhancedJobCreation />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/:jobId/status"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <JobWorkflowStatus />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fixer/job-board"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <FixerJobBoard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/:jobId/complete"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <EnhancedJobCompletion />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/:jobId/dispute"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <DisputeCreation />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Admin Routes */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <AdminDashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/smart-matching"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <SmartMatchingDashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/photo-verification"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <AdminPhotoVerificationDashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Business & Enterprise Features */}
+              <Route
+                path="/business-compliance"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BusinessCompliance />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/enterprise"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <B2BPortal />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/learning"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <LearningPlatform />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Communication Features */}
+              <Route
+                path="/sms"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <SMSInterface />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/voice-recorder"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <VoiceRecorder />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Payment Features */}
+              <Route
+                path="/payment"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <PaymentOptions />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fixer/payments"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <FixerPaymentManager />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Legal Routes */}
+              <Route
+                path="/terms"
+                element={<TermsOfService />}
+              />
+              <Route
+                path="/privacy"
+                element={<PrivacyPolicy />}
               />
 
               {/* Default Route */}
