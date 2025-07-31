@@ -18,11 +18,13 @@ try:
     from fastapi_cache.backends.redis import RedisBackend
     from fastapi_cache.decorator import cache
     import redis
-    import aioredis
     REDIS_AVAILABLE = True
+    # Import aioredis only when needed
+    aioredis = None
 except ImportError as e:
     logger.warning(f"Redis modules not available: {e}. Running without Redis cache.")
     REDIS_AVAILABLE = False
+    aioredis = None
 
 class PerformanceOptimizationService:
     def __init__(self):
