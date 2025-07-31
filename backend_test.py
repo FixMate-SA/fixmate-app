@@ -4979,60 +4979,72 @@ class FixMateAPITester:
         return False
 
     def run_all_tests(self):
-        """Run all PWA backend tests"""
-        print("🚀 PHASE 4A: PWA BASICS BACKEND TESTING")
+        """Run all Phase 4B Performance Optimization backend tests"""
+        print("🚀 PHASE 4B: PERFORMANCE OPTIMIZATION BACKEND TESTING")
         print("=" * 80)
         
         # Basic setup tests
         if not self.test_health_check():
             print("❌ Health check failed - aborting tests")
-            return
+            return False
         
         # Create test user and login
         if not self.test_create_user():
             print("❌ User creation failed - aborting tests")
-            return
+            return False
             
         if not self.test_login():
             print("❌ User login failed - aborting tests")
-            return
+            return False
         
         # Admin login for admin-only endpoints
         self.test_admin_login()
         
-        print("\n🔔 PUSH NOTIFICATION ENDPOINTS TESTING")
+        # Create test data for performance testing
+        self.test_create_fixer()
+        self.test_create_job()
+        
+        print("\n⚡ PERFORMANCE CACHING SYSTEM TESTING")
         print("-" * 50)
         
-        # Push Notification Tests
-        self.test_push_subscribe()
-        self.test_get_push_subscriptions()
-        self.test_send_push_notification()
-        self.test_send_push_to_role_admin_only()
-        self.test_get_notification_templates()
+        # Performance Caching System Tests
+        self.test_performance_cache_status()
+        self.test_performance_clear_cache()
+        self.test_performance_clear_cache_pattern()
         
-        print("\n📱 PWA SESSION TRACKING ENDPOINTS TESTING")
+        print("\n📊 OPTIMIZED ENDPOINTS TESTING")
         print("-" * 50)
         
-        # PWA Session Tracking Tests
-        self.test_start_pwa_session()
-        self.test_queue_offline_action()
-        self.test_get_offline_actions()
-        self.test_end_pwa_session()
+        # Optimized Endpoints Tests
+        self.test_optimized_jobs_listing_with_caching()
+        self.test_optimized_dashboard_with_caching()
+        self.test_performance_monitoring_headers()
+        self.test_database_query_optimization()
         
         # Print final results
         print("\n" + "=" * 80)
-        print("🎯 PHASE 4A PWA BACKEND TESTING RESULTS")
+        print("🎯 PHASE 4B PERFORMANCE OPTIMIZATION TESTING RESULTS")
         print("=" * 80)
         print(f"✅ PASSED: {self.results['passed']}")
         print(f"❌ FAILED: {self.results['failed']}")
-        print(f"📊 SUCCESS RATE: {(self.results['passed'] / (self.results['passed'] + self.results['failed']) * 100):.1f}%")
+        
+        if self.results['passed'] + self.results['failed'] > 0:
+            success_rate = (self.results['passed'] / (self.results['passed'] + self.results['failed']) * 100)
+            print(f"📊 SUCCESS RATE: {success_rate:.1f}%")
+        else:
+            print(f"📊 SUCCESS RATE: 0.0%")
         
         if self.results['errors']:
             print(f"\n❌ FAILED TESTS:")
             for error in self.results['errors']:
                 print(f"   • {error}")
         
-        return self.results['failed'] == 0
+        if self.results['failed'] == 0:
+            print("\n🎉 ALL PHASE 4B PERFORMANCE OPTIMIZATION TESTS PASSED!")
+            return True
+        else:
+            print("⚠️  Some tests failed. Please check the errors above.")
+            return False
         self.test_admin_update_compliance_request()
         print()
         
