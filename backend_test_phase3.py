@@ -508,20 +508,22 @@ class Phase3APITester:
         return False
     
     def test_ai_assistant_get_history(self):
-        """Test GET /api/ai-assistant/conversation/{conversation_id}/history"""
-        if 'conversation_id' not in self.test_data:
-            self.log_result("AI Assistant Get History", False, "No conversation ID available")
+        """Test GET /api/ai-chat/{session_id}/history"""
+        if 'session_id' not in self.test_data:
+            self.log_result("AI Assistant Get History", False, "No session ID available")
             return False
         
         try:
-            response = self.session.get(f"{API_BASE}/ai-assistant/conversation/{self.test_data['conversation_id']}/history")
+            headers = {"Authorization": f"Bearer {self.test_data.get('fixer_token', '')}"}
+            response = self.session.get(f"{API_BASE}/ai-chat/{self.test_data['session_id']}/history", headers=headers)
             
             if response.status_code == 200:
                 data = response.json()
-                if data.get('success') and 'messages' in data:
-                    messages = data['messages']
+                if data.get('success') and 'conversation' in data:
+                    conversation = data['conversation']
+                    messages = conversation.get('messages', [])
                     self.log_result("AI Assistant Get History", True, 
-                                  f"Retrieved {len(messages)} conversation messages")
+                                  f"Retrieved conversation with {len(messages)} messages")
                     return True
                 else:
                     self.log_result("AI Assistant Get History", False, "Invalid response format", response)
