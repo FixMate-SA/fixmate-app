@@ -1,0 +1,145 @@
+{
+  "name": "FixMate-SA",
+  "short_name": "FixMate",
+  "description": "South Africa's Premier Service Platform - Connect with skilled fixers for all your home repair needs",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#3B82F6",
+  "background_color": "#FFFFFF",
+  "lang": "en-ZA",
+  "scope": "/",
+  "categories": ["business", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/fixmate-logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/fixmate-logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/fixmate-logo.jpg",
+      "sizes": "144x144",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/fixmate-logo.jpg",
+      "sizes": "96x96",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Create Job",
+      "short_name": "New Job",
+      "description": "Create a new service request",
+      "url": "/jobs/create",
+      "icons": [
+        {
+          "src": "/fixmate-logo.jpg",
+          "sizes": "96x96",
+          "type": "image/jpeg"
+        }
+      ]
+    },
+    {
+      "name": "Browse Fixers",
+      "short_name": "Fixers",
+      "description": "Find skilled fixers in your area",
+      "url": "/fixers",
+      "icons": [
+        {
+          "src": "/fixmate-logo.jpg",
+          "sizes": "96x96",
+          "type": "image/jpeg"
+        }
+      ]
+    },
+    {
+      "name": "My Jobs",
+      "short_name": "Jobs",
+      "description": "View your service requests",
+      "url": "/jobs",
+      "icons": [
+        {
+          "src": "/fixmate-logo.jpg",
+          "sizes": "96x96",
+          "type": "image/jpeg"
+        }
+      ]
+    },
+    {
+      "name": "Phase 3 Features",
+      "short_name": "Phase 3",
+      "description": "Access advanced automation features",
+      "url": "/phase3",
+      "icons": [
+        {
+          "src": "/fixmate-logo.jpg",
+          "sizes": "96x96",
+          "type": "image/jpeg"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/fixmate-logo.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "FixMate-SA Dashboard"
+    },
+    {
+      "src": "/fixmate-logo.jpg",
+      "sizes": "750x1334",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "FixMate-SA Mobile View"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "file_handlers": [
+    {
+      "action": "/jobs/create",
+      "accept": {
+        "image/*": [".jpg", ".jpeg", ".png", ".gif", ".webp"]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+fixmate",
+      "url": "/jobs/create?type=%s"
+    }
+  ],
+  "share_target": {
+    "action": "/jobs/create",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "description",
+      "url": "url",
+      "files": [
+        {
+          "name": "photos",
+          "accept": ["image/*"]
+        }
+      ]
+    }
+  }
+}
