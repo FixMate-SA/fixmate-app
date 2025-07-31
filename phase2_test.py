@@ -572,13 +572,8 @@ class Phase2Tester:
             completion_data = {
                 "completion_notes": "Job completed successfully. Tap is no longer leaking.",
                 "final_price": 275.0,
-                "completion_photos": [
-                    {
-                        "data": base64_image,
-                        "filename": "completion_1.png",
-                        "description": "Final result - tap working properly"
-                    }
-                ],
+                "before_photos": [base64_image],  # List of base64 strings
+                "after_photos": [base64_image],   # List of base64 strings
                 "quality_checklist": {
                     "work_completed": True,
                     "area_cleaned": True,
