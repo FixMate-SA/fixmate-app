@@ -107,7 +107,7 @@ const Navigation = () => {
       label: t('adminPanel', 'Admin Panel'), 
       icon: '⚙️',
       roles: ['admin'],
-      permission: 'can_access_admin'
+      permission: null // Remove permission check
     },
     
     // Smart Matching Dashboard (Admin Only)
@@ -116,7 +116,7 @@ const Navigation = () => {
       label: t('smartMatching', 'Smart Matching'), 
       icon: '🎯',
       roles: ['admin'],
-      permission: 'can_access_admin'
+      permission: null // Remove permission check
     },
     
     // Photo Verification Dashboard (Admin Only)
@@ -125,7 +125,7 @@ const Navigation = () => {
       label: t('photoVerification', 'Photo Verification'), 
       icon: '📸',
       roles: ['admin'],
-      permission: 'can_access_admin'
+      permission: null // Remove permission check
     },
     
     // Phase 3: Automation & Engagement
