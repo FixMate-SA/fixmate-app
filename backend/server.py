@@ -2362,6 +2362,353 @@ async def get_ai_chat_analytics(days: int = 7, current_user: User = Depends(get_
         logger.error(f"Error getting AI chat analytics: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get analytics: {str(e)}")
 
+# ======= PHASE 4: PUSH NOTIFICATION ENDPOINTS =======
+
+@api_router.post("/push/subscribe")
+async def subscribe_to_push(subscription_data: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Subscribe user to push notifications (PWA feature).
+    """
+    try:
+        from services.push_notification_service import push_service, PushSubscriptionCreate
+        
+        # Validate subscription data
+        required_fields = ['endpoint', 'keys']
+        for field in required_fields:
+            if field not in subscription_data:
+                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+        
+        # Create subscription
+        subscription = PushSubscriptionCreate(
+            endpoint=subscription_data['endpoint'],
+            keys=subscription_data['keys'],
+            user_agent=subscription_data.get('user_agent')
+        )
+        
+        result = push_service.save_subscription(db, current_user.id, subscription)
+        
+        if result['success']:
+            return {
+                'success': True,
+                'message': result['message'],
+                'subscription_id': result['subscription_id']
+            }
+        else:
+            raise HTTPException(status_code=400, detail=result['error'])
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error subscribing to push notifications: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to subscribe: {str(e)}")
+
+@api_router.get("/push/subscriptions")
+async def get_push_subscriptions(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Get user's push notification subscriptions.
+    """
+    try:
+        from services.push_notification_service import push_service
+        
+        subscriptions = push_service.get_user_subscriptions(db, current_user.id)
+        
+        return {
+            'success': True,
+            'subscriptions': subscriptions
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting push subscriptions: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get subscriptions: {str(e)}")
+
+@api_router.post("/push/send")
+async def send_push_notification(notification_data: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Send push notification to user (Admin only or to self).
+    """
+    try:
+        from services.push_notification_service import push_service, PushNotificationRequest
+        
+        # Validate required fields
+        required_fields = ['title', 'body']
+        for field in required_fields:
+            if field not in notification_data:
+                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+        
+        target_user_id = notification_data.get('user_id', current_user.id)
+        
+        # Check permissions
+        if target_user_id != current_user.id and current_user.role not in ['admin', 'super_admin']:
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        
+        # Create notification
+        notification = PushNotificationRequest(
+            title=notification_data['title'],
+            body=notification_data['body'],
+            icon=notification_data.get('icon'),
+            badge=notification_data.get('badge'),
+            tag=notification_data.get('tag'),
+            data=notification_data.get('data'),
+            actions=notification_data.get('actions'),
+            require_interaction=notification_data.get('require_interaction', False),
+            silent=notification_data.get('silent', False),
+            url=notification_data.get('url')
+        )
+        
+        result = push_service.send_notification_to_user(db, target_user_id, notification)
+        
+        if result['success']:
+            return {
+                'success': True,
+                'message': result['message'],
+                'results': result.get('results', [])
+            }
+        else:
+            raise HTTPException(status_code=400, detail=result['error'])
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending push notification: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to send notification: {str(e)}")
+
+@api_router.post("/push/send-to-role")
+async def send_push_to_role(notification_data: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Send push notification to all users with specific role (Admin only).
+    """
+    try:
+        from services.push_notification_service import push_service, PushNotificationRequest
+        
+        # Admin only
+        if current_user.role not in ['admin', 'super_admin']:
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Validate required fields
+        required_fields = ['title', 'body', 'role']
+        for field in required_fields:
+            if field not in notification_data:
+                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+        
+        # Create notification
+        notification = PushNotificationRequest(
+            title=notification_data['title'],
+            body=notification_data['body'],
+            icon=notification_data.get('icon'),
+            badge=notification_data.get('badge'),
+            tag=notification_data.get('tag'),
+            data=notification_data.get('data'),
+            actions=notification_data.get('actions'),
+            require_interaction=notification_data.get('require_interaction', False),
+            silent=notification_data.get('silent', False),
+            url=notification_data.get('url')
+        )
+        
+        result = push_service.send_notification_to_role(db, notification_data['role'], notification)
+        
+        if result['success']:
+            return {
+                'success': True,
+                'message': result['message'],
+                'results': result.get('results', [])
+            }
+        else:
+            raise HTTPException(status_code=400, detail=result['error'])
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending push notification to role: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to send notification: {str(e)}")
+
+@api_router.get("/push/templates")
+async def get_notification_templates(current_user: User = Depends(get_current_user)):
+    """
+    Get predefined notification templates.
+    """
+    try:
+        from services.push_notification_service import push_service
+        
+        templates = push_service.get_notification_templates()
+        
+        return {
+            'success': True,
+            'templates': {
+                name: {
+                    'title': template.title,
+                    'body': template.body,
+                    'icon': template.icon,
+                    'tag': template.tag,
+                    'actions': template.actions,
+                    'require_interaction': template.require_interaction
+                }
+                for name, template in templates.items()
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting notification templates: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get templates: {str(e)}")
+
+# ======= PWA SESSION TRACKING ENDPOINTS =======
+
+@api_router.post("/pwa/session/start")
+async def start_pwa_session(session_data: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Start PWA session tracking.
+    """
+    try:
+        from models import AppSession
+        
+        # Create new session
+        session = AppSession(
+            user_id=current_user.id,
+            session_id=session_data.get('session_id', str(uuid.uuid4())),
+            user_agent=session_data.get('user_agent'),
+            device_type=session_data.get('device_type'),
+            platform=session_data.get('platform'),
+            is_pwa=session_data.get('is_pwa', False),
+            is_offline_capable=session_data.get('is_offline_capable', False),
+            initial_load_time=session_data.get('initial_load_time')
+        )
+        
+        db.add(session)
+        db.commit()
+        db.refresh(session)
+        
+        return {
+            'success': True,
+            'session_id': session.session_id,
+            'message': 'Session started successfully'
+        }
+        
+    except Exception as e:
+        logger.error(f"Error starting PWA session: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start session: {str(e)}")
+
+@api_router.post("/pwa/session/{session_id}/end")
+async def end_pwa_session(session_id: str, session_data: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    End PWA session tracking.
+    """
+    try:
+        from models import AppSession
+        from datetime import datetime
+        
+        session = db.query(AppSession).filter(
+            AppSession.session_id == session_id,
+            AppSession.user_id == current_user.id
+        ).first()
+        
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        # Update session end data
+        session.session_end = datetime.utcnow()
+        session.duration_seconds = session_data.get('duration_seconds')
+        session.pages_visited = json.dumps(session_data.get('pages_visited', []))
+        session.actions_performed = json.dumps(session_data.get('actions_performed', []))
+        session.offline_actions_queued = session_data.get('offline_actions_queued', 0)
+        session.cache_hits = session_data.get('cache_hits', 0)
+        session.average_page_load_time = session_data.get('average_page_load_time')
+        session.network_failures = session_data.get('network_failures', 0)
+        
+        db.commit()
+        
+        return {
+            'success': True,
+            'message': 'Session ended successfully',
+            'duration_seconds': session.duration_seconds
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error ending PWA session: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to end session: {str(e)}")
+
+@api_router.post("/pwa/offline-action")
+async def queue_offline_action(action_data: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Queue action for offline sync.
+    """
+    try:
+        from models import OfflineAction
+        from datetime import datetime, timedelta
+        
+        # Validate required fields
+        required_fields = ['action_type', 'action_data', 'session_id']
+        for field in required_fields:
+            if field not in action_data:
+                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+        
+        # Create offline action
+        offline_action = OfflineAction(
+            user_id=current_user.id,
+            session_id=action_data['session_id'],
+            action_type=action_data['action_type'],
+            action_data=json.dumps(action_data['action_data']),
+            priority=action_data.get('priority', 'normal'),
+            created_offline_at=datetime.fromisoformat(action_data.get('created_offline_at', datetime.utcnow().isoformat())),
+            expires_at=datetime.utcnow() + timedelta(days=7)  # Expire after 7 days
+        )
+        
+        db.add(offline_action)
+        db.commit()
+        db.refresh(offline_action)
+        
+        return {
+            'success': True,
+            'action_id': offline_action.id,
+            'message': 'Action queued for sync'
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error queuing offline action: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to queue action: {str(e)}")
+
+@api_router.get("/pwa/offline-actions")
+async def get_offline_actions(session_id: str = None, status: str = None, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Get user's offline actions.
+    """
+    try:
+        from models import OfflineAction
+        
+        query = db.query(OfflineAction).filter(OfflineAction.user_id == current_user.id)
+        
+        if session_id:
+            query = query.filter(OfflineAction.session_id == session_id)
+        if status:
+            query = query.filter(OfflineAction.sync_status == status)
+        
+        actions = query.order_by(OfflineAction.created_offline_at.desc()).limit(100).all()
+        
+        return {
+            'success': True,
+            'actions': [
+                {
+                    'id': action.id,
+                    'action_type': action.action_type,
+                    'action_data': json.loads(action.action_data),
+                    'priority': action.priority,
+                    'sync_status': action.sync_status,
+                    'sync_attempts': action.sync_attempts,
+                    'created_offline_at': action.created_offline_at.isoformat(),
+                    'synced_at': action.synced_at.isoformat() if action.synced_at else None
+                }
+                for action in actions
+            ]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting offline actions: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get actions: {str(e)}")
+
+# ======= END PHASE 4 ENDPOINTS =======
+
 # Review endpoints
 @api_router.post("/reviews", response_model=ReviewResponse)
 async def create_review(review: ReviewCreate, db: Session = Depends(get_db)):
