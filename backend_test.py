@@ -4509,6 +4509,32 @@ class FixMateAPITester:
         self.test_admin_improve_matching()
         print()
         
+        # NEW: PHASE 3 AUTOMATION & ENGAGEMENT TESTS (PRIORITY)
+        print("🚀 PHASE 3: AUTOMATION & ENGAGEMENT TESTS")
+        print("-" * 50)
+        # Real-time tracking tests
+        self.test_start_job_tracking()
+        self.test_update_fixer_location()
+        self.test_complete_job_tracking()
+        self.test_get_job_tracking_status()
+        
+        # Gamification and reputation tests
+        self.test_get_fixer_reputation()
+        self.test_initialize_fixer_reputation()
+        self.test_update_fixer_performance()
+        
+        # AI multilingual assistant tests
+        self.test_start_ai_conversation()
+        self.test_send_ai_message()
+        self.test_end_ai_conversation()
+        self.test_get_ai_conversation_history()
+        self.test_start_anonymous_ai_conversation()
+        
+        # Admin analytics tests
+        self.test_admin_gamification_stats()
+        self.test_admin_ai_chat_analytics()
+        print()
+        
         # CRITICAL TEST - Authentication Flow for Different User Roles (as requested)
         print("🔐 CRITICAL AUTHENTICATION FLOW TESTS")
         print("-" * 50)
