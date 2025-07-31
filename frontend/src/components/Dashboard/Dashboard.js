@@ -225,11 +225,19 @@ const Dashboard = () => {
               </div>
               <p className="text-sm text-gray-600 mb-2">📍 {fixer.location}</p>
               <div className="flex flex-wrap gap-1">
-                {JSON.parse(fixer.services).slice(0, 3).map((service, index) => (
-                  <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                    {service}
-                  </span>
-                ))}
+                {(() => {
+                  try {
+                    const services = fixer.services ? JSON.parse(fixer.services) : [];
+                    return Array.isArray(services) ? services.slice(0, 3).map((service, index) => (
+                      <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                        {service}
+                      </span>
+                    )) : [];
+                  } catch (error) {
+                    console.warn('Error parsing fixer services:', error, fixer.services);
+                    return [];
+                  }
+                })()}
               </div>
             </div>
           ))}
