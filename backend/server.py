@@ -1874,6 +1874,11 @@ async def update_fixer_location(job_id: str, request: dict, current_user: User =
     Update fixer's current location and recalculate ETA (Fixer only).
     """
     try:
+        # Find the fixer record associated with current user
+        fixer = db.query(Fixer).filter(Fixer.user_id == current_user.id).first()
+        if not fixer:
+            raise HTTPException(status_code=403, detail="Access denied: User is not a registered fixer")
+        
         location = request.get('location')  # {"lat": float, "lng": float}
         accuracy = request.get('accuracy')  # GPS accuracy in meters
         
@@ -1883,7 +1888,7 @@ async def update_fixer_location(job_id: str, request: dict, current_user: User =
         result = real_time_tracking_service.update_fixer_location(
             db=db,
             job_id=job_id,
-            fixer_id=current_user.id,
+            fixer_id=fixer.id,
             location=location,
             accuracy=accuracy
         )
