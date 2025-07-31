@@ -1917,10 +1917,15 @@ async def complete_job_tracking(job_id: str, current_user: User = Depends(get_cu
     Complete job tracking when work is finished (Fixer only).
     """
     try:
+        # Find the fixer record associated with current user
+        fixer = db.query(Fixer).filter(Fixer.user_id == current_user.id).first()
+        if not fixer:
+            raise HTTPException(status_code=403, detail="Access denied: User is not a registered fixer")
+        
         result = real_time_tracking_service.complete_job_tracking(
             db=db,
             job_id=job_id,
-            fixer_id=current_user.id
+            fixer_id=fixer.id
         )
         
         if not result['success']:
