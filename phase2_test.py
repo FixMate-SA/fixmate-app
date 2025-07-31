@@ -176,18 +176,7 @@ class Phase2Tester:
             
             photo_data = {
                 "photo_type": "before",
-                "photos": [
-                    {
-                        "data": base64_image,
-                        "filename": "before_1.png",
-                        "description": "Kitchen tap before repair"
-                    },
-                    {
-                        "data": base64_image,
-                        "filename": "before_2.png", 
-                        "description": "Close-up of leak"
-                    }
-                ]
+                "photos": [base64_image, base64_image]  # Just the base64 strings
             }
             
             headers = {"Authorization": f"Bearer {self.test_data['token']}"}
