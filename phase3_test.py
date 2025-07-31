@@ -142,7 +142,35 @@ class Phase3Tester:
                     fixer = fixer_response.json()
                     self.test_data['fixer_id'] = fixer['id']
                     self.test_data['fixer'] = fixer
+                    self.test_data['fixer_user_id'] = fixer_user['id']
                     print(f"✅ Test fixer created: {fixer['id']}")
+                    
+                    # Set password and login as fixer
+                    set_fixer_password_data = {
+                        "phone": fixer_user_data["phone"],
+                        "password": "fixerpass123",
+                        "confirm_password": "fixerpass123"
+                    }
+                    
+                    fixer_password_response = self.session.post(f"{API_BASE}/auth/set-password", json=set_fixer_password_data)
+                    if fixer_password_response.status_code == 200:
+                        # Login as fixer
+                        fixer_login_data = {
+                            "phone": fixer_user_data["phone"],
+                            "password": "fixerpass123"
+                        }
+                        
+                        fixer_login_response = self.session.post(f"{API_BASE}/auth/login", json=fixer_login_data)
+                        if fixer_login_response.status_code == 200:
+                            fixer_login_result = fixer_login_response.json()
+                            self.test_data['fixer_token'] = fixer_login_result['token']
+                            print(f"✅ Fixer logged in with token")
+                        else:
+                            print(f"❌ Fixer login failed: {fixer_login_response.status_code}")
+                            return False
+                    else:
+                        print(f"❌ Fixer set password failed: {fixer_password_response.status_code}")
+                        return False
                 else:
                     print(f"❌ Fixer creation failed: {fixer_response.status_code}")
                     return False
