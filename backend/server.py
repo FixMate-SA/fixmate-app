@@ -2767,35 +2767,83 @@ async def get_reviews(fixer_id: str = None, user_id: str = None, skip: int = 0, 
 
 # Dashboard endpoints
 @api_router.get("/dashboard/{user_id}")
+@cache_dashboard_data(ttl=180)  # Cache for 3 minutes
+@PerformanceMonitor.time_function("get_dashboard")
 async def get_dashboard(user_id: str, db: Session = Depends(get_db)):
+    """
+    Get dashboard data with caching and performance monitoring
+    """
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Get user's jobs
-    jobs = db.query(Job).filter(Job.user_id == user_id).order_by(Job.created_at.desc()).limit(10).all()
+    # Use optimized queries with eager loading
+    jobs_query = db.query(Job).filter(Job.user_id == user_id).order_by(Job.created_at.desc())
+    jobs_query = DatabaseOptimizer.add_eager_loading(jobs_query, Job.fixer)
+    jobs = jobs_query.limit(10).all()
     
-    # Get recent fixers
-    fixers = db.query(Fixer).filter(Fixer.is_active == True).order_by(Fixer.rating.desc()).limit(10).all()
+    # Get top fixers with optimized query
+    fixers_query = db.query(Fixer).filter(Fixer.is_active == True).order_by(Fixer.rating.desc())
+    fixers = fixers_query.limit(10).all()
     
-    # Get stats
-    total_jobs = db.query(Job).filter(Job.user_id == user_id).count()
-    completed_jobs = db.query(Job).filter(Job.user_id == user_id, Job.status == "completed").count()
+    # Get stats efficiently
+    total_jobs = db.query(func.count(Job.id)).filter(Job.user_id == user_id).scalar()
+    completed_jobs = db.query(func.count(Job.id)).filter(
+        Job.user_id == user_id, 
+        Job.status == "completed"
+    ).scalar()
     
-    # Generate AI business insight
+    # Generate AI business insight (cached separately)
     job_data = [{"id": job.id, "description": job.description, "service": job.service} for job in jobs]
     business_insight = ai_service.generate_business_insight(job_data)
     
-    return {
-        "user": user,
-        "recent_jobs": jobs,
-        "top_fixers": fixers,
+    dashboard_data = {
+        "user": {
+            "id": user.id,
+            "phone": user.phone,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "role": user.role,
+            "is_active": user.is_active
+        },
+        "recent_jobs": [
+            {
+                "id": job.id,
+                "service": job.service,
+                "description": job.description,
+                "status": job.status,
+                "location": job.location,
+                "created_at": job.created_at.isoformat(),
+                "estimated_price": job.estimated_price,
+                "fixer": {
+                    "id": job.fixer.id,
+                    "phone": job.fixer.phone,
+                    "service": job.fixer.service,
+                    "rating": job.fixer.rating
+                } if job.fixer else None
+            }
+            for job in jobs
+        ],
+        "top_fixers": [
+            {
+                "id": fixer.id,
+                "phone": fixer.phone,
+                "service": fixer.service,
+                "location": fixer.location,
+                "rating": fixer.rating,
+                "is_active": fixer.is_active
+            }
+            for fixer in fixers
+        ],
         "stats": {
             "total_jobs": total_jobs,
-            "completed_jobs": completed_jobs
+            "completed_jobs": completed_jobs,
+            "completion_rate": round((completed_jobs / total_jobs * 100) if total_jobs > 0 else 0, 1)
         },
         "business_insight": business_insight
     }
+    
+    return ResponseOptimizer.compress_json_response(dashboard_data)
 
 # Health check endpoint
 @api_router.get("/")
