@@ -416,6 +416,11 @@ class Phase2Tester:
                     self.log_result("Create Dispute - Quality Issue", False, "Invalid response format", response)
             else:
                 self.log_result("Create Dispute - Quality Issue", False, f"HTTP {response.status_code}", response)
+                try:
+                    error_detail = response.json()
+                    print(f"   Error details: {error_detail}")
+                except:
+                    print(f"   Response text: {response.text[:500]}")
         except Exception as e:
             self.log_result("Create Dispute - Quality Issue", False, f"Request error: {str(e)}")
         return False
