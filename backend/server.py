@@ -923,7 +923,7 @@ async def get_jobs(
             "fixer": {
                 "id": job.fixer.id,
                 "phone": job.fixer.phone,
-                "service": job.fixer.service,
+                "service": job.fixer.services,
                 "rating": job.fixer.rating
             } if job.fixer else None
         }
