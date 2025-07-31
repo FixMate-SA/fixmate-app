@@ -1360,6 +1360,460 @@ async def get_matching_improvement_suggestions(request: dict, current_user: User
         logger.error(f"Error generating matching improvements: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate recommendations: {str(e)}")
 
+# ======= PHASE 2: TRUST & RELIABILITY ENDPOINTS =======
+
+# Photo Verification Endpoints
+
+@api_router.post("/jobs/{job_id}/photos")
+async def submit_job_photos(job_id: str, request: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Submit before, after, or progress photos for a job.
+    Supports automatic AI analysis and quality assessment.
+    """
+    try:
+        # Validate required fields
+        photo_type = request.get('photo_type')  # 'before', 'after', 'progress'
+        photos = request.get('photos', [])
+        
+        if not photo_type or photo_type not in ['before', 'after', 'progress']:
+            raise HTTPException(status_code=400, detail="Invalid photo_type. Must be 'before', 'after', or 'progress'")
+        
+        if not photos or not isinstance(photos, list):
+            raise HTTPException(status_code=400, detail="Photos array is required")
+        
+        # Submit photos
+        result = photo_verification_service.submit_job_photos(
+            db=db,
+            job_id=job_id,
+            photo_type=photo_type,
+            photos=photos,
+            submitted_by=current_user.id
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result['error'])
+        
+        return {
+            'success': True,
+            'message': result['message'],
+            'data': {
+                'verification_id': result['verification_id'],
+                'photos_count': result['photos_count'],
+                'total_size': result['total_size'],
+                'status': result['status'],
+                'is_new_record': result['is_new_record']
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting job photos: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to submit photos: {str(e)}")
+
+@api_router.get("/jobs/{job_id}/photo-verification")
+async def get_job_photo_verification(job_id: str, db: Session = Depends(get_db)):
+    """
+    Get photo verification status and details for a job.
+    """
+    try:
+        verification = photo_verification_service.get_job_photo_verification(db, job_id)
+        
+        if not verification:
+            return {
+                'success': True,
+                'verification': None,
+                'message': 'No photo verification found for this job'
+            }
+        
+        return {
+            'success': True,
+            'verification': verification
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting photo verification: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get photo verification: {str(e)}")
+
+@api_router.get("/verification/{verification_id}/photos/{photo_type}")
+async def get_verification_photos(verification_id: str, photo_type: str, db: Session = Depends(get_db)):
+    """
+    Get actual photo data for display (admin/authorized users only).
+    """
+    try:
+        if photo_type not in ['before', 'after', 'progress']:
+            raise HTTPException(status_code=400, detail="Invalid photo_type")
+        
+        photos = photo_verification_service.get_photo_data(db, verification_id, photo_type)
+        
+        if not photos:
+            return {
+                'success': True,
+                'photos': [],
+                'message': f'No {photo_type} photos found'
+            }
+        
+        return {
+            'success': True,
+            'photos': photos,
+            'count': len(photos)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting verification photos: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get photos: {str(e)}")
+
+@api_router.post("/admin/photo-verification/{verification_id}/verify")
+async def admin_verify_photos(verification_id: str, request: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Admin verification of job photos (Admin only).
+    """
+    # Check admin permissions
+    if current_user.role not in ['admin', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        decision = request.get('decision')  # 'approved', 'rejected', 'needs_more'
+        comments = request.get('comments', '')
+        
+        if decision not in ['approved', 'rejected', 'needs_more']:
+            raise HTTPException(status_code=400, detail="Invalid decision. Must be 'approved', 'rejected', or 'needs_more'")
+        
+        result = photo_verification_service.admin_verify_photos(
+            db=db,
+            verification_id=verification_id,
+            admin_id=current_user.id,
+            decision=decision,
+            comments=comments
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result['error'])
+        
+        return {
+            'success': True,
+            'message': result['message'],
+            'verification_id': verification_id,
+            'decision': decision,
+            'verified_by': result['verified_by'],
+            'verified_at': result['verified_at']
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in admin photo verification: {e}")
+        raise HTTPException(status_code=500, detail=f"Verification failed: {str(e)}")
+
+@api_router.get("/admin/photo-verifications/pending")
+async def get_pending_photo_verifications(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Get list of photo verifications pending admin review (Admin only).
+    """
+    # Check admin permissions
+    if current_user.role not in ['admin', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        pending_verifications = photo_verification_service.get_pending_verifications(db)
+        
+        return {
+            'success': True,
+            'pending_verifications': pending_verifications,
+            'count': len(pending_verifications)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting pending photo verifications: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get pending verifications: {str(e)}")
+
+# Dispute Resolution Endpoints
+
+@api_router.post("/jobs/{job_id}/dispute")
+async def create_job_dispute(job_id: str, request: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Create a dispute for a job.
+    """
+    try:
+        # Validate required fields
+        required_fields = ['dispute_type', 'description']
+        for field in required_fields:
+            if field not in request:
+                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+        
+        result = dispute_resolution_service.create_dispute(
+            db=db,
+            job_id=job_id,
+            reporter_id=current_user.id,
+            dispute_data=request
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result['error'])
+        
+        return {
+            'success': True,
+            'message': result['message'],
+            'dispute_id': result['dispute_id'],
+            'status': result['status'],
+            'assigned_admin': result.get('assigned_admin'),
+            'payment_hold': result.get('payment_hold', False)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating dispute: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create dispute: {str(e)}")
+
+@api_router.post("/disputes/{dispute_id}/messages")
+async def add_dispute_message(dispute_id: str, request: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Add a message to an existing dispute.
+    """
+    try:
+        if 'message' not in request:
+            raise HTTPException(status_code=400, detail="Message is required")
+        
+        result = dispute_resolution_service.add_dispute_message(
+            db=db,
+            dispute_id=dispute_id,
+            sender_id=current_user.id,
+            message_data=request
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result['error'])
+        
+        return {
+            'success': True,
+            'message': result['message'],
+            'message_id': result['message_id']
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding dispute message: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to add message: {str(e)}")
+
+@api_router.get("/disputes/{dispute_id}")
+async def get_dispute_details(dispute_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Get complete dispute details including messages.
+    """
+    try:
+        dispute = dispute_resolution_service.get_dispute_details(db, dispute_id)
+        
+        if not dispute:
+            raise HTTPException(status_code=404, detail="Dispute not found")
+        
+        # Check permissions - only involved parties and admins can view
+        is_authorized = (
+            current_user.role in ['admin', 'super_admin'] or
+            current_user.id == dispute['reporter']['id'] or
+            current_user.id == dispute['job_details'].get('fixer_id')
+        )
+        
+        if not is_authorized:
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        return {
+            'success': True,
+            'dispute': dispute
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting dispute details: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get dispute: {str(e)}")
+
+@api_router.post("/admin/disputes/{dispute_id}/resolve")
+async def resolve_dispute(dispute_id: str, request: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Resolve a dispute with admin decision (Admin only).
+    """
+    # Check admin permissions
+    if current_user.role not in ['admin', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        required_fields = ['resolution_action', 'resolution']
+        for field in required_fields:
+            if field not in request:
+                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+        
+        result = dispute_resolution_service.resolve_dispute(
+            db=db,
+            dispute_id=dispute_id,
+            admin_id=current_user.id,
+            resolution_data=request
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result['error'])
+        
+        return {
+            'success': True,
+            'message': result['message'],
+            'dispute_id': dispute_id,
+            'resolution_action': result['resolution_action'],
+            'resolved_by': result['resolved_by'],
+            'resolved_at': result['resolved_at']
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resolving dispute: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to resolve dispute: {str(e)}")
+
+@api_router.get("/admin/disputes/pending")
+async def get_pending_disputes(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Get list of pending disputes for admin review (Admin only).
+    """
+    # Check admin permissions
+    if current_user.role not in ['admin', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        pending_disputes = dispute_resolution_service.get_pending_disputes(
+            db=db,
+            admin_id=current_user.id if current_user.role == 'admin' else None
+        )
+        
+        return {
+            'success': True,
+            'pending_disputes': pending_disputes,
+            'count': len(pending_disputes)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting pending disputes: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get pending disputes: {str(e)}")
+
+@api_router.post("/admin/disputes/auto-escalate")
+async def auto_escalate_disputes(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Auto-escalate disputes that have been open too long (Admin only).
+    """
+    # Check admin permissions
+    if current_user.role not in ['admin', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        result = dispute_resolution_service.auto_escalate_disputes(db)
+        
+        return {
+            'success': True,
+            'message': result['message'],
+            'escalated_count': result['escalated_count']
+        }
+        
+    except Exception as e:
+        logger.error(f"Error auto-escalating disputes: {e}")
+        raise HTTPException(status_code=500, detail=f"Auto-escalation failed: {str(e)}")
+
+# Job Completion with Photo Verification
+
+@api_router.post("/jobs/{job_id}/complete-with-photos")
+async def complete_job_with_photos(job_id: str, request: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Complete a job with before/after photos (Fixer only).
+    Combines job completion with photo verification process.
+    """
+    try:
+        # Get the job
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Check if current user is the assigned fixer
+        if job.fixer_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Only the assigned fixer can complete this job")
+        
+        # Check if job is in correct status
+        if job.status not in ['assigned', 'in_progress']:
+            raise HTTPException(status_code=400, detail=f"Cannot complete job with status: {job.status}")
+        
+        # Extract completion data
+        before_photos = request.get('before_photos', [])
+        after_photos = request.get('after_photos', [])
+        completion_notes = request.get('completion_notes', '')
+        final_price = request.get('final_price')
+        
+        # Submit before photos if provided
+        if before_photos:
+            before_result = photo_verification_service.submit_job_photos(
+                db=db,
+                job_id=job_id,
+                photo_type='before',
+                photos=before_photos,
+                submitted_by=current_user.id
+            )
+            if not before_result['success']:
+                raise HTTPException(status_code=400, detail=f"Before photos error: {before_result['error']}")
+        
+        # Submit after photos if provided
+        if after_photos:
+            after_result = photo_verification_service.submit_job_photos(
+                db=db,
+                job_id=job_id,
+                photo_type='after',
+                photos=after_photos,
+                submitted_by=current_user.id
+            )
+            if not after_result['success']:
+                raise HTTPException(status_code=400, detail=f"After photos error: {after_result['error']}")
+        
+        # Update job completion
+        job.status = 'completed'
+        job.job_completion_time = datetime.utcnow()
+        
+        if final_price:
+            job.final_price = float(final_price)
+        
+        if completion_notes:
+            # Add completion notes to job description or create a completion note field
+            job.description += f"\n\nCompletion Notes: {completion_notes}"
+        
+        # Calculate actual duration if start time exists
+        if job.job_start_time:
+            duration = datetime.utcnow() - job.job_start_time
+            job.actual_duration = int(duration.total_seconds() / 60)  # Duration in minutes
+        
+        job.updated_at = datetime.utcnow()
+        
+        try:
+            db.commit()
+            
+            return {
+                'success': True,
+                'message': 'Job completed successfully with photo verification',
+                'job_id': job_id,
+                'status': job.status,
+                'completion_time': job.job_completion_time.isoformat(),
+                'final_price': job.final_price,
+                'actual_duration': job.actual_duration,
+                'photos_submitted': {
+                    'before_count': len(before_photos),
+                    'after_count': len(after_photos)
+                }
+            }
+            
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Database error completing job with photos: {e}")
+            raise HTTPException(status_code=500, detail="Database error occurred")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error completing job with photos: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to complete job: {str(e)}")
+
 # Review endpoints
 @api_router.post("/reviews", response_model=ReviewResponse)
 async def create_review(review: ReviewCreate, db: Session = Depends(get_db)):
