@@ -420,6 +420,18 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                  <Route
+                    path="/performance"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading performance dashboard..." />}>
+                            <PerformanceDashboard />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
 
                   {/* Business & Enterprise Features - Lower Priority */}
                   <Route
