@@ -2941,7 +2941,7 @@ async def get_dashboard(user_id: str, db: Session = Depends(get_db)):
             {
                 "id": fixer.id,
                 "phone": fixer.phone,
-                "service": fixer.service,
+                "service": fixer.services,
                 "location": fixer.location,
                 "rating": fixer.rating,
                 "is_active": fixer.is_active
