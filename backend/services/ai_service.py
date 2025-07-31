@@ -1,19 +1,46 @@
 import os
 import io
 import tempfile
+import json
+import logging
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Tuple
 import google.generativeai as genai
+from openai import OpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
 
+# API Configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-class AIService:
+logger = logging.getLogger(__name__)
+
+class EnhancedAIService:
+    """
+    Enhanced AI Service with hybrid Gemini + OpenAI integration
+    for advanced smart matching and reinforcement learning
+    """
     def __init__(self):
-        self.model = genai.GenerativeModel('models/gemini-1.5-flash') if GEMINI_API_KEY else None
-    
+        # Gemini for multilingual and general AI tasks
+        self.gemini_model = genai.GenerativeModel('models/gemini-1.5-flash') if GEMINI_API_KEY else None
+        
+        # OpenAI for advanced reasoning and reinforcement learning
+        self.openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+        
+        # Matching performance tracking
+        self.matching_history = []
+        self.success_patterns = {}
+        
+        logger.info(f"Enhanced AI Service initialized - Gemini: {'✓' if self.gemini_model else '✗'}, OpenAI: {'✓' if self.openai_client else '✗'}")
+
+        # For backward compatibility
+        self.model = self.gemini_model
+
     def transcribe_audio(self, audio_data: bytes) -> str:
         """
         Transcribe audio using Google Gemini AI with support for South African languages.
@@ -476,4 +503,4 @@ class AIService:
         return insights
 
 # Global instance
-ai_service = AIService()
+ai_service = EnhancedAIService()
