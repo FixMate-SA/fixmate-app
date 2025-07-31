@@ -119,6 +119,15 @@ const Navigation = () => {
       permission: 'can_access_admin'
     },
     
+    // Photo Verification Dashboard (Admin Only)
+    { 
+      path: '/admin/photo-verification', 
+      label: t('photoVerification', 'Photo Verification'), 
+      icon: '📸',
+      roles: ['admin'],
+      permission: 'can_access_admin'
+    },
+    
     // Profile - available to all
     { 
       path: '/profile', 
