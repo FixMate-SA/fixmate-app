@@ -1,0 +1,385 @@
+import React from "react";
+import "./App.css";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
+import Header from "./components/Layout/Header";
+import Navigation from "./components/Layout/Navigation";
+import Footer from "./components/Layout/Footer";
+import OfflineIndicator from "./components/Common/OfflineIndicator";
+import LoginForm from "./components/Auth/LoginForm";
+import SignupForm from "./components/Auth/SignupForm";
+import Dashboard from "./components/Dashboard/Dashboard";
+import JobList from "./components/Jobs/JobList";
+import CreateJob from "./components/Jobs/CreateJob";
+import FixerList from "./components/Fixers/FixerList";
+import LearningPlatform from "./components/Learning/LearningPlatform";
+import SMSInterface from "./components/SMS/SMSInterface";
+import B2BPortal from "./components/Enterprise/B2BPortal";
+import PaymentOptions from "./components/Payment/PaymentOptions";
+import Profile from "./components/Profile/Profile";
+import AdminDashboard from "./components/Admin/AdminDashboard";
+import TermsOfService from "./components/Legal/TermsOfService";
+import PrivacyPolicy from "./components/Legal/PrivacyPolicy";
+import BusinessCompliance from "./components/Business/BusinessCompliance";
+import EnhancedJobCreation from "./components/Workflow/EnhancedJobCreation";
+import FixerJobBoard from "./components/Workflow/FixerJobBoard";
+import TermsAcceptance from "./components/Workflow/TermsAcceptance";
+import SmartMatchingDashboard from "./components/Admin/SmartMatchingDashboard";
+import EnhancedJobCompletion from "./components/Jobs/EnhancedJobCompletion";
+import DisputeCreation from "./components/Disputes/DisputeCreation";
+import AdminPhotoVerificationDashboard from "./components/Admin/AdminPhotoVerificationDashboard";
+import Phase3Dashboard from "./components/Phase3/Phase3Dashboard";
+import Phase3Test from "./components/Phase3/Phase3Test";
+import JobTrackingControls from "./components/Tracking/JobTrackingControls";
+import JobTrackingStatus from "./components/Tracking/JobTrackingStatus";
+import FixerReputationDashboard from "./components/Gamification/FixerReputationDashboard";
+import AIChatAssistant from "./components/AI/AIChatAssistant";
+import PWAStatusDashboard from "./components/PWA/PWAStatusDashboard";
+
+// Protected Route component
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    console.log('ProtectedRoute: User not authenticated, redirecting to login');
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+};
+
+// Public Route component (for login/signup pages)
+const PublicRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+  
+  if (isAuthenticated) {
+    console.log('PublicRoute: User authenticated, redirecting to dashboard');
+    return <Navigate to="/" replace />;
+  }
+  
+  return children;
+};
+
+// Layout component for authenticated pages
+const Layout = ({ children }) => {
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header />
+      <Navigation />
+      <OfflineIndicator />
+      <main className="container mx-auto px-4 py-8 flex-grow">
+        {children}
+      </main>
+      <Footer />
+    </div>
+  );
+};
+
+// Default Route component
+const DefaultRoute = () => {
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+  
+  return <Navigate to={isAuthenticated ? "/" : "/login"} replace />;
+};
+
+function App() {
+  return (
+    <LanguageProvider>
+      <AuthProvider>
+        <div className="App">
+          <BrowserRouter>
+            <Routes>
+              <Route 
+                path="/login" 
+                element={
+                  <PublicRoute>
+                    <LoginForm />
+                  </PublicRoute>
+                } 
+              />
+              <Route 
+                path="/signup" 
+                element={
+                  <PublicRoute>
+                    <SignupForm />
+                  </PublicRoute>
+                } 
+              />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <JobList />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/create"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CreateJob />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/create-workflow"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <EnhancedJobCreation />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fixer/jobs"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <FixerJobBoard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/terms"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <TermsAcceptance showModal={false} />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fixers"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <FixerList />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/learning"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <LearningPlatform />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/sms"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <SMSInterface />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/enterprise"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <B2BPortal />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payment"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <PaymentOptions 
+                        amount={500}
+                        description="Sample Payment"
+                        onPaymentSuccess={() => {}}
+                        onPaymentCancel={() => {}}
+                      />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <AdminDashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Profile />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/business-compliance"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BusinessCompliance />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/smart-matching"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <SmartMatchingDashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/photo-verification"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <AdminPhotoVerificationDashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/:jobId/complete"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <EnhancedJobCompletion />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/:jobId/dispute"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <DisputeCreation />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/phase3"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Phase3Test />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/phase3-full"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Phase3Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tracking/:jobId"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <JobTrackingStatus jobId={window.location.pathname.split('/')[2]} />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reputation/:fixerId"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <FixerReputationDashboard fixerId={window.location.pathname.split('/')[2]} />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/pwa-status"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <PWAStatusDashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/terms"
+                element={<TermsOfService />}
+              />
+              <Route
+                path="/privacy"
+                element={<PrivacyPolicy />}
+              />
+              <Route path="*" element={<DefaultRoute />} />
+            </Routes>
+          </BrowserRouter>
+        </div>
+      </AuthProvider>
+    </LanguageProvider>
+  );
+}
+
+export default App;

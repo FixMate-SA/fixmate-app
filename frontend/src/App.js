@@ -1,384 +1,555 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import "./App.css";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
+// Core Context Providers (always loaded)
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
-import Header from "./components/Layout/Header";
-import Navigation from "./components/Layout/Navigation";
-import Footer from "./components/Layout/Footer";
-import OfflineIndicator from "./components/Common/OfflineIndicator";
-import LoginForm from "./components/Auth/LoginForm";
-import SignupForm from "./components/Auth/SignupForm";
-import Dashboard from "./components/Dashboard/Dashboard";
-import JobList from "./components/Jobs/JobList";
-import CreateJob from "./components/Jobs/CreateJob";
-import FixerList from "./components/Fixers/FixerList";
-import LearningPlatform from "./components/Learning/LearningPlatform";
-import SMSInterface from "./components/SMS/SMSInterface";
-import B2BPortal from "./components/Enterprise/B2BPortal";
-import PaymentOptions from "./components/Payment/PaymentOptions";
-import Profile from "./components/Profile/Profile";
-import AdminDashboard from "./components/Admin/AdminDashboard";
-import TermsOfService from "./components/Legal/TermsOfService";
-import PrivacyPolicy from "./components/Legal/PrivacyPolicy";
-import BusinessCompliance from "./components/Business/BusinessCompliance";
-import EnhancedJobCreation from "./components/Workflow/EnhancedJobCreation";
-import FixerJobBoard from "./components/Workflow/FixerJobBoard";
-import TermsAcceptance from "./components/Workflow/TermsAcceptance";
-import SmartMatchingDashboard from "./components/Admin/SmartMatchingDashboard";
-import EnhancedJobCompletion from "./components/Jobs/EnhancedJobCompletion";
-import DisputeCreation from "./components/Disputes/DisputeCreation";
-import AdminPhotoVerificationDashboard from "./components/Admin/AdminPhotoVerificationDashboard";
-import Phase3Dashboard from "./components/Phase3/Phase3Dashboard";
-import Phase3Test from "./components/Phase3/Phase3Test";
-import JobTrackingControls from "./components/Tracking/JobTrackingControls";
-import JobTrackingStatus from "./components/Tracking/JobTrackingStatus";
-import FixerReputationDashboard from "./components/Gamification/FixerReputationDashboard";
-import AIChatAssistant from "./components/AI/AIChatAssistant";
-import PWAStatusDashboard from "./components/PWA/PWAStatusDashboard";
 
-// Protected Route component
-const ProtectedRoute = ({ children }) => {
+// Core Components (always loaded)
+import Layout from "./components/Layout/Layout";
+import LoadingSpinner from "./components/Common/LoadingSpinner";
+
+// Lazy-loaded components for code splitting
+const LoginForm = lazy(() => import("./components/Auth/LoginForm"));
+const SignupForm = lazy(() => import("./components/Auth/SignupForm"));
+const Dashboard = lazy(() => import("./components/Dashboard/Dashboard"));
+const Profile = lazy(() => import("./components/Profile/Profile"));
+
+// Job Management Components (frequently used, separate chunk)
+const CreateJob = lazy(() => import("./components/Jobs/CreateJob"));
+const JobList = lazy(() => import("./components/Jobs/JobList"));
+const FixerList = lazy(() => import("./components/Fixers/FixerList"));
+
+// Admin Components (admin-only, separate chunk)
+const AdminDashboard = lazy(() => import("./components/Admin/AdminDashboard"));
+const SmartMatchingDashboard = lazy(() => import("./components/Admin/SmartMatchingDashboard"));
+const AdminPhotoVerificationDashboard = lazy(() => import("./components/Admin/AdminPhotoVerificationDashboard"));
+
+// Phase 3 Components (advanced features, separate chunk)
+const Phase3Dashboard = lazy(() => import("./components/Phase3/Phase3Dashboard"));
+const JobTrackingControls = lazy(() => import("./components/Tracking/JobTrackingControls"));
+const JobTrackingStatus = lazy(() => import("./components/Tracking/JobTrackingStatus"));
+const FixerReputationDashboard = lazy(() => import("./components/Gamification/FixerReputationDashboard"));
+const AIChatAssistant = lazy(() => import("./components/AI/AIChatAssistant"));
+
+// Phase 4 Components (PWA features, separate chunk)
+const PWAStatusDashboard = lazy(() => import("./components/PWA/PWAStatusDashboard"));
+const PerformanceDashboard = lazy(() => import("./components/Performance/PerformanceDashboard"));
+
+// Business & Enterprise Components (separate chunk)
+const BusinessCompliance = lazy(() => import("./components/Business/BusinessCompliance"));
+const B2BPortal = lazy(() => import("./components/Enterprise/B2BPortal"));
+const LearningPlatform = lazy(() => import("./components/Learning/LearningPlatform"));
+
+// Advanced Workflow Components (separate chunk)
+const TermsAcceptance = lazy(() => import("./components/Workflow/TermsAcceptance"));
+const EnhancedJobCreation = lazy(() => import("./components/Workflow/EnhancedJobCreation"));
+const JobWorkflowStatus = lazy(() => import("./components/Workflow/JobWorkflowStatus"));
+const FixerJobBoard = lazy(() => import("./components/Workflow/FixerJobBoard"));
+const EnhancedJobCompletion = lazy(() => import("./components/Jobs/EnhancedJobCompletion"));
+const DisputeCreation = lazy(() => import("./components/Disputes/DisputeCreation"));
+
+// Communication Components (separate chunk)
+const SMSInterface = lazy(() => import("./components/SMS/SMSInterface"));
+const VoiceRecorder = lazy(() => import("./components/VoiceRecorder/VoiceRecorder"));
+
+// Payment Components (separate chunk)
+const PaymentOptions = lazy(() => import("./components/Payment/PaymentOptions"));
+const FixerPaymentManager = lazy(() => import("./components/Payment/FixerPaymentManager"));
+
+// Legal Components (rarely accessed, separate chunk)
+const TermsOfService = lazy(() => import("./components/Legal/TermsOfService"));
+const PrivacyPolicy = lazy(() => import("./components/Legal/PrivacyPolicy"));
+
+// Create QueryClient with optimized default options
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      cacheTime: 1000 * 60 * 30, // 30 minutes
+      retry: 3,
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+    },
+    mutations: {
+      retry: 2,
+    },
+  },
+});
+
+// Enhanced Loading Component with better UX
+const PageLoadingSpinner = ({ message = "Loading..." }) => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <div className="text-gray-600 font-medium">{message}</div>
+      <div className="text-gray-400 text-sm mt-2">FixMate-SA</div>
+    </div>
+  </div>
+);
+
+// Error Boundary for lazy-loaded components
+class LazyErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Lazy loading error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center max-w-md mx-auto p-6">
+            <div className="text-6xl mb-4">😵</div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              Oops! Something went wrong
+            </h2>
+            <p className="text-gray-600 mb-4">
+              We're having trouble loading this page. Please try refreshing or go back to the dashboard.
+            </p>
+            <div className="space-x-3">
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Refresh Page
+              </button>
+              <button
+                onClick={() => window.location.href = '/'}
+                className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+              >
+                Go Home
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// Optimized Protected Route component with memoization
+const ProtectedRoute = React.memo(({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoadingSpinner message="Authenticating..." />;
   }
   
   if (!isAuthenticated) {
-    console.log('ProtectedRoute: User not authenticated, redirecting to login');
     return <Navigate to="/login" replace />;
   }
   
   return children;
-};
+});
 
-// Public Route component (for login/signup pages)
-const PublicRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+// Default route component with lazy loading detection
+const DefaultRoute = () => {
+  const { isAuthenticated } = useAuth();
   
   if (isAuthenticated) {
-    console.log('PublicRoute: User authenticated, redirecting to dashboard');
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
   
-  return children;
+  return <Navigate to="/login" replace />;
 };
 
-// Layout component for authenticated pages
-const Layout = ({ children }) => {
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header />
-      <Navigation />
-      <OfflineIndicator />
-      <main className="container mx-auto px-4 py-8 flex-grow">
-        {children}
-      </main>
-      <Footer />
-    </div>
-  );
-};
-
-// Default Route component
-const DefaultRoute = () => {
-  const { isAuthenticated, loading } = useAuth();
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-  
-  return <Navigate to={isAuthenticated ? "/" : "/login"} replace />;
-};
-
+// Main App Component with optimized routing
 function App() {
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <div className="App">
-          <BrowserRouter>
-            <Routes>
-              <Route 
-                path="/login" 
-                element={
-                  <PublicRoute>
-                    <LoginForm />
-                  </PublicRoute>
-                } 
-              />
-              <Route 
-                path="/signup" 
-                element={
-                  <PublicRoute>
-                    <SignupForm />
-                  </PublicRoute>
-                } 
-              />
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Dashboard />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/jobs"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <JobList />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/jobs/create"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <CreateJob />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/jobs/create-workflow"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <EnhancedJobCreation />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/fixer/jobs"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <FixerJobBoard />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/terms"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <TermsAcceptance showModal={false} />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/fixers"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <FixerList />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/learning"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <LearningPlatform />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/sms"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <SMSInterface />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/enterprise"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <B2BPortal />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/payment"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <PaymentOptions 
-                        amount={500}
-                        description="Sample Payment"
-                        onPaymentSuccess={() => {}}
-                        onPaymentCancel={() => {}}
-                      />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <AdminDashboard />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Profile />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/business-compliance"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <BusinessCompliance />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/smart-matching"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <SmartMatchingDashboard />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/photo-verification"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <AdminPhotoVerificationDashboard />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/jobs/:jobId/complete"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <EnhancedJobCompletion />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/jobs/:jobId/dispute"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <DisputeCreation />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/phase3"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Phase3Test />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/phase3-full"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Phase3Dashboard />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/tracking/:jobId"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <JobTrackingStatus jobId={window.location.pathname.split('/')[2]} />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/reputation/:fixerId"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <FixerReputationDashboard fixerId={window.location.pathname.split('/')[2]} />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/pwa-status"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <PWAStatusDashboard />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/terms"
-                element={<TermsOfService />}
-              />
-              <Route
-                path="/privacy"
-                element={<PrivacyPolicy />}
-              />
-              <Route path="*" element={<DefaultRoute />} />
-            </Routes>
-          </BrowserRouter>
-        </div>
-      </AuthProvider>
-    </LanguageProvider>
+    <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
+        <AuthProvider>
+          <Router>
+            <div className="App">
+              <LazyErrorBoundary>
+                <Routes>
+                  {/* Authentication Routes - High Priority */}
+                  <Route
+                    path="/login"
+                    element={
+                      <Suspense fallback={<PageLoadingSpinner message="Loading login..." />}>
+                        <LoginForm />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/signup"
+                    element={
+                      <Suspense fallback={<PageLoadingSpinner message="Loading signup..." />}>
+                        <SignupForm />
+                      </Suspense>
+                    }
+                  />
+
+                  {/* Core App Routes - High Priority */}
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading dashboard..." />}>
+                            <Dashboard />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading profile..." />}>
+                            <Profile />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Job Management Routes - High Priority */}
+                  <Route
+                    path="/jobs/create"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading job creation..." />}>
+                            <CreateJob />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/jobs"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading jobs..." />}>
+                            <JobList />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/fixers"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading fixers..." />}>
+                            <FixerList />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Enhanced Workflow Routes - Medium Priority */}
+                  <Route
+                    path="/jobs/workflow/terms"
+                    element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<PageLoadingSpinner message="Loading terms..." />}>
+                          <TermsAcceptance />
+                        </Suspense>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/jobs/enhanced-create"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading enhanced job creation..." />}>
+                            <EnhancedJobCreation />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/jobs/:jobId/status"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading job status..." />}>
+                            <JobWorkflowStatus />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/fixer/job-board"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading job board..." />}>
+                            <FixerJobBoard />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/jobs/:jobId/complete"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading job completion..." />}>
+                            <EnhancedJobCompletion />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/jobs/:jobId/dispute"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading dispute creation..." />}>
+                            <DisputeCreation />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Admin Routes - Admin Only, Lower Priority */}
+                  <Route
+                    path="/admin"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading admin dashboard..." />}>
+                            <AdminDashboard />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/smart-matching"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading smart matching..." />}>
+                            <SmartMatchingDashboard />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/photo-verification"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading photo verification..." />}>
+                            <AdminPhotoVerificationDashboard />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Phase 3: Advanced Features - Lower Priority */}
+                  <Route
+                    path="/phase3"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading Phase 3..." />}>
+                            <Phase3Dashboard />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/tracking/:jobId"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading tracking..." />}>
+                            <JobTrackingStatus jobId={window.location.pathname.split('/')[2]} />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/reputation/:fixerId"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading reputation..." />}>
+                            <FixerReputationDashboard fixerId={window.location.pathname.split('/')[2]} />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Phase 4: PWA Features */}
+                  <Route
+                    path="/pwa-status"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading PWA status..." />}>
+                            <PWAStatusDashboard />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/performance"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading performance dashboard..." />}>
+                            <PerformanceDashboard />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Business & Enterprise Features - Lower Priority */}
+                  <Route
+                    path="/business-compliance"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading business compliance..." />}>
+                            <BusinessCompliance />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/enterprise"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading enterprise portal..." />}>
+                            <B2BPortal />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/learning"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading learning platform..." />}>
+                            <LearningPlatform />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Communication Features - Lower Priority */}
+                  <Route
+                    path="/sms"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading SMS interface..." />}>
+                            <SMSInterface />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/voice-recorder"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading voice recorder..." />}>
+                            <VoiceRecorder />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Payment Features - Lower Priority */}
+                  <Route
+                    path="/payment"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading payment options..." />}>
+                            <PaymentOptions />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/fixer/payments"
+                    element={
+                      <ProtectedRoute>
+                        <Layout>
+                          <Suspense fallback={<PageLoadingSpinner message="Loading payment manager..." />}>
+                            <FixerPaymentManager />
+                          </Suspense>
+                        </Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Legal Routes - Lowest Priority */}
+                  <Route
+                    path="/terms"
+                    element={
+                      <Suspense fallback={<PageLoadingSpinner message="Loading terms of service..." />}>
+                        <TermsOfService />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/privacy"
+                    element={
+                      <Suspense fallback={<PageLoadingSpinner message="Loading privacy policy..." />}>
+                        <PrivacyPolicy />
+                      </Suspense>
+                    }
+                  />
+
+                  {/* Default Route */}
+                  <Route path="*" element={<DefaultRoute />} />
+                </Routes>
+              </LazyErrorBoundary>
+            </div>
+          </Router>
+        </AuthProvider>
+      </LanguageProvider>
+    </QueryClientProvider>
   );
 }
 
