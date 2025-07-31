@@ -59,7 +59,7 @@ const FixerList = () => {
     const promises = fixersList.slice(0, 10).map(async (fixer) => {
       try {
         const response = await fetch(
-          `${import.meta.env.REACT_APP_BACKEND_URL}/api/fixer/${fixer.id}/match-history?days=30`
+          `${process.env.REACT_APP_BACKEND_URL}/api/fixer/${fixer.id}/match-history?days=30`
         );
         if (response.ok) {
           const data = await response.json();
