@@ -108,6 +108,7 @@ class DisputeResolutionService:
                 dispute.payment_hold = True
             
             db.add(dispute)
+            db.flush()  # Flush to get the dispute ID
             
             # Create initial message
             initial_message = DisputeMessage(
