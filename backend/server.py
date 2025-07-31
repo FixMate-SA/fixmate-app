@@ -41,6 +41,11 @@ from services.dispute_resolution_service import dispute_resolution_service
 from services.real_time_tracking_service import real_time_tracking_service
 from services.gamification_service import gamification_service
 from services.ai_multilingual_assistant import ai_assistant
+from services.performance_optimization_service import (
+    performance_service, cache_response, cache_user_data, cache_job_data, 
+    cache_fixer_data, cache_dashboard_data, cache_admin_data,
+    DatabaseOptimizer, PerformanceMonitor, ResponseOptimizer
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
