@@ -4098,6 +4098,399 @@ class FixMateAPITester:
             self.log_result("Admin Improve Matching", False, f"Request error: {str(e)}")
         return False
 
+    # ======= PHASE 3: AUTOMATION & ENGAGEMENT TESTS =======
+    
+    def test_start_job_tracking(self):
+        """Test starting real-time job tracking"""
+        if 'job_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Start Job Tracking", False, "No job ID or token available from previous tests")
+            return False
+        
+        try:
+            tracking_data = {
+                "departure_location": {
+                    "lat": -33.9249,
+                    "lng": 18.4241
+                }
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/jobs/{self.test_data['job_id']}/tracking/start", 
+                                       json=tracking_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'tracking_id' in data:
+                    self.test_data['tracking_id'] = data['tracking_id']
+                    self.log_result("Start Job Tracking", True, 
+                                  f"Job tracking started successfully. Tracking ID: {data['tracking_id']}")
+                    return True
+                else:
+                    self.log_result("Start Job Tracking", False, "Invalid response format", response)
+            else:
+                self.log_result("Start Job Tracking", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Start Job Tracking", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_update_fixer_location(self):
+        """Test updating fixer location during tracking"""
+        if 'job_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Update Fixer Location", False, "No job ID or token available from previous tests")
+            return False
+        
+        try:
+            location_data = {
+                "location": {
+                    "lat": -33.9200,
+                    "lng": 18.4300
+                },
+                "accuracy": 10.0
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/jobs/{self.test_data['job_id']}/tracking/location", 
+                                       json=location_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    self.log_result("Update Fixer Location", True, 
+                                  f"Location updated successfully. Status: {data.get('tracking_status')}")
+                    return True
+                else:
+                    self.log_result("Update Fixer Location", False, "Location update failed", response)
+            else:
+                self.log_result("Update Fixer Location", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Update Fixer Location", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_complete_job_tracking(self):
+        """Test completing job tracking"""
+        if 'job_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Complete Job Tracking", False, "No job ID or token available from previous tests")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/jobs/{self.test_data['job_id']}/tracking/complete", 
+                                       headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    self.log_result("Complete Job Tracking", True, 
+                                  f"Job tracking completed successfully. Duration: {data.get('total_duration', 'N/A')} minutes")
+                    return True
+                else:
+                    self.log_result("Complete Job Tracking", False, "Tracking completion failed", response)
+            else:
+                self.log_result("Complete Job Tracking", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Complete Job Tracking", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_get_job_tracking_status(self):
+        """Test getting job tracking status"""
+        if 'job_id' not in self.test_data:
+            self.log_result("Get Job Tracking Status", False, "No job ID available from previous tests")
+            return False
+        
+        try:
+            response = self.session.get(f"{API_BASE}/jobs/{self.test_data['job_id']}/tracking/status")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    tracking = data.get('tracking')
+                    if tracking:
+                        self.log_result("Get Job Tracking Status", True, 
+                                      f"Tracking status retrieved. Status: {tracking.get('status')}")
+                    else:
+                        self.log_result("Get Job Tracking Status", True, "No tracking information available")
+                    return True
+                else:
+                    self.log_result("Get Job Tracking Status", False, "Invalid response format", response)
+            else:
+                self.log_result("Get Job Tracking Status", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Get Job Tracking Status", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_get_fixer_reputation(self):
+        """Test getting fixer reputation information"""
+        if 'fixer_id' not in self.test_data:
+            self.log_result("Get Fixer Reputation", False, "No fixer ID available from previous tests")
+            return False
+        
+        try:
+            response = self.session.get(f"{API_BASE}/fixer/{self.test_data['fixer_id']}/reputation")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    reputation = data.get('reputation')
+                    if reputation:
+                        self.log_result("Get Fixer Reputation", True, 
+                                      f"Reputation retrieved. Tier: {reputation.get('current_tier')}, Points: {reputation.get('tier_points')}")
+                    else:
+                        self.log_result("Get Fixer Reputation", True, "No reputation information found")
+                    return True
+                else:
+                    self.log_result("Get Fixer Reputation", False, "Invalid response format", response)
+            else:
+                self.log_result("Get Fixer Reputation", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Get Fixer Reputation", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_initialize_fixer_reputation(self):
+        """Test initializing fixer reputation"""
+        if 'fixer_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Initialize Fixer Reputation", False, "No fixer ID or token available from previous tests")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/fixer/{self.test_data['fixer_id']}/reputation/initialize", 
+                                       headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    self.log_result("Initialize Fixer Reputation", True, 
+                                  f"Reputation initialized. Tier: {data.get('tier')}, Points: {data.get('points')}")
+                    return True
+                else:
+                    self.log_result("Initialize Fixer Reputation", False, "Reputation initialization failed", response)
+            else:
+                self.log_result("Initialize Fixer Reputation", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Initialize Fixer Reputation", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_update_fixer_performance(self):
+        """Test updating fixer performance metrics"""
+        if 'fixer_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Update Fixer Performance", False, "No fixer ID or token available from previous tests")
+            return False
+        
+        try:
+            performance_data = {
+                "job_completed": True
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/fixer/{self.test_data['fixer_id']}/reputation/update", 
+                                       json=performance_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    self.log_result("Update Fixer Performance", True, 
+                                  f"Performance updated. Tier: {data.get('current_tier')}, Jobs: {data.get('jobs_completed')}, New badges: {len(data.get('new_badges', []))}")
+                    return True
+                else:
+                    self.log_result("Update Fixer Performance", False, "Performance update failed", response)
+            else:
+                self.log_result("Update Fixer Performance", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Update Fixer Performance", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_start_ai_conversation(self):
+        """Test starting AI conversation"""
+        if 'token' not in self.test_data:
+            self.log_result("Start AI Conversation", False, "No token available from previous tests")
+            return False
+        
+        try:
+            conversation_data = {
+                "language": "english",
+                "user_type": "client"
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/ai-chat/start", 
+                                       json=conversation_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'session_id' in data:
+                    self.test_data['ai_session_id'] = data['session_id']
+                    self.log_result("Start AI Conversation", True, 
+                                  f"AI conversation started. Session ID: {data['session_id']}")
+                    return True
+                else:
+                    self.log_result("Start AI Conversation", False, "Invalid response format", response)
+            else:
+                self.log_result("Start AI Conversation", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Start AI Conversation", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_send_ai_message(self):
+        """Test sending message to AI assistant"""
+        if 'ai_session_id' not in self.test_data:
+            self.log_result("Send AI Message", False, "No AI session ID available from previous tests")
+            return False
+        
+        try:
+            message_data = {
+                "message": "Hello, I need help with booking a plumber for my kitchen tap",
+                "context": {"location": "Cape Town"}
+            }
+            
+            response = self.session.post(f"{API_BASE}/ai-chat/{self.test_data['ai_session_id']}/message", 
+                                       json=message_data)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'message' in data:
+                    self.log_result("Send AI Message", True, 
+                                  f"AI responded successfully. Intent: {data.get('intent')}, Confidence: {data.get('confidence')}")
+                    return True
+                else:
+                    self.log_result("Send AI Message", False, "Invalid response format", response)
+            else:
+                self.log_result("Send AI Message", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Send AI Message", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_end_ai_conversation(self):
+        """Test ending AI conversation"""
+        if 'ai_session_id' not in self.test_data:
+            self.log_result("End AI Conversation", False, "No AI session ID available from previous tests")
+            return False
+        
+        try:
+            end_data = {
+                "satisfaction_rating": 4,
+                "resolved_query": True
+            }
+            
+            response = self.session.post(f"{API_BASE}/ai-chat/{self.test_data['ai_session_id']}/end", 
+                                       json=end_data)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    self.log_result("End AI Conversation", True, 
+                                  f"AI conversation ended successfully. Duration: {data.get('duration_minutes', 'N/A')} minutes")
+                    return True
+                else:
+                    self.log_result("End AI Conversation", False, "Conversation end failed", response)
+            else:
+                self.log_result("End AI Conversation", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("End AI Conversation", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_get_ai_conversation_history(self):
+        """Test getting AI conversation history"""
+        if 'ai_session_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Get AI Conversation History", False, "No AI session ID or token available from previous tests")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.get(f"{API_BASE}/ai-chat/{self.test_data['ai_session_id']}/history", 
+                                      headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'conversation' in data:
+                    conversation = data['conversation']
+                    self.log_result("Get AI Conversation History", True, 
+                                  f"Conversation history retrieved. Messages: {conversation.get('statistics', {}).get('total_messages', 0)}")
+                    return True
+                else:
+                    self.log_result("Get AI Conversation History", False, "Invalid response format", response)
+            else:
+                self.log_result("Get AI Conversation History", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Get AI Conversation History", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_start_anonymous_ai_conversation(self):
+        """Test starting anonymous AI conversation"""
+        try:
+            conversation_data = {
+                "language": "english"
+            }
+            
+            response = self.session.post(f"{API_BASE}/ai-chat/anonymous/start", 
+                                       json=conversation_data)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'session_id' in data:
+                    self.test_data['anonymous_session_id'] = data['session_id']
+                    self.log_result("Start Anonymous AI Conversation", True, 
+                                  f"Anonymous AI conversation started. Session ID: {data['session_id']}")
+                    return True
+                else:
+                    self.log_result("Start Anonymous AI Conversation", False, "Invalid response format", response)
+            else:
+                self.log_result("Start Anonymous AI Conversation", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Start Anonymous AI Conversation", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_admin_gamification_stats(self):
+        """Test getting gamification statistics (admin only)"""
+        if 'admin_token' not in self.test_data:
+            self.log_result("Admin Gamification Stats", False, "No admin token available from previous tests")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
+            response = self.session.get(f"{API_BASE}/admin/gamification/stats", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    tier_distribution = data.get('tier_distribution', {})
+                    top_performers = data.get('top_performers', [])
+                    self.log_result("Admin Gamification Stats", True, 
+                                  f"Gamification stats retrieved. Tiers: {len(tier_distribution)}, Top performers: {len(top_performers)}")
+                    return True
+                else:
+                    self.log_result("Admin Gamification Stats", False, "Invalid response format", response)
+            else:
+                self.log_result("Admin Gamification Stats", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Admin Gamification Stats", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_admin_ai_chat_analytics(self):
+        """Test getting AI chat analytics (admin only)"""
+        if 'admin_token' not in self.test_data:
+            self.log_result("Admin AI Chat Analytics", False, "No admin token available from previous tests")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
+            response = self.session.get(f"{API_BASE}/admin/ai-chat/analytics?days=7", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    total_conversations = data.get('total_conversations', 0)
+                    completion_rate = data.get('completion_rate', 0)
+                    self.log_result("Admin AI Chat Analytics", True, 
+                                  f"AI chat analytics retrieved. Conversations: {total_conversations}, Completion rate: {completion_rate}%")
+                    return True
+                else:
+                    self.log_result("Admin AI Chat Analytics", False, "Invalid response format", response)
+            else:
+                self.log_result("Admin AI Chat Analytics", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Admin AI Chat Analytics", False, f"Request error: {str(e)}")
+        return False
+
     def run_all_tests(self):
         """Run all tests in sequence"""
         print("=" * 80)
