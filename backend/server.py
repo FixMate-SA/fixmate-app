@@ -2033,8 +2033,13 @@ async def update_fixer_performance(fixer_id: str, request: dict, current_user: U
     Update fixer performance metrics (typically called after job completion).
     """
     try:
+        # Find the fixer record to check ownership
+        fixer = db.query(Fixer).filter(Fixer.id == fixer_id).first()
+        if not fixer:
+            raise HTTPException(status_code=404, detail="Fixer not found")
+        
         # Check permissions (fixer themselves or admin)
-        if current_user.id != fixer_id and current_user.role not in ['admin', 'super_admin']:
+        if current_user.id != fixer.user_id and current_user.role not in ['admin', 'super_admin']:
             raise HTTPException(status_code=403, detail="Access denied")
         
         job_completed = request.get('job_completed', True)
