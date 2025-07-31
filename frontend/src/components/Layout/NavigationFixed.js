@@ -127,9 +127,9 @@ const NavigationFixed = () => {
     }
   ];
 
-  // Filter navigation items
+  // Filter navigation items based on user role
   const getVisibleNavItems = () => {
-    return baseNavItems.filter(item => {
+    return completeNavItems.filter(item => {
       // If no roles specified, show to everyone
       if (!item.roles) return true;
       
