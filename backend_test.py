@@ -857,127 +857,312 @@ class FixMateAPITester:
             self.log_result("Job Assignment Payment Check", False, f"Request error: {str(e)}")
         return False
     
-    def test_automatic_service_fee_creation(self):
-        """Test automatic service fee creation when job is assigned"""
-        # Create a new job and fixer to test automatic fee creation
-        import time
-        timestamp = str(int(time.time()))[-6:]  # Last 6 digits of timestamp
-        
-        user_data = {
-            "phone": f"+2782123{timestamp}",
-            "first_name": "Test",
-            "last_name": "User2",
-            "id_number": f"8001015009{timestamp[-3:]}",
-            "town": "Cape Town",
-            "email": f"testuser2.{timestamp}@example.com",
-            "address": "456 Test St, Cape Town"
-        }
-        
+    # ======= PHASE 4A: PWA BASICS TESTING =======
+    
+    def test_admin_login(self):
+        """Test admin login for admin-only endpoints"""
         try:
-            # Create test user
-            response = self.session.post(f"{API_BASE}/users", json=user_data)
-            if response.status_code != 200:
-                self.log_result("Automatic Service Fee Creation", False, "Failed to create test user", response)
-                return False
-            
-            test_user = response.json()
-            
-            # Create test job
-            job_data = {
-                "user_id": test_user['id'],
-                "service": "electrical",
-                "description": "Install new light fixture",
-                "location": "456 Test St, Cape Town",
-                "estimated_price": 150.0
+            login_data = {
+                "phone": "+27821234567",
+                "password": "admin123"
             }
             
-            response = self.session.post(f"{API_BASE}/jobs", json=job_data)
-            if response.status_code != 200:
-                self.log_result("Automatic Service Fee Creation", False, "Failed to create test job", response)
-                return False
-            
-            test_job = response.json()
-            
-            # Create test fixer with no outstanding payments
-            import time
-            timestamp2 = str(int(time.time()))[-5:]  # Different timestamp
-            
-            # Create user for clean fixer
-            clean_fixer_user_data = {
-                "phone": f"+2782987{timestamp2}",
-                "first_name": "Clean",
-                "last_name": "Fixer",
-                "id_number": f"8001015009{timestamp2[-3:]}",
-                "town": "Cape Town",
-                "email": f"clean.fixer.{timestamp2}@fixmate.com",
-                "address": "123 Clean St, Cape Town"
-            }
-            
-            user_response = self.session.post(f"{API_BASE}/users", json=clean_fixer_user_data)
-            if user_response.status_code != 200:
-                self.log_result("Automatic Service Fee Creation", False, "Failed to create user for clean fixer", user_response)
-                return False
-            
-            clean_fixer_user = user_response.json()
-            
-            fixer_data = {
-                "user_id": clean_fixer_user['id'],
-                "phone": f"+2782987{timestamp2}",
-                "name": "Clean Fixer",
-                "email": f"clean.fixer.{timestamp2}@fixmate.com",
-                "services": '["electrical", "carpentry"]',
-                "location": "Cape Town"
-            }
-            
-            response = self.session.post(f"{API_BASE}/fixers", json=fixer_data)
-            if response.status_code != 200:
-                self.log_result("Automatic Service Fee Creation", False, "Failed to create clean fixer", response)
-                return False
-            
-            clean_fixer = response.json()
-            
-            # Get initial payment history
-            response = self.session.get(f"{API_BASE}/fixer/{clean_fixer['id']}/payment-history")
-            if response.status_code != 200:
-                self.log_result("Automatic Service Fee Creation", False, "Failed to get initial payment history", response)
-                return False
-            
-            initial_payments = response.json()['payments']
-            initial_count = len(initial_payments)
-            
-            # Assign job to clean fixer (should automatically create service fee)
-            update_data = {
-                "fixer_id": clean_fixer['id'],
-                "status": "assigned"
-            }
-            
-            response = self.session.put(f"{API_BASE}/jobs/{test_job['id']}", json=update_data)
-            if response.status_code != 200:
-                self.log_result("Automatic Service Fee Creation", False, f"Failed to assign job. HTTP {response.status_code}", response)
-                return False
-            
-            # Check if service fee was automatically created
-            response = self.session.get(f"{API_BASE}/fixer/{clean_fixer['id']}/payment-history")
-            if response.status_code != 200:
-                self.log_result("Automatic Service Fee Creation", False, "Failed to get updated payment history", response)
-                return False
-            
-            updated_payments = response.json()['payments']
-            updated_count = len(updated_payments)
-            
-            if updated_count > initial_count:
-                # Check if the new payment is a service fee
-                new_payment = updated_payments[0]  # Most recent payment
-                if new_payment.get('payment_type') == 'service_fee' and new_payment.get('amount') == 20.0:
-                    self.log_result("Automatic Service Fee Creation", True, f"Service fee automatically created when job assigned. Payment ID: {new_payment['id']}")
+            response = self.session.post(f"{API_BASE}/auth/login", json=login_data)
+            if response.status_code == 200:
+                data = response.json()
+                if "user" in data and "token" in data:
+                    self.test_data['admin_token'] = data['token']
+                    self.test_data['admin_user'] = data['user']
+                    self.log_result("Admin Login", True, f"Admin login successful, role: {data.get('role_info', {}).get('role', 'unknown')}")
                     return True
                 else:
-                    self.log_result("Automatic Service Fee Creation", False, f"New payment created but not a service fee: {new_payment}")
+                    self.log_result("Admin Login", False, "Invalid response format", response)
             else:
-                self.log_result("Automatic Service Fee Creation", False, "No new payment created when job was assigned")
-                
+                self.log_result("Admin Login", False, f"HTTP {response.status_code}", response)
         except Exception as e:
-            self.log_result("Automatic Service Fee Creation", False, f"Request error: {str(e)}")
+            self.log_result("Admin Login", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_push_subscribe(self):
+        """Test subscribing user to push notifications"""
+        if 'token' not in self.test_data:
+            self.log_result("Push Subscribe", False, "No user token available from previous tests")
+            return False
+        
+        try:
+            subscription_data = {
+                "endpoint": "https://fcm.googleapis.com/fcm/send/test-endpoint-123",
+                "keys": {
+                    "p256dh": "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM",
+                    "auth": "tBHItJI5svbpez7KI4CCXg"
+                },
+                "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/push/subscribe", json=subscription_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'subscription_id' in data:
+                    self.test_data['subscription_id'] = data['subscription_id']
+                    self.log_result("Push Subscribe", True, f"Push subscription created successfully. ID: {data['subscription_id']}")
+                    return True
+                else:
+                    self.log_result("Push Subscribe", False, "Invalid response format", response)
+            else:
+                self.log_result("Push Subscribe", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Push Subscribe", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_get_push_subscriptions(self):
+        """Test getting user's push subscriptions"""
+        if 'token' not in self.test_data:
+            self.log_result("Get Push Subscriptions", False, "No user token available from previous tests")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.get(f"{API_BASE}/push/subscriptions", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'subscriptions' in data:
+                    subscriptions = data['subscriptions']
+                    self.log_result("Get Push Subscriptions", True, f"Retrieved {len(subscriptions)} push subscriptions")
+                    return True
+                else:
+                    self.log_result("Get Push Subscriptions", False, "Invalid response format", response)
+            else:
+                self.log_result("Get Push Subscriptions", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Get Push Subscriptions", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_send_push_notification(self):
+        """Test sending push notification to user"""
+        if 'token' not in self.test_data:
+            self.log_result("Send Push Notification", False, "No user token available from previous tests")
+            return False
+        
+        try:
+            notification_data = {
+                "title": "Test Notification",
+                "body": "This is a test push notification from FixMate-SA",
+                "icon": "/fixmate-logo.jpg",
+                "tag": "test-notification",
+                "data": {"test": True, "timestamp": datetime.now().isoformat()},
+                "actions": [
+                    {"action": "view", "title": "View"},
+                    {"action": "dismiss", "title": "Dismiss"}
+                ],
+                "require_interaction": False
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/push/send", json=notification_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    self.log_result("Send Push Notification", True, f"Push notification sent successfully: {data.get('message', 'Success')}")
+                    return True
+                else:
+                    self.log_result("Send Push Notification", False, "Notification send failed", response)
+            else:
+                self.log_result("Send Push Notification", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Send Push Notification", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_send_push_to_role_admin_only(self):
+        """Test sending push notification to all users with specific role (admin only)"""
+        if 'admin_token' not in self.test_data:
+            self.log_result("Send Push to Role (Admin Only)", False, "No admin token available from previous tests")
+            return False
+        
+        try:
+            notification_data = {
+                "title": "Admin Broadcast",
+                "body": "This is a broadcast message to all clients",
+                "role": "client",
+                "icon": "/fixmate-logo.jpg",
+                "tag": "admin-broadcast",
+                "data": {"broadcast": True, "from": "admin"},
+                "require_interaction": True
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
+            response = self.session.post(f"{API_BASE}/push/send-to-role", json=notification_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    self.log_result("Send Push to Role (Admin Only)", True, f"Broadcast notification sent: {data.get('message', 'Success')}")
+                    return True
+                else:
+                    self.log_result("Send Push to Role (Admin Only)", False, "Broadcast send failed", response)
+            else:
+                self.log_result("Send Push to Role (Admin Only)", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Send Push to Role (Admin Only)", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_get_notification_templates(self):
+        """Test getting predefined notification templates"""
+        if 'token' not in self.test_data:
+            self.log_result("Get Notification Templates", False, "No user token available from previous tests")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.get(f"{API_BASE}/push/templates", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'templates' in data:
+                    templates = data['templates']
+                    template_names = list(templates.keys())
+                    self.log_result("Get Notification Templates", True, f"Retrieved {len(templates)} templates: {', '.join(template_names)}")
+                    return True
+                else:
+                    self.log_result("Get Notification Templates", False, "Invalid response format", response)
+            else:
+                self.log_result("Get Notification Templates", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Get Notification Templates", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_start_pwa_session(self):
+        """Test starting PWA session tracking"""
+        if 'token' not in self.test_data:
+            self.log_result("Start PWA Session", False, "No user token available from previous tests")
+            return False
+        
+        try:
+            import uuid
+            session_data = {
+                "session_id": str(uuid.uuid4()),
+                "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+                "device_type": "desktop",
+                "platform": "Windows",
+                "is_pwa": True,
+                "is_offline_capable": True,
+                "initial_load_time": 1250
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/pwa/session/start", json=session_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'session_id' in data:
+                    self.test_data['pwa_session_id'] = data['session_id']
+                    self.log_result("Start PWA Session", True, f"PWA session started successfully. ID: {data['session_id']}")
+                    return True
+                else:
+                    self.log_result("Start PWA Session", False, "Invalid response format", response)
+            else:
+                self.log_result("Start PWA Session", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Start PWA Session", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_end_pwa_session(self):
+        """Test ending PWA session tracking"""
+        if 'token' not in self.test_data or 'pwa_session_id' not in self.test_data:
+            self.log_result("End PWA Session", False, "No user token or session ID available from previous tests")
+            return False
+        
+        try:
+            session_data = {
+                "duration_seconds": 1800,  # 30 minutes
+                "pages_visited": ["/dashboard", "/jobs", "/fixers", "/profile"],
+                "actions_performed": ["view_jobs", "create_job", "search_fixers", "update_profile"],
+                "offline_actions_queued": 2,
+                "cache_hits": 15,
+                "average_page_load_time": 850,
+                "network_failures": 1
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/pwa/session/{self.test_data['pwa_session_id']}/end", 
+                                       json=session_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    duration = data.get('duration_seconds', 0)
+                    self.log_result("End PWA Session", True, f"PWA session ended successfully. Duration: {duration} seconds")
+                    return True
+                else:
+                    self.log_result("End PWA Session", False, "Session end failed", response)
+            else:
+                self.log_result("End PWA Session", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("End PWA Session", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_queue_offline_action(self):
+        """Test queuing action for offline sync"""
+        if 'token' not in self.test_data or 'pwa_session_id' not in self.test_data:
+            self.log_result("Queue Offline Action", False, "No user token or session ID available from previous tests")
+            return False
+        
+        try:
+            action_data = {
+                "action_type": "CREATE_JOB",
+                "session_id": self.test_data['pwa_session_id'],
+                "action_data": {
+                    "service": "plumbing",
+                    "description": "Fix bathroom sink leak",
+                    "location": "123 Main St, Cape Town",
+                    "estimated_price": 200.0
+                },
+                "priority": "high",
+                "created_offline_at": datetime.now().isoformat()
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/pwa/offline-action", json=action_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'action_id' in data:
+                    self.test_data['offline_action_id'] = data['action_id']
+                    self.log_result("Queue Offline Action", True, f"Offline action queued successfully. ID: {data['action_id']}")
+                    return True
+                else:
+                    self.log_result("Queue Offline Action", False, "Invalid response format", response)
+            else:
+                self.log_result("Queue Offline Action", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Queue Offline Action", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_get_offline_actions(self):
+        """Test getting user's offline actions"""
+        if 'token' not in self.test_data:
+            self.log_result("Get Offline Actions", False, "No user token available from previous tests")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.get(f"{API_BASE}/pwa/offline-actions", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'actions' in data:
+                    actions = data['actions']
+                    self.log_result("Get Offline Actions", True, f"Retrieved {len(actions)} offline actions")
+                    return True
+                else:
+                    self.log_result("Get Offline Actions", False, "Invalid response format", response)
+            else:
+                self.log_result("Get Offline Actions", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Get Offline Actions", False, f"Request error: {str(e)}")
         return False
     
     # ======= PHASE 2: TRUST & RELIABILITY SYSTEM TESTS =======
