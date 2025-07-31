@@ -1180,6 +1180,355 @@ class FixMateAPITester:
     
     # ======= ENHANCED AI SMART MATCHING TESTING =======
     
+    def test_enhanced_smart_match(self):
+        """Test Enhanced AI-powered smart matching with hybrid AI (Gemini + OpenAI)"""
+        if 'job_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Enhanced Smart Match", False, "No job ID or token available from previous tests")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            request_data = {"limit": 10}
+            
+            response = self.session.post(
+                f"{API_BASE}/jobs/{self.test_data['job_id']}/enhanced-match",
+                json=request_data,
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'matches' in data:
+                    matches = data['matches']
+                    algorithm_version = data.get('algorithm_version', 'unknown')
+                    notifications_sent = data.get('notifications_sent', [])
+                    
+                    # Verify enhanced features
+                    enhanced_features = []
+                    if matches:
+                        first_match = matches[0]
+                        if 'confidence_level' in first_match:
+                            enhanced_features.append("confidence_levels")
+                        if 'success_prediction' in first_match:
+                            enhanced_features.append("success_predictions")
+                        if 'risk_factors' in first_match:
+                            enhanced_features.append("risk_analysis")
+                        if 'optimization_suggestions' in first_match:
+                            enhanced_features.append("optimization_suggestions")
+                    
+                    self.log_result("Enhanced Smart Match", True, 
+                                  f"Enhanced matching successful: {len(matches)} matches found, "
+                                  f"Algorithm: {algorithm_version}, "
+                                  f"Notifications: {len(notifications_sent)}, "
+                                  f"Enhanced features: {', '.join(enhanced_features)}")
+                    return True
+                else:
+                    self.log_result("Enhanced Smart Match", False, "Invalid response format", response)
+            else:
+                self.log_result("Enhanced Smart Match", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Enhanced Smart Match", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_enhanced_match_insights(self):
+        """Test Enhanced matching insights with comprehensive market analysis"""
+        if 'job_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Enhanced Match Insights", False, "No job ID or token available from previous tests")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.get(
+                f"{API_BASE}/jobs/{self.test_data['job_id']}/enhanced-insights",
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'insights' in data:
+                    insights = data['insights']
+                    
+                    # Verify enhanced insights features
+                    enhanced_insights = []
+                    if 'market_analysis' in insights:
+                        enhanced_insights.append("market_analysis")
+                    if 'client_profile' in insights:
+                        enhanced_insights.append("client_profile")
+                    if 'peak_hours' in insights.get('market_analysis', {}):
+                        enhanced_insights.append("peak_hours_detection")
+                    if 'location_demand' in insights.get('market_analysis', {}):
+                        enhanced_insights.append("demand_analysis")
+                    
+                    self.log_result("Enhanced Match Insights", True, 
+                                  f"Enhanced insights retrieved with features: {', '.join(enhanced_insights)}")
+                    return True
+                else:
+                    self.log_result("Enhanced Match Insights", False, "Invalid response format", response)
+            else:
+                self.log_result("Enhanced Match Insights", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Enhanced Match Insights", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_matching_update_success(self):
+        """Test reinforcement learning updates for matching success"""
+        if 'job_id' not in self.test_data or 'fixer_id' not in self.test_data or 'admin_token' not in self.test_data:
+            self.log_result("Matching Update Success", False, "Missing required data (job_id, fixer_id, admin_token)")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
+            update_data = {
+                "job_id": self.test_data['job_id'],
+                "fixer_id": self.test_data['fixer_id'],
+                "success": True,
+                "completion_time_hours": 2.5,
+                "satisfaction_rating": 4.8
+            }
+            
+            response = self.session.post(
+                f"{API_BASE}/matching/update-success",
+                json=update_data,
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    learning_applied = data.get('learning_applied', False)
+                    pattern_updates = data.get('pattern_updates', 0)
+                    
+                    self.log_result("Matching Update Success", True, 
+                                  f"Reinforcement learning update successful: "
+                                  f"Learning applied: {learning_applied}, "
+                                  f"Pattern updates: {pattern_updates}")
+                    return True
+                else:
+                    self.log_result("Matching Update Success", False, "Update failed", response)
+            else:
+                self.log_result("Matching Update Success", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Matching Update Success", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_admin_enhanced_matching_analytics(self):
+        """Test AI-powered analytics for enhanced matching (Admin only)"""
+        if 'admin_token' not in self.test_data:
+            self.log_result("Admin Enhanced Matching Analytics", False, "No admin token available")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
+            params = {"days": 7, "include_ai_insights": True}
+            
+            response = self.session.get(
+                f"{API_BASE}/admin/enhanced-matching-analytics",
+                params=params,
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'analytics' in data:
+                    analytics = data['analytics']
+                    
+                    # Verify enhanced analytics features
+                    analytics_features = []
+                    if 'ai_insights' in analytics:
+                        analytics_features.append("ai_insights")
+                    if 'pattern_recognition' in analytics:
+                        analytics_features.append("pattern_recognition")
+                    if 'success_predictions' in analytics:
+                        analytics_features.append("success_predictions")
+                    if 'optimization_recommendations' in analytics:
+                        analytics_features.append("optimization_recommendations")
+                    
+                    self.log_result("Admin Enhanced Matching Analytics", True, 
+                                  f"Enhanced analytics retrieved with features: {', '.join(analytics_features)}")
+                    return True
+                else:
+                    self.log_result("Admin Enhanced Matching Analytics", False, "Invalid response format", response)
+            else:
+                self.log_result("Admin Enhanced Matching Analytics", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Admin Enhanced Matching Analytics", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_admin_matching_retrain(self):
+        """Test algorithm retraining capabilities (Admin only)"""
+        if 'admin_token' not in self.test_data:
+            self.log_result("Admin Matching Retrain", False, "No admin token available")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
+            retrain_data = {
+                "retrain_type": "incremental",
+                "include_recent_data": True,
+                "optimization_focus": ["accuracy", "speed", "fairness"]
+            }
+            
+            response = self.session.post(
+                f"{API_BASE}/admin/matching/retrain",
+                json=retrain_data,
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    retrain_status = data.get('retrain_status', 'unknown')
+                    model_version = data.get('new_model_version', 'unknown')
+                    improvements = data.get('improvements', {})
+                    
+                    self.log_result("Admin Matching Retrain", True, 
+                                  f"Algorithm retraining successful: "
+                                  f"Status: {retrain_status}, "
+                                  f"New version: {model_version}, "
+                                  f"Improvements: {len(improvements)} metrics")
+                    return True
+                else:
+                    self.log_result("Admin Matching Retrain", False, "Retraining failed", response)
+            else:
+                self.log_result("Admin Matching Retrain", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Admin Matching Retrain", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_hybrid_ai_system_status(self):
+        """Test that both Gemini and OpenAI are active in the hybrid system"""
+        try:
+            # Test AI service classification to verify Gemini
+            gemini_test = self.session.post(f"{API_BASE}/classify-service", 
+                                          data={'description': 'Fix leaking tap in kitchen'})
+            
+            # Test enhanced matching to verify OpenAI integration
+            if 'job_id' in self.test_data and 'token' in self.test_data:
+                headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+                openai_test = self.session.post(
+                    f"{API_BASE}/jobs/{self.test_data['job_id']}/enhanced-match",
+                    json={"limit": 5},
+                    headers=headers
+                )
+            else:
+                openai_test = None
+            
+            gemini_active = gemini_test.status_code == 200
+            openai_active = openai_test and openai_test.status_code == 200
+            
+            if gemini_active and openai_active:
+                self.log_result("Hybrid AI System Status", True, 
+                              "✅ FULL HYBRID POWER: Both Gemini and OpenAI services operational")
+                return True
+            elif gemini_active:
+                self.log_result("Hybrid AI System Status", False, 
+                              "⚠️ Partial AI: Only Gemini active, OpenAI not responding")
+            elif openai_active:
+                self.log_result("Hybrid AI System Status", False, 
+                              "⚠️ Partial AI: Only OpenAI active, Gemini not responding")
+            else:
+                self.log_result("Hybrid AI System Status", False, 
+                              "❌ No AI services active")
+        except Exception as e:
+            self.log_result("Hybrid AI System Status", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_multilingual_matching(self):
+        """Test multilingual support in matching (South African languages)"""
+        if 'job_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Multilingual Matching", False, "No job ID or token available")
+            return False
+        
+        try:
+            # Test different South African languages
+            languages = ['english', 'afrikaans', 'zulu', 'xhosa']
+            successful_languages = []
+            
+            for language in languages:
+                headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+                request_data = {
+                    "limit": 5,
+                    "client_language": language,
+                    "prefer_language_match": True
+                }
+                
+                response = self.session.post(
+                    f"{API_BASE}/jobs/{self.test_data['job_id']}/enhanced-match",
+                    json=request_data,
+                    headers=headers
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get('success'):
+                        successful_languages.append(language)
+            
+            if successful_languages:
+                self.log_result("Multilingual Matching", True, 
+                              f"Multilingual matching working for: {', '.join(successful_languages)}")
+                return True
+            else:
+                self.log_result("Multilingual Matching", False, "No languages supported")
+        except Exception as e:
+            self.log_result("Multilingual Matching", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_advanced_scoring_factors(self):
+        """Test 7-factor analysis in enhanced matching"""
+        if 'fixer_id' not in self.test_data:
+            self.log_result("Advanced Scoring Factors", False, "No fixer ID available")
+            return False
+        
+        try:
+            # Test with mock job to verify scoring factors
+            test_job_data = {
+                "service": "plumbing",
+                "description": "Emergency pipe burst repair",
+                "location": "Cape Town",
+                "estimated_price": 500.0,
+                "priority_level": "high",
+                "client_language": "english"
+            }
+            
+            response = self.session.post(
+                f"{API_BASE}/fixer/{self.test_data['fixer_id']}/match-test",
+                json=test_job_data
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'match_result' in data:
+                    match_result = data['match_result']
+                    
+                    # Check for 7-factor scoring
+                    expected_factors = [
+                        'skill_match', 'success_rate', 'location_score', 
+                        'availability', 'language_preference', 'fairness_boost', 
+                        'reinforcement_learning'
+                    ]
+                    
+                    found_factors = []
+                    if 'scoring_breakdown' in match_result:
+                        breakdown = match_result['scoring_breakdown']
+                        for factor in expected_factors:
+                            if factor in breakdown:
+                                found_factors.append(factor)
+                    
+                    if len(found_factors) >= 5:  # At least 5 of 7 factors
+                        self.log_result("Advanced Scoring Factors", True, 
+                                      f"Multi-factor scoring active: {len(found_factors)}/7 factors found: {', '.join(found_factors)}")
+                        return True
+                    else:
+                        self.log_result("Advanced Scoring Factors", False, 
+                                      f"Insufficient scoring factors: {len(found_factors)}/7 found")
+                else:
+                    self.log_result("Advanced Scoring Factors", False, "Invalid response format", response)
+            else:
+                self.log_result("Advanced Scoring Factors", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Advanced Scoring Factors", False, f"Request error: {str(e)}")
+        return False
+    
     def test_existing_smart_match(self):
         """Test existing AI-powered smart matching endpoint"""
         if 'job_id' not in self.test_data:
