@@ -42,6 +42,11 @@ class User(Base):
     fixer_applications = relationship("FixerApplication", back_populates="user")
     terms_acceptances = relationship("UserTermsAcceptance", back_populates="user")
     
+    # Phase 4: PWA & Mobile Relationships
+    push_subscriptions = relationship("PushSubscription", back_populates="user")
+    app_sessions = relationship("AppSession", back_populates="user")
+    offline_actions = relationship("OfflineAction", back_populates="user")
+    
     def set_password(self, password):
         """Set password hash using bcrypt"""
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
