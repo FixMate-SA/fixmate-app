@@ -50,10 +50,10 @@ const JobList = () => {
     }
   };
 
-  const filteredJobs = jobs.filter(job => {
+  const filteredJobs = Array.isArray(jobs) ? jobs.filter(job => {
     if (filter === 'all') return true;
     return job.status === filter;
-  });
+  }) : [];
 
   if (loading) {
     return (
