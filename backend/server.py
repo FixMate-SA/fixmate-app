@@ -67,6 +67,10 @@ Base.metadata.create_all(bind=engine)  # Only create if they don't exist
 # Create the main app without a prefix
 app = FastAPI(title="FixMate-SA API", version="1.0.0")
 
+# Setup performance optimizations middleware (must be done before startup)
+performance_service.setup_compression(app)
+performance_service.setup_caching_headers(app)
+
 # Initialize performance optimizations
 @app.on_event("startup")
 async def startup_event():
