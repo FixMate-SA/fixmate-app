@@ -158,6 +158,82 @@ export const apiService = {
     });
   },
 
+  // Phase 3: Real-Time Job Tracking
+  startJobTracking: (jobId, departureLocation) => {
+    return api.post(`/jobs/${jobId}/tracking/start`, {
+      departure_location: departureLocation
+    });
+  },
+
+  updateJobTrackingLocation: (jobId, location, accuracy) => {
+    return api.post(`/jobs/${jobId}/tracking/location`, {
+      location,
+      accuracy
+    });
+  },
+
+  completeJobTracking: (jobId) => {
+    return api.post(`/jobs/${jobId}/tracking/complete`);
+  },
+
+  getJobTrackingStatus: (jobId) => {
+    return api.get(`/jobs/${jobId}/tracking/status`);
+  },
+
+  // Phase 3: Gamification System
+  getFixerReputation: (fixerId) => {
+    return api.get(`/fixer/${fixerId}/reputation`);
+  },
+
+  initializeFixerReputation: (fixerId) => {
+    return api.post(`/fixer/${fixerId}/reputation/initialize`);
+  },
+
+  updateFixerPerformance: (fixerId, performanceData) => {
+    return api.post(`/fixer/${fixerId}/reputation/update`, performanceData);
+  },
+
+  // Phase 3: AI Multilingual Assistant
+  startAIChat: (language, userType) => {
+    return api.post('/ai-chat/start', {
+      language,
+      user_type: userType
+    });
+  },
+
+  sendAIChatMessage: (sessionId, message, language) => {
+    return api.post(`/ai-chat/${sessionId}/message`, {
+      message,
+      language
+    });
+  },
+
+  endAIChat: (sessionId, satisfactionRating, resolutionStatus) => {
+    return api.post(`/ai-chat/${sessionId}/end`, {
+      satisfaction_rating: satisfactionRating,
+      resolution_status: resolutionStatus
+    });
+  },
+
+  getAIChatHistory: (sessionId) => {
+    return api.get(`/ai-chat/${sessionId}/history`);
+  },
+
+  startAnonymousAIChat: (language) => {
+    return api.post('/ai-chat/anonymous/start', {
+      language
+    });
+  },
+
+  // Phase 3: Admin Analytics
+  getGamificationStats: () => {
+    return api.get('/admin/gamification/stats');
+  },
+
+  getAIChatAnalytics: () => {
+    return api.get('/admin/ai-chat/analytics');
+  },
+
   verifyPayment: (paymentId, paymentType) => {
     const formData = new FormData();
     formData.append('payment_id', paymentId);
