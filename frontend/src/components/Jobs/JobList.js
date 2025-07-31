@@ -15,10 +15,14 @@ const JobList = () => {
     const fetchJobs = async () => {
       try {
         const response = await apiService.getJobs({ user_id: user.id });
-        setJobs(response.data);
+        // Ensure jobs is always an array
+        const jobsData = Array.isArray(response.data) ? response.data : 
+                         Array.isArray(response) ? response : [];
+        setJobs(jobsData);
       } catch (err) {
         console.error('Error fetching jobs:', err);
         setError('Failed to load jobs');
+        setJobs([]); // Set empty array on error
       } finally {
         setLoading(false);
       }
