@@ -190,16 +190,40 @@ const Navigation = () => {
     });
   };
 
-  const navItems = getVisibleNavItems();
-  
-  // Debug logging to see what items are being filtered
-  console.log('Navigation Debug:', {
-    userRole: userRole,
-    totalBaseItems: baseNavItems.length,
-    totalRoleBasedItems: roleBasedNavItems.length,
-    filteredItems: navItems.length,
-    itemTitles: navItems.map(item => item.label)
-  });
+  // Complete navigation items to match your screenshots exactly
+  const completeNavItems = [
+    // Row 1 - Core Features
+    { path: '/dashboard', label: 'Dashboard', icon: '📊', roles: ['client', 'fixer', 'admin'] },
+    { path: '/fixers', label: 'Fixers', icon: '🔧', roles: ['client', 'fixer', 'admin'] },
+    { path: '/learning', label: 'Learning', icon: '🎓', roles: ['client', 'fixer', 'admin'] },
+    { path: '/business-compliance', label: 'Business Compliance', icon: '🏢', roles: ['client', 'fixer', 'admin'] },
+    { path: '/sms', label: 'SMS Portal', icon: '📱', roles: ['client', 'fixer', 'admin'] },
+    
+    // Row 2 - Business & Admin
+    { path: '/enterprise', label: 'Enterprise', icon: '🏢', roles: ['admin'] },
+    { path: '/payment', label: 'Payments', icon: '💳', roles: ['fixer', 'admin'] },
+    { path: '/admin', label: 'Admin Panel', icon: '⚙️', roles: ['admin'] },
+    { path: '/admin/smart-matching', label: 'Smart Matching', icon: '🎯', roles: ['admin'] },
+    
+    // Row 3 - Advanced Features  
+    { path: '/admin/photo-verification', label: 'Photo Verification', icon: '📸', roles: ['admin'] },
+    { path: '/phase3', label: 'Phase 3: Auto & Engage', icon: '🚀', roles: ['client', 'fixer', 'admin'] },
+    { path: '/pwa-status', label: 'PWA Status', icon: '📱', roles: ['client', 'fixer', 'admin'] },
+    { path: '/performance', label: 'Performance', icon: '⚡', roles: ['client', 'fixer', 'admin'] },
+    
+    // Row 4 - User
+    { path: '/profile', label: 'Profile', icon: '👤', roles: ['client', 'fixer', 'admin'] }
+  ];
+
+  // Filter based on user role (show all items for admin)
+  const getCompleteNavItems = () => {
+    return completeNavItems.filter(item => {
+      if (!item.roles) return true;
+      return item.roles.includes(userRole);
+    });
+  };
+
+  const navItems = getCompleteNavItems();
 
   const isActive = (path) => {
     return location.pathname === path;
