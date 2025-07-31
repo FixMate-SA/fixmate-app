@@ -1815,6 +1815,9 @@ backend:
       - working: false
         agent: "testing"
         comment: "❌ CRITICAL: POST /api/fixer/{fixer_id}/reputation/initialize returns HTTP 403. Authentication design flaw - endpoint checks if current_user.id != fixer_id but these are different entities (User.id vs Fixer.id). Should check if current user is associated with the fixer record via Fixer.user_id field."
+      - working: "NEEDS_TESTING"
+        agent: "main"
+        comment: "🔧 AUTHENTICATION FIX APPLIED: Modified permission check to find fixer record first, then compare current_user.id with fixer.user_id instead of fixer_id. Added proper error handling for non-existent fixer records. Fix resolves User-Fixer relationship validation issue."
 
   - task: "Gamification System - Update Performance"
     implemented: true
@@ -1827,6 +1830,9 @@ backend:
       - working: false
         agent: "testing"
         comment: "❌ CRITICAL: POST /api/fixer/{fixer_id}/reputation/update returns HTTP 403. Same authentication design flaw as initialize - permission check incorrectly compares user_id with fixer_id. Need to verify user owns the fixer record via Fixer.user_id relationship."
+      - working: "NEEDS_TESTING"
+        agent: "main"
+        comment: "🔧 AUTHENTICATION FIX APPLIED: Modified permission check to find fixer record first, then compare current_user.id with fixer.user_id instead of fixer_id. Consistent with initialize reputation endpoint fix. Proper ownership validation implemented."
 
   - task: "AI Multilingual Assistant - Start Conversation"
     implemented: true
