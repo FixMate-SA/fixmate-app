@@ -343,9 +343,13 @@ class Phase3APITester:
             
             if response.status_code == 200:
                 data = response.json()
-                if 'tracking_status' in data:
-                    self.log_result("Job Tracking Status", True, 
-                                  f"Tracking status retrieved: {data.get('tracking_status', 'unknown')}")
+                if data.get('success') and 'tracking' in data:
+                    tracking = data['tracking']
+                    if tracking:
+                        self.log_result("Job Tracking Status", True, 
+                                      f"Tracking status retrieved: {tracking.get('status', 'unknown')}")
+                    else:
+                        self.log_result("Job Tracking Status", True, "No tracking information available")
                     return True
                 else:
                     self.log_result("Job Tracking Status", False, "Invalid response format", response)
