@@ -1,21 +1,28 @@
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.redis import RedisBackend
-from fastapi_cache.decorator import cache
-import redis
 import json
 import logging
 from typing import Optional, Dict, Any
 import asyncio
 from functools import wraps
 import hashlib
-import aioredis
 import os
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+# Try to import Redis-related modules
+try:
+    from fastapi_cache import FastAPICache
+    from fastapi_cache.backends.redis import RedisBackend
+    from fastapi_cache.decorator import cache
+    import redis
+    import aioredis
+    REDIS_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Redis modules not available: {e}. Running without Redis cache.")
+    REDIS_AVAILABLE = False
 
 class PerformanceOptimizationService:
     def __init__(self):
