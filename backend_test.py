@@ -5380,7 +5380,78 @@ class FixMateAPITester:
             print("⚠️  Some tests failed. Please check the errors above.")
             return False
 
-if __name__ == "__main__":
+def main():
+    """Main test execution focusing on Enhanced AI-Powered Smart Matching"""
     tester = FixMateAPITester()
-    success = tester.run_all_tests()
+    
+    print("🚀 ENHANCED AI-POWERED SMART MATCHING SYSTEM TESTING")
+    print("=" * 80)
+    
+    # Step 1: Basic setup and health check
+    if not tester.test_health_check():
+        print("❌ Health check failed. Aborting tests.")
+        return False
+    
+    # Step 2: Create test user and get authentication
+    if not tester.test_create_user():
+        print("❌ User creation failed. Aborting tests.")
+        return False
+    
+    if not tester.test_login():
+        print("❌ User login failed. Aborting tests.")
+        return False
+    
+    # Step 3: Admin login for admin-only endpoints
+    if not tester.test_admin_login():
+        print("❌ Admin login failed. Some tests will be skipped.")
+    
+    # Step 4: Create test data (fixer and job) for matching tests
+    if not tester.test_create_fixer():
+        print("❌ Fixer creation failed. Some tests may not work properly.")
+    
+    if not tester.test_create_job():
+        print("❌ Job creation failed. Matching tests will be skipped.")
+        return False
+    
+    print("\n🎯 TESTING ENHANCED AI SMART MATCHING ENDPOINTS")
+    print("=" * 60)
+    
+    # Step 5: Test Enhanced AI Smart Matching Endpoints
+    tester.test_enhanced_smart_match()
+    tester.test_enhanced_match_insights()
+    
+    # Step 6: Test Admin-only Enhanced Matching Endpoints
+    tester.test_update_matching_success_admin_only()
+    tester.test_enhanced_matching_analytics_admin_only()
+    tester.test_matching_algorithm_retrain_admin_only()
+    
+    # Step 7: Test some basic functionality to ensure backward compatibility
+    print("\n🔄 TESTING BACKWARD COMPATIBILITY")
+    print("=" * 40)
+    tester.test_get_all_jobs()
+    tester.test_get_all_fixers()
+    tester.test_dashboard()
+    
+    # Final results
+    print("\n" + "=" * 80)
+    print("🏁 ENHANCED AI SMART MATCHING TEST RESULTS")
+    print("=" * 80)
+    print(f"✅ Tests Passed: {tester.results['passed']}")
+    print(f"❌ Tests Failed: {tester.results['failed']}")
+    print(f"📊 Success Rate: {(tester.results['passed'] / (tester.results['passed'] + tester.results['failed']) * 100):.1f}%")
+    
+    if tester.results['errors']:
+        print(f"\n❌ FAILED TESTS:")
+        for error in tester.results['errors']:
+            print(f"   • {error}")
+    
+    print(f"\n🎯 FOCUS: Enhanced AI-Powered Smart Matching System")
+    print(f"📍 Backend URL: {API_BASE}")
+    print(f"🕒 Test completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    # Return success status
+    return tester.results['failed'] == 0
+
+if __name__ == "__main__":
+    success = main()
     sys.exit(0 if success else 1)
