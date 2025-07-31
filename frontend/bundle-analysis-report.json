@@ -1,0 +1,42 @@
+{
+  "timestamp": "2025-07-31T05:26:59.979Z",
+  "version": "1.0.0",
+  "phase": "4B - Performance Optimization",
+  "totalSize": 515069,
+  "jsFiles": [
+    {
+      "name": "main.dfead74b.js",
+      "path": "/app/frontend/build/static/js/main.dfead74b.js",
+      "size": 480666,
+      "sizeFormatted": "469.4 KB",
+      "type": "JavaScript"
+    }
+  ],
+  "cssFiles": [
+    {
+      "name": "main.98b1236b.css",
+      "path": "/app/frontend/build/static/css/main.98b1236b.css",
+      "size": 34403,
+      "sizeFormatted": "33.6 KB",
+      "type": "Stylesheet"
+    }
+  ],
+  "assets": [],
+  "chunks": {
+    "main": {
+      "name": "main.dfead74b.js",
+      "path": "/app/frontend/build/static/js/main.dfead74b.js",
+      "size": 480666,
+      "sizeFormatted": "469.4 KB",
+      "type": "JavaScript"
+    }
+  },
+  "recommendations": [
+    {
+      "type": "success",
+      "category": "Phase 4B Optimizations",
+      "message": "Code splitting and lazy loading have been implemented.",
+      "suggestion": "Monitor Core Web Vitals and consider further optimizations based on real user metrics."
+    }
+  ]
+}
