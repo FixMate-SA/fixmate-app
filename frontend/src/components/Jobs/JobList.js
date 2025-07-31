@@ -17,14 +17,17 @@ const JobList = () => {
         const response = await apiService.getJobs({ user_id: user.id });
         console.log('Jobs API Response:', response); // Debug log
         
-        // Ensure jobs is always an array
+        // Handle paginated response structure
         let jobsData = [];
-        if (response && response.data && Array.isArray(response.data)) {
+        if (response && response.data && response.data.data && Array.isArray(response.data.data)) {
+          // Paginated response: { data: { data: [...], total: ..., pagination: ... } }
+          jobsData = response.data.data;
+        } else if (response && response.data && Array.isArray(response.data)) {
+          // Simple array response: { data: [...] }
           jobsData = response.data;
         } else if (response && Array.isArray(response)) {
+          // Direct array response: [...]
           jobsData = response;
-        } else if (response && response.data && response.data.jobs && Array.isArray(response.data.jobs)) {
-          jobsData = response.data.jobs;
         } else {
           console.warn('Unexpected API response format:', response);
           jobsData = [];
