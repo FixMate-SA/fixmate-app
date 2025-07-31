@@ -67,6 +67,24 @@ Base.metadata.create_all(bind=engine)  # Only create if they don't exist
 # Create the main app without a prefix
 app = FastAPI(title="FixMate-SA API", version="1.0.0")
 
+# Initialize performance optimizations
+@app.on_event("startup")
+async def startup_event():
+    """Initialize performance optimizations on startup"""
+    try:
+        # Initialize cache
+        await performance_service.initialize_cache(app)
+        
+        # Setup compression
+        performance_service.setup_compression(app)
+        
+        # Setup caching headers
+        performance_service.setup_caching_headers(app)
+        
+        logger.info("Performance optimizations initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize performance optimizations: {e}")
+
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
