@@ -969,6 +969,549 @@ class FixMateAPITester:
             self.log_result("Automatic Service Fee Creation", False, f"Request error: {str(e)}")
         return False
     
+    # ======= PHASE 2: TRUST & RELIABILITY SYSTEM TESTS =======
+    
+    def test_admin_login(self):
+        """Test admin login for admin-only endpoints"""
+        try:
+            login_data = {
+                "phone": "+27821234567",
+                "password": "admin123"
+            }
+            
+            response = self.session.post(f"{API_BASE}/auth/login", json=login_data)
+            if response.status_code == 200:
+                data = response.json()
+                if "user" in data and "token" in data:
+                    self.test_data['admin_token'] = data['token']
+                    self.test_data['admin_user'] = data['user']
+                    self.log_result("Admin Login", True, f"Admin login successful, role: {data.get('role_info', {}).get('role', 'unknown')}")
+                    return True
+                else:
+                    self.log_result("Admin Login", False, "Invalid response format", response)
+            else:
+                self.log_result("Admin Login", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Admin Login", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_photo_submission_before_photos(self):
+        """Test submitting before photos for a job"""
+        if 'job_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Photo Submission - Before Photos", False, "No job ID or token available from previous tests")
+            return False
+        
+        try:
+            # Create sample base64 image data (minimal PNG)
+            import base64
+            # Minimal PNG header + data
+            png_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\tpHYs\x00\x00\x0b\x13\x00\x00\x0b\x13\x01\x00\x9a\x9c\x18\x00\x00\x00\nIDATx\x9cc\xf8\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00IEND\xaeB`\x82'
+            base64_image = base64.b64encode(png_data).decode('utf-8')
+            
+            photo_data = {
+                "photo_type": "before",
+                "photos": [
+                    {
+                        "data": base64_image,
+                        "filename": "before_1.png",
+                        "description": "Kitchen tap before repair"
+                    },
+                    {
+                        "data": base64_image,
+                        "filename": "before_2.png", 
+                        "description": "Close-up of leak"
+                    }
+                ]
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/jobs/{self.test_data['job_id']}/photos", 
+                                       json=photo_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'verification_id' in data.get('data', {}):
+                    self.test_data['verification_id'] = data['data']['verification_id']
+                    self.log_result("Photo Submission - Before Photos", True, 
+                                  f"Before photos submitted successfully. Verification ID: {data['data']['verification_id']}")
+                    return True
+                else:
+                    self.log_result("Photo Submission - Before Photos", False, "Invalid response format", response)
+            else:
+                self.log_result("Photo Submission - Before Photos", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Photo Submission - Before Photos", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_photo_submission_after_photos(self):
+        """Test submitting after photos for a job"""
+        if 'job_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Photo Submission - After Photos", False, "No job ID or token available from previous tests")
+            return False
+        
+        try:
+            import base64
+            png_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\tpHYs\x00\x00\x0b\x13\x00\x00\x0b\x13\x01\x00\x9a\x9c\x18\x00\x00\x00\nIDATx\x9cc\xf8\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00IEND\xaeB`\x82'
+            base64_image = base64.b64encode(png_data).decode('utf-8')
+            
+            photo_data = {
+                "photo_type": "after",
+                "photos": [
+                    {
+                        "data": base64_image,
+                        "filename": "after_1.png",
+                        "description": "Kitchen tap after repair - no leak"
+                    }
+                ]
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/jobs/{self.test_data['job_id']}/photos", 
+                                       json=photo_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    self.log_result("Photo Submission - After Photos", True, 
+                                  f"After photos submitted successfully. Photos count: {data.get('data', {}).get('photos_count', 0)}")
+                    return True
+                else:
+                    self.log_result("Photo Submission - After Photos", False, "Invalid response format", response)
+            else:
+                self.log_result("Photo Submission - After Photos", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Photo Submission - After Photos", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_photo_submission_invalid_type(self):
+        """Test photo submission with invalid photo type"""
+        if 'job_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Photo Submission - Invalid Type", False, "No job ID or token available from previous tests")
+            return False
+        
+        try:
+            photo_data = {
+                "photo_type": "invalid_type",
+                "photos": [{"data": "test", "filename": "test.png"}]
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/jobs/{self.test_data['job_id']}/photos", 
+                                       json=photo_data, headers=headers)
+            
+            if response.status_code == 400:
+                self.log_result("Photo Submission - Invalid Type", True, "Invalid photo type correctly rejected")
+                return True
+            else:
+                self.log_result("Photo Submission - Invalid Type", False, f"Expected 400 but got HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Photo Submission - Invalid Type", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_get_photo_verification_status(self):
+        """Test getting photo verification status for a job"""
+        if 'job_id' not in self.test_data:
+            self.log_result("Get Photo Verification Status", False, "No job ID available from previous tests")
+            return False
+        
+        try:
+            response = self.session.get(f"{API_BASE}/jobs/{self.test_data['job_id']}/photo-verification")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    verification = data.get('verification')
+                    if verification:
+                        self.log_result("Get Photo Verification Status", True, 
+                                      f"Photo verification found. Status: {verification.get('status', 'unknown')}")
+                    else:
+                        self.log_result("Get Photo Verification Status", True, "No photo verification found for job")
+                    return True
+                else:
+                    self.log_result("Get Photo Verification Status", False, "Invalid response format", response)
+            else:
+                self.log_result("Get Photo Verification Status", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Get Photo Verification Status", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_get_verification_photos(self):
+        """Test getting photo data from verification"""
+        if 'verification_id' not in self.test_data:
+            self.log_result("Get Verification Photos", False, "No verification ID available from previous tests")
+            return False
+        
+        try:
+            response = self.session.get(f"{API_BASE}/verification/{self.test_data['verification_id']}/photos/before")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    photos = data.get('photos', [])
+                    self.log_result("Get Verification Photos", True, 
+                                  f"Retrieved {len(photos)} before photos from verification")
+                    return True
+                else:
+                    self.log_result("Get Verification Photos", False, "Invalid response format", response)
+            else:
+                self.log_result("Get Verification Photos", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Get Verification Photos", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_admin_verify_photos(self):
+        """Test admin photo verification"""
+        if 'verification_id' not in self.test_data or 'admin_token' not in self.test_data:
+            self.log_result("Admin Verify Photos", False, "No verification ID or admin token available")
+            return False
+        
+        try:
+            verification_data = {
+                "decision": "approved",
+                "comments": "Photos clearly show the work completed satisfactorily"
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
+            response = self.session.post(f"{API_BASE}/admin/photo-verification/{self.test_data['verification_id']}/verify", 
+                                       json=verification_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    self.log_result("Admin Verify Photos", True, 
+                                  f"Photos verified successfully. Decision: {data.get('decision')}")
+                    return True
+                else:
+                    self.log_result("Admin Verify Photos", False, "Verification failed", response)
+            else:
+                self.log_result("Admin Verify Photos", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Admin Verify Photos", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_get_pending_photo_verifications(self):
+        """Test getting pending photo verifications (admin only)"""
+        if 'admin_token' not in self.test_data:
+            self.log_result("Get Pending Photo Verifications", False, "No admin token available")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
+            response = self.session.get(f"{API_BASE}/admin/photo-verifications/pending", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    pending_count = data.get('count', 0)
+                    self.log_result("Get Pending Photo Verifications", True, 
+                                  f"Retrieved {pending_count} pending photo verifications")
+                    return True
+                else:
+                    self.log_result("Get Pending Photo Verifications", False, "Invalid response format", response)
+            else:
+                self.log_result("Get Pending Photo Verifications", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Get Pending Photo Verifications", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_create_dispute_quality_issue(self):
+        """Test creating a dispute for quality issues"""
+        if 'job_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Create Dispute - Quality Issue", False, "No job ID or token available")
+            return False
+        
+        try:
+            dispute_data = {
+                "dispute_type": "quality",
+                "description": "The fixer did not complete the work to the agreed standard. The tap is still leaking.",
+                "evidence": "Photos show continued leaking after repair",
+                "requested_resolution": "Refund or redo the work properly"
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/jobs/{self.test_data['job_id']}/dispute", 
+                                       json=dispute_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'dispute_id' in data:
+                    self.test_data['dispute_id'] = data['dispute_id']
+                    self.log_result("Create Dispute - Quality Issue", True, 
+                                  f"Quality dispute created successfully. ID: {data['dispute_id']}")
+                    return True
+                else:
+                    self.log_result("Create Dispute - Quality Issue", False, "Invalid response format", response)
+            else:
+                self.log_result("Create Dispute - Quality Issue", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Create Dispute - Quality Issue", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_create_dispute_no_show(self):
+        """Test creating a dispute for no-show"""
+        if 'job_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Create Dispute - No Show", False, "No job ID or token available")
+            return False
+        
+        try:
+            # Create another job for no-show dispute
+            job_data = {
+                "user_id": self.test_data['user_id'],
+                "service": "electrical",
+                "description": "Install ceiling fan",
+                "location": "456 Test St, Cape Town",
+                "estimated_price": 300.0
+            }
+            
+            response = self.session.post(f"{API_BASE}/jobs", json=job_data)
+            if response.status_code != 200:
+                self.log_result("Create Dispute - No Show", False, "Failed to create test job for no-show dispute")
+                return False
+            
+            no_show_job = response.json()
+            
+            dispute_data = {
+                "dispute_type": "no_show",
+                "description": "Fixer did not show up at the agreed time and did not communicate",
+                "evidence": "No communication received, waited for 2 hours",
+                "requested_resolution": "Full refund and find alternative fixer"
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/jobs/{no_show_job['id']}/dispute", 
+                                       json=dispute_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'dispute_id' in data:
+                    self.test_data['no_show_dispute_id'] = data['dispute_id']
+                    self.log_result("Create Dispute - No Show", True, 
+                                  f"No-show dispute created successfully. ID: {data['dispute_id']}")
+                    return True
+                else:
+                    self.log_result("Create Dispute - No Show", False, "Invalid response format", response)
+            else:
+                self.log_result("Create Dispute - No Show", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Create Dispute - No Show", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_add_dispute_message(self):
+        """Test adding messages to a dispute"""
+        if 'dispute_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Add Dispute Message", False, "No dispute ID or token available")
+            return False
+        
+        try:
+            message_data = {
+                "message": "I have additional photos showing the poor quality of work",
+                "message_type": "evidence",
+                "attachments": ["photo_evidence_1.jpg", "photo_evidence_2.jpg"]
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/disputes/{self.test_data['dispute_id']}/messages", 
+                                       json=message_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'message_id' in data:
+                    self.log_result("Add Dispute Message", True, 
+                                  f"Message added to dispute successfully. Message ID: {data['message_id']}")
+                    return True
+                else:
+                    self.log_result("Add Dispute Message", False, "Invalid response format", response)
+            else:
+                self.log_result("Add Dispute Message", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Add Dispute Message", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_get_dispute_details(self):
+        """Test getting complete dispute details"""
+        if 'dispute_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Get Dispute Details", False, "No dispute ID or token available")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.get(f"{API_BASE}/disputes/{self.test_data['dispute_id']}", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'dispute' in data:
+                    dispute = data['dispute']
+                    messages_count = len(dispute.get('messages', []))
+                    self.log_result("Get Dispute Details", True, 
+                                  f"Dispute details retrieved. Status: {dispute.get('status')}, Messages: {messages_count}")
+                    return True
+                else:
+                    self.log_result("Get Dispute Details", False, "Invalid response format", response)
+            else:
+                self.log_result("Get Dispute Details", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Get Dispute Details", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_admin_resolve_dispute(self):
+        """Test admin dispute resolution"""
+        if 'dispute_id' not in self.test_data or 'admin_token' not in self.test_data:
+            self.log_result("Admin Resolve Dispute", False, "No dispute ID or admin token available")
+            return False
+        
+        try:
+            resolution_data = {
+                "resolution_action": "partial_refund",
+                "resolution": "After reviewing the evidence, we find that the work was partially completed. Client will receive 50% refund and fixer will redo the remaining work.",
+                "refund_amount": 125.0,
+                "requires_rework": True,
+                "admin_notes": "Quality issue confirmed through photo evidence"
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
+            response = self.session.post(f"{API_BASE}/admin/disputes/{self.test_data['dispute_id']}/resolve", 
+                                       json=resolution_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    self.log_result("Admin Resolve Dispute", True, 
+                                  f"Dispute resolved successfully. Action: {data.get('resolution_action')}")
+                    return True
+                else:
+                    self.log_result("Admin Resolve Dispute", False, "Resolution failed", response)
+            else:
+                self.log_result("Admin Resolve Dispute", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Admin Resolve Dispute", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_get_pending_disputes(self):
+        """Test getting pending disputes (admin only)"""
+        if 'admin_token' not in self.test_data:
+            self.log_result("Get Pending Disputes", False, "No admin token available")
+            return False
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
+            response = self.session.get(f"{API_BASE}/admin/disputes/pending", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    pending_count = data.get('count', 0)
+                    self.log_result("Get Pending Disputes", True, 
+                                  f"Retrieved {pending_count} pending disputes")
+                    return True
+                else:
+                    self.log_result("Get Pending Disputes", False, "Invalid response format", response)
+            else:
+                self.log_result("Get Pending Disputes", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Get Pending Disputes", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_admin_auto_escalate_disputes(self):
+        """Test admin auto-escalation of disputes"""
+        if 'admin_token' not in self.test_data:
+            self.log_result("Admin Auto-Escalate Disputes", False, "No admin token available")
+            return False
+        
+        try:
+            escalation_data = {
+                "escalation_criteria": {
+                    "age_hours": 24,
+                    "dispute_types": ["quality", "no_show"],
+                    "priority_threshold": "high"
+                }
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
+            response = self.session.post(f"{API_BASE}/admin/disputes/auto-escalate", 
+                                       json=escalation_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    escalated_count = data.get('escalated_count', 0)
+                    self.log_result("Admin Auto-Escalate Disputes", True, 
+                                  f"Auto-escalation completed. {escalated_count} disputes escalated")
+                    return True
+                else:
+                    self.log_result("Admin Auto-Escalate Disputes", False, "Auto-escalation failed", response)
+            else:
+                self.log_result("Admin Auto-Escalate Disputes", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Admin Auto-Escalate Disputes", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_complete_job_with_photos(self):
+        """Test enhanced job completion with photo verification"""
+        if 'job_id' not in self.test_data or 'token' not in self.test_data:
+            self.log_result("Complete Job with Photos", False, "No job ID or token available")
+            return False
+        
+        try:
+            import base64
+            png_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\tpHYs\x00\x00\x0b\x13\x00\x00\x0b\x13\x01\x00\x9a\x9c\x18\x00\x00\x00\nIDATx\x9cc\xf8\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00IEND\xaeB`\x82'
+            base64_image = base64.b64encode(png_data).decode('utf-8')
+            
+            completion_data = {
+                "completion_notes": "Job completed successfully. Tap is no longer leaking.",
+                "final_price": 275.0,
+                "completion_photos": [
+                    {
+                        "data": base64_image,
+                        "filename": "completion_1.png",
+                        "description": "Final result - tap working properly"
+                    }
+                ],
+                "quality_checklist": {
+                    "work_completed": True,
+                    "area_cleaned": True,
+                    "customer_satisfied": True,
+                    "warranty_provided": True
+                }
+            }
+            
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.post(f"{API_BASE}/jobs/{self.test_data['job_id']}/complete-with-photos", 
+                                       json=completion_data, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    self.log_result("Complete Job with Photos", True, 
+                                  f"Job completed with photo verification. Status: {data.get('status')}")
+                    return True
+                else:
+                    self.log_result("Complete Job with Photos", False, "Job completion failed", response)
+            else:
+                self.log_result("Complete Job with Photos", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Complete Job with Photos", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_unauthorized_admin_access(self):
+        """Test that non-admin users cannot access admin endpoints"""
+        if 'token' not in self.test_data:
+            self.log_result("Unauthorized Admin Access", False, "No user token available")
+            return False
+        
+        try:
+            # Try to access admin endpoint with regular user token
+            headers = {"Authorization": f"Bearer {self.test_data['token']}"}
+            response = self.session.get(f"{API_BASE}/admin/photo-verifications/pending", headers=headers)
+            
+            if response.status_code == 403:
+                self.log_result("Unauthorized Admin Access", True, "Non-admin user correctly denied access to admin endpoint")
+                return True
+            else:
+                self.log_result("Unauthorized Admin Access", False, f"Expected 403 but got HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Unauthorized Admin Access", False, f"Request error: {str(e)}")
+        return False
+    
     # WhatsApp Integration Tests
     def test_whatsapp_webhook_verify(self):
         """Test WhatsApp webhook verification endpoint"""
