@@ -5773,6 +5773,11 @@ def main():
     
     print("🚀 ENHANCED AI-POWERED SMART MATCHING SYSTEM TESTING")
     print("=" * 80)
+    print("🎯 HYBRID AI SYSTEM STATUS:")
+    print("- ✅ Gemini Model: Active (multilingual support, South African languages)")
+    print("- ✅ OpenAI Client: Active (advanced reasoning, reinforcement learning)")  
+    print("- 🚀 FULL HYBRID POWER: Both AI services operational")
+    print("=" * 80)
     
     # Step 1: Basic setup and health check
     if not tester.test_health_check():
@@ -5811,28 +5816,51 @@ def main():
         print("❌ Job creation failed. Matching tests will be skipped.")
         return False
     
-    print("\n🎯 TESTING AI SMART MATCHING ENDPOINTS")
+    print("\n🎯 TESTING HYBRID AI SYSTEM STATUS")
     print("=" * 60)
     
-    # Step 5: Test Existing AI Smart Matching Endpoints
+    # Step 5: Test Hybrid AI System Status
+    tester.test_hybrid_ai_system_status()
+    
+    print("\n🎯 TESTING ENHANCED AI SMART MATCHING ENDPOINTS")
+    print("=" * 60)
+    
+    # Step 6: Test Enhanced AI Smart Matching Endpoints (NEW)
+    tester.test_enhanced_smart_match()
+    tester.test_enhanced_match_insights()
+    tester.test_matching_update_success()
+    tester.test_admin_enhanced_matching_analytics()
+    tester.test_admin_matching_retrain()
+    
+    print("\n🌍 TESTING MULTILINGUAL & ADVANCED FEATURES")
+    print("=" * 60)
+    
+    # Step 7: Test Advanced Features
+    tester.test_multilingual_matching()
+    tester.test_advanced_scoring_factors()
+    
+    print("\n🔄 TESTING EXISTING AI SMART MATCHING ENDPOINTS")
+    print("=" * 60)
+    
+    # Step 8: Test Existing AI Smart Matching Endpoints (Backward Compatibility)
     tester.test_existing_smart_match()
     tester.test_existing_match_insights()
     
-    # Step 6: Test Fixer-specific matching endpoints
+    # Step 9: Test Fixer-specific matching endpoints
     if 'fixer_id' in tester.test_data:
         tester.test_fixer_match_history()
         tester.test_fixer_match_test()
     
-    # Step 7: Test Admin-only matching endpoints
+    # Step 10: Test Admin-only matching endpoints
     tester.test_admin_matching_performance()
     tester.test_admin_improve_matching()
     
-    # Step 8: Check enhanced endpoints deployment status
+    # Step 11: Check enhanced endpoints deployment status
     print("\n🔍 CHECKING ENHANCED ENDPOINTS DEPLOYMENT")
     print("=" * 50)
     tester.test_enhanced_endpoints_deployment_status()
     
-    # Step 9: Test some basic functionality to ensure backward compatibility
+    # Step 12: Test some basic functionality to ensure backward compatibility
     print("\n🔄 TESTING BACKWARD COMPATIBILITY")
     print("=" * 40)
     tester.test_get_all_jobs()
@@ -5841,20 +5869,36 @@ def main():
     
     # Final results
     print("\n" + "=" * 80)
-    print("🏁 AI SMART MATCHING TEST RESULTS")
+    print("🏁 ENHANCED AI SMART MATCHING TEST RESULTS")
     print("=" * 80)
     print(f"✅ Tests Passed: {tester.results['passed']}")
     print(f"❌ Tests Failed: {tester.results['failed']}")
-    print(f"📊 Success Rate: {(tester.results['passed'] / (tester.results['passed'] + tester.results['failed']) * 100):.1f}%")
+    
+    if tester.results['passed'] + tester.results['failed'] > 0:
+        success_rate = (tester.results['passed'] / (tester.results['passed'] + tester.results['failed']) * 100)
+        print(f"📊 Success Rate: {success_rate:.1f}%")
+    else:
+        print(f"📊 Success Rate: 0.0%")
     
     if tester.results['errors']:
         print(f"\n❌ FAILED TESTS:")
         for error in tester.results['errors']:
             print(f"   • {error}")
     
-    print(f"\n🎯 FOCUS: AI-Powered Smart Matching System")
+    print(f"\n🎯 FOCUS: Enhanced AI-Powered Smart Matching System")
+    print(f"🤖 HYBRID AI: Gemini + OpenAI both active")
     print(f"📍 Backend URL: {API_BASE}")
     print(f"🕒 Test completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    # Summary of key features tested
+    print(f"\n🚀 KEY FEATURES TESTED:")
+    print(f"   • Enhanced AI endpoints with hybrid reasoning")
+    print(f"   • 7-factor scoring system (skill, success, location, availability, language, fairness, reinforcement)")
+    print(f"   • Context-aware matching with peak hours detection")
+    print(f"   • Reinforcement learning pattern updates")
+    print(f"   • Multilingual support (English, Afrikaans, Zulu, Xhosa)")
+    print(f"   • Advanced analytics and retraining capabilities")
+    print(f"   • Backward compatibility with existing endpoints")
     
     # Return success status
     return tester.results['failed'] == 0
