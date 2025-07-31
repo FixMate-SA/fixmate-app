@@ -62,19 +62,29 @@ app = FastAPI(title="FixMate-SA API", version="1.0.0")
 api_router = APIRouter(prefix="/api")
 
 # Authentication dependency
-async def get_current_user(token: str = None, db: Session = Depends(get_db)):
+from fastapi import Header
+from typing import Optional
+
+async def get_current_user(authorization: Optional[str] = Header(None), token: str = None, db: Session = Depends(get_db)):
     """
     Get current user from token (simplified for demo)
     In production, use proper JWT validation
     """
-    if not token:
+    # Try to get token from Authorization header first, then from parameter
+    auth_token = None
+    if authorization and authorization.startswith("Bearer "):
+        auth_token = authorization.replace("Bearer ", "")
+    elif token:
+        auth_token = token
+    
+    if not auth_token:
         raise HTTPException(status_code=401, detail="Authentication required")
     
     # Extract user_id from token (simplified)
-    if not token.startswith("token_"):
+    if not auth_token.startswith("token_"):
         raise HTTPException(status_code=401, detail="Invalid token format")
     
-    user_id = token.replace("token_", "")
+    user_id = auth_token.replace("token_", "")
     user = db.query(User).filter(User.id == user_id).first()
     
     if not user:
