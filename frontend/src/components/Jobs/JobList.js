@@ -50,10 +50,12 @@ const JobList = () => {
     }
   };
 
-  const filteredJobs = Array.isArray(jobs) ? jobs.filter(job => {
+  // Ensure jobs is always an array before filtering
+  const safeJobs = Array.isArray(jobs) ? jobs : [];
+  const filteredJobs = safeJobs.filter(job => {
     if (filter === 'all') return true;
-    return job.status === filter;
-  }) : [];
+    return job && job.status === filter;
+  });
 
   if (loading) {
     return (
