@@ -1827,6 +1827,515 @@ async def complete_job_with_photos(job_id: str, request: dict, current_user: Use
         logger.error(f"Error completing job with photos: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to complete job: {str(e)}")
 
+# ======= PHASE 3: AUTOMATION & ENGAGEMENT ENDPOINTS =======
+
+# Real-Time Job Tracking Endpoints
+
+@api_router.post("/jobs/{job_id}/tracking/start")
+async def start_job_tracking(job_id: str, request: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Start real-time tracking for a job (Fixer only).
+    """
+    try:
+        departure_location = request.get('departure_location')  # {"lat": float, "lng": float}
+        
+        result = real_time_tracking_service.start_job_tracking(
+            db=db,
+            job_id=job_id,
+            fixer_id=current_user.id,
+            departure_location=departure_location
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result['error'])
+        
+        return {
+            'success': True,
+            'message': result['message'],
+            'tracking_id': result['tracking_id'],
+            'estimated_arrival': result.get('estimated_arrival'),
+            'estimated_duration': result.get('estimated_duration')
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting job tracking: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start tracking: {str(e)}")
+
+@api_router.post("/jobs/{job_id}/tracking/location")
+async def update_fixer_location(job_id: str, request: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Update fixer's current location and recalculate ETA (Fixer only).
+    """
+    try:
+        location = request.get('location')  # {"lat": float, "lng": float}
+        accuracy = request.get('accuracy')  # GPS accuracy in meters
+        
+        if not location or 'lat' not in location or 'lng' not in location:
+            raise HTTPException(status_code=400, detail="Valid location with lat/lng is required")
+        
+        result = real_time_tracking_service.update_fixer_location(
+            db=db,
+            job_id=job_id,
+            fixer_id=current_user.id,
+            location=location,
+            accuracy=accuracy
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result['error'])
+        
+        return {
+            'success': True,
+            'message': result['message'],
+            'tracking_status': result['tracking_status'],
+            'estimated_arrival': result.get('estimated_arrival'),
+            'distance_to_job': result.get('distance_to_job'),
+            'arrival_accuracy': result.get('arrival_accuracy')
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating fixer location: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update location: {str(e)}")
+
+@api_router.post("/jobs/{job_id}/tracking/complete")
+async def complete_job_tracking(job_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Complete job tracking when work is finished (Fixer only).
+    """
+    try:
+        result = real_time_tracking_service.complete_job_tracking(
+            db=db,
+            job_id=job_id,
+            fixer_id=current_user.id
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result['error'])
+        
+        return {
+            'success': True,
+            'message': result['message'],
+            'total_duration': result.get('total_duration'),
+            'route_efficiency': result.get('route_efficiency')
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error completing job tracking: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to complete tracking: {str(e)}")
+
+@api_router.get("/jobs/{job_id}/tracking/status")
+async def get_job_tracking_status(job_id: str, db: Session = Depends(get_db)):
+    """
+    Get current tracking status for a job.
+    """
+    try:
+        tracking_status = real_time_tracking_service.get_job_tracking_status(db, job_id)
+        
+        if not tracking_status:
+            return {
+                'success': True,
+                'tracking': None,
+                'message': 'No tracking information available for this job'
+            }
+        
+        return {
+            'success': True,
+            'tracking': tracking_status
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting tracking status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get tracking status: {str(e)}")
+
+# Gamification & Reputation Endpoints
+
+@api_router.get("/fixer/{fixer_id}/reputation")
+async def get_fixer_reputation(fixer_id: str, db: Session = Depends(get_db)):
+    """
+    Get complete reputation and gamification information for a fixer.
+    """
+    try:
+        reputation = gamification_service.get_fixer_reputation(db, fixer_id)
+        
+        if not reputation:
+            return {
+                'success': True,
+                'reputation': None,
+                'message': 'No reputation information found for this fixer'
+            }
+        
+        return {
+            'success': True,
+            'reputation': reputation
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting fixer reputation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get reputation: {str(e)}")
+
+@api_router.post("/fixer/{fixer_id}/reputation/initialize")
+async def initialize_fixer_reputation(fixer_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Initialize reputation tier for a new fixer.
+    """
+    try:
+        # Check if current user is the fixer or admin
+        if current_user.id != fixer_id and current_user.role not in ['admin', 'super_admin']:
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        result = gamification_service.initialize_fixer_reputation(db, fixer_id)
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result['error'])
+        
+        return {
+            'success': True,
+            'message': result['message'],
+            'tier': result['tier'],
+            'points': result['points']
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error initializing fixer reputation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to initialize reputation: {str(e)}")
+
+@api_router.post("/fixer/{fixer_id}/reputation/update")
+async def update_fixer_performance(fixer_id: str, request: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Update fixer performance metrics (typically called after job completion).
+    """
+    try:
+        # Check permissions (fixer themselves or admin)
+        if current_user.id != fixer_id and current_user.role not in ['admin', 'super_admin']:
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        job_completed = request.get('job_completed', True)
+        
+        result = gamification_service.update_fixer_performance(
+            db=db,
+            fixer_id=fixer_id,
+            job_completed=job_completed
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result['error'])
+        
+        return {
+            'success': True,
+            'message': result['message'],
+            'current_tier': result['current_tier'],
+            'tier_points': result['tier_points'],
+            'jobs_completed': result['jobs_completed'],
+            'streak_count': result['streak_count'],
+            'new_badges': result['new_badges'],
+            'tier_changed': result['tier_changed'],
+            'progress_to_next_tier': result['progress_to_next_tier']
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating fixer performance: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update performance: {str(e)}")
+
+# AI Multilingual Assistant Endpoints
+
+@api_router.post("/ai-chat/start")
+async def start_ai_conversation(request: dict, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Start a new AI conversation session.
+    """
+    try:
+        session_id = request.get('session_id')
+        language = request.get('language', 'english')
+        user_type = request.get('user_type', 'client')
+        
+        # Validate language
+        if language not in ai_assistant.supported_languages:
+            language = 'english'
+        
+        result = ai_assistant.start_conversation(
+            db=db,
+            user_id=current_user.id if current_user else None,
+            session_id=session_id,
+            language=language,
+            user_type=user_type
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result['error'])
+        
+        return {
+            'success': True,
+            'conversation_id': result['conversation_id'],
+            'session_id': result['session_id'],
+            'welcome_message': result.get('welcome_message'),
+            'supported_languages': result.get('supported_languages', [])
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting AI conversation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start conversation: {str(e)}")
+
+@api_router.post("/ai-chat/{session_id}/message")
+async def send_ai_message(session_id: str, request: dict, db: Session = Depends(get_db)):
+    """
+    Send message to AI assistant and get response.
+    """
+    try:
+        user_message = request.get('message')
+        message_context = request.get('context', {})
+        
+        if not user_message or not user_message.strip():
+            raise HTTPException(status_code=400, detail="Message is required")
+        
+        result = ai_assistant.process_user_message(
+            db=db,
+            session_id=session_id,
+            user_message=user_message.strip(),
+            message_context=message_context
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result['error'])
+        
+        return {
+            'success': True,
+            'message': result['message'],
+            'intent': result.get('intent'),
+            'confidence': result.get('confidence'),
+            'actions': result.get('actions', []),
+            'language': result.get('language'),
+            'escalated': result.get('escalated', False),
+            'total_messages': result.get('total_messages')
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error processing AI message: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to process message: {str(e)}")
+
+@api_router.post("/ai-chat/{session_id}/end")
+async def end_ai_conversation(session_id: str, request: dict, db: Session = Depends(get_db)):
+    """
+    End AI conversation and collect feedback.
+    """
+    try:
+        satisfaction_rating = request.get('satisfaction_rating')  # 1-5
+        resolved_query = request.get('resolved_query', False)
+        
+        if satisfaction_rating is not None:
+            if not isinstance(satisfaction_rating, int) or satisfaction_rating < 1 or satisfaction_rating > 5:
+                raise HTTPException(status_code=400, detail="Satisfaction rating must be between 1 and 5")
+        
+        result = ai_assistant.end_conversation(
+            db=db,
+            session_id=session_id,
+            satisfaction_rating=satisfaction_rating,
+            resolved_query=resolved_query
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result['error'])
+        
+        return {
+            'success': True,
+            'message': result['message'],
+            'duration_minutes': result.get('duration_minutes'),
+            'total_messages': result.get('total_messages'),
+            'satisfaction_rating': satisfaction_rating
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error ending AI conversation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to end conversation: {str(e)}")
+
+@api_router.get("/ai-chat/{session_id}/history")
+async def get_ai_conversation_history(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Get conversation history and details.
+    """
+    try:
+        history = ai_assistant.get_conversation_history(db, session_id)
+        
+        if not history:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        # Check permissions
+        if history.get('user_id') and history['user_id'] != current_user.id and current_user.role not in ['admin', 'super_admin']:
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        return {
+            'success': True,
+            'conversation': history
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting conversation history: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get conversation history: {str(e)}")
+
+# Anonymous AI Chat (for non-logged-in users)
+
+@api_router.post("/ai-chat/anonymous/start")
+async def start_anonymous_ai_conversation(request: dict, db: Session = Depends(get_db)):
+    """
+    Start anonymous AI conversation for non-logged-in users.
+    """
+    try:
+        language = request.get('language', 'english')
+        session_id = request.get('session_id')
+        
+        if language not in ai_assistant.supported_languages:
+            language = 'english'
+        
+        result = ai_assistant.start_conversation(
+            db=db,
+            user_id=None,
+            session_id=session_id,
+            language=language,
+            user_type='anonymous'
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result['error'])
+        
+        return {
+            'success': True,
+            'conversation_id': result['conversation_id'],
+            'session_id': result['session_id'],
+            'welcome_message': result.get('welcome_message'),
+            'supported_languages': result.get('supported_languages', [])
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting anonymous AI conversation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start conversation: {str(e)}")
+
+# Admin Analytics for Phase 3 Features
+
+@api_router.get("/admin/gamification/stats")
+async def get_gamification_stats(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Get gamification system statistics (Admin only).
+    """
+    if current_user.role not in ['admin', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        from models import FixerReputationTier
+        
+        # Get tier distribution
+        tier_stats = db.query(
+            FixerReputationTier.current_tier,
+            func.count(FixerReputationTier.id).label('count')
+        ).group_by(FixerReputationTier.current_tier).all()
+        
+        # Get top performers
+        top_performers = db.query(FixerReputationTier).order_by(
+            FixerReputationTier.tier_points.desc()
+        ).limit(10).all()
+        
+        # Calculate averages
+        avg_stats = db.query(
+            func.avg(FixerReputationTier.tier_points).label('avg_points'),
+            func.avg(FixerReputationTier.client_satisfaction_avg).label('avg_satisfaction'),
+            func.avg(FixerReputationTier.streak_count).label('avg_streak')
+        ).first()
+        
+        return {
+            'success': True,
+            'tier_distribution': {tier: count for tier, count in tier_stats},
+            'top_performers': [
+                {
+                    'fixer_id': performer.fixer_id,
+                    'tier': performer.current_tier,
+                    'points': performer.tier_points,
+                    'jobs_completed': performer.jobs_completed,
+                    'satisfaction': performer.client_satisfaction_avg
+                }
+                for performer in top_performers
+            ],
+            'averages': {
+                'points': round(avg_stats.avg_points or 0, 1),
+                'satisfaction': round(avg_stats.avg_satisfaction or 0, 2),
+                'streak': round(avg_stats.avg_streak or 0, 1)
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting gamification stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
+
+@api_router.get("/admin/ai-chat/analytics")
+async def get_ai_chat_analytics(days: int = 7, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Get AI chat analytics (Admin only).
+    """
+    if current_user.role not in ['admin', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        from models import AIConversation
+        
+        cutoff_date = datetime.utcnow() - timedelta(days=days)
+        
+        # Get conversation stats
+        conversations = db.query(AIConversation).filter(
+            AIConversation.started_at >= cutoff_date
+        ).all()
+        
+        total_conversations = len(conversations)
+        completed_conversations = len([c for c in conversations if c.status == 'completed'])
+        escalated_conversations = len([c for c in conversations if c.escalated_to_human])
+        
+        # Language distribution
+        language_stats = {}
+        for conv in conversations:
+            lang = conv.language
+            language_stats[lang] = language_stats.get(lang, 0) + 1
+        
+        # Average metrics
+        total_messages = sum(c.total_messages for c in conversations)
+        total_duration = sum(c.duration_minutes or 0 for c in conversations if c.duration_minutes)
+        avg_satisfaction = sum(c.satisfaction_rating or 0 for c in conversations if c.satisfaction_rating) / max(1, len([c for c in conversations if c.satisfaction_rating]))
+        
+        return {
+            'success': True,
+            'period_days': days,
+            'total_conversations': total_conversations,
+            'completed_conversations': completed_conversations,
+            'escalated_conversations': escalated_conversations,
+            'completion_rate': round((completed_conversations / max(1, total_conversations)) * 100, 1),
+            'escalation_rate': round((escalated_conversations / max(1, total_conversations)) * 100, 1),
+            'language_distribution': language_stats,
+            'averages': {
+                'messages_per_conversation': round(total_messages / max(1, total_conversations), 1),
+                'duration_minutes': round(total_duration / max(1, len([c for c in conversations if c.duration_minutes])), 1),
+                'satisfaction_rating': round(avg_satisfaction, 2)
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting AI chat analytics: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get analytics: {str(e)}")
+
 # Review endpoints
 @api_router.post("/reviews", response_model=ReviewResponse)
 async def create_review(review: ReviewCreate, db: Session = Depends(get_db)):
