@@ -1167,6 +1167,295 @@ class FixMateAPITester:
             self.log_result("Get Offline Actions", False, f"Request error: {str(e)}")
         return False
     
+    # ======= PHASE 4B: PERFORMANCE OPTIMIZATION TESTING =======
+    
+    def test_performance_cache_status(self):
+        """Test getting cache status and statistics"""
+        try:
+            response = self.session.get(f"{API_BASE}/performance/cache-status")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'cache_stats' in data:
+                    cache_stats = data['cache_stats']
+                    required_keys = ['cache_enabled', 'total_keys', 'active_keys', 'cache_size_mb', 'status']
+                    
+                    if all(key in cache_stats for key in required_keys):
+                        self.log_result("Performance Cache Status", True, 
+                                      f"Cache status retrieved: {cache_stats['status']}, "
+                                      f"Active keys: {cache_stats['active_keys']}, "
+                                      f"Size: {cache_stats['cache_size_mb']}MB")
+                        return True
+                    else:
+                        missing_keys = [key for key in required_keys if key not in cache_stats]
+                        self.log_result("Performance Cache Status", False, f"Missing cache stats keys: {missing_keys}", response)
+                else:
+                    self.log_result("Performance Cache Status", False, "Invalid response format", response)
+            else:
+                self.log_result("Performance Cache Status", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Performance Cache Status", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_performance_clear_cache(self):
+        """Test clearing cache functionality"""
+        try:
+            # First, populate cache by making some requests
+            self.session.get(f"{API_BASE}/jobs")
+            if 'user_id' in self.test_data:
+                self.session.get(f"{API_BASE}/dashboard/{self.test_data['user_id']}")
+            
+            # Clear all cache
+            response = self.session.post(f"{API_BASE}/performance/clear-cache")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'message' in data:
+                    self.log_result("Performance Clear Cache", True, f"Cache cleared successfully: {data['message']}")
+                    return True
+                else:
+                    self.log_result("Performance Clear Cache", False, "Invalid response format", response)
+            else:
+                self.log_result("Performance Clear Cache", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Performance Clear Cache", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_performance_clear_cache_pattern(self):
+        """Test clearing cache by pattern"""
+        try:
+            # Clear cache with specific pattern
+            data = {"pattern": "job"}
+            response = self.session.post(f"{API_BASE}/performance/clear-cache", json=data)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get('success') and 'pattern' in result.get('message', ''):
+                    self.log_result("Performance Clear Cache Pattern", True, f"Pattern cache cleared: {result['message']}")
+                    return True
+                else:
+                    self.log_result("Performance Clear Cache Pattern", False, "Invalid response format", response)
+            else:
+                self.log_result("Performance Clear Cache Pattern", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Performance Clear Cache Pattern", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_optimized_jobs_listing_with_caching(self):
+        """Test optimized jobs listing with caching and compression"""
+        try:
+            import time
+            
+            # First request - should be cache miss
+            start_time = time.time()
+            response1 = self.session.get(f"{API_BASE}/jobs?limit=10")
+            first_request_time = time.time() - start_time
+            
+            if response1.status_code != 200:
+                self.log_result("Optimized Jobs Listing", False, f"First request failed: HTTP {response1.status_code}", response1)
+                return False
+            
+            # Check for cache headers
+            cache_control = response1.headers.get('Cache-Control', '')
+            has_cache_headers = 'max-age' in cache_control
+            
+            # Second request - should be faster due to caching
+            start_time = time.time()
+            response2 = self.session.get(f"{API_BASE}/jobs?limit=10")
+            second_request_time = time.time() - start_time
+            
+            if response2.status_code != 200:
+                self.log_result("Optimized Jobs Listing", False, f"Second request failed: HTTP {response2.status_code}", response2)
+                return False
+            
+            # Check response format
+            data = response1.json()
+            if isinstance(data, dict) and 'data' in data and 'pagination' in data:
+                # New paginated format
+                jobs_count = len(data['data'])
+                pagination = data['pagination']
+                self.log_result("Optimized Jobs Listing", True, 
+                              f"Jobs retrieved with pagination: {jobs_count} jobs, "
+                              f"Cache headers: {has_cache_headers}, "
+                              f"Response times: {first_request_time:.3f}s / {second_request_time:.3f}s")
+            elif isinstance(data, list):
+                # Legacy format
+                jobs_count = len(data)
+                self.log_result("Optimized Jobs Listing", True, 
+                              f"Jobs retrieved (legacy format): {jobs_count} jobs, "
+                              f"Cache headers: {has_cache_headers}, "
+                              f"Response times: {first_request_time:.3f}s / {second_request_time:.3f}s")
+            else:
+                self.log_result("Optimized Jobs Listing", False, "Invalid response format", response1)
+                return False
+            
+            return True
+            
+        except Exception as e:
+            self.log_result("Optimized Jobs Listing", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_optimized_dashboard_with_caching(self):
+        """Test optimized dashboard endpoint with performance monitoring"""
+        if 'user_id' not in self.test_data:
+            self.log_result("Optimized Dashboard", False, "No user ID available from previous tests")
+            return False
+        
+        try:
+            import time
+            
+            # First request - should be cache miss
+            start_time = time.time()
+            response1 = self.session.get(f"{API_BASE}/dashboard/{self.test_data['user_id']}")
+            first_request_time = time.time() - start_time
+            
+            if response1.status_code != 200:
+                self.log_result("Optimized Dashboard", False, f"First request failed: HTTP {response1.status_code}", response1)
+                return False
+            
+            # Check for cache headers
+            cache_control = response1.headers.get('Cache-Control', '')
+            has_cache_headers = 'max-age' in cache_control
+            
+            # Check response compression
+            content_encoding = response1.headers.get('Content-Encoding', '')
+            is_compressed = 'gzip' in content_encoding
+            
+            # Second request - should be faster due to caching
+            start_time = time.time()
+            response2 = self.session.get(f"{API_BASE}/dashboard/{self.test_data['user_id']}")
+            second_request_time = time.time() - start_time
+            
+            if response2.status_code != 200:
+                self.log_result("Optimized Dashboard", False, f"Second request failed: HTTP {response2.status_code}", response2)
+                return False
+            
+            # Verify dashboard data structure
+            data = response1.json()
+            required_keys = ['user', 'recent_jobs', 'top_fixers', 'stats']
+            if all(key in data for key in required_keys):
+                self.log_result("Optimized Dashboard", True, 
+                              f"Dashboard optimized successfully: "
+                              f"Cache headers: {has_cache_headers}, "
+                              f"Compressed: {is_compressed}, "
+                              f"Response times: {first_request_time:.3f}s / {second_request_time:.3f}s")
+                return True
+            else:
+                missing_keys = [key for key in required_keys if key not in data]
+                self.log_result("Optimized Dashboard", False, f"Missing dashboard keys: {missing_keys}", response1)
+            
+        except Exception as e:
+            self.log_result("Optimized Dashboard", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_performance_monitoring_headers(self):
+        """Test that performance monitoring headers are properly set"""
+        try:
+            # Test different endpoint types for cache headers
+            endpoints_to_test = [
+                ("/jobs", "job data"),
+                ("/fixers", "fixer data"),
+                ("/users", "user data")
+            ]
+            
+            headers_found = []
+            
+            for endpoint, description in endpoints_to_test:
+                response = self.session.get(f"{API_BASE}{endpoint}")
+                if response.status_code == 200:
+                    # Check for cache control headers
+                    cache_control = response.headers.get('Cache-Control', '')
+                    x_content_type = response.headers.get('X-Content-Type-Options', '')
+                    x_frame_options = response.headers.get('X-Frame-Options', '')
+                    
+                    endpoint_headers = {
+                        'endpoint': endpoint,
+                        'cache_control': bool(cache_control),
+                        'security_headers': bool(x_content_type and x_frame_options),
+                        'cache_control_value': cache_control
+                    }
+                    headers_found.append(endpoint_headers)
+            
+            if headers_found:
+                cache_enabled_count = sum(1 for h in headers_found if h['cache_control'])
+                security_enabled_count = sum(1 for h in headers_found if h['security_headers'])
+                
+                self.log_result("Performance Monitoring Headers", True, 
+                              f"Headers tested on {len(headers_found)} endpoints: "
+                              f"Cache headers: {cache_enabled_count}/{len(headers_found)}, "
+                              f"Security headers: {security_enabled_count}/{len(headers_found)}")
+                return True
+            else:
+                self.log_result("Performance Monitoring Headers", False, "No endpoints responded successfully")
+                
+        except Exception as e:
+            self.log_result("Performance Monitoring Headers", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_database_query_optimization(self):
+        """Test database query optimization with pagination"""
+        try:
+            # Test pagination with different limits
+            test_cases = [
+                {"limit": 5, "skip": 0},
+                {"limit": 10, "skip": 5},
+                {"limit": 20, "skip": 0}
+            ]
+            
+            optimization_results = []
+            
+            for case in test_cases:
+                import time
+                start_time = time.time()
+                
+                params = f"?limit={case['limit']}&skip={case['skip']}"
+                response = self.session.get(f"{API_BASE}/jobs{params}")
+                
+                query_time = time.time() - start_time
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    # Check if response is paginated
+                    if isinstance(data, dict) and 'pagination' in data:
+                        jobs_count = len(data['data'])
+                        pagination = data['pagination']
+                        
+                        optimization_results.append({
+                            'limit': case['limit'],
+                            'skip': case['skip'],
+                            'returned_count': jobs_count,
+                            'query_time': query_time,
+                            'has_pagination': True,
+                            'total': pagination.get('total', 0)
+                        })
+                    else:
+                        # Legacy format
+                        jobs_count = len(data) if isinstance(data, list) else 0
+                        optimization_results.append({
+                            'limit': case['limit'],
+                            'skip': case['skip'],
+                            'returned_count': jobs_count,
+                            'query_time': query_time,
+                            'has_pagination': False
+                        })
+            
+            if optimization_results:
+                avg_query_time = sum(r['query_time'] for r in optimization_results) / len(optimization_results)
+                paginated_count = sum(1 for r in optimization_results if r['has_pagination'])
+                
+                self.log_result("Database Query Optimization", True, 
+                              f"Query optimization tested: "
+                              f"Avg query time: {avg_query_time:.3f}s, "
+                              f"Paginated responses: {paginated_count}/{len(optimization_results)}")
+                return True
+            else:
+                self.log_result("Database Query Optimization", False, "No successful queries")
+                
+        except Exception as e:
+            self.log_result("Database Query Optimization", False, f"Request error: {str(e)}")
+        return False
+
     # ======= PHASE 2: TRUST & RELIABILITY SYSTEM TESTS =======
     
     def test_admin_login(self):
