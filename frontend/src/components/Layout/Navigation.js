@@ -146,6 +146,15 @@ const Navigation = () => {
       permission: null
     },
     
+    // Phase 4: Performance Dashboard
+    { 
+      path: '/performance', 
+      label: t('performanceDashboard', 'Performance'), 
+      icon: '⚡',
+      roles: ['client', 'fixer', 'admin'],
+      permission: null
+    },
+    
     // Profile - available to all
     { 
       path: '/profile', 
