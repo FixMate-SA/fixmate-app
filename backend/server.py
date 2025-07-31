@@ -10,6 +10,7 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 import json
+import uuid
 from datetime import datetime, timedelta
 
 from database import get_db, drop_and_recreate_tables
