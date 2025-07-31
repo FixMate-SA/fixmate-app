@@ -9,7 +9,7 @@ import os
 
 from database import get_db
 from models import User, PushSubscription
-from services.role_service import get_current_user
+# from services.role_service import get_current_user  # Not needed here
 
 # Configure logging
 logger = logging.getLogger(__name__)
