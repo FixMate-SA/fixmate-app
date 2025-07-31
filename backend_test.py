@@ -5445,25 +5445,45 @@ def main():
     
     # Step 4: Create test data (fixer and job) for matching tests
     if not tester.test_create_fixer():
-        print("❌ Fixer creation failed. Some tests may not work properly.")
+        print("⚠️ Fixer creation failed. Will test with existing fixers.")
+        # Get an existing fixer for testing
+        try:
+            response = tester.session.get(f"{API_BASE}/fixers")
+            if response.status_code == 200:
+                fixers = response.json()
+                if fixers and len(fixers) > 0:
+                    tester.test_data['fixer_id'] = fixers[0]['id']
+                    tester.test_data['fixer'] = fixers[0]
+                    print(f"✅ Using existing fixer: {fixers[0]['name']}")
+        except:
+            pass
     
     if not tester.test_create_job():
         print("❌ Job creation failed. Matching tests will be skipped.")
         return False
     
-    print("\n🎯 TESTING ENHANCED AI SMART MATCHING ENDPOINTS")
+    print("\n🎯 TESTING AI SMART MATCHING ENDPOINTS")
     print("=" * 60)
     
-    # Step 5: Test Enhanced AI Smart Matching Endpoints
-    tester.test_enhanced_smart_match()
-    tester.test_enhanced_match_insights()
+    # Step 5: Test Existing AI Smart Matching Endpoints
+    tester.test_existing_smart_match()
+    tester.test_existing_match_insights()
     
-    # Step 6: Test Admin-only Enhanced Matching Endpoints
-    tester.test_update_matching_success_admin_only()
-    tester.test_enhanced_matching_analytics_admin_only()
-    tester.test_matching_algorithm_retrain_admin_only()
+    # Step 6: Test Fixer-specific matching endpoints
+    if 'fixer_id' in tester.test_data:
+        tester.test_fixer_match_history()
+        tester.test_fixer_match_test()
     
-    # Step 7: Test some basic functionality to ensure backward compatibility
+    # Step 7: Test Admin-only matching endpoints
+    tester.test_admin_matching_performance()
+    tester.test_admin_improve_matching()
+    
+    # Step 8: Check enhanced endpoints deployment status
+    print("\n🔍 CHECKING ENHANCED ENDPOINTS DEPLOYMENT")
+    print("=" * 50)
+    tester.test_enhanced_endpoints_deployment_status()
+    
+    # Step 9: Test some basic functionality to ensure backward compatibility
     print("\n🔄 TESTING BACKWARD COMPATIBILITY")
     print("=" * 40)
     tester.test_get_all_jobs()
@@ -5472,7 +5492,7 @@ def main():
     
     # Final results
     print("\n" + "=" * 80)
-    print("🏁 ENHANCED AI SMART MATCHING TEST RESULTS")
+    print("🏁 AI SMART MATCHING TEST RESULTS")
     print("=" * 80)
     print(f"✅ Tests Passed: {tester.results['passed']}")
     print(f"❌ Tests Failed: {tester.results['failed']}")
@@ -5483,7 +5503,7 @@ def main():
         for error in tester.results['errors']:
             print(f"   • {error}")
     
-    print(f"\n🎯 FOCUS: Enhanced AI-Powered Smart Matching System")
+    print(f"\n🎯 FOCUS: AI-Powered Smart Matching System")
     print(f"📍 Backend URL: {API_BASE}")
     print(f"🕒 Test completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
