@@ -314,6 +314,36 @@ function App() {
                 }
               />
               <Route
+                path="/phase3"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Phase3Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tracking/:jobId"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <JobTrackingStatus jobId={window.location.pathname.split('/')[2]} />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reputation/:fixerId"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <FixerReputationDashboard fixerId={window.location.pathname.split('/')[2]} />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/terms"
                 element={<TermsOfService />}
               />
