@@ -534,9 +534,9 @@ class Phase3APITester:
         return False
     
     def test_ai_assistant_end_conversation(self):
-        """Test POST /api/ai-assistant/conversation/{conversation_id}/end"""
-        if 'conversation_id' not in self.test_data:
-            self.log_result("AI Assistant End Conversation", False, "No conversation ID available")
+        """Test POST /api/ai-chat/{session_id}/end"""
+        if 'session_id' not in self.test_data:
+            self.log_result("AI Assistant End Conversation", False, "No session ID available")
             return False
         
         try:
@@ -545,7 +545,7 @@ class Phase3APITester:
                 "feedback": "Very helpful assistant"
             }
             
-            response = self.session.post(f"{API_BASE}/ai-assistant/conversation/{self.test_data['conversation_id']}/end", 
+            response = self.session.post(f"{API_BASE}/ai-chat/{self.test_data['session_id']}/end", 
                                        json=end_data)
             
             if response.status_code == 200:
