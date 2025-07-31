@@ -279,6 +279,36 @@ function App() {
                 }
               />
               <Route
+                path="/admin/photo-verification"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <AdminPhotoVerificationDashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/:jobId/complete"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <EnhancedJobCompletion />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/:jobId/dispute"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <DisputeCreation />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/terms"
                 element={<TermsOfService />}
               />
