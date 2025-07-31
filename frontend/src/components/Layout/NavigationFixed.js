@@ -27,7 +27,9 @@ const NavigationFixed = () => {
     }
   };
 
-  const baseNavItems = [
+  // Complete navigation items matching your screenshots exactly - ALL 14 ITEMS
+  const completeNavItems = [
+    // Row 1 - Core Features  
     { 
       path: '/dashboard', 
       label: t('dashboard', 'Dashboard'), 
@@ -38,31 +40,6 @@ const NavigationFixed = () => {
       path: '/fixers', 
       label: t('fixers', 'Fixers'), 
       icon: '🔧',
-      permission: null
-    },
-    { 
-      path: '/jobs', 
-      label: t('jobs', 'Jobs'), 
-      icon: '📋',
-      permission: null
-    },
-    { 
-      path: '/jobs/create', 
-      label: t('createJob', 'Create Job'), 
-      icon: '➕',
-      permission: null
-    },
-    { 
-      path: '/profile', 
-      label: t('profile', 'Profile'), 
-      icon: '👤',
-      permission: null
-    },
-    { 
-      path: '/admin', 
-      label: t('admin', 'Admin Panel'), 
-      icon: '⚙️',
-      roles: ['admin'],
       permission: null
     },
     { 
@@ -83,16 +60,69 @@ const NavigationFixed = () => {
       icon: '📱',
       permission: null
     },
+    
+    // Row 2 - Business & Admin
     { 
       path: '/enterprise', 
       label: t('enterprise', 'Enterprise'), 
       icon: '🏢',
+      roles: ['admin'],
       permission: null
     },
     { 
       path: '/payment', 
       label: t('payment', 'Payments'), 
       icon: '💳',
+      roles: ['fixer', 'admin'],
+      permission: null
+    },
+    { 
+      path: '/admin', 
+      label: t('admin', 'Admin Panel'), 
+      icon: '⚙️',
+      roles: ['admin'],
+      permission: null
+    },
+    { 
+      path: '/admin/smart-matching', 
+      label: t('smartMatching', 'Smart Matching'), 
+      icon: '🎯',
+      roles: ['admin'],
+      permission: null
+    },
+    
+    // Row 3 - Advanced Features
+    { 
+      path: '/admin/photo-verification', 
+      label: t('photoVerification', 'Photo Verification'), 
+      icon: '📸',
+      roles: ['admin'],
+      permission: null
+    },
+    { 
+      path: '/phase3', 
+      label: t('phase3Dashboard', 'Phase 3: Auto & Engage'), 
+      icon: '🚀',
+      permission: null
+    },
+    { 
+      path: '/pwa-status', 
+      label: t('pwaStatus', 'PWA Status'), 
+      icon: '📱',
+      permission: null
+    },
+    { 
+      path: '/performance', 
+      label: t('performanceDashboard', 'Performance'), 
+      icon: '⚡',
+      permission: null
+    },
+    
+    // Row 4 - User Profile
+    { 
+      path: '/profile', 
+      label: t('profile', 'Profile'), 
+      icon: '👤',
       permission: null
     }
   ];
