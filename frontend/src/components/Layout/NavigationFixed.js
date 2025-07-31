@@ -1,0 +1,185 @@
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
+
+const NavigationFixed = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { t } = useLanguage();
+  const { hasPermission, isRole, getUserRole } = useAuth();
+
+  const userRole = getUserRole();
+
+  // Enhanced navigation handler that ensures navigation works
+  const handleNavigation = (path, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    console.log(`Navigation: Attempting to navigate to ${path}`);
+    
+    // Force navigation using React Router's navigate function
+    navigate(path, { replace: false });
+    
+    // Backup: Also update browser history
+    if (window.history && window.history.pushState) {
+      window.history.pushState(null, '', path);
+    }
+  };
+
+  const baseNavItems = [
+    { 
+      path: '/dashboard', 
+      label: t('dashboard', 'Dashboard'), 
+      icon: '📊',
+      permission: null
+    },
+    { 
+      path: '/fixers', 
+      label: t('fixers', 'Fixers'), 
+      icon: '🔧',
+      permission: null
+    },
+    { 
+      path: '/jobs', 
+      label: t('jobs', 'Jobs'), 
+      icon: '📋',
+      permission: null
+    },
+    { 
+      path: '/jobs/create', 
+      label: t('createJob', 'Create Job'), 
+      icon: '➕',
+      permission: null
+    },
+    { 
+      path: '/profile', 
+      label: t('profile', 'Profile'), 
+      icon: '👤',
+      permission: null
+    },
+    { 
+      path: '/admin', 
+      label: t('admin', 'Admin Panel'), 
+      icon: '⚙️',
+      roles: ['admin'],
+      permission: null
+    },
+    { 
+      path: '/learning', 
+      label: t('learning', 'Learning'), 
+      icon: '🎓',
+      permission: null
+    },
+    { 
+      path: '/business-compliance', 
+      label: t('businessCompliance', 'Business Compliance'), 
+      icon: '🏢',
+      permission: null
+    },
+    { 
+      path: '/sms', 
+      label: t('sms', 'SMS Portal'), 
+      icon: '📱',
+      permission: null
+    },
+    { 
+      path: '/enterprise', 
+      label: t('enterprise', 'Enterprise'), 
+      icon: '🏢',
+      permission: null
+    },
+    { 
+      path: '/payment', 
+      label: t('payment', 'Payments'), 
+      icon: '💳',
+      permission: null
+    }
+  ];
+
+  // Filter navigation items
+  const getVisibleNavItems = () => {
+    return baseNavItems.filter(item => {
+      // If no roles specified, show to everyone
+      if (!item.roles) return true;
+      
+      // Check if user's role is in allowed roles
+      if (!item.roles.includes(userRole)) return false;
+      
+      return true;
+    });
+  };
+
+  const navItems = getVisibleNavItems();
+
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
+  const getRoleBorderColor = (role, isActive) => {
+    if (!isActive) return 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300';
+    
+    switch (role) {
+      case 'admin': return 'border-red-500 text-red-600';
+      case 'fixer': return 'border-green-500 text-green-600';
+      case 'client': return 'border-blue-500 text-blue-600';
+      default: return 'border-blue-500 text-blue-600';
+    }
+  };
+
+  return (
+    <nav className="bg-white shadow-sm border-b border-gray-200">
+      <div className="container mx-auto px-4">
+        <div className="flex space-x-2 overflow-x-auto">
+          {navItems.map((item) => (
+            <a
+              key={item.path}
+              href={item.path}
+              onClick={(e) => handleNavigation(item.path, e)}
+              className={`flex items-center space-x-2 py-4 px-3 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+                getRoleBorderColor(userRole, isActive(item.path))
+              }`}
+            >
+              <span className="text-lg">{item.icon}</span>
+              <span className="font-medium text-sm">{item.label}</span>
+              
+              {/* Show role indicator for special items */}
+              {item.roles && item.roles.length === 1 && item.roles[0] !== 'client' && (
+                <span className={`ml-1 px-1 py-0.5 text-xs rounded ${
+                  item.roles[0] === 'admin' ? 'bg-red-100 text-red-600' : 
+                  item.roles[0] === 'fixer' ? 'bg-green-100 text-green-600' : ''
+                }`}>
+                  {item.roles[0].charAt(0).toUpperCase()}
+                </span>
+              )}
+            </a>
+          ))}
+        </div>
+        
+        {/* Role indicator */}
+        <div className="py-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-xs text-gray-500">
+              <span>Logged in as:</span>
+              <span className={`px-2 py-1 rounded-full font-medium ${
+                userRole === 'admin' ? 'bg-red-100 text-red-700' :
+                userRole === 'fixer' ? 'bg-green-100 text-green-700' :
+                'bg-blue-100 text-blue-700'
+              }`}>
+                {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+              </span>
+            </div>
+            
+            {userRole === 'fixer' && (
+              <div className="text-xs text-gray-500">
+                <span>🔧 Fixer Dashboard Active</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default NavigationFixed;
