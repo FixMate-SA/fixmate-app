@@ -4494,7 +4494,7 @@ class FixMateAPITester:
     def run_all_tests(self):
         """Run all tests in sequence"""
         print("=" * 80)
-        print("🚀 FIXMATE-SA BACKEND API COMPREHENSIVE TESTING - AI SMART MATCHING SYSTEM")
+        print("🚀 FIXMATE-SA PHASE 3: AUTOMATION & ENGAGEMENT SYSTEM TESTING")
         print("=" * 80)
         print()
         
