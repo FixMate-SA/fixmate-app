@@ -207,6 +207,12 @@ class Phase2Tester:
                 self.log_result("Photo Submission - Before Photos", False, f"HTTP {response.status_code}", response)
         except Exception as e:
             self.log_result("Photo Submission - Before Photos", False, f"Request error: {str(e)}")
+            if response:
+                try:
+                    error_detail = response.json()
+                    print(f"   Error details: {error_detail}")
+                except:
+                    print(f"   Response text: {response.text[:500]}")
         return False
     
     def test_photo_submission_after_photos(self):
