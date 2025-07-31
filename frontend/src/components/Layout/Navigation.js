@@ -137,6 +137,15 @@ const Navigation = () => {
       permission: null
     },
     
+    // Phase 4: PWA Status Dashboard
+    { 
+      path: '/pwa-status', 
+      label: t('pwaStatus', 'PWA Status'), 
+      icon: '📱',
+      roles: ['client', 'fixer', 'admin'],
+      permission: null
+    },
+    
     // Profile - available to all
     { 
       path: '/profile', 
