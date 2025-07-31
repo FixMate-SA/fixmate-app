@@ -36,6 +36,7 @@ const AIChatAssistant = lazy(() => import("./components/AI/AIChatAssistant"));
 
 // Phase 4 Components (PWA features, separate chunk)
 const PWAStatusDashboard = lazy(() => import("./components/PWA/PWAStatusDashboard"));
+const PerformanceDashboard = lazy(() => import("./components/Performance/PerformanceDashboard"));
 
 // Business & Enterprise Components (separate chunk)
 const BusinessCompliance = lazy(() => import("./components/Business/BusinessCompliance"));
