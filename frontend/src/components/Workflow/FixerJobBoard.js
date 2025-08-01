@@ -37,7 +37,7 @@ const FixerJobBoard = () => {
     if (!user?.phone) return;
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/fixers`);
+      const response = await fetch(`${API_BASE_URL}/fixers`);
       if (response.ok) {
         const data = await response.json();
         const currentFixer = data.data?.find(f => f.phone === user.phone);
