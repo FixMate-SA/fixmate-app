@@ -177,7 +177,7 @@ const CreateJob = () => {
       };
 
       // Use the enhanced workflow API instead of regular job creation
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs/workflow`, {
+      const response = await fetch(`${API_BASE_URL}/jobs/workflow`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
