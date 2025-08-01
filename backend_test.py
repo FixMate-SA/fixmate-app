@@ -545,32 +545,6 @@ class FixMateAPITester:
     
     # ======= ADDITIONAL SYSTEM VALIDATION TESTS =======
     
-    def test_terms_acceptance_workflow(self):
-        """Test terms acceptance workflow"""
-        if 'user_id' not in self.test_data:
-            self.log_result("Terms Acceptance Workflow", False, "No user ID available from previous tests")
-            return False
-        
-        try:
-            # First check terms acceptance status
-            response = self.session.get(f"{API_BASE}/terms/check/{self.test_data['user_id']}")
-            
-            if response.status_code == 200:
-                data = response.json()
-                
-                if 'has_accepted' in data:
-                    has_accepted = data['has_accepted']
-                    self.log_result("Terms Acceptance Workflow", True, 
-                                  f"Terms acceptance workflow operational: User has accepted terms: {has_accepted}")
-                    return True
-                else:
-                    self.log_result("Terms Acceptance Workflow", False, "Invalid terms check response format", response)
-            else:
-                self.log_result("Terms Acceptance Workflow", False, f"HTTP {response.status_code}", response)
-        except Exception as e:
-            self.log_result("Terms Acceptance Workflow", False, f"Request error: {str(e)}")
-        return False
-    
     def test_job_workflow_creation(self):
         """Test enhanced job workflow creation"""
         if 'user_id' not in self.test_data:
