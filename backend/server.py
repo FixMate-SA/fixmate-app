@@ -3417,14 +3417,35 @@ async def get_notification_templates(current_user: User = Depends(get_current_us
 # ======= PWA SESSION TRACKING ENDPOINTS =======
 
 @api_router.get("/debug/health")
-async def debug_health_check():
-    """Debug endpoint to check if API is accessible on Heroku"""
-    return {
-        "status": "ok",
-        "message": "Backend API is accessible",
-        "timestamp": datetime.utcnow().isoformat(),
-        "environment": "production" if os.getenv("PORT") else "development"
-    }
+async def debug_health_check(db: Session = Depends(get_db)):
+    """Debug endpoint to check if API and database are accessible on Heroku"""
+    try:
+        # Test database connection
+        user_count = db.query(User).count()
+        fixer_count = db.query(Fixer).count()
+        
+        return {
+            "status": "ok",
+            "message": "Backend API and database are accessible",
+            "database": {
+                "connected": True,
+                "user_count": user_count,
+                "fixer_count": fixer_count
+            },
+            "timestamp": datetime.utcnow().isoformat(),
+            "environment": "production" if os.getenv("PORT") else "development"
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Database connection failed: {str(e)}",
+            "database": {
+                "connected": False,
+                "error": str(e)
+            },
+            "timestamp": datetime.utcnow().isoformat(),
+            "environment": "production" if os.getenv("PORT") else "development"
+        }
 
 @api_router.post("/debug/login-test")
 async def debug_login_test(credentials: dict):
