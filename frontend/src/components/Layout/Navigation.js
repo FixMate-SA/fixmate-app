@@ -128,33 +128,6 @@ const Navigation = () => {
       permission: null // Remove permission check
     },
     
-    // Phase 3: Automation & Engagement
-    { 
-      path: '/phase3', 
-      label: t('phase3Dashboard', 'Phase 3: Auto & Engage'), 
-      icon: '🚀',
-      roles: ['client', 'fixer', 'admin'],
-      permission: null
-    },
-    
-    // Phase 4: PWA Status Dashboard
-    { 
-      path: '/pwa-status', 
-      label: t('pwaStatus', 'PWA Status'), 
-      icon: '📱',
-      roles: ['client', 'fixer', 'admin'],
-      permission: null
-    },
-    
-    // Phase 4: Performance Dashboard
-    { 
-      path: '/performance', 
-      label: t('performanceDashboard', 'Performance'), 
-      icon: '⚡',
-      roles: ['client', 'fixer', 'admin'],
-      permission: null
-    },
-    
     // Profile - available to all
     { 
       path: '/profile', 
