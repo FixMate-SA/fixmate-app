@@ -918,17 +918,29 @@ backend:
         agent: "testing"
         comment: "✅ API URL CONFIGURATION WORKING! All /api endpoints accessible and responding correctly (4/4 endpoints tested successfully). API routing through /api prefix is functional. Database connectivity verified through /api/debug/health endpoint."
 
-  - task: "Database Model Cleanup - Removed PWA Models"
+  - task: "Heroku Login Issue - Comprehensive Login Stability Testing"
     implemented: true
     working: true
-    file: "backend/models.py, backend/services/"
+    file: "backend/server.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
       - working: true
-        agent: "main"
-        comment: "Verified that AppSession and OfflineAction models are completely removed from codebase. No references found in models.py or services directory."
+        agent: "testing"
+        comment: "✅ COMPREHENSIVE LOGIN STABILITY TESTING COMPLETED SUCCESSFULLY! Admin login endpoint (POST /api/auth/login) working without crashes using credentials +27821234567/admin123. Multiple phone number formats tested successfully (standard +27, local 0, international without +). No server crashes or H10 errors detected. Database connectivity verified. Login endpoint stability confirmed for Heroku deployment."
+
+  - task: "Heroku Login Issue - Database Health and Connectivity"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ DATABASE HEALTH AND CONNECTIVITY WORKING! GET /api/debug/health endpoint successfully verifies database connectivity. Database connection stable and responding correctly. No database-related crashes detected during login flow testing."
 
 metadata:
   created_by: "main_agent"
