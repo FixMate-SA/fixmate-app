@@ -106,7 +106,15 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true, user: userData, roleInfo: roleData };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ LOGIN ERROR:', error);
+      console.error('❌ Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method
+      });
+      
       const errorMessage = error.response?.data?.detail || 'Login failed';
       return { success: false, error: errorMessage };
     }
