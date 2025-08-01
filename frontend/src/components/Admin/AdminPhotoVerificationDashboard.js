@@ -52,11 +52,11 @@ const AdminPhotoVerificationDashboard = () => {
     
     try {
       const response = await fetch(
-        `${import.meta.env.REACT_APP_BACKEND_URL}/api/admin/photo-verification/${verificationId}/verify`,
+        `${process.env.REACT_APP_BACKEND_URL}/api/admin/photo-verification/${verificationId}/verify`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
