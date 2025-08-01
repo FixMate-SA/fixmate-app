@@ -83,6 +83,26 @@ const CreateJob = () => {
       setJobBeingCancelled(null);
     }
   };
+
+  const serviceOptions = [
+    'Plumbing',
+    'Electrical',
+    'Carpentry',
+    'Painting',
+    'Cleaning',
+    'Gardening',
+    'Handyman',
+    'Appliance Repair',
+    'Roofing',
+    'Flooring',
+    'HVAC',
+    'Tech Support',
+    'Tutoring',
+    'Beauty Services',
+    'Catering',
+    'Photography',
+    'Other'
+  ];
     'Plumbing',
     'Electrical',
     'Carpentry',
