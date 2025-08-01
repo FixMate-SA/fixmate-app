@@ -16,9 +16,13 @@ const FixerJobBoard = () => {
   useEffect(() => {
     fetchFixerInfo();
     fetchAvailableJobs();
+    fetchCurrentJob();
     
-    // Set up polling for new jobs
-    const interval = setInterval(fetchAvailableJobs, 5000); // Poll every 5 seconds
+    // Set up polling for new jobs and current job status
+    const interval = setInterval(() => {
+      fetchAvailableJobs();
+      fetchCurrentJob();
+    }, 5000); // Poll every 5 seconds
     
     return () => clearInterval(interval);
   }, [user]);
