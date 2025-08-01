@@ -1031,11 +1031,14 @@ backend:
     file: "backend/server.py, backend/services/job_workflow_service.py"
     stuck_count: 1
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: false
         agent: "testing"
         comment: "❌ NOTIFICATION & ACCEPTANCE SYSTEM HAS CRITICAL FAILURES! 1/5 tests passed: ✅ Notification system tracking working (assignment history and notification history properly tracked), ❌ Fixer job acceptance failing (POST /api/jobs/{job_id}/accept returns HTTP 400), ❌ Fixer job cancellation failing (Cancel Job button not working - HTTP 400), ❌ Enhanced job acceptance failing (POST /api/jobs/{job_id}/accept-enhanced returns HTTP 400). CRITICAL ISSUE: Core first-come-first-served acceptance mechanism not functional."
+      - working: false
+        agent: "testing"
+        comment: "❌ SYSTEM REQUIREMENT 4 STILL FAILING! HTTP 400 error on fixer job acceptance endpoint. While basic job acceptance works in integration testing, the notification & acceptance system for first-come-first-served logic has issues. Fixer cancellation with penalties not fully testable due to acceptance workflow problems."
 
   - task: "System Requirement 5: Timeout Handling (180 minutes = 3 hours)"
     implemented: true
