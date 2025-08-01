@@ -58,7 +58,67 @@ const FixerJobBoard = () => {
     }
   };
 
-  const acceptJob = async (jobId) => {
+  const fetchCurrentJob = async () => {
+    if (!fixerInfo?.id) return;
+
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs`);
+      if (response.ok) {
+        const data = await response.json();
+        // Find the current job assigned to this fixer
+        const assignedJob = data.data?.find(job => 
+          job.fixer_id === fixerInfo.id && 
+          ['assigned', 'in_progress'].includes(job.status)
+        );
+        setCurrentJob(assignedJob || null);
+      }
+    } catch (error) {
+      console.error('Error fetching current job:', error);
+    }
+  };
+
+  const cancelJob = async (jobId) => {
+    if (!fixerInfo?.id || cancelling || !jobId) return;
+
+    const confirmCancel = window.confirm(
+      'Are you sure you want to cancel this job? This will:\n' +
+      '• Apply a 2-hour availability freeze\n' +
+      '• Apply a 0.2 rating penalty\n' +
+      '• Reassign the job to another fixer'
+    );
+
+    if (!confirmCancel) return;
+
+    setCancelling(jobId);
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fixer_id: fixerInfo.id,
+          cancelled_by: 'fixer',
+          reason: prompt('Please provide a reason for cancellation:') || 'No reason provided'
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        alert('Job cancelled. Penalties applied: 2-hour freeze and 0.2 rating penalty.');
+        setCurrentJob(null);
+        fetchAvailableJobs(); // Refresh available jobs
+      } else {
+        alert(result.detail || result.message || 'Failed to cancel job.');
+      }
+    } catch (error) {
+      console.error('Error cancelling job:', error);
+      alert('An error occurred while cancelling the job. Please try again.');
+    } finally {
+      setCancelling(null);
+    }
+  };
     if (!fixerInfo?.id || accepting) return;
 
     setAccepting(jobId);
