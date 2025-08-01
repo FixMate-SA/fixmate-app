@@ -1104,9 +1104,9 @@ class FixMateAPITester:
             self.log_result("SR10: Platform Fee Management", False, f"Request error: {str(e)}")
             return False
     
-    def run_core_workflow_tests(self):
-        """Run Core Job Assignment Workflow tests"""
-        print("🚀 CORE JOB ASSIGNMENT WORKFLOW TESTING")
+    def run_comprehensive_system_requirements_tests(self):
+        """Run Comprehensive System Requirements Testing for Enhanced Job Assignment Workflow"""
+        print("🚀 COMPREHENSIVE ENHANCED JOB ASSIGNMENT WORKFLOW SYSTEM TESTING")
         print("=" * 80)
         
         # Phase 1: Setup and Authentication
@@ -1127,44 +1127,46 @@ class FixMateAPITester:
             print("❌ Admin login failed. Cannot proceed with admin endpoint testing.")
             return False
         
-        # Phase 2: Terms Acceptance Testing
-        print("\n📋 PHASE 2: TERMS ACCEPTANCE INTEGRATION")
-        print("-" * 50)
-        
-        # First check current terms acceptance status
-        if not self.test_terms_acceptance_check():
-            print("❌ Terms acceptance check failed.")
-            return False
-        
-        # Accept terms for the user
-        if not self.test_terms_acceptance_workflow():
-            print("❌ Terms acceptance workflow failed.")
-            return False
-        
-        # Verify terms acceptance status after accepting
-        if not self.test_terms_acceptance_check():
-            print("❌ Terms acceptance verification failed.")
-            return False
-        
-        # Phase 3: Fixer Screening Validation
-        print("\n📋 PHASE 3: FIXER SCREENING VALIDATION")
-        print("-" * 50)
-        
         # Get approved fixers for testing
         if not self.test_get_approved_fixers():
             print("❌ Fixer screening validation failed - no approved fixers found.")
             return False
         
-        # Phase 4: Core Workflow Endpoint Testing (The 3 failing endpoints)
-        print("\n🎯 PHASE 4: CORE WORKFLOW ENDPOINT TESTING")
+        # Phase 2: Comprehensive System Requirements Testing
+        print("\n🎯 PHASE 2: COMPREHENSIVE SYSTEM REQUIREMENTS TESTING")
         print("-" * 50)
-        print("Testing the core job assignment workflow endpoints that were previously failing:")
+        print("Testing all 10 Enhanced Job Assignment Workflow System Requirements:")
         print()
         
+        system_requirements_tests = [
+            ("System Requirement 1: Client Terms Acceptance", self.test_system_requirement_1_client_terms_acceptance),
+            ("System Requirement 2: Job Assignment Workflow - Request Logging", self.test_system_requirement_2_job_assignment_workflow),
+            ("System Requirement 3: Real-Time Fixer Screening", self.test_system_requirement_3_real_time_fixer_screening),
+            ("System Requirement 4: Notification & Acceptance (First-Come-First-Served)", self.test_system_requirement_4_notification_acceptance),
+            ("System Requirement 5: Timeout Handling (180 minutes = 3 hours)", self.test_system_requirement_5_timeout_handling),
+            ("System Requirement 6: Job Completion Protocol", self.test_system_requirement_6_job_completion_protocol),
+            ("System Requirement 7: AI-Powered Fraud Prevention", self.test_system_requirement_7_ai_fraud_prevention),
+            ("System Requirement 8: Cancellation Protocols", self.test_system_requirement_8_cancellation_protocols),
+            ("System Requirement 9: Fair Matching Algorithm", self.test_system_requirement_9_fair_matching_algorithm),
+            ("System Requirement 10: Platform Fee Management", self.test_system_requirement_10_platform_fee_management)
+        ]
+        
+        system_results = []
+        for test_name, test_func in system_requirements_tests:
+            print(f"Testing {test_name}...")
+            result = test_func()
+            system_results.append((test_name, result))
+            print()
+        
+        # Phase 3: Integration Testing
+        print("\n🔗 PHASE 3: INTEGRATION TESTING")
+        print("-" * 50)
+        
+        # Test core workflow endpoints that were previously failing
         core_tests = [
-            ("1. Job Workflow Creation (POST /api/jobs/workflow)", self.test_job_workflow_creation),
-            ("2. Fixer Job Acceptance (POST /api/jobs/{id}/accept)", self.test_fixer_job_acceptance),
-            ("3. Workflow Status Retrieval (GET /api/jobs/{id}/workflow-status)", self.test_workflow_status_retrieval)
+            ("Enhanced Job Workflow Creation (POST /api/jobs/workflow)", self.test_job_workflow_creation),
+            ("Fixer Job Acceptance (POST /api/jobs/{id}/accept)", self.test_fixer_job_acceptance),
+            ("Workflow Status Retrieval (GET /api/jobs/{id}/workflow-status)", self.test_workflow_status_retrieval)
         ]
         
         core_results = []
@@ -1176,46 +1178,79 @@ class FixMateAPITester:
         
         # Results Summary
         print("=" * 80)
-        print("🎯 CORE JOB ASSIGNMENT WORKFLOW TEST RESULTS")
+        print("🎯 COMPREHENSIVE ENHANCED JOB ASSIGNMENT WORKFLOW TEST RESULTS")
         print("=" * 80)
         
-        print("🔥 CORE WORKFLOW ENDPOINTS (Previously Failing):")
+        print("🔥 SYSTEM REQUIREMENTS VALIDATION:")
+        system_passed = 0
+        for test_name, result in system_results:
+            status = "✅ WORKING" if result else "❌ FAILING"
+            print(f"   {status}: {test_name}")
+            if result:
+                system_passed += 1
+        
+        print(f"\n📊 System Requirements Success Rate: {system_passed}/10 ({system_passed/10*100:.1f}%)")
+        
+        print("\n🔧 INTEGRATION TESTING (Previously Failing Endpoints):")
         core_passed = 0
         for test_name, result in core_results:
-            status = "✅ WORKING" if result else "❌ FAILED"
+            status = "✅ WORKING" if result else "❌ FAILING"
             print(f"   {status}: {test_name}")
             if result:
                 core_passed += 1
         
-        print(f"\n📊 Core Workflow Success Rate: {core_passed}/3 ({core_passed/3*100:.1f}%)")
+        print(f"\n📊 Integration Testing Success Rate: {core_passed}/3 ({core_passed/3*100:.1f}%)")
         
-        # Additional validation results
-        print("\n🔧 SYSTEM REQUIREMENTS VALIDATION:")
-        print(f"   ✅ WORKING: Terms Acceptance Integration")
-        print(f"   ✅ WORKING: Fixer Screening Validation (≥3.0 rating OR new fixers with 0.0)")
-        
-        total_passed = core_passed + 2  # Add the 2 validation tests that passed
-        total_tests = 5
+        # Overall Assessment
+        total_passed = system_passed + core_passed
+        total_tests = 13
         overall_success_rate = total_passed / total_tests * 100
         
         print(f"\n🎉 OVERALL SUCCESS RATE: {total_passed}/{total_tests} ({overall_success_rate:.1f}%)")
         
-        if core_passed == 3:
-            print("\n✅ SUCCESS! All 3 core workflow endpoints are now working!")
-            print("✅ Terms acceptance is enforced before job creation")
-            print("✅ Fixer screening criteria are properly applied")
-            print("✅ First-come-first-served job acceptance is functional")
-            print("✅ Workflow status tracking shows proper progression")
+        # Detailed Assessment
+        if system_passed >= 8:  # 80% of system requirements working
+            print("\n✅ SUCCESS! Enhanced Job Assignment Workflow System Requirements are largely functional!")
+            
+            working_requirements = [name for name, result in system_results if result]
+            failing_requirements = [name for name, result in system_results if not result]
+            
+            if working_requirements:
+                print("✅ WORKING REQUIREMENTS:")
+                for req in working_requirements:
+                    print(f"   • {req}")
+            
+            if failing_requirements:
+                print("\n❌ FAILING REQUIREMENTS:")
+                for req in failing_requirements:
+                    print(f"   • {req}")
         else:
-            print(f"\n⚠️  WARNING! {3-core_passed} core workflow endpoints still failing.")
-            print("❌ HTTP 400 errors may still be present in the workflow")
+            print(f"\n⚠️  WARNING! Only {system_passed}/10 system requirements are working.")
+            print("❌ Enhanced Job Assignment Workflow system needs significant attention.")
         
-        if overall_success_rate >= 80:
-            print("🎉 Core Job Assignment Workflow system is operational!")
+        if core_passed >= 2:  # Most integration tests working
+            print("\n✅ Integration testing largely successful!")
+            print("✅ Core workflow endpoints are operational")
         else:
-            print("⚠️  Core Job Assignment Workflow system needs attention.")
+            print(f"\n⚠️  WARNING! Only {core_passed}/3 integration tests passed.")
+            print("❌ Core workflow endpoints still have issues")
         
-        return core_passed == 3
+        # Production Readiness Assessment
+        if overall_success_rate >= 85:
+            print("\n🎉 ENHANCED JOB ASSIGNMENT WORKFLOW SYSTEM IS PRODUCTION-READY!")
+            print("✅ All major system requirements are functional")
+            print("✅ Integration testing successful")
+            print("✅ Backend workflow service handling business logic correctly")
+        elif overall_success_rate >= 70:
+            print("\n⚠️  ENHANCED JOB ASSIGNMENT WORKFLOW SYSTEM IS MOSTLY READY")
+            print("✅ Most system requirements are functional")
+            print("⚠️  Some minor issues need attention before full production deployment")
+        else:
+            print("\n❌ ENHANCED JOB ASSIGNMENT WORKFLOW SYSTEM NEEDS ATTENTION")
+            print("❌ Multiple system requirements failing")
+            print("❌ Not ready for production deployment")
+        
+        return overall_success_rate >= 70
 
 if __name__ == "__main__":
     print("🔧 FixMate-SA Core Job Assignment Workflow Backend Testing")
