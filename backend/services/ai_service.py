@@ -541,6 +541,11 @@ class EnhancedAIService:
         OpenAI-powered enhanced matching with advanced reasoning
         """
         try:
+            # Check if OpenAI client is available
+            if not self.openai_client:
+                logger.warning("OpenAI client not available, falling back to Gemini")
+                return self._gemini_enhanced_matching(fixer_data, job_data, context)
+            
             # Prepare enhanced matching prompt
             matching_prompt = self._build_enhanced_matching_prompt(fixer_data, job_data, context)
             
