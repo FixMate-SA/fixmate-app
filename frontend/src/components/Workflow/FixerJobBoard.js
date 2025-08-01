@@ -228,9 +228,9 @@ const FixerJobBoard = () => {
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+            <div className={`w-3 h-3 rounded-full ${currentJob ? 'bg-orange-500' : 'bg-green-500'}`}></div>
             <span className="text-sm font-medium text-gray-900">
-              {t('fixerStatus', 'Status')}: {t('available', 'Available')}
+              {t('fixerStatus', 'Status')}: {currentJob ? 'Busy with Job' : t('available', 'Available')}
             </span>
           </div>
           <div className="text-sm text-gray-500">
@@ -238,6 +238,41 @@ const FixerJobBoard = () => {
           </div>
         </div>
       </div>
+
+      {/* Current Job Section */}
+      {currentJob && (
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-6">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                🔧 Current Job: {currentJob.service?.replace('_', ' ').toUpperCase()}
+              </h3>
+              <div className="space-y-2 text-sm">
+                <p><strong>Location:</strong> {currentJob.location}</p>
+                <p><strong>Description:</strong> {currentJob.description}</p>
+                <p><strong>Price:</strong> R{currentJob.estimated_price || 'TBD'}</p>
+                <p><strong>Status:</strong> {currentJob.status}</p>
+              </div>
+            </div>
+            <div className="flex flex-col space-y-2">
+              <button
+                onClick={() => cancelJob(currentJob.id)}
+                disabled={cancelling === currentJob.id}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  cancelling === currentJob.id
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-red-600 text-white hover:bg-red-700'
+                }`}
+              >
+                {cancelling === currentJob.id ? 'Cancelling...' : 'Cancel Job'}
+              </button>
+              <p className="text-xs text-gray-600 text-center">
+                ⚠️ Penalties apply
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Jobs List */}
       {availableJobs.length === 0 ? (
