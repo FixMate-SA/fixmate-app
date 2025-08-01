@@ -39,7 +39,7 @@ const TermsAcceptance = ({ onAccept, showModal = false, onClose }) => {
 
     setAccepting(true);
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/terms/accept`, {
+      const response = await fetch(`${API_BASE_URL}/terms/accept`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
