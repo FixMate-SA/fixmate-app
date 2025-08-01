@@ -278,6 +278,21 @@ class FixerAvailability(Base):
     suspension_reason = Column(Text, nullable=True)
     suspension_until = Column(DateTime, nullable=True)
     
+    # Enhanced workflow restrictions
+    is_availability_frozen = Column(Boolean, default=False)  # Temporary freeze after cancellation
+    availability_frozen_until = Column(DateTime, nullable=True)  # When freeze expires
+    freeze_reason = Column(String, nullable=True)  # Reason for freeze (timeout, cancellation, etc.)
+    
+    # Rating and performance thresholds
+    minimum_rating_met = Column(Boolean, default=True)  # If meets minimum 3.0 rating requirement
+    rating_penalty_applied = Column(Float, default=0.0)  # Accumulated rating penalties
+    cancellation_penalty_count = Column(Integer, default=0)  # Number of cancellation penalties
+    
+    # Payment status tracking
+    platform_fee_status = Column(String, default="current")  # current, overdue, blocked
+    platform_fee_overdue_since = Column(DateTime, nullable=True)  # When fees became overdue
+    platform_fee_amount_due = Column(Float, default=0.0)  # Amount currently due
+    
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
     
