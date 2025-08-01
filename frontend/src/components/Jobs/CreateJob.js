@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import VoiceRecorder from '../VoiceRecorder/VoiceRecorder';
+import TermsAcceptance from '../Workflow/TermsAcceptance';
 
 const CreateJob = () => {
   const { user } = useAuth();
