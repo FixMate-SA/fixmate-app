@@ -22,10 +22,10 @@ const SmartMatchingDashboard = () => {
     
     try {
       const response = await fetch(
-        `${import.meta.env.REACT_APP_BACKEND_URL}/api/admin/matching-performance?days=${selectedPeriod}`,
+        `${process.env.REACT_APP_BACKEND_URL}/api/admin/matching-performance?days=${selectedPeriod}`,
         {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`,
             'Content-Type': 'application/json'
           }
         }
