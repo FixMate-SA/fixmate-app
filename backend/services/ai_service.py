@@ -6,7 +6,16 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 import google.generativeai as genai
-from openai import OpenAI
+
+# Fallback import for OpenAI to handle deployment issues
+try:
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    print("Warning: OpenAI library not available - AI features will use fallback")
+    OpenAI = None
+    OPENAI_AVAILABLE = False
+
 from dotenv import load_dotenv
 
 load_dotenv()
