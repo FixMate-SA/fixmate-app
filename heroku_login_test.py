@@ -63,7 +63,7 @@ class HerokuLoginFixTester:
         print()
     
     def test_service_worker_cleanup(self):
-        """Test 1: Service Worker Cleanup - GET /sw.js should return HTTP 410 Gone"""
+        """Test 1: Service Worker Cleanup - Check if sw.js is properly handled"""
         print("🔍 Testing Service Worker Cleanup (GET /sw.js)")
         
         try:
@@ -72,8 +72,20 @@ class HerokuLoginFixTester:
             
             if response.status_code == 410:
                 self.log_result("Service Worker Cleanup", True, 
-                              f"✅ SERVICE WORKER CLEANUP WORKING! GET /sw.js returns HTTP 410 Gone as expected (not 404)")
+                              f"✅ SERVICE WORKER CLEANUP WORKING! GET /sw.js returns HTTP 410 Gone as expected")
                 return True
+            elif response.status_code == 200:
+                # Check if it's serving the React app instead of the backend endpoint
+                content = response.text.lower()
+                if "<!doctype html>" in content or "<html" in content:
+                    self.log_result("Service Worker Cleanup", False, 
+                                  f"❌ SERVICE WORKER CLEANUP ISSUE! GET /sw.js is serving React app (HTML) instead of backend 410 Gone response. "
+                                  f"The catch-all route is overriding the service worker endpoint.", response)
+                    return False
+                else:
+                    self.log_result("Service Worker Cleanup", False, 
+                                  f"❌ SERVICE WORKER CLEANUP ISSUE! GET /sw.js returns HTTP 200 with unexpected content instead of 410 Gone", response)
+                    return False
             elif response.status_code == 404:
                 self.log_result("Service Worker Cleanup", False, 
                               f"❌ SERVICE WORKER CLEANUP ISSUE! GET /sw.js returns HTTP 404 instead of expected 410 Gone", response)
