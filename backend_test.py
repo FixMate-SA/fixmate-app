@@ -1,42 +1,35 @@
 #!/usr/bin/env python3
 """
-FixMate-SA Enhanced Job Assignment Workflow Backend Testing Script
-Re-tests the Enhanced Job Assignment Workflow system after successful database migration.
+FixMate-SA Core Job Assignment Workflow Backend Testing Script
+Tests the core job assignment workflow endpoints that were previously failing.
 
-PRIORITY FOCUS: Test 5 endpoints that were failing due to database schema issues:
+PRIORITY TESTS (Previously Failing):
+1. POST /api/jobs/workflow - Enhanced job workflow creation
+2. POST /api/jobs/{job_id}/accept - Fixer job acceptance (first-come-first-served)
+3. GET /api/jobs/{job_id}/workflow-status - Get workflow status
+4. Terms Acceptance Integration - Test that jobs cannot be created without terms acceptance
+5. Fixer Screening Validation - Verify only approved fixers are eligible
 
-PRIORITY RE-TESTING ENDPOINTS:
-1. GET /api/fixer/{fixer_id}/performance-stats - Test comprehensive fixer performance statistics
-2. GET /api/jobs/{job_id}/assignment-history - Test job assignment history tracking  
-3. POST /api/jobs/{job_id}/emergency-escalate - Test manual emergency escalation
-4. GET /api/admin/workflow-analytics - Test workflow analytics dashboard
-5. GET /api/fixer/{fixer_id}/eligible-jobs - Test eligible jobs for fixers
+FOCUS AREAS:
+- Fix any remaining HTTP 400 errors
+- Verify the workflow integration works end-to-end
+- Confirm fixer screening criteria are properly applied
+- Test that terms acceptance is enforced
 
-ADDITIONAL VERIFICATION TESTS:
-- Verify database schema is now synchronized (all new columns added)
-- Test the enhanced workflow business logic end-to-end
-- Verify fraud detection system is operational
-- Test timeout handling and penalty systems
-- Confirm admin override capabilities work
-
-KEY FEATURES TO VERIFY:
-- Enhanced Job Assignment Workflow with database schema synchronization
-- Fair Matching Algorithm with proximity, rating, reliability factors
-- Timeout Handling & Emergency Reassignment (180-minute deadline)
-- AI-Powered Fraud Prevention (0-100 scale risk scoring)
-- R20 Platform Fee Integration with 48-hour payment deadline
-- Cancellation Protocols with penalties and freeze systems
-- Admin Override System for manual interventions
+TEST DATA SETUP:
+- Use admin: +27821234567 / admin123
+- Test with approved fixers (we just approved 5 fixers)
+- Create realistic job data for plumbing service
 
 EXPECTED RESULTS:
-- All 11 new API endpoints should now work correctly
-- Database operations should succeed without column errors
-- Enhanced workflow logic should be fully operational
-- Fraud monitoring and admin systems should be functional
+- POST /api/jobs/workflow should return 200 with job creation success
+- Job acceptance should work with first-come-first-served logic
+- Workflow status should show proper progression
+- All system requirements integration should be functional
 
 Authentication Context:
 - Admin: +27821234567 / admin123
-- Create test data as needed for comprehensive workflow testing
+- Use realistic data for plumbing service testing
 """
 
 import requests
