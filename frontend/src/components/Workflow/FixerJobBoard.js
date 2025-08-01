@@ -68,7 +68,7 @@ const FixerJobBoard = () => {
     if (!fixerInfo?.id) return;
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs`);
+      const response = await fetch(`${API_BASE_URL}/jobs`);
       if (response.ok) {
         const data = await response.json();
         // Find the current job assigned to this fixer
