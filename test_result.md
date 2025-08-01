@@ -2352,6 +2352,125 @@ backend:
 user_problem_statement: "Test the newly implemented Phase 3: Automation & Engagement systems in FixMate-SA backend after fixing critical authentication issues. Focus on Real-Time Tracking, Gamification, and AI Assistant functionality."
 
 backend:
+  - task: "Enhanced Job Assignment Workflow - Terms Acceptance Enhancement"
+    implemented: false
+    working: false
+    file: "backend/server.py, backend/services/job_workflow_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Starting implementation of enhanced terms acceptance system with mandatory pre-job acceptance, improved UI integration, and better tracking."
+
+  - task: "Enhanced Job Assignment Workflow - Real-Time Fixer Screening"
+    implemented: false
+    working: false
+    file: "backend/services/job_workflow_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Implementing enhanced fixer screening with comprehensive rating validation (≥3.0 or new fixer with 0.0), debt checking, and availability verification."
+
+  - task: "Enhanced Job Assignment Workflow - Fair Matching Algorithm"
+    implemented: false
+    working: false
+    file: "backend/services/job_workflow_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Implementing advanced fair matching algorithm prioritizing proximity, user rating, availability status, and historical performance."
+
+  - task: "Enhanced Job Assignment Workflow - Timeout Handling & Emergency Reassignment"
+    implemented: false
+    working: false
+    file: "backend/services/job_workflow_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Implementing 180-minute (3-hour) timeout system with emergency escalation, fixer availability freeze (4-hour), and automatic reassignment."
+
+  - task: "Enhanced Job Assignment Workflow - AI-Powered Fraud Prevention"
+    implemented: false
+    working: false
+    file: "backend/services/job_workflow_service.py, backend/services/ai_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Implementing AI monitoring for fraud patterns: job completion ratio tracking, cancellation frequency analysis, no-show pattern detection, and admin alert triggers."
+
+  - task: "Enhanced Job Assignment Workflow - R20 Platform Fee & Payment Integration"
+    implemented: false
+    working: false
+    file: "backend/services/job_workflow_service.py, backend/services/payment_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Implementing automatic R20 platform fee deduction, 48-hour payment deadline, account suspension for unpaid fees, and payment status tracking."
+
+  - task: "Enhanced Job Assignment Workflow - Cancellation Protocols & Penalties"
+    implemented: false
+    working: false
+    file: "backend/services/job_workflow_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Implementing fixer cancellation penalties: 2-hour availability freeze, 0.2 rating penalty, and client cancellation protocols with immediate job release."
+
+  - task: "Enhanced Job Assignment Workflow - Admin Override System"
+    implemented: false
+    working: false
+    file: "backend/server.py, backend/services/job_workflow_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Implementing admin override capabilities: bypass system restrictions, manual fixer status reset, rating adjustments, and emergency intervention protocols."
+
+  - task: "Enhanced Job Assignment Workflow - Database Schema Updates"
+    implemented: false
+    working: false
+    file: "backend/models.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Adding new database fields and constraints for enhanced workflow system: rating thresholds, payment status tracking, behavior analysis, and admin override logs."
+
+  - task: "Enhanced Job Assignment Workflow - API Endpoints"
+    implemented: false
+    working: false
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Creating new API endpoints for enhanced workflow features: admin overrides, fraud prevention monitoring, payment status management, and advanced cancellation handling."
   - task: "Real-Time Job Tracking - Start Tracking"
     implemented: true
     working: true
