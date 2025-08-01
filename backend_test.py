@@ -281,6 +281,9 @@ class FixMateAPITester:
                     message = data.get('message', 'Terms accepted')
                     self.log_result("Terms Acceptance Workflow", True, 
                                   f"✅ TERMS ACCEPTANCE WORKFLOW WORKING! {message}")
+                    
+                    # Store that terms have been accepted
+                    self.test_data['terms_accepted'] = True
                     return True
                 else:
                     self.log_result("Terms Acceptance Workflow", False, f"Terms acceptance failed: {data}", response)
