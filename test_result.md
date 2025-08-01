@@ -950,10 +950,10 @@ metadata:
 
 test_plan:
   current_focus:
+    - "Service worker endpoint routing issue needs resolution"
+    - "All other Heroku login fixes validated successfully"
+  stuck_tasks:
     - "Heroku Login Issue - Service Worker Cleanup"
-    - "Heroku Login Issue - Frontend Service Worker Unregistration"
-    - "Heroku Login Issue - API URL Configuration"
-  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
