@@ -925,19 +925,22 @@ This job needs immediate attention. Higher compensation may apply.
     # 8. Job Completion and Fee Processing
     
     def complete_job(self, db: Session, job_id: str, fixer_id: str, completion_data: Dict[str, Any]) -> Tuple[bool, str]:
-        """Mark job as completed and process R20 platform fee"""
+        """Enhanced job completion with automatic R20 platform fee processing"""
         try:
             job = db.query(Job).filter(Job.id == job_id).first()
             if not job or job.fixer_id != fixer_id:
                 return False, "Job not found or not assigned to you"
             
-            # Update job
+            # Update job status
             job.status = "completed"
             job.workflow_stage = "completed"
             job.tracking_active = False
             job.final_price = completion_data.get('final_price')
+            job.platform_fee_status = "due"
+            job.platform_fee_deadline = datetime.utcnow() + timedelta(hours=self.platform_fee_deadline_hours)
             
-            # Update fixer availability
+            # Get fixer and update availability
+            fixer = db.query(Fixer).filter(Fixer.id == fixer_id).first()
             availability = db.query(FixerAvailability).filter(
                 FixerAvailability.fixer_id == fixer_id
             ).first()
@@ -947,12 +950,30 @@ This job needs immediate attention. Higher compensation may apply.
                 availability.current_job_id = None
                 availability.last_job_completed_at = datetime.utcnow()
             
-            # Create R20 platform fee payment
-            from services.payment_service import payment_service
-            fee_created = payment_service.create_job_completion_fee(db, fixer_id, job_id)
+            if fixer:
+                # Update fixer statistics
+                fixer.jobs_completed += 1
+                fixer.total_jobs += 1
+                fixer.last_assigned_at = datetime.utcnow()
+                
+                # Add platform fee to amount owed
+                fixer.platform_fees_owed += self.platform_fee_amount
+                
+                # Recalculate completion percentage
+                total_assignments = fixer.jobs_completed + fixer.jobs_cancelled + fixer.jobs_incomplete + fixer.jobs_no_show
+                if total_assignments > 0:
+                    fixer.completion_percentage = (fixer.jobs_completed / total_assignments) * 100
             
-            if not fee_created:
-                logger.warning(f"Failed to create R20 fee for job {job_id}")
+            # Create R20 platform fee payment record
+            platform_fee_payment = FixerPayment(
+                fixer_id=fixer_id,
+                amount=self.platform_fee_amount,
+                payment_type="platform_fee",
+                description=f"Platform fee for job {job_id}",
+                due_date=job.platform_fee_deadline,
+                status="pending"
+            )
+            db.add(platform_fee_payment)
             
             # Update assignment history
             history = db.query(JobAssignmentHistory).filter(
@@ -964,23 +985,209 @@ This job needs immediate attention. Higher compensation may apply.
             if history:
                 history.completion_status = "completed"
             
-            # Update fixer stats
-            fixer = db.query(Fixer).filter(Fixer.id == fixer_id).first()
-            if fixer:
-                fixer.total_jobs += 1
-            
             db.commit()
             
-            # Trigger AI analysis update
-            self._update_fixer_behavior_analysis(db, fixer_id)
+            # Trigger AI behavior analysis update
+            self._update_fixer_behavior_analysis_enhanced(db, fixer_id)
             
-            logger.info(f"Job {job_id} completed by fixer {fixer_id}")
-            return True, "Job completed successfully"
+            # Notify client of completion
+            self._notify_client_job_completion(db, job)
+            
+            logger.info(f"Job {job_id} completed by fixer {fixer_id} - R{self.platform_fee_amount} platform fee due")
+            return True, f"Job completed successfully. Platform fee of R{self.platform_fee_amount} due within {self.platform_fee_deadline_hours} hours."
             
         except Exception as e:
             logger.error(f"Error completing job: {str(e)}")
             db.rollback()
             return False, f"Error completing job: {str(e)}"
+    
+    def _notify_client_job_completion(self, db: Session, job: Job) -> None:
+        """Notify client that job has been completed"""
+        try:
+            user = job.user
+            fixer = job.fixer
+            
+            message = f"""
+✅ Job Completed!
+Service: {job.service}
+Fixer: {fixer.name if fixer else 'Unknown'}
+Final Price: R{job.final_price or job.estimated_price or 'TBD'}
+
+Please rate your fixer's service quality to help other clients.
+Thank you for using FixMate-SA! 🔧
+"""
+            
+            # Send WhatsApp notification
+            if user.whatsapp_active and user.phone:
+                whatsapp_service.send_whatsapp_message(user.phone, message)
+            
+            logger.info(f"Client notified of job completion for job {job.id}")
+            
+        except Exception as e:
+            logger.error(f"Error notifying client of job completion: {str(e)}")
+    
+    # Enhanced Cancellation Protocols
+    
+    def cancel_job_by_client(self, db: Session, job_id: str, user_id: str, reason: str = None) -> Tuple[bool, str]:
+        """Handle client cancellation with immediate job release"""
+        try:
+            job = db.query(Job).filter(Job.id == job_id, Job.user_id == user_id).first()
+            if not job:
+                return False, "Job not found or not authorized"
+            
+            # Check if job can be cancelled
+            if job.status in ["completed", "cancelled"]:
+                return False, "Job cannot be cancelled in its current state"
+            
+            # Update job
+            job.status = "cancelled"
+            job.workflow_stage = "cancelled_by_client"
+            job.client_cancelled = True
+            job.client_cancellation_reason = reason or "No reason provided"
+            job.tracking_active = False
+            
+            # Release fixer if assigned
+            if job.fixer_id:
+                availability = db.query(FixerAvailability).filter(
+                    FixerAvailability.fixer_id == job.fixer_id
+                ).first()
+                
+                if availability:
+                    availability.is_available = True
+                    availability.current_job_id = None
+                
+                # Notify fixer of cancellation
+                fixer = db.query(Fixer).filter(Fixer.id == job.fixer_id).first()
+                if fixer:
+                    message = f"""
+❌ Job Cancelled by Client
+Service: {job.service}
+Location: {job.location}
+Reason: {job.client_cancellation_reason}
+
+You are now available for new jobs.
+"""
+                    whatsapp_service.send_whatsapp_message(fixer.phone, message)
+                
+                job.fixer_id = None
+            
+            db.commit()
+            logger.info(f"Job {job_id} cancelled by client {user_id}")
+            return True, "Job cancelled successfully. No fees charged."
+            
+        except Exception as e:
+            logger.error(f"Error cancelling job by client: {str(e)}")
+            db.rollback()
+            return False, f"Error cancelling job: {str(e)}"
+    
+    def cancel_job_by_fixer(self, db: Session, job_id: str, fixer_id: str, reason: str = None) -> Tuple[bool, str]:
+        """Handle fixer cancellation with 2-hour freeze and 0.2 rating penalty"""
+        try:
+            job = db.query(Job).filter(Job.id == job_id, Job.fixer_id == fixer_id).first()
+            if not job:
+                return False, "Job not found or not assigned to you"
+            
+            # Check if job can be cancelled
+            if job.status in ["completed", "cancelled"]:
+                return False, "Job cannot be cancelled in its current state"
+            
+            # Get fixer and availability
+            fixer = db.query(Fixer).filter(Fixer.id == fixer_id).first()
+            availability = db.query(FixerAvailability).filter(
+                FixerAvailability.fixer_id == fixer_id
+            ).first()
+            
+            if fixer and availability:
+                # Apply 2-hour availability freeze as per requirements
+                freeze_until = datetime.utcnow() + timedelta(hours=self.cancellation_freeze_hours)
+                availability.is_availability_frozen = True
+                availability.availability_frozen_until = freeze_until
+                availability.freeze_reason = "fixer_cancellation"
+                availability.is_available = False
+                
+                # Apply 0.2 rating penalty
+                rating_penalty = self.rating_penalty_per_cancellation
+                fixer.rating_penalty_total += rating_penalty
+                fixer.cancellation_penalty_count += 1
+                fixer.last_cancellation_penalty = datetime.utcnow()
+                fixer.jobs_cancelled += 1
+                
+                # Update stats
+                fixer.availability_freeze_count += 1
+                fixer.total_freeze_hours += self.cancellation_freeze_hours
+                
+                # Recalculate completion percentage
+                total_assignments = fixer.jobs_completed + fixer.jobs_cancelled + fixer.jobs_incomplete + fixer.jobs_no_show
+                if total_assignments > 0:
+                    fixer.completion_percentage = (fixer.jobs_completed / total_assignments) * 100
+                
+                penalties_applied = {
+                    "rating_penalty": rating_penalty,
+                    "freeze_hours": self.cancellation_freeze_hours,
+                    "freeze_until": freeze_until.isoformat()
+                }
+                
+                logger.warning(f"Fixer {fixer_id} penalized for job cancellation: {penalties_applied}")
+            
+            # Update job
+            job.status = "cancelled"
+            job.workflow_stage = "cancelled_by_fixer"
+            job.fixer_cancelled = True
+            job.fixer_cancellation_reason = reason or "No reason provided"
+            job.cancellation_penalties_applied = json.dumps(penalties_applied) if 'penalties_applied' in locals() else None
+            job.tracking_active = False
+            job.fixer_id = None
+            
+            # Update assignment history
+            history = db.query(JobAssignmentHistory).filter(
+                JobAssignmentHistory.job_id == job_id,
+                JobAssignmentHistory.fixer_id == fixer_id,
+                JobAssignmentHistory.response_type == "accepted"
+            ).first()
+            
+            if history:
+                history.response_type = "cancelled"
+                history.completion_status = "cancelled"
+                history.response_reason = reason or "Fixer cancelled"
+            
+            # Immediately reassign to next available fixer
+            self._reassign_after_cancellation(db, job)
+            
+            db.commit()
+            
+            # Trigger AI fraud monitoring
+            self._check_fixer_fraud_patterns(db, fixer_id)
+            
+            logger.info(f"Job {job_id} cancelled by fixer {fixer_id} - penalties applied")
+            return True, f"Job cancelled. Penalties applied: {self.cancellation_freeze_hours}h freeze, -{rating_penalty} rating points."
+            
+        except Exception as e:
+            logger.error(f"Error cancelling job by fixer: {str(e)}")
+            db.rollback()
+            return False, f"Error cancelling job: {str(e)}"
+    
+    def _reassign_after_cancellation(self, db: Session, job: Job) -> None:
+        """Reassign job to next available fixer after cancellation"""
+        try:
+            # Get fresh list of eligible fixers
+            eligible_fixers = self.get_eligible_fixers(db, job)
+            
+            if eligible_fixers:
+                job.status = "notifying_fixers"
+                job.workflow_stage = "notifying"
+                job.assignment_timeout = datetime.utcnow() + timedelta(minutes=self.assignment_timeout_minutes)
+                job.assignment_attempts += 1
+                
+                # Notify eligible fixers
+                self._notify_eligible_fixers(db, job, eligible_fixers)
+                
+                logger.info(f"Job {job.id} reassigned after fixer cancellation")
+            else:
+                # No eligible fixers - escalate
+                self._escalate_to_emergency_enhanced(db, job, "no_fixers_after_cancellation")
+                
+        except Exception as e:
+            logger.error(f"Error reassigning after cancellation: {str(e)}")
     
     # 9. AI Monitoring and Behavior Analysis
     
