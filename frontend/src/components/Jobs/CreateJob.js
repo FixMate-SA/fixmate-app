@@ -4,6 +4,7 @@ import { apiService } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import VoiceRecorder from '../VoiceRecorder/VoiceRecorder';
 import TermsAcceptance from '../Workflow/TermsAcceptance';
+import { API_BASE_URL } from '../../utils/apiConfig';
 
 const CreateJob = () => {
   const { user } = useAuth();
