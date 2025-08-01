@@ -1382,7 +1382,126 @@ class FixMateAPITester:
             self.log_result("Job Workflow Creation", False, f"Request error: {str(e)}")
         return False
     
-    def test_push_subscribe(self):
+    def run_enhanced_workflow_tests(self):
+        """Run Enhanced Job Assignment Workflow tests"""
+        print("🚀 ENHANCED JOB ASSIGNMENT WORKFLOW TESTING")
+        print("=" * 80)
+        
+        # Phase 1: Setup and Authentication
+        print("📋 PHASE 1: SETUP AND AUTHENTICATION")
+        print("-" * 50)
+        
+        if not self.test_health_check():
+            print("❌ Health check failed. Cannot proceed with testing.")
+            return False
+        
+        # Create test user
+        if not self.test_create_user():
+            print("❌ User creation failed. Cannot proceed with workflow testing.")
+            return False
+        
+        # Admin login for admin-only endpoints
+        if not self.test_admin_login():
+            print("❌ Admin login failed. Cannot proceed with admin endpoint testing.")
+            return False
+        
+        # Phase 2: Test Data Creation
+        print("\n📋 PHASE 2: TEST DATA CREATION")
+        print("-" * 50)
+        
+        # Create test fixer for workflow testing
+        if not self.test_create_test_fixer_for_workflow():
+            print("❌ Test fixer creation failed. Cannot proceed with fixer-related tests.")
+            return False
+        
+        # Create test job for workflow testing
+        if not self.test_create_test_job_for_workflow():
+            print("❌ Test job creation failed. Cannot proceed with job-related tests.")
+            return False
+        
+        # Phase 3: Priority Endpoint Testing (The 5 failing endpoints)
+        print("\n🎯 PHASE 3: PRIORITY ENDPOINT TESTING")
+        print("-" * 50)
+        print("Testing the 5 endpoints that were failing due to database schema issues:")
+        print()
+        
+        priority_tests = [
+            ("1. Fixer Performance Stats", self.test_fixer_performance_stats),
+            ("2. Job Assignment History", self.test_job_assignment_history),
+            ("3. Emergency Escalate Job", self.test_emergency_escalate_job),
+            ("4. Admin Workflow Analytics", self.test_admin_workflow_analytics),
+            ("5. Fixer Eligible Jobs", self.test_fixer_eligible_jobs)
+        ]
+        
+        priority_results = []
+        for test_name, test_func in priority_tests:
+            print(f"Testing {test_name}...")
+            result = test_func()
+            priority_results.append((test_name, result))
+            print()
+        
+        # Phase 4: Additional Workflow Verification
+        print("📋 PHASE 4: ADDITIONAL WORKFLOW VERIFICATION")
+        print("-" * 50)
+        
+        additional_tests = [
+            ("Fraud Detection System", self.test_fraud_detection_system),
+            ("Timeout Handling System", self.test_timeout_handling_system),
+            ("Admin Override System", self.test_admin_override_system),
+            ("Cancellation Protocols", self.test_cancellation_protocols),
+            ("Terms Acceptance Workflow", self.test_terms_acceptance_workflow),
+            ("Job Workflow Creation", self.test_job_workflow_creation)
+        ]
+        
+        additional_results = []
+        for test_name, test_func in additional_tests:
+            print(f"Testing {test_name}...")
+            result = test_func()
+            additional_results.append((test_name, result))
+            print()
+        
+        # Results Summary
+        print("=" * 80)
+        print("🎯 ENHANCED JOB ASSIGNMENT WORKFLOW TEST RESULTS")
+        print("=" * 80)
+        
+        print("🔥 PRIORITY ENDPOINTS (Previously Failing):")
+        priority_passed = 0
+        for test_name, result in priority_results:
+            status = "✅ WORKING" if result else "❌ FAILED"
+            print(f"   {status}: {test_name}")
+            if result:
+                priority_passed += 1
+        
+        print(f"\n📊 Priority Endpoints Success Rate: {priority_passed}/5 ({priority_passed/5*100:.1f}%)")
+        
+        print("\n🔧 ADDITIONAL WORKFLOW FEATURES:")
+        additional_passed = 0
+        for test_name, result in additional_results:
+            status = "✅ WORKING" if result else "❌ FAILED"
+            print(f"   {status}: {test_name}")
+            if result:
+                additional_passed += 1
+        
+        print(f"\n📊 Additional Features Success Rate: {additional_passed}/6 ({additional_passed/6*100:.1f}%)")
+        
+        total_passed = priority_passed + additional_passed
+        total_tests = 11
+        overall_success_rate = total_passed / total_tests * 100
+        
+        print(f"\n🎉 OVERALL SUCCESS RATE: {total_passed}/{total_tests} ({overall_success_rate:.1f}%)")
+        
+        if priority_passed == 5:
+            print("\n✅ SUCCESS! All 5 priority endpoints are now working after database migration!")
+        else:
+            print(f"\n⚠️  WARNING! {5-priority_passed} priority endpoints still failing. Database migration may be incomplete.")
+        
+        if overall_success_rate >= 80:
+            print("🎉 Enhanced Job Assignment Workflow system is operational!")
+        else:
+            print("⚠️  Enhanced Job Assignment Workflow system needs attention.")
+        
+        return priority_passed == 5
         """Test subscribing user to push notifications"""
         if 'token' not in self.test_data:
             self.log_result("Push Subscribe", False, "No user token available from previous tests")
