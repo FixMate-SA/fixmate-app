@@ -14,7 +14,7 @@ import uuid
 from datetime import datetime, timedelta
 
 from database import get_db, drop_and_recreate_tables
-from models import User, Fixer, Job, Review, FixerPayment, FixerVerification, EmergencyAlert, FixerApplication, DataInsight
+from models import User, Fixer, Job, Review, FixerPayment, FixerVerification, EmergencyAlert, FixerApplication, DataInsight, FixerAvailability
 from schemas import (
     UserCreate, UserResponse, FixerCreate, FixerResponse,
     JobCreate, JobUpdate, JobResponse, ReviewCreate, ReviewResponse,
