@@ -131,7 +131,7 @@ const FixerJobBoard = () => {
 
     setAccepting(jobId);
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/accept`, {
+      const response = await fetch(`${API_BASE_URL}/jobs/${jobId}/accept`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
