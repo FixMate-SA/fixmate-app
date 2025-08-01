@@ -1046,11 +1046,14 @@ backend:
     file: "backend/server.py, backend/services/job_workflow_service.py"
     stuck_count: 1
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: false
         agent: "testing"
         comment: "❌ TIMEOUT HANDLING SYSTEM PARTIALLY WORKING! 3/4 tests passed: ✅ Timeout processing system working (180-minute timeout system operational with admin processing), ✅ Emergency escalation working (manual emergency escalation functional for timeout scenarios), ✅ Fixer availability freeze system working (4-hour freeze system operational with proper tracking), ❌ Timeout tracking in workflow not testable (no workflow job available due to workflow creation failure). Core timeout logic implemented but workflow integration incomplete."
+      - working: false
+        agent: "testing"
+        comment: "❌ SYSTEM REQUIREMENT 5 STILL FAILING! HTTP 400 error on emergency escalation endpoint (POST /api/jobs/{job_id}/emergency-escalate). While timeout processing endpoint works, the emergency escalation system has issues preventing full 180-minute timeout handling validation."
 
   - task: "System Requirement 6: Job Completion Protocol"
     implemented: true
