@@ -27,9 +27,9 @@ const NavigationFixed = () => {
     }
   };
 
-  // Complete navigation items matching your screenshots exactly - ALL 14 ITEMS
+  // Navigation items matching system requirements document only
   const completeNavItems = [
-    // Row 1 - Core Features  
+    // Core Features  
     { 
       path: '/dashboard', 
       label: t('dashboard', 'Dashboard'), 
@@ -61,7 +61,7 @@ const NavigationFixed = () => {
       permission: null
     },
     
-    // Row 2 - Business & Admin
+    // Business & Admin Features
     { 
       path: '/enterprise', 
       label: t('enterprise', 'Enterprise'), 
@@ -90,8 +90,6 @@ const NavigationFixed = () => {
       roles: ['admin'],
       permission: null
     },
-    
-    // Row 3 - Advanced Features
     { 
       path: '/admin/photo-verification', 
       label: t('photoVerification', 'Photo Verification'), 
@@ -99,26 +97,8 @@ const NavigationFixed = () => {
       roles: ['admin'],
       permission: null
     },
-    { 
-      path: '/phase3', 
-      label: t('phase3Dashboard', 'Phase 3: Auto & Engage'), 
-      icon: '🚀',
-      permission: null
-    },
-    { 
-      path: '/pwa-status', 
-      label: t('pwaStatus', 'PWA Status'), 
-      icon: '📱',
-      permission: null
-    },
-    { 
-      path: '/performance', 
-      label: t('performanceDashboard', 'Performance'), 
-      icon: '⚡',
-      permission: null
-    },
     
-    // Row 4 - User Profile
+    // User Profile
     { 
       path: '/profile', 
       label: t('profile', 'Profile'), 
