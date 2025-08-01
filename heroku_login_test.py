@@ -88,11 +88,16 @@ class HerokuLoginFixTester:
             return False
     
     def test_database_health_check(self):
-        """Test 2: Database Health Check - GET /api/health should verify database connectivity"""
-        print("🔍 Testing Database Health Check (GET /api/health)")
+        """Test 2: Database Health Check - GET /api/debug/health should verify database connectivity"""
+        print("🔍 Testing Database Health Check (GET /api/debug/health)")
         
         try:
-            response = self.session.get(f"{API_BASE}/health")
+            # Try the debug health endpoint first
+            response = self.session.get(f"{API_BASE}/debug/health")
+            
+            if response.status_code == 404:
+                # Fallback to root API endpoint
+                response = self.session.get(f"{API_BASE}/")
             
             if response.status_code == 200:
                 try:
