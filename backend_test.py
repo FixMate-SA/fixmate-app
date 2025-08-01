@@ -290,11 +290,55 @@ class FixMateAPITester:
             self.log_result("Terms Acceptance Workflow", False, f"❌ TERMS ACCEPTANCE WORKFLOW ERROR! Request error: {str(e)}")
         return False
     
+    def test_regular_job_creation(self):
+        """Test regular job creation first to verify basic functionality"""
+        if 'user_id' not in self.test_data:
+            self.log_result("Regular Job Creation", False, "No user ID available from previous tests")
+            return False
+        
+        try:
+            job_data = {
+                "user_id": self.test_data['user_id'],
+                "service": "plumbing",
+                "description": "Basic plumbing repair - leaky faucet",
+                "location": "123 Test Street, Cape Town",
+                "estimated_price": 250.0
+            }
+            
+            print(f"   Testing regular job creation first...")
+            response = self.session.post(f"{API_BASE}/jobs", json=job_data)
+            
+            print(f"   Regular job response status: {response.status_code}")
+            if response.status_code != 200:
+                print(f"   Regular job response text: {response.text[:500]}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "id" in data:
+                    self.test_data['regular_job_id'] = data['id']
+                    self.log_result("Regular Job Creation", True, f"Regular job creation works - Job ID: {data['id']}")
+                    return True
+                else:
+                    self.log_result("Regular Job Creation", False, "Invalid response format", response)
+            else:
+                try:
+                    error_data = response.json()
+                    error_detail = error_data.get('detail', 'Unknown error')
+                    self.log_result("Regular Job Creation", False, f"HTTP {response.status_code} - {error_detail}", response)
+                except:
+                    self.log_result("Regular Job Creation", False, f"HTTP {response.status_code} - {response.text[:200]}", response)
+        except Exception as e:
+            self.log_result("Regular Job Creation", False, f"Request error: {str(e)}")
+        return False
+    
     def test_job_workflow_creation(self):
         """PRIORITY TEST 1: POST /api/jobs/workflow - Enhanced job workflow creation"""
         if 'user_id' not in self.test_data:
             self.log_result("Job Workflow Creation", False, "No user ID available from previous tests")
             return False
+        
+        # First test regular job creation to verify basic functionality
+        self.test_regular_job_creation()
         
         try:
             workflow_job_data = {
@@ -312,7 +356,8 @@ class FixMateAPITester:
             response = self.session.post(f"{API_BASE}/jobs/workflow", json=workflow_job_data)
             
             print(f"   Response status: {response.status_code}")
-            print(f"   Response text: {response.text[:500]}")
+            if response.status_code != 200:
+                print(f"   Response text: {response.text[:500]}")
             
             if response.status_code == 200:
                 data = response.json()
