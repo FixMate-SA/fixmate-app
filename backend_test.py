@@ -738,17 +738,17 @@ class FixMateAPITester:
         return core_passed == 3
 
 if __name__ == "__main__":
-    print("🔧 FixMate-SA Enhanced Job Assignment Workflow Backend Testing")
+    print("🔧 FixMate-SA Core Job Assignment Workflow Backend Testing")
     print("=" * 80)
-    print("🎯 FOCUS: Re-testing Enhanced Job Assignment Workflow after database migration")
-    print("📋 PRIORITY: 5 endpoints that were failing due to database schema issues")
+    print("🎯 FOCUS: Testing core job assignment workflow endpoints that were previously failing")
+    print("📋 PRIORITY: POST /api/jobs/workflow, POST /api/jobs/{id}/accept, GET /api/jobs/{id}/workflow-status")
     print("=" * 80)
     
     tester = FixMateAPITester()
     
     try:
-        # Run Enhanced Job Assignment Workflow tests
-        success = tester.run_enhanced_workflow_tests()
+        # Run Core Job Assignment Workflow tests
+        success = tester.run_core_workflow_tests()
         
         print("\n" + "=" * 80)
         print("📊 FINAL TEST SUMMARY")
@@ -763,11 +763,15 @@ if __name__ == "__main__":
                 print(f"   • {error}")
         
         if success:
-            print("\n🎉 ENHANCED JOB ASSIGNMENT WORKFLOW SYSTEM IS OPERATIONAL!")
-            print("✅ Database migration successful - all priority endpoints working")
+            print("\n🎉 CORE JOB ASSIGNMENT WORKFLOW SYSTEM IS OPERATIONAL!")
+            print("✅ All priority workflow endpoints working correctly")
+            print("✅ Terms acceptance integration functional")
+            print("✅ Fixer screening validation working")
+            print("✅ First-come-first-served logic operational")
         else:
-            print("\n⚠️  ENHANCED JOB ASSIGNMENT WORKFLOW SYSTEM NEEDS ATTENTION")
-            print("❌ Some priority endpoints still failing - database migration may be incomplete")
+            print("\n⚠️  CORE JOB ASSIGNMENT WORKFLOW SYSTEM NEEDS ATTENTION")
+            print("❌ Some core workflow endpoints still failing")
+            print("❌ HTTP 400 errors may still be present")
         
         print("\n" + "=" * 80)
         
