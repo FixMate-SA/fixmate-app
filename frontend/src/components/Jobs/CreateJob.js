@@ -29,7 +29,60 @@ const CreateJob = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [jobBeingCancelled, setJobBeingCancelled] = useState(null);
 
-  const serviceOptions = [
+  useEffect(() => {
+    // Check terms acceptance status on component mount
+    checkTermsAcceptance();
+  }, [user]);
+
+  const checkTermsAcceptance = async () => {
+    if (!user?.id) return;
+
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/terms/check/${user.id}`);
+      const data = await response.json();
+      setTermsAccepted(data.has_accepted);
+    } catch (error) {
+      console.error('Error checking terms acceptance:', error);
+    }
+  };
+
+  const handleTermsAcceptance = (accepted) => {
+    setTermsAccepted(accepted);
+    setShowTermsModal(false);
+  };
+
+  const cancelJob = async (jobId) => {
+    if (!jobId) return;
+    
+    setJobBeingCancelled(jobId);
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          cancelled_by: 'client',
+          reason: 'Client cancelled service request'
+        })
+      });
+
+      if (response.ok) {
+        setCreatedJobId(null);
+        setShowSmartMatching(false);
+        alert('Job cancelled successfully. No fees charged.');
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to cancel job: ${errorData.detail || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error cancelling job:', error);
+      alert('Failed to cancel job. Please try again.');
+    } finally {
+      setJobBeingCancelled(null);
+    }
+  };
     'Plumbing',
     'Electrical',
     'Carpentry',
