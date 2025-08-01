@@ -232,222 +232,217 @@ class FixMateAPITester:
             self.log_result("Create Test Job for Workflow", False, f"Request error: {str(e)}")
         return False
     
-    def test_fixer_performance_stats(self):
-        """PRIORITY TEST 1: GET /api/fixer/{fixer_id}/performance-stats - Test comprehensive fixer performance statistics"""
-        if 'workflow_fixer_id' not in self.test_data:
-            self.log_result("Fixer Performance Stats", False, "No workflow fixer ID available from previous test")
+    def test_terms_acceptance_check(self):
+        """Test terms acceptance status check"""
+        if 'user_id' not in self.test_data:
+            self.log_result("Terms Acceptance Check", False, "No user ID available from previous tests")
             return False
         
         try:
-            response = self.session.get(f"{API_BASE}/fixer/{self.test_data['workflow_fixer_id']}/performance-stats")
+            response = self.session.get(f"{API_BASE}/terms/check/{self.test_data['user_id']}")
             
             if response.status_code == 200:
                 data = response.json()
                 
-                # Verify comprehensive performance statistics
-                required_fields = [
-                    'fixer_id', 'fixer_name', 'base_rating', 'effective_rating',
-                    'jobs_completed', 'jobs_cancelled', 'completion_percentage',
-                    'platform_fees_owed', 'is_available'
-                ]
-                
-                missing_fields = [field for field in required_fields if field not in data]
-                if missing_fields:
-                    self.log_result("Fixer Performance Stats", False, f"Missing required fields: {missing_fields}", response)
-                    return False
-                
-                # Check for enhanced workflow fields
-                enhanced_fields = []
-                if 'rating_penalty_total' in data:
-                    enhanced_fields.append("rating_penalties")
-                if 'cancellation_penalty_count' in data:
-                    enhanced_fields.append("cancellation_penalties")
-                if 'availability_freeze_count' in data:
-                    enhanced_fields.append("availability_freezes")
-                if 'behavior_analysis' in data:
-                    enhanced_fields.append("behavior_analysis")
-                
-                self.log_result("Fixer Performance Stats", True, 
-                              f"✅ PRIORITY ENDPOINT 1 WORKING! Comprehensive fixer performance stats retrieved: "
-                              f"Rating: {data.get('effective_rating', 0)}/5, "
-                              f"Completed: {data.get('jobs_completed', 0)} jobs, "
-                              f"Completion rate: {data.get('completion_percentage', 0)}%, "
-                              f"Enhanced features: {', '.join(enhanced_fields) if enhanced_fields else 'basic stats only'}")
-                return True
+                if 'has_accepted' in data:
+                    has_accepted = data['has_accepted']
+                    self.log_result("Terms Acceptance Check", True, 
+                                  f"✅ TERMS ACCEPTANCE CHECK WORKING! User has accepted terms: {has_accepted}")
+                    return True
+                else:
+                    self.log_result("Terms Acceptance Check", False, "Invalid terms check response format", response)
             else:
-                self.log_result("Fixer Performance Stats", False, f"❌ PRIORITY ENDPOINT 1 FAILED! HTTP {response.status_code}", response)
+                self.log_result("Terms Acceptance Check", False, f"❌ TERMS ACCEPTANCE CHECK FAILED! HTTP {response.status_code}", response)
         except Exception as e:
-            self.log_result("Fixer Performance Stats", False, f"❌ PRIORITY ENDPOINT 1 ERROR! Request error: {str(e)}")
+            self.log_result("Terms Acceptance Check", False, f"❌ TERMS ACCEPTANCE CHECK ERROR! Request error: {str(e)}")
         return False
     
-    def test_job_assignment_history(self):
-        """PRIORITY TEST 2: GET /api/jobs/{job_id}/assignment-history - Test job assignment history tracking"""
-        if 'workflow_job_id' not in self.test_data:
-            self.log_result("Job Assignment History", False, "No workflow job ID available from previous test")
+    def test_terms_acceptance_workflow(self):
+        """Test terms acceptance workflow"""
+        if 'user_id' not in self.test_data:
+            self.log_result("Terms Acceptance Workflow", False, "No user ID available from previous tests")
             return False
         
         try:
-            response = self.session.get(f"{API_BASE}/jobs/{self.test_data['workflow_job_id']}/assignment-history")
-            
-            if response.status_code == 200:
-                data = response.json()
-                
-                # Verify assignment history structure
-                required_fields = [
-                    'job_id', 'job_status', 'assignment_attempts', 
-                    'assignment_history', 'notification_history'
-                ]
-                
-                missing_fields = [field for field in required_fields if field not in data]
-                if missing_fields:
-                    self.log_result("Job Assignment History", False, f"Missing required fields: {missing_fields}", response)
-                    return False
-                
-                # Check for enhanced workflow tracking fields
-                enhanced_tracking = []
-                if 'workflow_stage' in data:
-                    enhanced_tracking.append("workflow_stage")
-                if 'auto_reassignment_count' in data:
-                    enhanced_tracking.append("auto_reassignment")
-                if 'is_emergency_escalated' in data:
-                    enhanced_tracking.append("emergency_escalation")
-                if 'fixer_timeout_count' in data:
-                    enhanced_tracking.append("timeout_tracking")
-                
-                assignment_count = len(data.get('assignment_history', []))
-                notification_count = len(data.get('notification_history', []))
-                
-                self.log_result("Job Assignment History", True, 
-                              f"✅ PRIORITY ENDPOINT 2 WORKING! Job assignment history retrieved: "
-                              f"Job status: {data.get('job_status', 'unknown')}, "
-                              f"Assignment attempts: {data.get('assignment_attempts', 0)}, "
-                              f"History records: {assignment_count} assignments, {notification_count} notifications, "
-                              f"Enhanced tracking: {', '.join(enhanced_tracking) if enhanced_tracking else 'basic tracking only'}")
-                return True
-            else:
-                self.log_result("Job Assignment History", False, f"❌ PRIORITY ENDPOINT 2 FAILED! HTTP {response.status_code}", response)
-        except Exception as e:
-            self.log_result("Job Assignment History", False, f"❌ PRIORITY ENDPOINT 2 ERROR! Request error: {str(e)}")
-        return False
-    
-    def test_emergency_escalate_job(self):
-        """PRIORITY TEST 3: POST /api/jobs/{job_id}/emergency-escalate - Test manual emergency escalation"""
-        if 'workflow_job_id' not in self.test_data or 'admin_user_id' not in self.test_data:
-            self.log_result("Emergency Escalate Job", False, "No workflow job ID or admin user ID available from previous tests")
-            return False
-        
-        try:
-            escalation_data = {
-                "admin_user_id": self.test_data['admin_user_id'],
-                "reason": "Client reported urgent safety issue - gas leak detected"
+            # Accept terms for the user
+            terms_data = {
+                "user_id": self.test_data['user_id'],
+                "ip_address": "192.168.1.100",
+                "user_agent": "FixMate-Test-Client/1.0",
+                "method": "web"
             }
             
-            response = self.session.post(f"{API_BASE}/jobs/{self.test_data['workflow_job_id']}/emergency-escalate", 
-                                       json=escalation_data)
+            response = self.session.post(f"{API_BASE}/terms/accept", json=terms_data)
             
             if response.status_code == 200:
                 data = response.json()
                 
                 if data.get('success'):
-                    message = data.get('message', 'Emergency escalation completed')
-                    self.log_result("Emergency Escalate Job", True, 
-                                  f"✅ PRIORITY ENDPOINT 3 WORKING! Manual emergency escalation successful: {message}")
+                    message = data.get('message', 'Terms accepted')
+                    self.log_result("Terms Acceptance Workflow", True, 
+                                  f"✅ TERMS ACCEPTANCE WORKFLOW WORKING! {message}")
                     return True
                 else:
-                    self.log_result("Emergency Escalate Job", False, f"Emergency escalation failed: {data}", response)
+                    self.log_result("Terms Acceptance Workflow", False, f"Terms acceptance failed: {data}", response)
             else:
-                self.log_result("Emergency Escalate Job", False, f"❌ PRIORITY ENDPOINT 3 FAILED! HTTP {response.status_code}", response)
+                self.log_result("Terms Acceptance Workflow", False, f"❌ TERMS ACCEPTANCE WORKFLOW FAILED! HTTP {response.status_code}", response)
         except Exception as e:
-            self.log_result("Emergency Escalate Job", False, f"❌ PRIORITY ENDPOINT 3 ERROR! Request error: {str(e)}")
+            self.log_result("Terms Acceptance Workflow", False, f"❌ TERMS ACCEPTANCE WORKFLOW ERROR! Request error: {str(e)}")
         return False
     
-    def test_admin_workflow_analytics(self):
-        """PRIORITY TEST 4: GET /api/admin/workflow-analytics - Test workflow analytics dashboard"""
-        try:
-            response = self.session.get(f"{API_BASE}/admin/workflow-analytics")
-            
-            if response.status_code == 200:
-                data = response.json()
-                
-                # Verify comprehensive workflow analytics
-                required_sections = [
-                    'job_statistics', 'fixer_statistics', 
-                    'fraud_monitoring', 'financial_statistics'
-                ]
-                
-                missing_sections = [section for section in required_sections if section not in data]
-                if missing_sections:
-                    self.log_result("Admin Workflow Analytics", False, f"Missing required sections: {missing_sections}", response)
-                    return False
-                
-                # Extract key metrics
-                job_stats = data.get('job_statistics', {})
-                fixer_stats = data.get('fixer_statistics', {})
-                fraud_stats = data.get('fraud_monitoring', {})
-                financial_stats = data.get('financial_statistics', {})
-                
-                # Verify detailed statistics
-                analytics_features = []
-                if job_stats.get('emergency_jobs') is not None:
-                    analytics_features.append("emergency_tracking")
-                if fixer_stats.get('frozen_fixers') is not None:
-                    analytics_features.append("fixer_freeze_tracking")
-                if fraud_stats.get('pending_alerts') is not None:
-                    analytics_features.append("fraud_monitoring")
-                if financial_stats.get('total_fees_owed') is not None:
-                    analytics_features.append("financial_tracking")
-                
-                self.log_result("Admin Workflow Analytics", True, 
-                              f"✅ PRIORITY ENDPOINT 4 WORKING! Comprehensive workflow analytics retrieved: "
-                              f"Total jobs: {job_stats.get('total_jobs', 0)}, "
-                              f"Active fixers: {fixer_stats.get('active_fixers', 0)}, "
-                              f"Emergency jobs: {job_stats.get('emergency_jobs', 0)}, "
-                              f"Fraud alerts: {fraud_stats.get('pending_alerts', 0)}, "
-                              f"Analytics features: {', '.join(analytics_features)}")
-                return True
-            else:
-                self.log_result("Admin Workflow Analytics", False, f"❌ PRIORITY ENDPOINT 4 FAILED! HTTP {response.status_code}", response)
-        except Exception as e:
-            self.log_result("Admin Workflow Analytics", False, f"❌ PRIORITY ENDPOINT 4 ERROR! Request error: {str(e)}")
-        return False
-    
-    def test_fixer_eligible_jobs(self):
-        """PRIORITY TEST 5: GET /api/fixer/{fixer_id}/eligible-jobs - Test eligible jobs for fixers"""
-        if 'workflow_fixer_id' not in self.test_data:
-            self.log_result("Fixer Eligible Jobs", False, "No workflow fixer ID available from previous test")
+    def test_job_workflow_creation(self):
+        """PRIORITY TEST 1: POST /api/jobs/workflow - Enhanced job workflow creation"""
+        if 'user_id' not in self.test_data:
+            self.log_result("Job Workflow Creation", False, "No user ID available from previous tests")
             return False
         
         try:
-            response = self.session.get(f"{API_BASE}/fixer/{self.test_data['workflow_fixer_id']}/eligible-jobs")
+            workflow_job_data = {
+                "user_id": self.test_data['user_id'],
+                "service": "plumbing",
+                "description": "Emergency plumbing repair - burst pipe in kitchen causing water damage",
+                "location": "123 Main Street, Cape Town, Western Cape",
+                "estimated_price": 850.0,
+                "priority_level": "high",
+                "urgency": "emergency"
+            }
+            
+            response = self.session.post(f"{API_BASE}/jobs/workflow", json=workflow_job_data)
             
             if response.status_code == 200:
                 data = response.json()
                 
-                if 'available_jobs' in data:
-                    available_jobs = data['available_jobs']
+                if data.get('success') and 'job_id' in data:
+                    job_id = data['job_id']
+                    workflow_status = data.get('workflow_status', {})
+                    message = data.get('message', 'Job created successfully')
                     
-                    # Verify job structure for eligible jobs
-                    enhanced_features = []
-                    if available_jobs:
-                        first_job = available_jobs[0]
-                        if 'assignment_timeout' in first_job:
-                            enhanced_features.append("timeout_tracking")
-                        if 'priority_level' in first_job:
-                            enhanced_features.append("priority_levels")
-                        if 'is_emergency' in first_job:
-                            enhanced_features.append("emergency_flagging")
+                    # Store job ID for subsequent tests
+                    self.test_data['workflow_job_id'] = job_id
                     
-                    self.log_result("Fixer Eligible Jobs", True, 
-                                  f"✅ PRIORITY ENDPOINT 5 WORKING! Eligible jobs retrieved: "
-                                  f"{len(available_jobs)} jobs available for fixer, "
-                                  f"Enhanced features: {', '.join(enhanced_features) if enhanced_features else 'basic job listing'}")
+                    self.log_result("Job Workflow Creation", True, 
+                                  f"✅ PRIORITY TEST 1 PASSED! Enhanced job workflow creation successful: "
+                                  f"Job ID {job_id}, Message: {message}, "
+                                  f"Workflow status fields: {len(workflow_status)}")
                     return True
                 else:
-                    self.log_result("Fixer Eligible Jobs", False, "Missing 'available_jobs' field in response", response)
+                    self.log_result("Job Workflow Creation", False, f"❌ PRIORITY TEST 1 FAILED! Workflow creation failed: {data}", response)
             else:
-                self.log_result("Fixer Eligible Jobs", False, f"❌ PRIORITY ENDPOINT 5 FAILED! HTTP {response.status_code}", response)
+                self.log_result("Job Workflow Creation", False, f"❌ PRIORITY TEST 1 FAILED! HTTP {response.status_code}", response)
         except Exception as e:
-            self.log_result("Fixer Eligible Jobs", False, f"❌ PRIORITY ENDPOINT 5 ERROR! Request error: {str(e)}")
+            self.log_result("Job Workflow Creation", False, f"❌ PRIORITY TEST 1 ERROR! Request error: {str(e)}")
+        return False
+    
+    def test_get_approved_fixers(self):
+        """Get approved fixers for job acceptance testing"""
+        try:
+            response = self.session.get(f"{API_BASE}/fixers")
+            
+            if response.status_code == 200:
+                fixers = response.json()
+                
+                # Filter for approved fixers with good ratings
+                approved_fixers = []
+                for fixer in fixers:
+                    if (fixer.get('is_approved', False) and 
+                        fixer.get('is_active', False) and 
+                        (fixer.get('rating', 0) >= 3.0 or fixer.get('rating', 0) == 0.0)):  # New fixers or good rating
+                        approved_fixers.append(fixer)
+                
+                if approved_fixers:
+                    # Store first approved fixer for testing
+                    self.test_data['approved_fixer'] = approved_fixers[0]
+                    self.test_data['approved_fixer_id'] = approved_fixers[0]['id']
+                    
+                    self.log_result("Get Approved Fixers", True, 
+                                  f"✅ FIXER SCREENING WORKING! Found {len(approved_fixers)} approved fixers. "
+                                  f"Test fixer: {approved_fixers[0]['name']} (Rating: {approved_fixers[0].get('rating', 0)}/5)")
+                    return True
+                else:
+                    self.log_result("Get Approved Fixers", False, "No approved fixers found for testing", response)
+            else:
+                self.log_result("Get Approved Fixers", False, f"HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Get Approved Fixers", False, f"Request error: {str(e)}")
+        return False
+    
+    def test_fixer_job_acceptance(self):
+        """PRIORITY TEST 2: POST /api/jobs/{job_id}/accept - Fixer job acceptance (first-come-first-served)"""
+        if 'workflow_job_id' not in self.test_data or 'approved_fixer_id' not in self.test_data:
+            self.log_result("Fixer Job Acceptance", False, "No workflow job ID or approved fixer ID available from previous tests")
+            return False
+        
+        try:
+            acceptance_data = {
+                "fixer_id": self.test_data['approved_fixer_id']
+            }
+            
+            response = self.session.post(f"{API_BASE}/jobs/{self.test_data['workflow_job_id']}/accept", 
+                                       json=acceptance_data)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if data.get('success'):
+                    message = data.get('message', 'Job accepted successfully')
+                    fixer_name = self.test_data['approved_fixer'].get('name', 'Unknown')
+                    
+                    self.log_result("Fixer Job Acceptance", True, 
+                                  f"✅ PRIORITY TEST 2 PASSED! Fixer job acceptance successful: "
+                                  f"Fixer {fixer_name} accepted job {self.test_data['workflow_job_id']}. "
+                                  f"Message: {message}")
+                    return True
+                else:
+                    self.log_result("Fixer Job Acceptance", False, f"❌ PRIORITY TEST 2 FAILED! Job acceptance failed: {data}", response)
+            else:
+                self.log_result("Fixer Job Acceptance", False, f"❌ PRIORITY TEST 2 FAILED! HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Fixer Job Acceptance", False, f"❌ PRIORITY TEST 2 ERROR! Request error: {str(e)}")
+        return False
+    
+    def test_workflow_status_retrieval(self):
+        """PRIORITY TEST 3: GET /api/jobs/{job_id}/workflow-status - Get workflow status"""
+        if 'workflow_job_id' not in self.test_data:
+            self.log_result("Workflow Status Retrieval", False, "No workflow job ID available from previous tests")
+            return False
+        
+        try:
+            response = self.session.get(f"{API_BASE}/jobs/{self.test_data['workflow_job_id']}/workflow-status")
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Verify workflow status structure
+                required_fields = ['job_id', 'status', 'workflow_stage']
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_result("Workflow Status Retrieval", False, f"Missing required fields: {missing_fields}", response)
+                    return False
+                
+                # Check workflow progression
+                workflow_features = []
+                if 'assignment_attempts' in data:
+                    workflow_features.append("assignment_tracking")
+                if 'eligible_fixers' in data:
+                    workflow_features.append("fixer_screening")
+                if 'terms_accepted' in data:
+                    workflow_features.append("terms_validation")
+                if 'workflow_stage' in data:
+                    workflow_features.append("stage_tracking")
+                
+                job_status = data.get('status', 'unknown')
+                workflow_stage = data.get('workflow_stage', 'unknown')
+                
+                self.log_result("Workflow Status Retrieval", True, 
+                              f"✅ PRIORITY TEST 3 PASSED! Workflow status retrieved successfully: "
+                              f"Status: {job_status}, Stage: {workflow_stage}, "
+                              f"Features: {', '.join(workflow_features) if workflow_features else 'basic status only'}")
+                return True
+            else:
+                self.log_result("Workflow Status Retrieval", False, f"❌ PRIORITY TEST 3 FAILED! HTTP {response.status_code}", response)
+        except Exception as e:
+            self.log_result("Workflow Status Retrieval", False, f"❌ PRIORITY TEST 3 ERROR! Request error: {str(e)}")
         return False
     
     # ======= ADDITIONAL ENHANCED WORKFLOW VERIFICATION TESTS =======
