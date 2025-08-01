@@ -29,6 +29,26 @@ const CreateJob = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [jobBeingCancelled, setJobBeingCancelled] = useState(null);
 
+  const serviceOptions = [
+    'Plumbing',
+    'Electrical',
+    'Carpentry',
+    'Painting',
+    'Cleaning',
+    'Gardening',
+    'Handyman',
+    'Appliance Repair',
+    'Roofing',
+    'Flooring',
+    'HVAC',
+    'Tech Support',
+    'Tutoring',
+    'Beauty Services',
+    'Catering',
+    'Photography',
+    'Other'
+  ];
+
   useEffect(() => {
     // Check terms acceptance status on component mount
     checkTermsAcceptance();
@@ -84,71 +104,14 @@ const CreateJob = () => {
     }
   };
 
-  const serviceOptions = [
-    'Plumbing',
-    'Electrical',
-    'Carpentry',
-    'Painting',
-    'Cleaning',
-    'Gardening',
-    'Handyman',
-    'Appliance Repair',
-    'Roofing',
-    'Flooring',
-    'HVAC',
-    'Tech Support',
-    'Tutoring',
-    'Beauty Services',
-    'Catering',
-    'Photography',
-    'Other'
-  ];
-    'Plumbing',
-    'Electrical',
-    'Carpentry',
-    'Painting',
-    'Cleaning',
-    'Gardening',
-    'Handyman',
-    'Appliance Repair',
-    'Roofing',
-    'Flooring',
-    'HVAC',
-    'Tech Support',
-    'Tutoring',
-    'Beauty Services',
-    'Catering',
-    'Photography',
-    'Other'
-  ];
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleVoiceTranscription = async (transcription) => {
-    try {
-      // Extract service and description from transcription
-      const response = await apiService.classifyService(transcription);
-      const classification = response.data.classification;
-      
-      // Auto-fill form based on transcription
-      setFormData(prev => ({
-        ...prev,
-        service: classification.charAt(0).toUpperCase() + classification.slice(1),
-        description: transcription
-      }));
-      
-      setShowVoiceRecorder(false);
-    } catch (err) {
-      console.error('Error processing voice input:', err);
-      setError('Failed to process voice input. Please try again.');
-    }
-  };
-
-  const handleVoiceError = (errorMessage) => {
-    setError(errorMessage);
+    setFormData(prev => ({ ...prev, description: transcription }));
+    setShowVoiceRecorder(false);
   };
 
   const findSmartMatches = async (jobId) => {
@@ -156,8 +119,8 @@ const CreateJob = () => {
     
     setSmartMatchLoading(true);
     try {
-      // Get smart matches for the job
-      const matchResponse = await fetch(`${import.meta.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/smart-match`, {
+      // Get smart matches
+      const matchResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/smart-match`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -174,7 +137,7 @@ const CreateJob = () => {
       }
 
       // Get match insights
-      const insightsResponse = await fetch(`${import.meta.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/match-insights`);
+      const insightsResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/match-insights`);
       if (insightsResponse.ok) {
         const insightsData = await insightsResponse.json();
         setMatchInsights(insightsData.insights);
@@ -248,23 +211,24 @@ const CreateJob = () => {
     if (!createdJobId) return;
     
     try {
-      const response = await fetch(`${import.meta.env.REACT_APP_BACKEND_URL}/api/jobs/${createdJobId}/smart-match`, {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs/${createdJobId}/smart-match`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          limit: 5,
-          auto_notify: true
+          auto_notify: true,
+          limit: 5
         })
       });
 
       if (response.ok) {
-        const data = await response.json();
-        if (data.notification_result?.success) {
-          alert('Top fixers have been notified about your job!');
-          navigate(`/jobs/${createdJobId}`);
-        }
+        alert('Fixers have been notified about your job!');
+        // Navigate to job list or dashboard
+        navigate('/jobs');
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || 'Failed to notify fixers');
       }
     } catch (err) {
       console.error('Error notifying fixers:', err);
@@ -272,228 +236,49 @@ const CreateJob = () => {
     }
   };
 
-  const getMatchQualityColor = (percentage) => {
-    if (percentage >= 80) return 'text-green-600 bg-green-50';
-    if (percentage >= 60) return 'text-blue-600 bg-blue-50';
-    if (percentage >= 40) return 'text-yellow-600 bg-yellow-50';
-    return 'text-red-600 bg-red-50';
-  };
-
-  const getMatchQualityText = (recommendation) => {
-    switch (recommendation) {
-      case 'excellent': return '⭐ Excellent Match';
-      case 'good': return '👍 Good Match';
-      case 'fair': return '👌 Fair Match';
-      default: return '⚠️ Poor Match';
-    }
-  };
-
-  if (showSmartMatching) {
-    return (
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">🎯 Smart Matching Results</h1>
-              <p className="text-gray-600 mt-1">AI-powered fixer matches for your job</p>
-            </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => navigate(`/jobs/${createdJobId}`)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-              >
-                View Job Details
-              </button>
-              {smartMatches.length > 0 && (
-                <button
-                  onClick={handleNotifyFixers}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Notify Top Fixers
-                </button>
-              )}
-            </div>
-          </div>
-
-          {smartMatchLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-600">Finding the best fixers for your job...</p>
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Match Insights */}
-              {matchInsights && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                  <h3 className="font-medium text-blue-900 mb-2">🔍 Matching Insights</h3>
-                  <div className="text-sm text-blue-800">
-                    <p><strong>Status:</strong> {matchInsights.status}</p>
-                    <p><strong>Message:</strong> {matchInsights.message}</p>
-                    {matchInsights.total_eligible_fixers && (
-                      <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="text-center">
-                          <div className="font-semibold text-lg">{matchInsights.total_eligible_fixers}</div>
-                          <div className="text-xs">Eligible Fixers</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-semibold text-lg">{matchInsights.available_now || 0}</div>
-                          <div className="text-xs">Available Now</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-semibold text-lg">{matchInsights.highly_rated || 0}</div>
-                          <div className="text-xs">Highly Rated</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-semibold text-lg">{matchInsights.service_area_coverage || 0}</div>
-                          <div className="text-xs">In Your Area</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Smart Matches */}
-              {smartMatches.length > 0 ? (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-4">
-                    Top {smartMatches.length} AI-Recommended Fixers
-                  </h3>
-                  <div className="space-y-4">
-                    {smartMatches.map((match, index) => (
-                      <div key={match.fixer_id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-2">
-                              <h4 className="font-medium text-gray-900">
-                                #{index + 1} {match.fixer_name}
-                              </h4>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getMatchQualityColor(match.match_percentage)}`}>
-                                {getMatchQualityText(match.recommendation)}
-                              </span>
-                              <span className="text-sm text-gray-500">
-                                {match.match_percentage}% match
-                              </span>
-                            </div>
-                            
-                            <p className="text-sm text-gray-600 mb-3">
-                              {match.explanation}
-                            </p>
-
-                            {/* Score Breakdown */}
-                            <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-xs">
-                              <div className="text-center">
-                                <div className="font-semibold text-blue-600">{match.factors?.skill_match || 0}</div>
-                                <div className="text-gray-500">Skill</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="font-semibold text-green-600">{Math.round(match.factors?.success_rate || 0)}</div>
-                                <div className="text-gray-500">Success</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="font-semibold text-purple-600">{Math.round(match.factors?.location_score || 0)}</div>
-                                <div className="text-gray-500">Location</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="font-semibold text-orange-600">{Math.round(match.factors?.availability || 0)}</div>
-                                <div className="text-gray-500">Available</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="font-semibold text-red-600">{Math.round(match.factors?.reliability || 0)}</div>
-                                <div className="text-gray-500">Reliable</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="font-semibold text-indigo-600">{Math.round(match.factors?.fairness_boost || 0)}</div>
-                                <div className="text-gray-500">Fair</div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="text-right ml-4">
-                            <div className="text-2xl font-bold text-gray-900">
-                              {match.match_score}
-                            </div>
-                            <div className="text-xs text-gray-500">/ 110 points</div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <div className="text-gray-400 text-6xl mb-4">🔍</div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Perfect Matches Found</h3>
-                  <p className="text-gray-600 mb-4">
-                    Our AI couldn't find fixers that meet the quality threshold for your specific job requirements.
-                  </p>
-                  <div className="space-y-2 text-sm text-gray-500">
-                    <p>• Try expanding your search area</p>
-                    <p>• Consider adjusting service requirements</p>
-                    <p>• Check back later as more fixers join the platform</p>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center space-x-3 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Create New Job</h1>
-          <div className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-            ✨ AI-Powered Matching
-          </div>
-        </div>
-        
-        {/* Voice Input Toggle */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-gray-900">How would you like to describe your service?</h2>
-            <button
-              type="button"
-              onClick={() => setShowVoiceRecorder(!showVoiceRecorder)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
-                showVoiceRecorder 
-                  ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                  : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              </svg>
-              <span>{showVoiceRecorder ? 'Hide Voice Input' : 'Use Voice Input'}</span>
-            </button>
-          </div>
-          
-          {showVoiceRecorder && (
-            <VoiceRecorder
-              onTranscription={handleVoiceTranscription}
-              onError={handleVoiceError}
-            />
-          )}
-        </div>
+    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Request a Service</h2>
+      
+      {/* Terms Acceptance Modal */}
+      {showTermsModal && (
+        <TermsAcceptance 
+          showModal={true}
+          onAccept={handleTermsAcceptance}
+          onClose={() => setShowTermsModal(false)}
+        />
+      )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Service */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+        </div>
+      )}
+
+      {!termsAccepted && (
+        <div className="mb-4 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
+          ⚠️ You must accept our terms and conditions before creating a job request.
+          <button 
+            onClick={() => setShowTermsModal(true)}
+            className="ml-2 text-blue-600 underline hover:text-blue-800"
+          >
+            Review Terms
+          </button>
+        </div>
+      )}
+
+      {!showSmartMatching ? (
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="service" className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Service Type *
             </label>
             <select
-              id="service"
               name="service"
-              required
               value={formData.service}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Select a service</option>
               {serviceOptions.map((service) => (
@@ -504,112 +289,165 @@ const CreateJob = () => {
             </select>
           </div>
 
-          {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-              Job Description *
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description *
             </label>
-            <textarea
-              id="description"
-              name="description"
-              required
-              rows={4}
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Describe the work that needs to be done..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <p className="mt-1 text-sm text-gray-500">
-              💡 You can use the voice input above to describe your service needs in any South African language
-            </p>
+            <div className="relative">
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Describe what needs to be fixed or done..."
+                required
+                rows="4"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <button
+                type="button"
+                onClick={() => setShowVoiceRecorder(true)}
+                className="absolute bottom-2 right-2 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 transition-colors"
+                title="Use voice input"
+              >
+                🎤
+              </button>
+            </div>
           </div>
 
-          {/* Location */}
           <div>
-            <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Location *
             </label>
             <input
               type="text"
-              id="location"
               name="location"
-              required
               value={formData.location}
               onChange={handleChange}
-              placeholder="Enter your address or area"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter your location"
+              required
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
-          {/* Estimated Price */}
           <div>
-            <label htmlFor="estimated_price" className="block text-sm font-medium text-gray-700 mb-2">
-              Estimated Budget (Optional)
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Estimated Budget (R)
             </label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">R</span>
-              <input
-                type="number"
-                id="estimated_price"
-                name="estimated_price"
-                step="0.01"
-                min="0"
-                value={formData.estimated_price}
-                onChange={handleChange}
-                placeholder="0.00"
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+            <input
+              type="number"
+              name="estimated_price"
+              value={formData.estimated_price}
+              onChange={handleChange}
+              placeholder="Enter estimated budget"
+              min="0"
+              step="0.01"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
 
-          {/* Scheduled Date */}
           <div>
-            <label htmlFor="scheduled_at" className="block text-sm font-medium text-gray-700 mb-2">
-              Preferred Date & Time (Optional)
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Preferred Date & Time
             </label>
             <input
               type="datetime-local"
-              id="scheduled_at"
               name="scheduled_at"
               value={formData.scheduled_at}
               onChange={handleChange}
-              min={new Date().toISOString().slice(0, 16)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-              {error}
+          <button
+            type="submit"
+            disabled={loading || !termsAccepted}
+            className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
+              loading || !termsAccepted
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            {loading ? 'Creating Job Request...' : 'Submit Job Request'}
+          </button>
+        </form>
+      ) : (
+        <div className="space-y-6">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-green-800 mb-2">
+              🎉 Job Request Created Successfully!
+            </h3>
+            <p className="text-green-700">
+              Your job has been created and eligible fixers have been notified via WhatsApp and app notifications.
+              The first fixer to accept will get the job (first-come, first-served).
+            </p>
+          </div>
+
+          {/* Cancel Service Button - System Requirement */}
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={() => cancelJob(createdJobId)}
+              disabled={jobBeingCancelled === createdJobId}
+              className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:bg-gray-400"
+            >
+              {jobBeingCancelled === createdJobId ? 'Cancelling...' : 'Cancel Service'}
+            </button>
+            
+            <button
+              onClick={() => navigate('/jobs')}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              View My Jobs
+            </button>
+          </div>
+
+          {smartMatches.length > 0 && (
+            <div className="mt-6">
+              <h4 className="text-lg font-semibold mb-3">Available Fixers</h4>
+              <div className="grid gap-4">
+                {smartMatches.map((match, index) => (
+                  <div key={index} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h5 className="font-medium">{match.fixer_name}</h5>
+                        <p className="text-sm text-gray-600">Rating: {match.rating}/5</p>
+                        <p className="text-sm text-gray-600">Match Score: {match.match_score}%</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-500">
+                          Distance: {match.distance ? `${match.distance}km` : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Submit Button */}
-          <div className="flex items-center justify-end space-x-4">
-            <button
-              type="button"
-              onClick={() => navigate('/jobs')}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Creating & Finding Matches...</span>
-                </div>
-              ) : (
-                'Create Job with Smart Matching'
-              )}
-            </button>
+          {matchInsights && (
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="font-semibold text-blue-800 mb-2">Match Insights</h4>
+              <div className="text-sm text-blue-700 space-y-1">
+                <p>Total Fixers: {matchInsights.total_fixers}</p>
+                <p>Eligible Fixers: {matchInsights.eligible_fixers}</p>
+                <p>Average Match Score: {matchInsights.average_score}%</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Voice Recorder Modal */}
+      {showVoiceRecorder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <VoiceRecorder 
+              onTranscription={handleVoiceTranscription}
+              onClose={() => setShowVoiceRecorder(false)}
+            />
           </div>
-        </form>
-      </div>
+        </div>
+      )}
     </div>
   );
 };
