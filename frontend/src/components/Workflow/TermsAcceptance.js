@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { apiService } from '../../services/api';
+import { API_BASE_URL } from '../../utils/apiConfig';
 
 const TermsAcceptance = ({ onAccept, showModal = false, onClose }) => {
   const { user } = useAuth();
