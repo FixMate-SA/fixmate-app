@@ -15,17 +15,22 @@ const FixerJobBoard = () => {
 
   useEffect(() => {
     fetchFixerInfo();
-    fetchAvailableJobs();
-    fetchCurrentJob();
-    
-    // Set up polling for new jobs and current job status
-    const interval = setInterval(() => {
+  }, [user]);
+
+  useEffect(() => {
+    if (fixerInfo?.id) {
       fetchAvailableJobs();
       fetchCurrentJob();
-    }, 5000); // Poll every 5 seconds
-    
-    return () => clearInterval(interval);
-  }, [user]);
+      
+      // Set up polling for new jobs and current job status
+      const interval = setInterval(() => {
+        fetchAvailableJobs();
+        fetchCurrentJob();
+      }, 5000); // Poll every 5 seconds
+      
+      return () => clearInterval(interval);
+    }
+  }, [fixerInfo]);
 
   const fetchFixerInfo = async () => {
     if (!user?.phone) return;
@@ -119,6 +124,8 @@ const FixerJobBoard = () => {
       setCancelling(null);
     }
   };
+
+  const acceptJob = async (jobId) => {
     if (!fixerInfo?.id || accepting) return;
 
     setAccepting(jobId);
@@ -138,6 +145,7 @@ const FixerJobBoard = () => {
       if (response.ok && result.success) {
         alert(t('jobAcceptedSuccess', 'Job accepted successfully! You can now start working on this job.'));
         fetchAvailableJobs(); // Refresh the list
+        fetchCurrentJob(); // Refresh current job
       } else {
         alert(result.detail || result.message || t('jobAcceptError', 'Failed to accept job. It may have been taken by another fixer.'));
       }
@@ -184,16 +192,14 @@ const FixerJobBoard = () => {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              ⚠️
-            </div>
-            <div className="ml-3">
+          <div className="flex items-center">
+            <div className="text-yellow-600 mr-3">⚠️</div>
+            <div>
               <h3 className="text-sm font-medium text-yellow-800">
-                {t('fixerProfileRequired', 'Fixer Profile Required')}
+                {t('fixerNotFound', 'Fixer Profile Not Found')}
               </h3>
-              <p className="mt-1 text-sm text-yellow-700">
-                {t('fixerProfileRequiredMessage', 'You need to have an approved fixer profile to view available jobs.')}
+              <p className="text-sm text-yellow-700 mt-1">
+                {t('fixerNotFoundMessage', 'You need to complete your fixer registration to access the job board.')}
               </p>
             </div>
           </div>
@@ -279,10 +285,13 @@ const FixerJobBoard = () => {
         <div className="bg-gray-50 rounded-lg p-8 text-center">
           <div className="text-4xl mb-4">🔍</div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {t('noJobsAvailable', 'No Jobs Available')}
+            {currentJob ? 'No New Jobs Available' : t('noJobsAvailable', 'No Jobs Available')}
           </h3>
           <p className="text-gray-600">
-            {t('noJobsMessage', 'There are currently no jobs available that match your profile. New jobs will appear here automatically.')}
+            {currentJob 
+              ? 'Complete your current job to see new opportunities.'
+              : t('noJobsMessage', 'There are currently no jobs available that match your profile. New jobs will appear here automatically.')
+            }
           </p>
         </div>
       ) : (
@@ -332,69 +341,59 @@ const FixerJobBoard = () => {
                   <h4 className="text-sm font-medium text-gray-700 mb-1">
                     📝 {t('description', 'Description')}
                   </h4>
-                  <p className="text-sm text-gray-600">
-                    {job.description.length > 150 
-                      ? `${job.description.substring(0, 150)}...` 
-                      : job.description
-                    }
-                  </p>
+                  <p className="text-sm text-gray-600">{job.description}</p>
                 </div>
+
+                {job.scheduled_at && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-1">
+                      🕐 {t('scheduledTime', 'Scheduled Time')}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      {new Date(job.scheduled_at).toLocaleString()}
+                    </p>
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                <div className="flex items-center space-x-4 text-xs text-gray-500">
-                  <span>
-                    🕐 {t('posted', 'Posted')}: {new Date().toLocaleTimeString()}
+              <div className="flex items-center justify-between border-t pt-4">
+                <div className="text-xs text-gray-500">
+                  <span className="mr-4">
+                    👤 Client: {job.client_contact || t('anonymous', 'Anonymous')}
                   </span>
+                  {job.distance && (
+                    <span className="mr-4">
+                      📍 Distance: {job.distance}km
+                    </span>
+                  )}
                   <span>
-                    {job.priority_level === 'emergency' 
-                      ? t('emergencyPriority', 'Emergency Priority')
-                      : t('normalPriority', 'Normal Priority')
-                    }
+                    🎯 Match: {job.match_score}%
                   </span>
                 </div>
 
                 <button
                   onClick={() => acceptJob(job.job_id)}
-                  disabled={accepting === job.job_id}
-                  className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                    accepting === job.job_id
+                  disabled={accepting === job.job_id || currentJob}
+                  className={`px-6 py-2 rounded-md font-medium transition-colors ${
+                    accepting === job.job_id || currentJob
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : job.is_emergency
-                      ? 'bg-red-600 hover:bg-red-700 text-white'
-                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      ? 'bg-red-600 text-white hover:bg-red-700'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
                 >
-                  {accepting === job.job_id ? (
-                    <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      {t('accepting', 'Accepting...')}
-                    </div>
-                  ) : (
-                    <>
-                      ✋ {t('acceptJob', 'Accept Job')}
-                    </>
-                  )}
+                  {accepting === job.job_id 
+                    ? t('accepting', 'Accepting...') 
+                    : currentJob 
+                    ? 'Complete Current Job'
+                    : t('acceptJob', 'Accept Job')
+                  }
                 </button>
               </div>
             </div>
           ))}
         </div>
       )}
-
-      {/* Quick Tips */}
-      <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-blue-800 mb-2">
-          💡 {t('quickTips', 'Quick Tips')}
-        </h3>
-        <ul className="text-sm text-blue-700 space-y-1">
-          <li>• {t('tip1', 'Jobs are assigned first come, first serve')}</li>
-          <li>• {t('tip2', 'You can only have one active job at a time')}</li>
-          <li>• {t('tip3', 'Emergency jobs have higher priority and better compensation')}</li>
-          <li>• {t('tip4', 'Complete jobs on time to maintain your reliability score')}</li>
-          <li>• {t('tip5', 'R20 platform fee applies to each completed job')}</li>
-        </ul>
-      </div>
     </div>
   );
 };
