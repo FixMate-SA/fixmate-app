@@ -52,7 +52,7 @@ const FixerJobBoard = () => {
     if (!fixerInfo?.id) return;
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/fixer/${fixerInfo.id}/eligible-jobs`);
+      const response = await fetch(`${API_BASE_URL}/fixer/${fixerInfo.id}/eligible-jobs`);
       if (response.ok) {
         const data = await response.json();
         setAvailableJobs(data.available_jobs || []);
