@@ -340,6 +340,11 @@ class FixMateAPITester:
             self.log_result("Job Workflow Creation", False, "No user ID available from previous tests")
             return False
         
+        # Ensure terms have been accepted before creating workflow job
+        if not self.test_data.get('terms_accepted', False):
+            self.log_result("Job Workflow Creation", False, "Terms must be accepted before creating workflow job")
+            return False
+        
         # First test regular job creation to verify basic functionality
         self.test_regular_job_creation()
         
@@ -355,6 +360,7 @@ class FixMateAPITester:
             }
             
             print(f"   Sending job workflow data: {workflow_job_data}")
+            print(f"   Terms accepted: {self.test_data.get('terms_accepted', False)}")
             
             response = self.session.post(f"{API_BASE}/jobs/workflow", json=workflow_job_data)
             
