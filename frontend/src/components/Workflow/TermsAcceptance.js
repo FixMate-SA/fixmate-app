@@ -20,7 +20,7 @@ const TermsAcceptance = ({ onAccept, showModal = false, onClose }) => {
     if (!user?.id) return;
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/terms/check/${user.id}`);
+      const response = await fetch(`${API_BASE_URL}/terms/check/${user.id}`);
       const data = await response.json();
       setHasAccepted(data.has_accepted);
       
