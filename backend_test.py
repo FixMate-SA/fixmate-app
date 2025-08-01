@@ -307,7 +307,12 @@ class FixMateAPITester:
                 "urgency": "emergency"
             }
             
+            print(f"   Sending job workflow data: {workflow_job_data}")
+            
             response = self.session.post(f"{API_BASE}/jobs/workflow", json=workflow_job_data)
+            
+            print(f"   Response status: {response.status_code}")
+            print(f"   Response text: {response.text[:500]}")
             
             if response.status_code == 200:
                 data = response.json()
@@ -328,7 +333,13 @@ class FixMateAPITester:
                 else:
                     self.log_result("Job Workflow Creation", False, f"❌ PRIORITY TEST 1 FAILED! Workflow creation failed: {data}", response)
             else:
-                self.log_result("Job Workflow Creation", False, f"❌ PRIORITY TEST 1 FAILED! HTTP {response.status_code}", response)
+                # Try to get more detailed error information
+                try:
+                    error_data = response.json()
+                    error_detail = error_data.get('detail', 'Unknown error')
+                    self.log_result("Job Workflow Creation", False, f"❌ PRIORITY TEST 1 FAILED! HTTP {response.status_code} - {error_detail}", response)
+                except:
+                    self.log_result("Job Workflow Creation", False, f"❌ PRIORITY TEST 1 FAILED! HTTP {response.status_code} - {response.text[:200]}", response)
         except Exception as e:
             self.log_result("Job Workflow Creation", False, f"❌ PRIORITY TEST 1 ERROR! Request error: {str(e)}")
         return False
