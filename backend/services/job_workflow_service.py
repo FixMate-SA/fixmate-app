@@ -27,9 +27,20 @@ class JobWorkflowService:
     
     def __init__(self):
         self.assignment_timeout_minutes = 15  # Time for fixers to respond
-        self.attendance_timeout_minutes = 30  # Time for fixer to confirm attendance
+        self.attendance_timeout_minutes = 180  # 3 hours for fixer to arrive (as per requirements)
         self.max_reassignment_attempts = 3    # Maximum auto-reassignment attempts
-        self.emergency_escalation_minutes = 45  # Time before emergency escalation
+        self.emergency_escalation_minutes = 180  # 3 hours before emergency escalation
+        self.platform_fee_amount = 20.0      # R20 platform fee
+        self.platform_fee_deadline_hours = 48  # 48 hours to pay platform fee
+        self.availability_freeze_hours = 4   # 4-hour freeze after timeout
+        self.cancellation_freeze_hours = 2   # 2-hour freeze after cancellation
+        self.rating_penalty_per_cancellation = 0.2  # 0.2 rating penalty per cancellation
+        self.minimum_rating_threshold = 3.0  # Minimum rating required
+        self.fraud_monitoring_thresholds = {
+            'max_failures_per_week': 3,
+            'min_completion_rate': 65.0,
+            'max_cancellation_rate': 25.0
+        }
         
     # 1. Terms Acceptance Management
     
