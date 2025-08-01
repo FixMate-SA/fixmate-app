@@ -4204,12 +4204,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Handle service worker requests with 410 Gone (PWA cleanup)
-@app.get("/sw.js")
-async def serve_service_worker():
-    """Return 410 Gone for service worker requests after PWA removal"""
-    return Response(content="Gone", status_code=410, media_type="text/plain")
-
 # Serve static files from React build if available
 static_path = Path(__file__).parent.parent / "frontend" / "build"
 if static_path.exists():
@@ -4247,6 +4241,12 @@ else:
     @app.get("/")
     async def root():
         return {"message": "FixMate-SA API is running", "status": "ok", "frontend": "not built"}
+
+# Handle service worker requests with 410 Gone (PWA cleanup) - MUST be after catch-all route
+@app.get("/sw.js")
+async def serve_service_worker():
+    """Return 410 Gone for service worker requests after PWA removal"""
+    return Response(content="Gone", status_code=410, media_type="text/plain")
 
 if __name__ == "__main__":
     import uvicorn
