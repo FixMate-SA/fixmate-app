@@ -627,14 +627,19 @@ class FixMateAPITester:
         print("\n📋 PHASE 2: TERMS ACCEPTANCE INTEGRATION")
         print("-" * 50)
         
-        # Test terms acceptance workflow
+        # First check current terms acceptance status
+        if not self.test_terms_acceptance_check():
+            print("❌ Terms acceptance check failed.")
+            return False
+        
+        # Accept terms for the user
         if not self.test_terms_acceptance_workflow():
             print("❌ Terms acceptance workflow failed.")
             return False
         
-        # Verify terms acceptance status
+        # Verify terms acceptance status after accepting
         if not self.test_terms_acceptance_check():
-            print("❌ Terms acceptance check failed.")
+            print("❌ Terms acceptance verification failed.")
             return False
         
         # Phase 3: Fixer Screening Validation
