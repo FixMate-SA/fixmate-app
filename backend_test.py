@@ -46,9 +46,9 @@ load_dotenv('/app/frontend/.env')
 BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'http://localhost:8001')
 API_BASE = f"{BACKEND_URL}/api"
 
-print(f"🔧 Testing Enhanced Job Assignment Workflow System at: {API_BASE}")
+print(f"🔧 Testing Core Job Assignment Workflow System at: {API_BASE}")
 print("=" * 80)
-print("🎯 ENHANCED JOB ASSIGNMENT WORKFLOW TESTING")
+print("🎯 CORE JOB ASSIGNMENT WORKFLOW TESTING")
 print("=" * 80)
 
 class FixMateAPITester:
