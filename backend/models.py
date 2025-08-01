@@ -900,6 +900,8 @@ class PushSubscription(Base):
         return f"<PushSubscription(id='{self.id}', user_id='{self.user_id}', active='{self.is_active}')>"
 
 # ======= PHASE 3 ENHANCEMENTS: AUTOMATION & ENGAGEMENT MODELS =======
+
+class FixerReputationTier(Base):
     """
     Model for fixer reputation tiers and gamification system.
     Manages badges, levels, and performance-based incentives.
