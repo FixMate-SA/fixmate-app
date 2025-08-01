@@ -39,7 +39,13 @@ class EnhancedAIService:
         self.gemini_model = genai.GenerativeModel('models/gemini-1.5-flash') if GEMINI_API_KEY else None
         
         # OpenAI for advanced reasoning and reinforcement learning
-        self.openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+        self.openai_client = None
+        if OPENAI_AVAILABLE and OPENAI_API_KEY:
+            try:
+                self.openai_client = OpenAI(api_key=OPENAI_API_KEY)
+            except Exception as e:
+                logger.warning(f"Failed to initialize OpenAI client: {e}")
+                self.openai_client = None
         
         # Matching performance tracking
         self.matching_history = []
