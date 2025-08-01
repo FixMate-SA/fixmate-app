@@ -1191,9 +1191,11 @@ You are now available for new jobs.
     
     # 9. AI Monitoring and Behavior Analysis
     
-    def _update_fixer_behavior_analysis(self, db: Session, fixer_id: str) -> None:
-        """Update AI behavior analysis for fixer"""
+    def _update_fixer_behavior_analysis_enhanced(self, db: Session, fixer_id: str) -> None:
+        """Enhanced AI behavior analysis with fraud detection"""
         try:
+            from models import FraudAlertLog
+            
             # Get or create behavior analysis record
             analysis = db.query(FixerBehaviorAnalysis).filter(
                 FixerBehaviorAnalysis.fixer_id == fixer_id
@@ -1216,6 +1218,7 @@ You are now available for new jobs.
             total_completed = len([h for h in job_history if h.completion_status == "completed"])
             total_cancelled = len([h for h in job_history if h.completion_status == "cancelled"])
             total_incomplete = len([h for h in job_history if h.completion_status == "incomplete"])
+            total_no_show = len([h for h in job_history if h.completion_status == "no_show"])
             
             analysis.total_jobs_assigned = total_assigned
             analysis.total_jobs_completed = total_completed
@@ -1223,48 +1226,326 @@ You are now available for new jobs.
             analysis.total_jobs_incomplete = total_incomplete
             
             # Calculate rates
+            completion_rate = 0.0
+            cancellation_rate = 0.0
+            
             if total_assigned > 0:
-                analysis.completion_rate = (total_completed / total_assigned) * 100
-                analysis.cancellation_rate = (total_cancelled / total_assigned) * 100
+                completion_rate = (total_completed / total_assigned) * 100
+                cancellation_rate = (total_cancelled / total_assigned) * 100
+                analysis.completion_rate = completion_rate
+                analysis.cancellation_rate = cancellation_rate
             
-            # AI behavior pattern detection
+            # Enhanced AI fraud pattern detection
             behavior_flags = []
+            fraud_risk_score = 0.0
             
-            # Check for concerning patterns
-            if analysis.cancellation_rate > 20:  # More than 20% cancellation
-                behavior_flags.append("high_cancellation_rate")
+            # Check for concerning patterns with specific thresholds
+            weekly_failures = total_cancelled + total_incomplete + total_no_show
             
-            if analysis.completion_rate < 80:  # Less than 80% completion
+            if weekly_failures > self.fraud_monitoring_thresholds['max_failures_per_week']:
+                behavior_flags.append("high_failure_rate")
+                fraud_risk_score += 30
+            
+            if completion_rate < self.fraud_monitoring_thresholds['min_completion_rate']:
                 behavior_flags.append("low_completion_rate")
+                fraud_risk_score += 25
             
-            if total_incomplete > 3:  # More than 3 incomplete jobs
-                behavior_flags.append("frequent_incomplete_jobs")
+            if cancellation_rate > self.fraud_monitoring_thresholds['max_cancellation_rate']:
+                behavior_flags.append("high_cancellation_rate")
+                fraud_risk_score += 20
             
-            # Update risk level
-            if len(behavior_flags) >= 3:
+            # Pattern detection for fraud indicators
+            if total_no_show > 2:  # More than 2 no-shows in 30 days
+                behavior_flags.append("frequent_no_show")
+                fraud_risk_score += 35
+            
+            # Check for dishonesty patterns
+            dishonesty_indicators = []
+            if total_incomplete > 3:
+                dishonesty_indicators.append("frequent_incomplete_jobs")
+                fraud_risk_score += 15
+            
+            # Update risk level based on comprehensive scoring
+            if fraud_risk_score >= 80:
                 analysis.risk_level = "critical"
                 analysis.admin_attention_required = True
-            elif len(behavior_flags) >= 2:
+            elif fraud_risk_score >= 60:
                 analysis.risk_level = "high"
-            elif len(behavior_flags) >= 1:
+                analysis.admin_attention_required = True
+            elif fraud_risk_score >= 40:
                 analysis.risk_level = "medium"
             else:
                 analysis.risk_level = "low"
             
             analysis.behavior_flags = json.dumps(behavior_flags)
+            analysis.dishonesty_indicators = json.dumps(dishonesty_indicators)
             analysis.last_analyzed_at = datetime.utcnow()
             analysis.next_analysis_due = datetime.utcnow() + timedelta(days=7)
+            analysis.reliability_score = max(0, 100 - fraud_risk_score)
             
-            # Generate AI recommendations
-            recommendations = self._generate_ai_recommendations(analysis, behavior_flags)
-            analysis.ai_recommendations = json.dumps(recommendations)
+            # Create fraud alert if critical thresholds met
+            if fraud_risk_score >= 60:
+                self._create_fraud_alert(db, fixer_id, behavior_flags, fraud_risk_score, analysis)
             
             db.commit()
-            
-            logger.info(f"Behavior analysis updated for fixer {fixer_id}")
+            logger.info(f"Enhanced behavior analysis completed for fixer {fixer_id} - Risk Score: {fraud_risk_score}")
             
         except Exception as e:
-            logger.error(f"Error updating behavior analysis: {str(e)}")
+            logger.error(f"Error updating enhanced behavior analysis: {str(e)}")
+    
+    def _create_fraud_alert(self, db: Session, fixer_id: str, behavior_flags: List[str], 
+                           fraud_risk_score: float, analysis: FixerBehaviorAnalysis) -> None:
+        """Create fraud alert for high-risk fixers"""
+        try:
+            from models import FraudAlertLog
+            
+            # Determine alert type and severity
+            alert_type = "suspicious_behavior"
+            alert_severity = "medium"
+            
+            if "frequent_no_show" in behavior_flags:
+                alert_type = "no_show_pattern"
+                alert_severity = "high"
+            elif "high_failure_rate" in behavior_flags:
+                alert_type = "high_cancellation"
+                alert_severity = "high"
+            elif analysis.completion_rate < 50:
+                alert_type = "low_completion"
+                alert_severity = "critical"
+            
+            if fraud_risk_score >= 80:
+                alert_severity = "critical"
+            
+            # Create detailed description
+            description = f"AI detected concerning patterns: {', '.join(behavior_flags)}. "
+            description += f"Completion rate: {analysis.completion_rate:.1f}%, "
+            description += f"Cancellation rate: {analysis.cancellation_rate:.1f}%, "
+            description += f"Total failures (30 days): {analysis.total_jobs_cancelled + analysis.total_jobs_incomplete}"
+            
+            # Prepare pattern data
+            pattern_data = {
+                "completion_rate": analysis.completion_rate,
+                "cancellation_rate": analysis.cancellation_rate,
+                "total_assigned": analysis.total_jobs_assigned,
+                "total_completed": analysis.total_jobs_completed,
+                "total_cancelled": analysis.total_jobs_cancelled,
+                "total_incomplete": analysis.total_jobs_incomplete,
+                "behavior_flags": behavior_flags,
+                "analysis_period": "30_days"
+            }
+            
+            # Create fraud alert
+            fraud_alert = FraudAlertLog(
+                fixer_id=fixer_id,
+                alert_type=alert_type,
+                alert_severity=alert_severity,
+                description=description,
+                ai_confidence=min(100.0, fraud_risk_score + 20),  # Boost confidence for high risk
+                pattern_data=json.dumps(pattern_data),
+                timeframe="30_days",
+                auto_escalated=fraud_risk_score >= 80
+            )
+            
+            db.add(fraud_alert)
+            db.commit()
+            
+            logger.warning(f"Fraud alert created for fixer {fixer_id}: {alert_type} ({alert_severity}) - Score: {fraud_risk_score}")
+            
+        except Exception as e:
+            logger.error(f"Error creating fraud alert: {str(e)}")
+    
+    def _check_fixer_fraud_patterns(self, db: Session, fixer_id: str) -> None:
+        """Check for immediate fraud patterns after significant events"""
+        try:
+            # Trigger enhanced behavior analysis
+            self._update_fixer_behavior_analysis_enhanced(db, fixer_id)
+            
+            # Get current week's performance
+            week_ago = datetime.utcnow() - timedelta(days=7)
+            
+            recent_history = db.query(JobAssignmentHistory).filter(
+                JobAssignmentHistory.fixer_id == fixer_id,
+                JobAssignmentHistory.notified_at >= week_ago
+            ).all()
+            
+            # Quick fraud check for this week
+            week_failures = len([h for h in recent_history if h.completion_status in ["cancelled", "incomplete", "no_show"]])
+            week_total = len([h for h in recent_history if h.response_type == "accepted"])
+            
+            if week_failures >= self.fraud_monitoring_thresholds['max_failures_per_week']:
+                logger.warning(f"FRAUD ALERT: Fixer {fixer_id} has {week_failures} failures this week")
+                
+                # Auto-escalate to admin for review
+                analysis = db.query(FixerBehaviorAnalysis).filter(
+                    FixerBehaviorAnalysis.fixer_id == fixer_id
+                ).first()
+                
+                if analysis:
+                    analysis.admin_attention_required = True
+                    analysis.risk_level = "critical"
+                    db.commit()
+            
+        except Exception as e:
+            logger.error(f"Error checking fraud patterns: {str(e)}")
+    
+    # Admin Override System
+    
+    def admin_override_fixer_restrictions(self, db: Session, admin_user_id: str, fixer_id: str, 
+                                        override_type: str, reason: str, 
+                                        override_data: Dict[str, Any] = None) -> Tuple[bool, str]:
+        """Admin override system for bypassing restrictions and manual interventions"""
+        try:
+            from models import AdminOverrideLog
+            
+            # Verify admin permissions
+            admin_user = db.query(User).filter(User.id == admin_user_id).first()
+            if not admin_user or admin_user.role not in ['admin', 'super_admin']:
+                return False, "Insufficient admin privileges"
+            
+            fixer = db.query(Fixer).filter(Fixer.id == fixer_id).first()
+            availability = db.query(FixerAvailability).filter(
+                FixerAvailability.fixer_id == fixer_id
+            ).first()
+            
+            if not fixer or not availability:
+                return False, "Fixer not found"
+            
+            # Store previous values for audit
+            previous_values = {
+                "rating": fixer.rating,
+                "rating_penalty_total": fixer.rating_penalty_total,
+                "is_suspended": availability.is_suspended,
+                "is_availability_frozen": availability.is_availability_frozen,
+                "platform_fee_status": availability.platform_fee_status,
+                "completion_percentage": fixer.completion_percentage
+            }
+            
+            new_values = {}
+            
+            # Apply different override types
+            if override_type == "bypass_restrictions":
+                # Remove all restrictions
+                availability.is_suspended = False
+                availability.suspension_reason = None
+                availability.is_availability_frozen = False
+                availability.availability_frozen_until = None
+                availability.freeze_reason = None
+                availability.platform_fee_status = "current"
+                fixer.fee_payment_overdue = False
+                fixer.fee_suspension_applied = False
+                
+                new_values["restrictions_bypassed"] = True
+                
+            elif override_type == "reset_status":
+                # Reset fixer to clean state
+                fixer.rating_penalty_total = 0.0
+                fixer.cancellation_penalty_count = 0
+                fixer.availability_freeze_count = 0
+                fixer.total_freeze_hours = 0
+                availability.is_availability_frozen = False
+                availability.availability_frozen_until = None
+                
+                new_values["status_reset"] = True
+                
+            elif override_type == "adjust_rating":
+                # Manual rating adjustment
+                new_rating = override_data.get('new_rating', fixer.rating)
+                penalty_adjustment = override_data.get('penalty_adjustment', 0.0)
+                
+                fixer.rating = max(0.0, min(5.0, new_rating))
+                fixer.rating_penalty_total = max(0.0, fixer.rating_penalty_total + penalty_adjustment)
+                
+                new_values["new_rating"] = fixer.rating
+                new_values["penalty_adjustment"] = penalty_adjustment
+                
+            elif override_type == "emergency_intervention":
+                # Emergency intervention - restore full functionality
+                availability.is_suspended = False
+                availability.is_availability_frozen = False
+                availability.is_available = True
+                availability.platform_fee_status = "current"
+                fixer.fee_payment_overdue = False
+                fixer.fee_suspension_applied = False
+                
+                # Reset behavior analysis alerts
+                analysis = db.query(FixerBehaviorAnalysis).filter(
+                    FixerBehaviorAnalysis.fixer_id == fixer_id
+                ).first()
+                
+                if analysis:
+                    analysis.admin_attention_required = False
+                    analysis.risk_level = "low"
+                
+                new_values["emergency_intervention"] = True
+            
+            else:
+                return False, f"Unknown override type: {override_type}"
+            
+            # Log the override action
+            override_log = AdminOverrideLog(
+                admin_user_id=admin_user_id,
+                target_type="fixer",
+                target_id=fixer_id,
+                override_type=override_type,
+                override_reason=reason,
+                previous_values=json.dumps(previous_values),
+                new_values=json.dumps(new_values),
+                emergency_flag=override_type == "emergency_intervention"
+            )
+            
+            db.add(override_log)
+            db.commit()
+            
+            logger.info(f"Admin {admin_user_id} applied {override_type} override to fixer {fixer_id}: {reason}")
+            return True, f"Override applied successfully: {override_type}"
+            
+        except Exception as e:
+            logger.error(f"Error applying admin override: {str(e)}")
+            db.rollback()
+            return False, f"Error applying override: {str(e)}"
+    
+    def get_fraud_alerts_for_admin(self, db: Session, status: str = None, severity: str = None) -> List[Dict[str, Any]]:
+        """Get fraud alerts for admin review"""
+        try:
+            from models import FraudAlertLog
+            
+            query = db.query(FraudAlertLog)
+            
+            if status:
+                query = query.filter(FraudAlertLog.status == status)
+            if severity:
+                query = query.filter(FraudAlertLog.alert_severity == severity)
+            
+            alerts = query.order_by(FraudAlertLog.created_at.desc()).limit(50).all()
+            
+            alert_data = []
+            for alert in alerts:
+                fixer = db.query(Fixer).filter(Fixer.id == alert.fixer_id).first()
+                
+                alert_info = {
+                    "id": alert.id,
+                    "fixer_id": alert.fixer_id,
+                    "fixer_name": fixer.name if fixer else "Unknown",
+                    "alert_type": alert.alert_type,
+                    "alert_severity": alert.alert_severity,
+                    "description": alert.description,
+                    "ai_confidence": alert.ai_confidence,
+                    "pattern_data": json.loads(alert.pattern_data) if alert.pattern_data else {},
+                    "status": alert.status,
+                    "created_at": alert.created_at.isoformat(),
+                    "auto_escalated": alert.auto_escalated,
+                    "admin_response": alert.admin_response,
+                    "reviewed_by": alert.reviewed_by,
+                    "reviewed_at": alert.reviewed_at.isoformat() if alert.reviewed_at else None
+                }
+                
+                alert_data.append(alert_info)
+            
+            return alert_data
+            
+        except Exception as e:
+            logger.error(f"Error getting fraud alerts: {str(e)}")
+            return []
     
     def _generate_ai_recommendations(self, analysis: FixerBehaviorAnalysis, behavior_flags: List[str]) -> List[str]:
         """Generate AI recommendations based on behavior analysis"""
