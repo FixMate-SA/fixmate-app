@@ -97,7 +97,7 @@ const FixerJobBoard = () => {
 
     setCancelling(jobId);
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/cancel`, {
+      const response = await fetch(`${API_BASE_URL}/jobs/${jobId}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
