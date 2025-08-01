@@ -164,6 +164,31 @@ class Fixer(Base):
     approval_date = Column(DateTime, nullable=True)  # When fixer was approved
     payment_status = Column(String, default="current")  # current, overdue, blocked
     
+    # Enhanced rating and performance tracking
+    base_rating = Column(Float, default=0.0)  # Base rating before penalties
+    rating_penalty_total = Column(Float, default=0.0)  # Total rating penalties applied
+    minimum_rating_threshold = Column(Float, default=3.0)  # Minimum rating required for jobs
+    is_new_fixer = Column(Boolean, default=True)  # If fixer is new (0.0 rating acceptable)
+    
+    # Job completion tracking
+    jobs_completed = Column(Integer, default=0)
+    jobs_cancelled = Column(Integer, default=0)
+    jobs_incomplete = Column(Integer, default=0)
+    jobs_no_show = Column(Integer, default=0)
+    completion_percentage = Column(Float, default=100.0)  # Calculated completion rate
+    
+    # Cancellation and penalty tracking
+    cancellation_penalty_count = Column(Integer, default=0)
+    last_cancellation_penalty = Column(DateTime, nullable=True)
+    availability_freeze_count = Column(Integer, default=0)  # Number of times frozen
+    total_freeze_hours = Column(Integer, default=0)  # Total hours frozen
+    
+    # Platform fee management
+    platform_fees_owed = Column(Float, default=0.0)  # Total platform fees owed
+    platform_fees_paid = Column(Float, default=0.0)  # Total platform fees paid
+    fee_payment_overdue = Column(Boolean, default=False)  # If fees are overdue > 48 hours
+    fee_suspension_applied = Column(Boolean, default=False)  # If suspended due to unpaid fees
+    
     # WhatsApp integration fields
     vetting_status = Column(String, default="pending")  # pending, approved, rejected
     skills = Column(Text, nullable=True)  # Skills for job matching
