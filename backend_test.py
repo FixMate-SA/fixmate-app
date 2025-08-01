@@ -279,7 +279,10 @@ class FixMateAPITester:
                 "method": "web"
             }
             
+            print(f"   Calling POST /api/terms/accept with data: {terms_data}")
             response = self.session.post(f"{API_BASE}/terms/accept", json=terms_data)
+            print(f"   Terms accept response status: {response.status_code}")
+            print(f"   Terms accept response text: {response.text[:300]}")
             
             if response.status_code == 200:
                 data = response.json()
@@ -295,7 +298,12 @@ class FixMateAPITester:
                 else:
                     self.log_result("Terms Acceptance Workflow", False, f"Terms acceptance failed: {data}", response)
             else:
-                self.log_result("Terms Acceptance Workflow", False, f"❌ TERMS ACCEPTANCE WORKFLOW FAILED! HTTP {response.status_code}", response)
+                try:
+                    error_data = response.json()
+                    error_detail = error_data.get('detail', 'Unknown error')
+                    self.log_result("Terms Acceptance Workflow", False, f"❌ TERMS ACCEPTANCE WORKFLOW FAILED! HTTP {response.status_code} - {error_detail}", response)
+                except:
+                    self.log_result("Terms Acceptance Workflow", False, f"❌ TERMS ACCEPTANCE WORKFLOW FAILED! HTTP {response.status_code} - {response.text[:200]}", response)
         except Exception as e:
             self.log_result("Terms Acceptance Workflow", False, f"❌ TERMS ACCEPTANCE WORKFLOW ERROR! Request error: {str(e)}")
         return False
