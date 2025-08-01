@@ -108,7 +108,7 @@ class JobWorkflowService:
     # 2. Fixer Eligibility Checking
     
     def get_eligible_fixers(self, db: Session, job: Job) -> List[str]:
-        """Get list of eligible fixer IDs based on location, debt, and active job checks"""
+        """Get list of eligible fixer IDs based on enhanced criteria including rating validation"""
         try:
             eligible_fixers = []
             
@@ -122,6 +122,10 @@ class JobWorkflowService:
             ).all()
             
             for fixer in fixers:
+                # Enhanced eligibility checks
+                if not self._is_fixer_eligible(db, fixer):
+                    continue
+                
                 # Check availability record
                 availability = db.query(FixerAvailability).filter(
                     FixerAvailability.fixer_id == fixer.id
@@ -132,33 +136,166 @@ class JobWorkflowService:
                     availability = FixerAvailability(fixer_id=fixer.id)
                     db.add(availability)
                 
-                # Apply eligibility checks
+                # Apply comprehensive eligibility checks
                 if (availability.is_available and 
                     not availability.current_job_id and 
                     not availability.has_outstanding_debt and
                     not availability.is_suspended and
-                    not availability.is_on_break):
+                    not availability.is_on_break and
+                    not availability.is_availability_frozen and
+                    availability.platform_fee_status == "current"):
                     
-                    # Check location proximity if coordinates available
-                    if (job.latitude and job.longitude and 
-                        availability.current_latitude and availability.current_longitude):
-                        distance = self._calculate_distance(
-                            job.latitude, job.longitude,
-                            availability.current_latitude, availability.current_longitude
-                        )
-                        if distance <= availability.service_radius:
-                            eligible_fixers.append(fixer.id)
-                    else:
-                        # If no GPS data, include based on text location matching
+                    # Check location proximity with fair distribution
+                    if self._check_location_and_fairness(db, job, fixer, availability):
                         eligible_fixers.append(fixer.id)
             
+            # Apply fair matching algorithm to sort eligible fixers
+            eligible_fixers = self._apply_fair_matching_algorithm(db, job, eligible_fixers)
+            
             db.commit()
-            logger.info(f"Found {len(eligible_fixers)} eligible fixers for job {job.id}")
+            logger.info(f"Found {len(eligible_fixers)} eligible fixers for job {job.id} after comprehensive screening")
             return eligible_fixers
             
         except Exception as e:
             logger.error(f"Error getting eligible fixers: {str(e)}")
             return []
+    
+    def _is_fixer_eligible(self, db: Session, fixer: Fixer) -> bool:
+        """Enhanced fixer eligibility check with rating and payment validation"""
+        try:
+            # Check rating requirements (≥3.0 or new fixer with 0.0)
+            if fixer.is_new_fixer:
+                # New fixers with 0.0 rating are eligible
+                if fixer.rating != 0.0:
+                    fixer.is_new_fixer = False  # No longer new
+            else:
+                # Existing fixers must have ≥3.0 rating
+                effective_rating = fixer.rating - fixer.rating_penalty_total
+                if effective_rating < self.minimum_rating_threshold:
+                    logger.info(f"Fixer {fixer.id} ineligible: rating {effective_rating} < {self.minimum_rating_threshold}")
+                    return False
+            
+            # Check platform fee status
+            if fixer.fee_payment_overdue or fixer.fee_suspension_applied:
+                logger.info(f"Fixer {fixer.id} ineligible: platform fees overdue or suspended")
+                return False
+            
+            # Check if fixer owes $0 outstanding balance
+            if fixer.platform_fees_owed > 0:
+                logger.info(f"Fixer {fixer.id} ineligible: outstanding balance R{fixer.platform_fees_owed}")
+                return False
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error checking fixer eligibility: {str(e)}")
+            return False
+    
+    def _check_location_and_fairness(self, db: Session, job: Job, fixer: Fixer, availability: FixerAvailability) -> bool:
+        """Check location proximity and apply fairness criteria"""
+        try:
+            # Location proximity check
+            if (job.latitude and job.longitude and 
+                availability.current_latitude and availability.current_longitude):
+                distance = self._calculate_distance(
+                    job.latitude, job.longitude,
+                    availability.current_latitude, availability.current_longitude
+                )
+                if distance > availability.service_radius:
+                    return False
+            
+            # Fair distribution check - ensure fixers get equal opportunities
+            # Check if fixer was recently assigned to avoid overloading
+            if fixer.last_assigned_at:
+                hours_since_last_job = (datetime.utcnow() - fixer.last_assigned_at).total_seconds() / 3600
+                if hours_since_last_job < 1:  # Less than 1 hour since last assignment
+                    # Only allow if completion rate is very high (>95%)
+                    if fixer.completion_percentage < 95.0:
+                        return False
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error checking location and fairness: {str(e)}")
+            return False
+    
+    def _apply_fair_matching_algorithm(self, db: Session, job: Job, fixer_ids: List[str]) -> List[str]:
+        """Apply fair matching algorithm prioritizing proximity, rating, availability, and performance"""
+        try:
+            if not fixer_ids:
+                return []
+            
+            fixer_scores = []
+            
+            for fixer_id in fixer_ids:
+                fixer = db.query(Fixer).filter(Fixer.id == fixer_id).first()
+                availability = db.query(FixerAvailability).filter(
+                    FixerAvailability.fixer_id == fixer_id
+                ).first()
+                
+                if not fixer or not availability:
+                    continue
+                
+                score = self._calculate_fixer_match_score(job, fixer, availability)
+                fixer_scores.append((fixer_id, score))
+            
+            # Sort by score (highest first) and return sorted fixer IDs
+            fixer_scores.sort(key=lambda x: x[1], reverse=True)
+            sorted_fixer_ids = [fixer_id for fixer_id, score in fixer_scores]
+            
+            logger.info(f"Applied fair matching algorithm, top fixer scores: {fixer_scores[:5]}")
+            return sorted_fixer_ids
+            
+        except Exception as e:
+            logger.error(f"Error applying fair matching algorithm: {str(e)}")
+            return fixer_ids  # Return original list if error
+    
+    def _calculate_fixer_match_score(self, job: Job, fixer: Fixer, availability: FixerAvailability) -> float:
+        """Calculate comprehensive match score for fair algorithm"""
+        try:
+            score = 0.0
+            
+            # 1. Proximity score (highest weight: 40%)
+            if (job.latitude and job.longitude and 
+                availability.current_latitude and availability.current_longitude):
+                distance = self._calculate_distance(
+                    job.latitude, job.longitude,
+                    availability.current_latitude, availability.current_longitude
+                )
+                # Closer = higher score (max 40 points)
+                proximity_score = max(0, 40 - (distance * 2))  # 2 points deducted per km
+                score += proximity_score
+            else:
+                score += 20  # Default proximity score if no GPS data
+            
+            # 2. User rating score (25%)
+            effective_rating = max(0, fixer.rating - fixer.rating_penalty_total)
+            rating_score = (effective_rating / 5.0) * 25  # Max 25 points for 5-star rating
+            score += rating_score
+            
+            # 3. Availability and reliability score (20%)
+            reliability_score = (availability.reliability_score / 100.0) * 20
+            score += reliability_score
+            
+            # 4. Historical performance score (15%)
+            performance_score = (fixer.completion_percentage / 100.0) * 15
+            score += performance_score
+            
+            # Fairness boost: Give slight advantage to fixers who haven't worked recently
+            if fixer.last_assigned_at:
+                hours_since_last_job = (datetime.utcnow() - fixer.last_assigned_at).total_seconds() / 3600
+                if hours_since_last_job > 24:  # More than 24 hours
+                    score += 5  # Fairness boost
+                elif hours_since_last_job > 12:  # More than 12 hours
+                    score += 2  # Small fairness boost
+            else:
+                score += 10  # New fixer boost
+            
+            return round(score, 2)
+            
+        except Exception as e:
+            logger.error(f"Error calculating fixer match score: {str(e)}")
+            return 0.0
     
     def _calculate_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
         """Calculate distance between two GPS coordinates in kilometers"""
