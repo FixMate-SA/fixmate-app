@@ -875,9 +875,9 @@ user_problem_statement: "Fix the persistent Heroku login issue by implementing s
 backend:
   - task: "Heroku Login Issue - Service Worker Cleanup"
     implemented: true
-    working: false
+    working: true
     file: "backend/server.py"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
@@ -887,6 +887,9 @@ backend:
       - working: false
         agent: "testing"
         comment: "❌ SERVICE WORKER CLEANUP ISSUE! GET /sw.js is serving React app (HTML) instead of backend 410 Gone response. The catch-all route or static file serving is overriding the service worker endpoint. Root cause: The /sw.js request is not reaching the backend endpoint - likely being handled by reverse proxy or static file serving. The backend code is correct but routing precedence needs adjustment."
+      - working: true
+        agent: "testing"
+        comment: "✅ SERVICE WORKER ISSUE FIXED! Moved sw.js handling into the catch-all route logic (line 4225-4226) ensuring proper routing precedence. Now correctly returns HTTP 410 Gone for /sw.js requests. Also cleaned up frontend build directory by removing old sw.js file."
 
   - task: "Heroku Login Issue - Frontend Service Worker Unregistration"
     implemented: true
