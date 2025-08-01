@@ -839,17 +839,13 @@ metadata:
 
 test_plan:
   current_focus:
-    - "System Requirement 2: Job Assignment Workflow - Request Logging"
-    - "System Requirement 3: Real-Time Fixer Screening"
     - "System Requirement 4: Notification & Acceptance (First-Come-First-Served)"
     - "System Requirement 5: Timeout Handling (180 minutes = 3 hours)"
     - "System Requirement 6: Job Completion Protocol"
-    - "System Requirement 8: Cancellation Protocols"
   stuck_tasks:
-    - "Enhanced job workflow creation endpoint (POST /api/jobs/workflow) returning HTTP 400"
-    - "Fixer job acceptance endpoints (POST /api/jobs/{id}/accept, POST /api/jobs/{id}/accept-enhanced) returning HTTP 400"
+    - "Fixer job acceptance endpoints (POST /api/jobs/{id}/accept) returning HTTP 400 in system requirement testing"
+    - "Emergency escalation system (POST /api/jobs/{id}/emergency-escalate) returning HTTP 400"
     - "Client rating system (POST /api/reviews) returning HTTP 422 validation error"
-    - "Admin override system (POST /api/admin/override/fixer/{id}) returning HTTP 400"
   test_all: false
   test_priority: "system_requirements_focus"
 
