@@ -415,6 +415,9 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     Enhanced login with password-based authentication and role detection
     """
     try:
+        # DEBUG: Log login attempt for Heroku debugging
+        logger.info(f"LOGIN ATTEMPT: phone={request.phone}, environment={'heroku' if os.getenv('PORT') else 'local'}")
+        
         # Format phone number and try multiple formats to find user
         original_phone = request.phone
         
@@ -443,15 +446,19 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
             if not clean_phone.startswith('whatsapp:'):
                 phone_formats.append(f"whatsapp:{original_phone}")
         
+        # DEBUG: Log phone formats being tried
+        logger.info(f"LOGIN DEBUG: Trying phone formats: {phone_formats}")
+        
         # Try to find user with any of the phone formats
         user = None
         for phone_format in phone_formats:
             user = db.query(User).filter(User.phone == phone_format).first()
             if user:
-                print(f"✅ Found user with phone format: {phone_format}")
+                logger.info(f"LOGIN DEBUG: Found user with format: {phone_format}")
                 break
         
         if not user:
+            logger.warning(f"LOGIN DEBUG: No user found with any phone format for: {original_phone}")
             raise HTTPException(status_code=404, detail="Account not found. Please sign up first.")
         
         # Check password
