@@ -7,8 +7,10 @@ const FixerJobBoard = () => {
   const { t } = useLanguage();
   
   const [availableJobs, setAvailableJobs] = useState([]);
+  const [currentJob, setCurrentJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(null);
+  const [cancelling, setCancelling] = useState(null);
   const [fixerInfo, setFixerInfo] = useState(null);
 
   useEffect(() => {
