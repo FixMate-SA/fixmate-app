@@ -1,36 +1,33 @@
 <analysis>
-The AI engineer successfully progressed the FixMate-SA application through several development phases, culminating in substantial backend and frontend feature additions, including AI-powered matching and PWA capabilities. The trajectory details a challenging debugging period focused primarily on frontend stability and Heroku deployment. Initially, a JSON parsing error in the Dashboard component was identified and fixed locally. Subsequently, the focus shifted to a blank page issue on Heroku, leading to a complex series of frontend dependency and build configuration fixes, including , , and  modifications, as well as React and Babel version adjustments. Although local builds and functionality were restored multiple times, persistent git-related deployment hurdles on Heroku prevented the latest working code from going live, leading to a state where the application functions locally but exhibits navigation issues in production.
+The AI engineer's work evolved from initial Heroku deployment and navigation fixes to implementing a complex job assignment workflow. Key phases included debugging Heroku R10 errors, resolving frontend navigation issues, fixing  errors, and integrating an AI-powered smart matching system. A significant portion focused on a comprehensive Job Assignment Workflow, involving database schema updates, real-time fixer screening, timeout handling, fraud prevention, and cancellation protocols. After successfully implementing and debugging this workflow to 100% completion, the focus shifted to refining the application. The user then requested a full cleanup, specifically removing Phase 3, PWA Status, and Performance features from both frontend and backend, including related models and services. This cleanup was thorough. Currently, the AI engineer is debugging a persistent login issue on Heroku, which appears functional locally but fails in the production environment, attributing it to environment-aware API URL handling.
 </analysis>
 
 <product_requirements>
-FixMate-SA is a mobile/web application designed to connect clients with fixers, offering core features like user authentication, job management, fixer profiles, and ratings. It supports non-smartphone users via SMS/MMS (USSD) and includes a learning platform.
+FixMate-SA is a mobile/web application connecting clients with fixers, featuring user authentication, job management, fixer profiles, and rating systems, supporting non-smartphone users via SMS/MMS (USSD) and a learning platform.
 
-Recent enhancements aimed to:
-*   Support all 11 South African official languages.
-*   Implement a fixer payment system with job allocation controls.
-*   Develop an Admin verification portal for fixers (ID/background checks).
-*   Integrate an Emergency/Panic Button with location alerts.
-*   Enhance AI job matching for fairness.
-*   Implement password authentication for all roles and comprehensive signup (full name, ID, town).
-*   Ensure robust fixer vetting.
-*   Migrate a legacy Flask application (WhatsApp, Gemini, PayFast, job matching, voice transcription, analytics) into the FastAPI backend.
-*   Specific latest requests included: separate name/surname capture, fixing a 405 WhatsApp webhook error, implementing a FixMate Job Request and Assignment Workflow (terms, location, debt checks, simultaneous notifications, FCFS, timeouts, completion/ratings, admin overrides, AI monitoring, single job limit), Heroku-compatible DB migrations, CLI commands for adding password-enabled fixers, and resolving login issues for CLI-created fixers (phone format,  flag).
+The primary goal is to establish a robust FixMate Job Request and Assignment Workflow. This workflow mandates client terms acceptance before job submission and includes a multi-step process:
+1.  **Request Logging**: Client submits/cancels requests.
+2.  **Real-Time Fixer Screening**: Identifies closest, available fixers (/bin/bash debt, ≥3.0 rating or new 0.0 rating, available status).
+3.  **Notification & Acceptance**: Qualified fixers receive app/WhatsApp notifications; first-come-first-served acceptance, with cancellation options.
+4.  **Client Updates & Tracking**: Client receives fixer details and real-time tracking; can cancel until fixer arrival.
+5.  **Timeout Handling**: If fixer doesn't arrive within 180 minutes, job is flagged EMERGENCY, reassigned, and original fixer is marked unavailable (4-hour freeze).
+6.  **Job Completion Protocol**: Post-service, client rates fixer, provides feedback; R20 platform fee is automatically deducted. Admins can override incomplete jobs.
+7.  **AI-Powered Fraud Prevention**: Monitors fixers for patterns (>3 failures/week, <65% completion, >25% cancellation) triggering admin alerts.
+8.  **Fair Matching Algorithm**: Prioritizes proximity, user rating, availability, and historical performance.
+9.  **Cancellation Protocols**: Fixer cancellation (2-hour freeze, 0.2 rating penalty), Client cancellation (immediate job release, no fees). Both receive notifications.
+10. **Fixer Constraints**: Only one active job; must complete current job before new requests; outstanding balances block eligibility; 48-hour suspension for unpaid fees.
+11. **Admin Override Privileges**: Can bypass restrictions for non-fault failures, false reports, or emergencies; can manually reset status/ratings.
+Additionally, the user requested permanent removal of Phase 3, PWA Status, and Performance features from the application.
 </product_requirements>
 
 <key_technical_concepts>
 -   **Full-stack architecture**: React.js (frontend), FastAPI (backend), PostgreSQL (database).
--   **API Communication**: REST API, relative URLs, Kubernetes ingress with  prefix.
--   **Database Management**: SQLAlchemy ORM, Database migrations.
--   **Authentication**: Phone/password, bcrypt, JWT, flexible phone number parsing.
+-   **API Communication**: REST API, Kubernetes ingress with  prefix.
 -   **Cloud Deployment**: Heroku, Supervisor, environment variables.
--   **Messaging**: Dialog360 WhatsApp API, SMS/USSD.
--   **Internationalization (I18n)**: React Context for multi-language support.
--   **CLI Tools**: Python  for admin tasks.
--   **AI/NLP**: Job classification, smart matching, multilingual assistant.
--   **Geospatial**:  for distance calculations.
--   **Image Handling**: Base64 encoding.
--   **PWA**: Service Workers, Manifest, Offline support, Push Notifications.
--   **Performance**: Lazy loading, code splitting, caching (FastAPI-Cache2), React Query.
+-   **Authentication**: Phone/password, JWT.
+-   **AI/LLM**: Gemini, OpenAI (GPT-4) for smart matching.
+-   **Database Migration**: SQLAlchemy, custom migration scripts.
+-   **Real-time Features**: Notifications, tracking.
 </key_technical_concepts>
 
 <code_architecture>
@@ -38,60 +35,110 @@ The application employs a standard full-stack architecture with  (React) and  (F
 
 
 
--   ****: Core FastAPI app. Configured for API routes, serving static frontend files. Integrates WhatsApp routes, job workflow, updated auth, and new API endpoints for Smart Matching, Photo Verification, Disputes, Tracking, Gamification, AI Chat Assistant, PWA push notifications, and performance optimizations.
--   ****: SQLAlchemy ORM models. Updated with enhanced /, new models for job workflow, Phase 2 (JobPhoto, JobDispute), Phase 3 (JobTracking, FixerBadge, FixerTier), and Phase 4A (PushSubscription).
--   ****: Pydantic schemas. Expanded for job workflow and all subsequent features.
--   ****: Backend caching/compression.
--   ****: Originally replaced by . Was simplified temporarily for Heroku build issues. Later restored with full React Router routes, directly importing components (no lazy loading).
--   ****: Intended optimized main React component with lazy loading. Its content was used as reference for restoring .
--   ****: Modified to fix a  by adding a conditional check () before parsing .
--   ****: Created to define the main layout structure. Modified to use .
--   ** (NEW)**: Created to resolve persistent navigation issues on Heroku by ensuring proper event handling for React Router links.
--   ****: Modified to update environment variable usage from  to  to prevent runtime errors.
--   ****: Modified to include  buildpack in addition to  for full-stack deployment on Heroku.
--   ****: Updated to specify frontend build (yarn install v1.22.22
-info No lockfile found.
-[1/5] Validating package.json...
-info Visit https://yarnpkg.com/en/docs/cli/install for documentation about this command.) before starting the backend service. Also adjusted release phase command.
--   ** (root)**: A new  was created at the root level to enable Heroku to detect and build the Node.js frontend application.
--   ****: Dependencies were adjusted multiple times:  was removed,  was also removed during a debugging phase, React was downgraded to 18.3.1, , , and  were added.  was downgraded to 6.30.1.
+**Key Files and Changes:**
+
+*   ****: Contains SQLAlchemy models for database.
+    *   **Changes**: Enhanced Job and Fixer models with workflow, rating, performance tracking, and fraud prevention fields (e.g., , , , , ). Added  and  models. Removed  and  (PWA related).
+*   ****: Main FastAPI application with API endpoints.
+    *   **Changes**: Added/modified API endpoints for enhanced smart matching and the comprehensive job assignment workflow (, , , , , ). Removed PWA-related API endpoints. Simplified Dashboard endpoint by removing specific decorators causing 500 errors. Added debug endpoints for Heroku.
+*   ****: Implements core job assignment logic.
+    *   **Changes**: Significant enhancements to , , , . Implemented real-time fixer screening (proximity, debt, rating, availability), FCFS logic, 180-minute timeout with re-assignment, R20 platform fee, AI fraud prevention, and admin override logic.
+*   ****: Handles AI interactions.
+    *   **Changes**: Integrated OpenAI (GPT-4) alongside Gemini for advanced reasoning and reinforcement learning in smart matching.
+*   ****: Main React component defining routes.
+    *   **Changes**: Confirmed removal of Phase3, PWA, and Performance routes.
+*   ****: Primary navigation component.
+    *   **Changes**: Cleaned up to show only 11 specific navigation items, explicitly removing Phase 3, PWA Status, and Performance to match system requirements.
+*   ****: Dashboard UI.
+    *   **Changes**: Fixed  and 500 errors by handling JSON parsing, removing problematic decorators and ensuring correct data fetching.
+*   ****: Displays job listings.
+    *   **Changes**: Fixed  by adding robust array validation.
+*   ****: Job creation UI.
+    *   **Changes**: Updated to enforce terms acceptance before submission and integrated with the enhanced workflow API (). Modified to use  from .
+*   ****: Fixer's job board.
+    *   **Changes**: Added Cancel Job functionality for fixers, integrated with the backend cancellation API, and updated to use  for API calls.
+*   ****: Handles client terms acceptance.
+    *   **Changes**: Confirmed existing implementation and integrated with the new  for API calls.
+*   ****: Admin UI for smart matching.
+    *   **Changes**: Fixed API calls by changing  to  and ensuring correct token usage.
+*   ****: Admin UI for photo verification.
+    *   **Changes**: Applied similar environment variable and token fixes as SmartMatchingDashboard.
+*   ** (NEW)**: Utility for consistent API URL handling.
+    *   **Importance**: Critical for handling relative/absolute backend URLs in development vs. production (Heroku) environments, addressing login issues.
+    *   **Changes**: Created to define  which returns  for production and  for development.
+*   ****: Central API service.
+    *   **Changes**: Updated to use  for all API calls.
+*   ****: Frontend translations.
+    *   **Changes**: Removed all Phase 3, PWA, and Performance-related translation strings.
+*   ** (NEW)**: Database migration script.
+    *   **Importance**: Ensures new columns for enhanced workflow and removed tables are properly managed in the database schema.
+    *   **Changes**: Created to add missing columns to  and  tables, and drop  and  tables.
+*   ** (NEW)**: A declaration file.
+    *   **Importance**: Documents features that are permanently removed and should not be reintroduced.
+    *   **Changes**: Created to explicitly list Phase 3, PWA Status, and Performance as permanently banned.
+*   ****: Heroku build configuration.
+    *   **Changes**: Includes  and .
+*   ****: Heroku process configuration.
+    *   **Changes**: Configured to run backend () with . Assumes frontend is built via  and served by backend.
+*   ** (root)**: Root-level Node.js manifest.
+    *   **Changes**: Includes  script to build frontend (
+added 1 package, removed 49 packages, changed 2 packages, and audited 1353 packages in 15s
+
+278 packages are looking for funding
+  run `npm fund` for details
+
+12 vulnerabilities (2 low, 4 moderate, 6 high)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+> fixmate-sa-frontend@0.1.0 build
+> craco build
+
+Creating an optimized production build...
+Compiled successfully.
+
+File sizes after gzip:
+
+  131.62 kB  build/static/js/main.eaa79dc3.js
+  7.4 kB     build/static/css/main.98a7645a.css
+
+The project was built assuming it is hosted at /.
+You can control this with the homepage field in your package.json.
+
+The build folder is ready to be deployed.
+You may serve it with a static server:
+
+  yarn global add serve
+  serve -s build
+
+Find out more about deployment here:
+
+  https://cra.link/deployment).
+
 </code_architecture>
 
 <pending_tasks>
--   **Fixer Payment System**: Finalize full integration into job allocation UI and payment flow.
--   **Admin Verification System**: Develop frontend UI for fixer application and admin review (beyond basic photo verification).
--   **Enhanced AI Job Matching**: Implement advanced fairness algorithms and reinforcement learning.
--   **Real-Time Job Tracking with ETA**: Integrate frontend for live GPS tracking and notifications.
--   **Gamification & Fixer Reputation Tiers**: Complete frontend/backend implementation of badges, levels, and performance incentives.
--   **AI Chat Assistant (Multilingual)**: Complete full frontend/backend implementation for automated support.
--   **Deploy Fixed Navigation to Heroku**: The navigation system is working locally but needs to be deployed to Heroku.
+-   **Heroku Deployment Issues**: The application is fully functional locally, but a persistent login issue remains when deployed to Heroku. This needs to be diagnosed and resolved to ensure production readiness.
 </pending_tasks>
 
 <current_work>
-Immediately before this summary request, the AI engineer was engaged in resolving a critical frontend navigation issue on the Heroku deployment of the FixMate-SA application.
+Immediately before this summary request, the AI engineer was actively debugging a login problem occurring specifically on the Heroku deployment of the FixMate-SA application. The application logs revealed a Login failed message on Heroku, despite login working perfectly in the local preview environment.
 
-The work began with addressing a dashboard display issue where the screen would flash and revert. This was traced to a  in  when parsing . The fix involved adding a conditional check () to ensure valid data. This fix was verified locally.
+The previous attempts to resolve this focused on:
+1.  **Backend Login Endpoint Debugging**: Added debug logging to  in  to capture request details and potential issues.
+2.  **Database Health Check**: Implemented a simple database health check endpoint in  to verify database connectivity on Heroku.
+3.  **Frontend API Configuration Refinement**:
+    *   Created a new utility file  to provide a consistent base URL for API calls. This utility is designed to return a relative path () for production (Heroku) and an absolute path () for local development, addressing the assumption that Heroku serves both frontend and backend on the same domain.
+    *   Updated critical frontend components like  (for login), , , and , as well as the main API service , to use this new  utility.
+4.  **Frontend Debugging**: Added console logging to  and  to explicitly log the API URLs being used and the login function's execution flow.
+5.  **CORS Configuration Review**: Checked CORS settings in , which appear correctly configured.
 
-Subsequently, the user reported a blank page on Heroku. This led to a series of extensive debugging steps primarily focused on Heroku's build process and environment configuration. Key actions included:
-1.  Adding  buildpack to .
-2.  Creating a root  to enable Heroku's Node.js detection.
-3.  Modifying the root  to explicitly build the frontend using yarn run v1.22.22
-info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. before starting the backend.
-4.  Addressing various frontend build issues by:
-    *   Adding  and .
-    *   Downgrading React to 18.3.1.
-    *   Removing old  and  dependencies.
-    *   Removing problematic imports/files (, , ).
-    *   Downgrading  to 6.30.1.
-    *   Restoring the main  to include all application routes (previously simplified for debugging).
-    *   Adding missing  package.
-    *   Updating  to  in .
-
-After these extensive fixes, the application's full navigation and features were verified to be working perfectly in the local preview environment.
-
-The final challenge, and the immediate context before this summary, is that despite the local fixes and successful builds, the Heroku deployment still exhibits navigation issues (screen flashes, clicks don't change URL, page re-renders Dashboard). The AI engineer identified that React Router links were not functioning correctly on Heroku, even though programmatic navigation worked. To address this, a new  component was created, and  was updated to use it. This fix was also verified to be working locally. However, subsequent attempts to deploy these latest changes to Heroku have been hampered by persistent issues with the git system, preventing the updated code from being pushed and triggering a successful Heroku rebuild.
+The local preview shows successful login and full application functionality, confirming that the code changes themselves are not breaking the login. The problem is isolated to the Heroku environment, strongly suggesting an environment variable, build-time URL resolution, or deployment-specific configuration issue related to how the frontend tries to reach the backend on Heroku. The latest action was adding more extensive logging to pinpoint the exact failure point during Heroku login.
 </current_work>
 
 <optional_next_step>
-Address the persistent git and Heroku deployment issues to push the locally verified navigation fix to the production environment.
+Diagnose the Heroku login issue by analyzing Heroku logs based on the added debug logging.
 </optional_next_step>
