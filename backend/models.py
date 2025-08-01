@@ -44,8 +44,6 @@ class User(Base):
     
     # Phase 4: PWA & Mobile Relationships
     push_subscriptions = relationship("PushSubscription", back_populates="user")
-    app_sessions = relationship("AppSession", back_populates="user")
-    offline_actions = relationship("OfflineAction", back_populates="user")
     
     def set_password(self, password):
         """Set password hash using bcrypt"""
