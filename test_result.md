@@ -891,9 +891,10 @@ frontend:
 test_plan:
   current_focus:
     - "Heroku Production Login Testing"
-  stuck_tasks: []
+  stuck_tasks:
+    - "Heroku Production Login Testing"
   test_all: false
-  test_priority: "production_verification"
+  test_priority: "critical_deployment_failure"
 
 agent_communication:
   - agent: "main"
