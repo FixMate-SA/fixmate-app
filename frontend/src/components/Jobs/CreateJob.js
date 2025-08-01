@@ -194,24 +194,51 @@ const CreateJob = () => {
     setLoading(true);
     setError('');
 
+    // Check if terms are accepted before proceeding
+    if (!termsAccepted) {
+      setShowTermsModal(true);
+      setLoading(false);
+      return;
+    }
+
     try {
       const jobData = {
         ...formData,
         user_id: user.id,
         estimated_price: formData.estimated_price ? parseFloat(formData.estimated_price) : null,
         scheduled_at: formData.scheduled_at ? new Date(formData.scheduled_at).toISOString() : null,
+        contact_number: user.phone, // Use user's phone as contact
+        latitude: null, // TODO: Add GPS integration
+        longitude: null
       };
 
-      const response = await apiService.createJob(jobData);
-      const jobId = response.data.id;
-      setCreatedJobId(jobId);
-      
-      // Automatically find smart matches after job creation
-      await findSmartMatches(jobId);
+      // Use the enhanced workflow API instead of regular job creation
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs/workflow`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(jobData)
+      });
+
+      if (response.ok) {
+        const responseData = await response.json();
+        const jobId = responseData.job_id;
+        setCreatedJobId(jobId);
+        
+        // Show success message with workflow information
+        alert(`Job created successfully! ${responseData.message}`);
+        
+        // Automatically show workflow status
+        setShowSmartMatching(true);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || 'Failed to create job');
+      }
       
     } catch (err) {
       console.error('Error creating job:', err);
-      setError(err.response?.data?.detail || 'Failed to create job');
+      setError('Failed to create job. Please try again.');
     } finally {
       setLoading(false);
     }
