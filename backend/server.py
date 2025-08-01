@@ -1137,6 +1137,374 @@ async def update_fixer_location(fixer_id: str, request: dict, db: Session = Depe
     else:
         raise HTTPException(status_code=500, detail="Failed to update location")
 
+@api_router.post("/jobs/{job_id}/cancel")
+async def cancel_job(job_id: str, request: dict, db: Session = Depends(get_db)):
+    """Cancel job with enhanced protocols and penalties"""
+    user_id = request.get('user_id')
+    fixer_id = request.get('fixer_id')
+    cancellation_reason = request.get('reason', '')
+    cancelled_by = request.get('cancelled_by')  # 'client' or 'fixer'
+    
+    if not cancelled_by:
+        raise HTTPException(status_code=400, detail="cancelled_by is required (client or fixer)")
+    
+    if cancelled_by == 'client':
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id is required for client cancellation")
+        success, message = job_workflow_service.cancel_job_by_client(db, job_id, user_id, cancellation_reason)
+    elif cancelled_by == 'fixer':
+        if not fixer_id:
+            raise HTTPException(status_code=400, detail="fixer_id is required for fixer cancellation")
+        success, message = job_workflow_service.cancel_job_by_fixer(db, job_id, fixer_id, cancellation_reason)
+    else:
+        raise HTTPException(status_code=400, detail="cancelled_by must be 'client' or 'fixer'")
+    
+    if success:
+        return {"success": True, "message": message}
+    else:
+        raise HTTPException(status_code=400, detail=message)
+
+@api_router.post("/admin/override/fixer/{fixer_id}")
+async def admin_override_fixer_restrictions(fixer_id: str, request: dict, db: Session = Depends(get_db)):
+    """Admin override system for fixer restrictions and manual interventions"""
+    admin_user_id = request.get('admin_user_id')
+    override_type = request.get('override_type')  # bypass_restrictions, reset_status, adjust_rating, emergency_intervention
+    reason = request.get('reason')
+    override_data = request.get('override_data', {})
+    
+    if not admin_user_id:
+        raise HTTPException(status_code=400, detail="admin_user_id is required")
+    if not override_type:
+        raise HTTPException(status_code=400, detail="override_type is required")
+    if not reason:
+        raise HTTPException(status_code=400, detail="reason is required")
+    
+    success, message = job_workflow_service.admin_override_fixer_restrictions(
+        db, admin_user_id, fixer_id, override_type, reason, override_data
+    )
+    
+    if success:
+        return {"success": True, "message": message}
+    else:
+        raise HTTPException(status_code=400, detail=message)
+
+@api_router.get("/admin/fraud-alerts")
+async def get_fraud_alerts(
+    status: str = None, 
+    severity: str = None, 
+    db: Session = Depends(get_db)
+):
+    """Get fraud alerts for admin review"""
+    alerts = job_workflow_service.get_fraud_alerts_for_admin(db, status, severity)
+    return {"fraud_alerts": alerts, "total_count": len(alerts)}
+
+@api_router.post("/admin/fraud-alerts/{alert_id}/review")
+async def review_fraud_alert(alert_id: str, request: dict, db: Session = Depends(get_db)):
+    """Admin review and response to fraud alerts"""
+    from models import FraudAlertLog
+    
+    admin_user_id = request.get('admin_user_id')
+    action_taken = request.get('action_taken')  # warning, suspension, no_action, dismiss
+    admin_response = request.get('admin_response', '')
+    
+    if not admin_user_id:
+        raise HTTPException(status_code=400, detail="admin_user_id is required")
+    if not action_taken:
+        raise HTTPException(status_code=400, detail="action_taken is required")
+    
+    # Verify admin permissions
+    admin_user = db.query(User).filter(User.id == admin_user_id).first()
+    if not admin_user or admin_user.role not in ['admin', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Update fraud alert
+    alert = db.query(FraudAlertLog).filter(FraudAlertLog.id == alert_id).first()
+    if not alert:
+        raise HTTPException(status_code=404, detail="Fraud alert not found")
+    
+    alert.status = "reviewed"
+    alert.action_taken = action_taken
+    alert.admin_response = admin_response
+    alert.reviewed_by = admin_user_id
+    alert.reviewed_at = datetime.utcnow()
+    
+    db.commit()
+    
+    return {"success": True, "message": "Fraud alert reviewed successfully"}
+
+@api_router.get("/fixer/{fixer_id}/performance-stats")
+async def get_fixer_performance_stats(fixer_id: str, db: Session = Depends(get_db)):
+    """Get comprehensive fixer performance statistics"""
+    fixer = db.query(Fixer).filter(Fixer.id == fixer_id).first()
+    if not fixer:
+        raise HTTPException(status_code=404, detail="Fixer not found")
+    
+    availability = db.query(FixerAvailability).filter(
+        FixerAvailability.fixer_id == fixer_id
+    ).first()
+    
+    # Get behavior analysis
+    from models import FixerBehaviorAnalysis
+    analysis = db.query(FixerBehaviorAnalysis).filter(
+        FixerBehaviorAnalysis.fixer_id == fixer_id
+    ).first()
+    
+    # Calculate effective rating
+    effective_rating = max(0, fixer.rating - fixer.rating_penalty_total)
+    
+    stats = {
+        "fixer_id": fixer_id,
+        "fixer_name": fixer.name,
+        "base_rating": fixer.rating,
+        "rating_penalty_total": fixer.rating_penalty_total,
+        "effective_rating": effective_rating,
+        "is_new_fixer": fixer.is_new_fixer,
+        "jobs_completed": fixer.jobs_completed,
+        "jobs_cancelled": fixer.jobs_cancelled,
+        "jobs_incomplete": fixer.jobs_incomplete,
+        "jobs_no_show": fixer.jobs_no_show,
+        "completion_percentage": fixer.completion_percentage,
+        "platform_fees_owed": fixer.platform_fees_owed,
+        "platform_fees_paid": fixer.platform_fees_paid,
+        "fee_payment_overdue": fixer.fee_payment_overdue,
+        "cancellation_penalty_count": fixer.cancellation_penalty_count,
+        "availability_freeze_count": fixer.availability_freeze_count,
+        "total_freeze_hours": fixer.total_freeze_hours,
+        "is_available": availability.is_available if availability else False,
+        "is_availability_frozen": availability.is_availability_frozen if availability else False,
+        "freeze_reason": availability.freeze_reason if availability else None,
+        "availability_frozen_until": availability.availability_frozen_until.isoformat() if availability and availability.availability_frozen_until else None
+    }
+    
+    # Add behavior analysis if available
+    if analysis:
+        stats["behavior_analysis"] = {
+            "risk_level": analysis.risk_level,
+            "reliability_score": analysis.reliability_score,
+            "completion_rate": analysis.completion_rate,
+            "cancellation_rate": analysis.cancellation_rate,
+            "admin_attention_required": analysis.admin_attention_required,
+            "behavior_flags": json.loads(analysis.behavior_flags) if analysis.behavior_flags else [],
+            "last_analyzed_at": analysis.last_analyzed_at.isoformat() if analysis.last_analyzed_at else None
+        }
+    
+    return stats
+
+@api_router.get("/jobs/{job_id}/assignment-history")
+async def get_job_assignment_history(job_id: str, db: Session = Depends(get_db)):
+    """Get complete assignment history for a job"""
+    from models import JobAssignmentHistory, JobNotification
+    
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Get assignment history
+    history = db.query(JobAssignmentHistory).filter(
+        JobAssignmentHistory.job_id == job_id
+    ).order_by(JobAssignmentHistory.notified_at).all()
+    
+    # Get notifications
+    notifications = db.query(JobNotification).filter(
+        JobNotification.job_id == job_id
+    ).order_by(JobNotification.sent_at).all()
+    
+    assignment_history = []
+    for h in history:
+        fixer = db.query(Fixer).filter(Fixer.id == h.fixer_id).first()
+        assignment_history.append({
+            "fixer_id": h.fixer_id,
+            "fixer_name": fixer.name if fixer else "Unknown",
+            "assignment_type": h.assignment_type,
+            "notified_at": h.notified_at.isoformat(),
+            "responded_at": h.responded_at.isoformat() if h.responded_at else None,
+            "response_type": h.response_type,
+            "response_reason": h.response_reason,
+            "accepted_at": h.accepted_at.isoformat() if h.accepted_at else None,
+            "cancelled_at": h.cancelled_at.isoformat() if h.cancelled_at else None,
+            "completion_status": h.completion_status
+        })
+    
+    notification_history = []
+    for n in notifications:
+        fixer = db.query(Fixer).filter(Fixer.id == n.fixer_id).first()
+        notification_history.append({
+            "fixer_id": n.fixer_id,
+            "fixer_name": fixer.name if fixer else "Unknown",
+            "notification_type": n.notification_type,
+            "channel": n.channel,
+            "sent_at": n.sent_at.isoformat(),
+            "delivered_at": n.delivered_at.isoformat() if n.delivered_at else None,
+            "read_at": n.read_at.isoformat() if n.read_at else None,
+            "status": n.status,
+            "response_action": n.response_action
+        })
+    
+    return {
+        "job_id": job_id,
+        "job_status": job.status,
+        "workflow_stage": job.workflow_stage,
+        "assignment_attempts": job.assignment_attempts,
+        "auto_reassignment_count": job.auto_reassignment_count,
+        "is_emergency_escalated": job.is_emergency_escalated,
+        "emergency_escalation_reason": job.emergency_escalation_reason,
+        "fixer_timeout_count": job.fixer_timeout_count,
+        "assignment_history": assignment_history,
+        "notification_history": notification_history
+    }
+
+@api_router.post("/jobs/{job_id}/emergency-escalate")
+async def emergency_escalate_job(job_id: str, request: dict, db: Session = Depends(get_db)):
+    """Manually escalate job to emergency status (Admin only)"""
+    admin_user_id = request.get('admin_user_id')
+    escalation_reason = request.get('reason', 'manual_admin_escalation')
+    
+    if not admin_user_id:
+        raise HTTPException(status_code=400, detail="admin_user_id is required")
+    
+    # Verify admin permissions
+    admin_user = db.query(User).filter(User.id == admin_user_id).first()
+    if not admin_user or admin_user.role not in ['admin', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    if job.status in ["completed", "cancelled"]:
+        raise HTTPException(status_code=400, detail="Cannot escalate completed or cancelled job")
+    
+    # Manual escalation
+    job_workflow_service._escalate_to_emergency_enhanced(db, job, escalation_reason)
+    
+    # Log admin override
+    from models import AdminOverrideLog
+    override_log = AdminOverrideLog(
+        admin_user_id=admin_user_id,
+        target_type="job",
+        target_id=job_id,
+        override_type="emergency_escalation",
+        override_reason=f"Manual emergency escalation: {escalation_reason}",
+        emergency_flag=True
+    )
+    db.add(override_log)
+    db.commit()
+    
+    logger.info(f"Job {job_id} manually escalated to emergency by admin {admin_user_id}")
+    return {"success": True, "message": "Job escalated to emergency status"}
+
+@api_router.get("/admin/workflow-analytics")
+async def get_workflow_analytics(db: Session = Depends(get_db)):
+    """Get comprehensive workflow analytics for admin dashboard"""
+    from models import FraudAlertLog, AdminOverrideLog
+    
+    # Job statistics
+    total_jobs = db.query(Job).count()
+    pending_jobs = db.query(Job).filter(Job.status == "pending").count()
+    in_progress_jobs = db.query(Job).filter(Job.status.in_(["notifying_fixers", "assigned", "in_progress"])).count()
+    completed_jobs = db.query(Job).filter(Job.status == "completed").count()
+    cancelled_jobs = db.query(Job).filter(Job.status == "cancelled").count()
+    emergency_jobs = db.query(Job).filter(Job.is_emergency_escalated == True).count()
+    
+    # Fixer statistics
+    total_fixers = db.query(Fixer).count()
+    active_fixers = db.query(Fixer).filter(Fixer.is_active == True).count()
+    frozen_fixers = db.query(FixerAvailability).filter(
+        FixerAvailability.is_availability_frozen == True
+    ).count()
+    suspended_fixers = db.query(FixerAvailability).filter(
+        FixerAvailability.is_suspended == True
+    ).count()
+    
+    # Fraud alerts
+    pending_fraud_alerts = db.query(FraudAlertLog).filter(
+        FraudAlertLog.status == "pending"
+    ).count()
+    critical_fraud_alerts = db.query(FraudAlertLog).filter(
+        FraudAlertLog.alert_severity == "critical"
+    ).count()
+    
+    # Admin overrides (last 30 days)
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    recent_overrides = db.query(AdminOverrideLog).filter(
+        AdminOverrideLog.created_at >= thirty_days_ago
+    ).count()
+    
+    # Platform fee statistics
+    total_fees_owed = db.query(func.sum(Fixer.platform_fees_owed)).scalar() or 0
+    overdue_fees = db.query(Fixer).filter(Fixer.fee_payment_overdue == True).count()
+    
+    return {
+        "job_statistics": {
+            "total_jobs": total_jobs,
+            "pending_jobs": pending_jobs,
+            "in_progress_jobs": in_progress_jobs,
+            "completed_jobs": completed_jobs,
+            "cancelled_jobs": cancelled_jobs,
+            "emergency_jobs": emergency_jobs,
+            "completion_rate": (completed_jobs / total_jobs * 100) if total_jobs > 0 else 0
+        },
+        "fixer_statistics": {
+            "total_fixers": total_fixers,
+            "active_fixers": active_fixers,
+            "frozen_fixers": frozen_fixers,
+            "suspended_fixers": suspended_fixers,
+            "availability_rate": (active_fixers / total_fixers * 100) if total_fixers > 0 else 0
+        },
+        "fraud_monitoring": {
+            "pending_alerts": pending_fraud_alerts,
+            "critical_alerts": critical_fraud_alerts,
+            "recent_overrides": recent_overrides
+        },
+        "financial_statistics": {
+            "total_fees_owed": float(total_fees_owed),
+            "fixers_with_overdue_fees": overdue_fees
+        }
+    }
+
+# Enhanced job acceptance with enhanced workflow
+@api_router.post("/jobs/{job_id}/accept-enhanced")
+async def accept_job_enhanced(job_id: str, request: dict, db: Session = Depends(get_db)):
+    """Enhanced fixer job acceptance with comprehensive validation"""
+    fixer_id = request.get('fixer_id')
+    if not fixer_id:
+        raise HTTPException(status_code=400, detail="fixer_id is required")
+    
+    # Enhanced eligibility check before acceptance
+    fixer = db.query(Fixer).filter(Fixer.id == fixer_id).first()
+    if not fixer:
+        raise HTTPException(status_code=404, detail="Fixer not found")
+    
+    # Check if fixer is eligible using enhanced criteria
+    if not job_workflow_service._is_fixer_eligible(db, fixer):
+        raise HTTPException(status_code=400, detail="Fixer not eligible for job assignments")
+    
+    success, message = job_workflow_service.accept_job(db, job_id, fixer_id)
+    
+    if success:
+        return {"success": True, "message": message}
+    else:
+        raise HTTPException(status_code=400, detail=message)
+
+# Endpoint to process job timeouts (for admin/system use)
+@api_router.post("/admin/process-timeouts")
+async def process_job_timeouts(request: dict, db: Session = Depends(get_db)):
+    """Process all job timeouts (Admin/System use)"""
+    admin_user_id = request.get('admin_user_id')
+    
+    if admin_user_id:
+        # Verify admin permissions if user ID provided
+        admin_user = db.query(User).filter(User.id == admin_user_id).first()
+        if not admin_user or admin_user.role not in ['admin', 'super_admin']:
+            raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        job_workflow_service.process_job_timeouts(db)
+        return {"success": True, "message": "Job timeouts processed successfully"}
+    except Exception as e:
+        logger.error(f"Error processing job timeouts: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to process job timeouts")
+
 @api_router.get("/fixer/{fixer_id}/eligible-jobs")
 async def get_eligible_jobs(fixer_id: str, db: Session = Depends(get_db)):
     """Get jobs available for fixer to accept"""
