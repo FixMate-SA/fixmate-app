@@ -3409,6 +3409,25 @@ async def get_notification_templates(current_user: User = Depends(get_current_us
 
 # ======= PWA SESSION TRACKING ENDPOINTS =======
 
+@api_router.get("/debug/health")
+async def debug_health_check():
+    """Debug endpoint to check if API is accessible on Heroku"""
+    return {
+        "status": "ok",
+        "message": "Backend API is accessible",
+        "timestamp": datetime.utcnow().isoformat(),
+        "environment": "production" if os.getenv("PORT") else "development"
+    }
+
+@api_router.post("/debug/login-test")
+async def debug_login_test(credentials: dict):
+    """Debug endpoint to test login without full authentication"""
+    return {
+        "received": credentials,
+        "message": "Login endpoint is reachable",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
 # Review endpoints
 @api_router.post("/reviews", response_model=ReviewResponse)
 async def create_review(review: ReviewCreate, db: Session = Depends(get_db)):
