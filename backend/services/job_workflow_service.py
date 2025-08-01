@@ -597,11 +597,11 @@ Your fixer is on the way! You can track their location in the app.
     # 7. Timeout and Reallocation System
     
     def process_job_timeouts(self, db: Session) -> None:
-        """Process all job timeouts and handle reallocation"""
+        """Process all job timeouts and handle reallocation with enhanced 3-hour system"""
         try:
             current_time = datetime.utcnow()
             
-            # Handle assignment timeouts
+            # Handle assignment timeouts (fixers not responding)
             assignment_timeout_jobs = db.query(Job).filter(
                 Job.status == "notifying_fixers",
                 Job.assignment_timeout < current_time
@@ -610,20 +610,219 @@ Your fixer is on the way! You can track their location in the app.
             for job in assignment_timeout_jobs:
                 self._handle_assignment_timeout(db, job)
             
-            # Handle attendance timeouts
+            # Handle attendance timeouts (3-hour attendance deadline)
             attendance_timeout_jobs = db.query(Job).filter(
                 Job.status == "assigned",
-                Job.attendance_timeout < current_time
+                Job.attendance_deadline < current_time
             ).all()
             
             for job in attendance_timeout_jobs:
-                self._handle_attendance_timeout(db, job)
+                self._handle_attendance_timeout_enhanced(db, job)
+            
+            # Process availability freeze expirations
+            self._process_availability_freeze_expirations(db)
+            
+            # Process platform fee deadlines
+            self._process_platform_fee_deadlines(db)
             
             db.commit()
             
         except Exception as e:
             logger.error(f"Error processing job timeouts: {str(e)}")
             db.rollback()
+    
+    def _handle_attendance_timeout_enhanced(self, db: Session, job: Job) -> None:
+        """Enhanced attendance timeout handling with 4-hour fixer freeze"""
+        try:
+            if not job.fixer_id:
+                return
+            
+            # Get fixer and availability
+            fixer = db.query(Fixer).filter(Fixer.id == job.fixer_id).first()
+            availability = db.query(FixerAvailability).filter(
+                FixerAvailability.fixer_id == job.fixer_id
+            ).first()
+            
+            if fixer and availability:
+                # Apply 4-hour availability freeze as per requirements
+                freeze_until = datetime.utcnow() + timedelta(hours=self.availability_freeze_hours)
+                availability.is_availability_frozen = True
+                availability.availability_frozen_until = freeze_until
+                availability.freeze_reason = "attendance_timeout"
+                availability.is_available = False  # Mark as unavailable
+                
+                # Update fixer stats
+                fixer.jobs_no_show += 1
+                fixer.availability_freeze_count += 1
+                fixer.total_freeze_hours += self.availability_freeze_hours
+                fixer.last_assigned_at = None  # Reset last assignment
+                
+                # Recalculate completion percentage
+                total_assignments = fixer.jobs_completed + fixer.jobs_cancelled + fixer.jobs_incomplete + fixer.jobs_no_show
+                if total_assignments > 0:
+                    fixer.completion_percentage = (fixer.jobs_completed / total_assignments) * 100
+                
+                # Update assignment history
+                history = db.query(JobAssignmentHistory).filter(
+                    JobAssignmentHistory.job_id == job.id,
+                    JobAssignmentHistory.fixer_id == job.fixer_id,
+                    JobAssignmentHistory.response_type == "accepted"
+                ).first()
+                
+                if history:
+                    history.response_type = "timeout"
+                    history.completion_status = "no_show"
+                    history.response_reason = "Failed to arrive within 180 minutes"
+                
+                logger.warning(f"Fixer {job.fixer_id} froze for 4 hours due to attendance timeout on job {job.id}")
+            
+            # Update job for emergency escalation
+            job.fixer_timeout_count += 1
+            job.emergency_escalation_reason = "attendance_timeout"
+            job.fixer_freeze_applied = True
+            job.fixer_id = None  # Clear assignment
+            job.tracking_active = False
+            
+            # Flag as emergency and escalate
+            self._escalate_to_emergency_enhanced(db, job, "attendance_timeout")
+            
+            logger.info(f"Enhanced attendance timeout handled for job {job.id}")
+            
+        except Exception as e:
+            logger.error(f"Error handling enhanced attendance timeout: {str(e)}")
+    
+    def _process_availability_freeze_expirations(self, db: Session) -> None:
+        """Process and release expired availability freezes"""
+        try:
+            current_time = datetime.utcnow()
+            
+            expired_freezes = db.query(FixerAvailability).filter(
+                FixerAvailability.is_availability_frozen == True,
+                FixerAvailability.availability_frozen_until < current_time
+            ).all()
+            
+            for availability in expired_freezes:
+                availability.is_availability_frozen = False
+                availability.availability_frozen_until = None
+                availability.freeze_reason = None
+                availability.is_available = True  # Restore availability
+                
+                logger.info(f"Availability freeze expired for fixer {availability.fixer_id}")
+            
+            if expired_freezes:
+                db.commit()
+                logger.info(f"Released {len(expired_freezes)} expired availability freezes")
+                
+        except Exception as e:
+            logger.error(f"Error processing availability freeze expirations: {str(e)}")
+    
+    def _process_platform_fee_deadlines(self, db: Session) -> None:
+        """Process platform fee deadlines and apply suspensions"""
+        try:
+            current_time = datetime.utcnow()
+            
+            # Find fixers with overdue platform fees (>48 hours)
+            overdue_fixers = db.query(Fixer).filter(
+                Fixer.platform_fees_owed > 0,
+                Fixer.fee_payment_overdue == False
+            ).all()
+            
+            for fixer in overdue_fixers:
+                # Check if any fees are more than 48 hours overdue
+                overdue_payments = db.query(FixerPayment).filter(
+                    FixerPayment.fixer_id == fixer.id,
+                    FixerPayment.status == "pending",
+                    FixerPayment.due_date < (current_time - timedelta(hours=self.platform_fee_deadline_hours))
+                ).all()
+                
+                if overdue_payments:
+                    # Mark as overdue and suspend if necessary
+                    fixer.fee_payment_overdue = True
+                    fixer.fee_suspension_applied = True
+                    
+                    # Update availability to suspended
+                    availability = db.query(FixerAvailability).filter(
+                        FixerAvailability.fixer_id == fixer.id
+                    ).first()
+                    
+                    if availability:
+                        availability.is_suspended = True
+                        availability.suspension_reason = "Platform fees overdue >48 hours"
+                        availability.platform_fee_status = "overdue"
+                    
+                    logger.warning(f"Fixer {fixer.id} suspended for overdue platform fees")
+            
+            if overdue_fixers:
+                db.commit()
+                
+        except Exception as e:
+            logger.error(f"Error processing platform fee deadlines: {str(e)}")
+    
+    def _escalate_to_emergency_enhanced(self, db: Session, job: Job, reason: str) -> None:
+        """Enhanced emergency escalation with comprehensive notification system"""
+        try:
+            job.status = "escalated"
+            job.workflow_stage = "emergency"
+            job.is_emergency_escalated = True
+            job.priority_level = "emergency"
+            job.emergency_escalation_reason = reason
+            
+            # Get all available fixers with emergency criteria (less restrictive)
+            emergency_fixers = db.query(Fixer).join(FixerAvailability).filter(
+                Fixer.is_active == True,
+                Fixer.is_approved == True,
+                FixerAvailability.is_available == True,
+                FixerAvailability.is_suspended == False,
+                FixerAvailability.platform_fee_status == "current"
+            ).all()
+            
+            # Filter out frozen fixers unless absolutely necessary
+            available_emergency_fixers = []
+            frozen_emergency_fixers = []
+            
+            for fixer in emergency_fixers:
+                availability = db.query(FixerAvailability).filter(
+                    FixerAvailability.fixer_id == fixer.id
+                ).first()
+                
+                if availability and not availability.is_availability_frozen:
+                    available_emergency_fixers.append(fixer)
+                elif availability:
+                    frozen_emergency_fixers.append(fixer)
+            
+            # Use available fixers first, then frozen if necessary
+            target_fixers = available_emergency_fixers if available_emergency_fixers else frozen_emergency_fixers
+            emergency_fixer_ids = [f.id for f in target_fixers]
+            
+            if emergency_fixer_ids:
+                # Send emergency notifications with higher compensation mention
+                for fixer in target_fixers:
+                    message = f"""
+🚨 EMERGENCY JOB ALERT! 🚨
+Service: {job.service}
+Location: {job.location}
+Priority: URGENT - {reason.replace('_', ' ').title()}
+Estimated Price: R{job.estimated_price or 'TBD'}
+
+⚡ EMERGENCY RATE: Higher compensation applies!
+⏰ Immediate response required!
+
+This job needs immediate attention due to: {reason.replace('_', ' ')}
+"""
+                    whatsapp_service.send_whatsapp_message(fixer.phone, message)
+                
+                job.eligible_fixers = json.dumps(emergency_fixer_ids)
+                job.assignment_timeout = datetime.utcnow() + timedelta(minutes=10)  # Shorter timeout for emergency
+                
+                logger.warning(f"Job {job.id} escalated to emergency - notified {len(target_fixers)} fixers")
+            else:
+                # No fixers available - flag for manual admin intervention
+                job.admin_attention_flagged = True
+                job.workflow_stage = "admin_intervention_required"
+                logger.critical(f"Job {job.id} requires manual admin intervention - no emergency fixers available")
+            
+        except Exception as e:
+            logger.error(f"Error escalating to emergency: {str(e)}")
     
     def _handle_assignment_timeout(self, db: Session, job: Job) -> None:
         """Handle timeout when no fixer accepts the job"""
