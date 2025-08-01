@@ -25,6 +25,9 @@ const CreateJob = () => {
   const [matchInsights, setMatchInsights] = useState(null);
   const [showSmartMatching, setShowSmartMatching] = useState(false);
   const [createdJobId, setCreatedJobId] = useState(null);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [jobBeingCancelled, setJobBeingCancelled] = useState(null);
 
   const serviceOptions = [
     'Plumbing',
