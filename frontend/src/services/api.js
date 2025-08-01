@@ -1,8 +1,19 @@
 import axios from 'axios';
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL 
-  ? `${process.env.REACT_APP_BACKEND_URL}/api`
-  : '/api';
+// Determine the correct API base URL based on environment
+const getApiBaseUrl = () => {
+  // If we're in production (Heroku), use relative URLs
+  if (process.env.NODE_ENV === 'production') {
+    return '/api';
+  }
+  
+  // For development, use the environment variable or fallback
+  return process.env.REACT_APP_BACKEND_URL 
+    ? `${process.env.REACT_APP_BACKEND_URL}/api`
+    : '/api';
+};
+
+const API_BASE = getApiBaseUrl();
 
 // Create axios instance
 const api = axios.create({
