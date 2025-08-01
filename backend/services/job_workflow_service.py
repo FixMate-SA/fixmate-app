@@ -360,7 +360,8 @@ class JobWorkflowService:
             job.workflow_stage = "notifying"
             job.status = "notifying_fixers"
             
-            # Set assignment timeout
+            # Set attendance deadline (180 minutes = 3 hours as per requirements)
+            job.attendance_deadline = datetime.utcnow() + timedelta(minutes=self.attendance_timeout_minutes)
             job.assignment_timeout = datetime.utcnow() + timedelta(minutes=self.assignment_timeout_minutes)
             
             db.commit()
