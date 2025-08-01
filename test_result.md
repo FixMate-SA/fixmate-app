@@ -870,7 +870,75 @@ agent_communication:
   - agent: "testing"
     message: "🎉 FINAL COMPREHENSIVE VALIDATION TEST COMPLETED SUCCESSFULLY! Enhanced Job Assignment Workflow System achieved 100% COMPLETION TARGET: ✅ ALL 10 SYSTEM REQUIREMENTS NOW WORKING (100% success rate): 1) Client Terms Acceptance ✅ WORKING - Terms enforcement before job creation operational, 2) Job Assignment Workflow - Request Logging ✅ WORKING - Enhanced workflow creation and client cancellation functional, 3) Real-Time Fixer Screening ✅ WORKING - Found 18 eligible fixers with proper rating/payment validation, 4) Notification & Acceptance (First-Come-First-Served) ✅ WORKING - Fixer job acceptance working correctly (HTTP 400 'Fixer is no longer available' is correct behavior for fixers with outstanding R20 payments), 5) Timeout Handling (180 minutes = 3 hours) ✅ WORKING - Emergency escalation system working with proper admin authentication, 6) Job Completion Protocol ✅ WORKING - Client rating system working with proper fixer_id field, R20 fee integration operational, 7) AI-Powered Fraud Prevention ✅ WORKING - Fraud monitoring system operational with 0 alerts, 8) Cancellation Protocols ✅ WORKING - Client cancellation functional (immediate release, no fees), 9) Fair Matching Algorithm ✅ WORKING - Smart matching algorithm operational, 10) Platform Fee Management ✅ WORKING - R20 platform fee system fully functional. ✅ INTEGRATION TESTING: All core workflow endpoints operational (job creation, fixer acceptance, workflow status). ✅ COMPREHENSIVE WORKFLOW VALIDATION: 7/7 workflow components working (100%). FINAL ASSESSMENT: Enhanced Job Assignment Workflow System is 100% PRODUCTION-READY with all system requirements validated and functional. The system correctly enforces payment validation, admin authentication, and proper data validation - all apparent 'failures' were actually correct system behavior validating business rules."
 
-user_problem_statement: "Analyze the current state of the FixMate-SA job assignment workflow system and test what's currently working versus what needs to be implemented according to the system requirements document. Test 9 core system requirements: Client Terms Acceptance, Job Assignment Workflow - Request Logging, Real-Time Fixer Screening, Notification & Acceptance (First-Come-First-Served), Timeout Handling (180 minutes = 3 hours), Job Completion Protocol, AI-Powered Fraud Prevention, Cancellation Protocols, and Platform Fee Management."
+user_problem_statement: "Fix the persistent Heroku login issue by implementing service worker cleanup, backend error handling, and environment-specific API URL resolution as identified in the root cause analysis."
+
+backend:
+  - task: "Heroku Login Issue - Service Worker Cleanup"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added sw.js endpoint that returns HTTP 410 Gone to handle service worker requests after PWA removal. This prevents 404 errors that were causing H10 crashes on Heroku."
+
+  - task: "Heroku Login Issue - Frontend Service Worker Unregistration"
+    implemented: true
+    working: true
+    file: "frontend/src/index.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added service worker cleanup code to frontend/src/index.js to unregister any existing service workers on app load. Removed sw.js file from public directory to prevent 404 errors."
+
+  - task: "Heroku Login Issue - API URL Configuration"
+    implemented: true
+    working: true
+    file: "frontend/src/utils/apiConfig.js, frontend/src/contexts/AuthContext.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Verified apiConfig.js is properly configured for production environment with relative URLs (/api) for Heroku deployment. AuthContext.js is correctly using API_BASE_URL from apiConfig."
+
+  - task: "Database Model Cleanup - Removed PWA Models"
+    implemented: true
+    working: true
+    file: "backend/models.py, backend/services/"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Verified that AppSession and OfflineAction models are completely removed from codebase. No references found in models.py or services directory."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Heroku Login Issue - Service Worker Cleanup"
+    - "Heroku Login Issue - Frontend Service Worker Unregistration"
+    - "Heroku Login Issue - API URL Configuration"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Implemented Heroku login issue fixes based on root cause analysis: 1) Added sw.js endpoint returning HTTP 410 Gone, 2) Added service worker unregistration in frontend index.js, 3) Verified API URL configuration is correct, 4) Confirmed PWA model cleanup is complete. Local testing shows successful login. Ready for backend testing to verify fixes."
 
 backend:
   - task: "Enhanced Job Assignment Workflow - Database Schema Implementation"
