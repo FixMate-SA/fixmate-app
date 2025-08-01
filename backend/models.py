@@ -751,6 +751,71 @@ class DisputeMessage(Base):
     def __repr__(self):
         return f"<DisputeMessage(id='{self.id}', dispute_id='{self.dispute_id}', sender_type='{self.sender_type}')>"
 
+class AdminOverrideLog(Base):
+    """Track all admin override actions for audit purposes"""
+    __tablename__ = "admin_override_logs"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    admin_user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    target_type = Column(String, nullable=False)  # fixer, job, user
+    target_id = Column(String, nullable=False)  # ID of affected entity
+    
+    # Override details
+    override_type = Column(String, nullable=False)  # bypass_restrictions, reset_status, adjust_rating, emergency_intervention
+    override_reason = Column(Text, nullable=False)  # Admin's reason for override
+    previous_values = Column(Text, nullable=True)  # JSON of previous values
+    new_values = Column(Text, nullable=True)  # JSON of new values
+    
+    # Context
+    related_job_id = Column(String, ForeignKey("jobs.id"), nullable=True)
+    emergency_flag = Column(Boolean, default=False)  # If this was an emergency override
+    client_complaint = Column(Boolean, default=False)  # If related to client complaint
+    
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    ip_address = Column(String, nullable=True)
+    user_agent = Column(Text, nullable=True)
+    
+    # Relationships
+    admin_user = relationship("User", foreign_keys=[admin_user_id])
+    related_job = relationship("Job", foreign_keys=[related_job_id])
+
+class FraudAlertLog(Base):
+    """Track AI-detected fraud patterns and admin responses"""
+    __tablename__ = "fraud_alert_logs"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    fixer_id = Column(String, ForeignKey("fixers.id"), nullable=False)
+    
+    # Alert details
+    alert_type = Column(String, nullable=False)  # high_cancellation, low_completion, no_show_pattern, suspicious_behavior
+    alert_severity = Column(String, default="medium")  # low, medium, high, critical
+    description = Column(Text, nullable=False)
+    ai_confidence = Column(Float, default=0.0)  # AI confidence in detection (0-100)
+    
+    # Pattern data
+    pattern_data = Column(Text, nullable=True)  # JSON with detected patterns
+    metrics = Column(Text, nullable=True)  # JSON with supporting metrics
+    timeframe = Column(String, default="30_days")  # Analysis timeframe
+    
+    # Status and response
+    status = Column(String, default="pending")  # pending, reviewed, dismissed, action_taken
+    admin_response = Column(Text, nullable=True)  # Admin notes/response
+    action_taken = Column(String, nullable=True)  # warning, suspension, no_action
+    reviewed_by = Column(String, ForeignKey("users.id"), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    
+    # Auto-resolution
+    auto_escalated = Column(Boolean, default=False)  # If automatically escalated
+    escalation_threshold_met = Column(Boolean, default=False)  # If critical thresholds were met
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    fixer = relationship("Fixer")
+    reviewer = relationship("User", foreign_keys=[reviewed_by])
+
 # ======= PHASE 4: MOBILE & PWA MODELS =======
 
 class PushSubscription(Base):
