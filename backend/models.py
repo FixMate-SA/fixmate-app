@@ -436,6 +436,31 @@ class Job(Base):
     last_assignment_attempt = Column(DateTime, nullable=True)  # Last assignment attempt time
     auto_reassignment_count = Column(Integer, default=0)  # How many times auto-reassigned
     
+    # Enhanced timeout and penalty system
+    fixer_timeout_count = Column(Integer, default=0)  # How many fixers timed out
+    emergency_escalation_reason = Column(String, nullable=True)  # Why escalated (timeout, no_fixers, emergency)
+    attendance_deadline = Column(DateTime, nullable=True)  # 180-minute attendance deadline
+    fixer_freeze_applied = Column(Boolean, default=False)  # If fixer was frozen due to timeout
+    
+    # Cancellation tracking
+    client_cancelled = Column(Boolean, default=False)  # If client cancelled
+    client_cancellation_reason = Column(Text, nullable=True)  # Client's reason for cancellation
+    fixer_cancelled = Column(Boolean, default=False)  # If fixer cancelled
+    fixer_cancellation_reason = Column(Text, nullable=True)  # Fixer's reason for cancellation
+    cancellation_penalties_applied = Column(Text, nullable=True)  # JSON of penalties applied
+    
+    # Payment and fee tracking
+    platform_fee_due = Column(Float, default=20.0)  # R20 platform fee
+    platform_fee_status = Column(String, default="pending")  # pending, paid, overdue, waived
+    platform_fee_deadline = Column(DateTime, nullable=True)  # 48-hour payment deadline
+    platform_fee_paid_at = Column(DateTime, nullable=True)  # When fee was paid
+    
+    # AI fraud monitoring
+    fraud_risk_score = Column(Float, default=0.0)  # AI-calculated fraud risk (0-100)
+    fraud_indicators = Column(Text, nullable=True)  # JSON array of detected indicators
+    ai_monitoring_active = Column(Boolean, default=True)  # If AI is monitoring this job
+    admin_attention_flagged = Column(Boolean, default=False)  # If flagged for admin attention
+    
     # Photo Verification Fields - Phase 2 Enhancement
     before_photos = Column(Text, nullable=True)  # JSON array of base64 before photos
     after_photos = Column(Text, nullable=True)   # JSON array of base64 after photos
