@@ -4221,9 +4221,9 @@ if static_path.exists():
         if full_path == "whatsapp":
             raise HTTPException(status_code=404, detail="WhatsApp endpoint not found")
         
-        # Don't serve React app for service worker endpoint (let backend handle it)
+        # Don't serve React app for service worker endpoint - return 410 Gone directly
         if full_path == "sw.js":
-            raise HTTPException(status_code=404, detail="Service worker endpoint not found")
+            return Response(content="Gone", status_code=410, media_type="text/plain")
         
         # Check if it's a static file request
         static_file_path = static_path / full_path
