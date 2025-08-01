@@ -51,6 +51,13 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (phone, password = null, name = null, email = null) => {
     try {
+      console.log('🔍 LOGIN ATTEMPT:', {
+        phone,
+        hasPassword: !!password,
+        apiBaseUrl: API_BASE,
+        environment: process.env.NODE_ENV
+      });
+      
       const loginData = { 
         phone, 
         name: name || `User ${phone}`,
@@ -61,7 +68,10 @@ export const AuthProvider = ({ children }) => {
         loginData.password = password;
       }
       
+      console.log('🔍 Sending login request to:', `${API_BASE}/auth/login`);
       const response = await axios.post(`${API_BASE}/auth/login`, loginData);
+      
+      console.log('✅ Login response received:', response.status);
       
       const { 
         user: userData, 
