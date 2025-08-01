@@ -15,7 +15,8 @@ import logging
 
 from models import (
     Job, User, Fixer, FixerAvailability, FixerBehaviorAnalysis,
-    JobAssignmentHistory, JobNotification, PlatformTerms, UserTermsAcceptance
+    JobAssignmentHistory, JobNotification, PlatformTerms, UserTermsAcceptance,
+    FixerPayment
 )
 from services.whatsapp_service import whatsapp_service
 from services.ai_service import ai_service
