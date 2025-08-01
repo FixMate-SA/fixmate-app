@@ -1061,11 +1061,14 @@ backend:
     file: "backend/server.py, backend/services/payment_service.py"
     stuck_count: 1
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: false
         agent: "testing"
         comment: "❌ JOB COMPLETION PROTOCOL HAS ISSUES! 2/4 tests passed: ✅ Job completion with R20 fee working (automatic R20 platform fee deduction operational), ❌ Client rating system failing (1-5 stars + feedback system returns HTTP 422 validation error), ✅ R20 platform fee system working (fee tracking and payment history functional), ❌ Admin override for incomplete jobs failing (HTTP 400). Core completion and fee system working but rating and admin override not functional."
+      - working: false
+        agent: "testing"
+        comment: "❌ SYSTEM REQUIREMENT 6 STILL FAILING! HTTP 422 error on review creation (POST /api/reviews). Client rating system not functional due to validation errors, preventing testing of automatic R20 platform fee deduction and admin override capabilities for incomplete jobs."
 
   - task: "System Requirement 7: AI-Powered Fraud Prevention"
     implemented: true
