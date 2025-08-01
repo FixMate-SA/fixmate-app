@@ -49,12 +49,6 @@ export const languages = {
       termsRequired: 'Terms Acceptance Required',
       termsRequiredMessage: 'You must accept our platform terms and conditions before creating a service request.',
       
-      // Phase 3: Automation & Engagement
-      phase3Dashboard: 'Phase 3: Auto & Engage',
-      phase3Welcome: 'Welcome to Phase 3: Automation & Engagement',
-      phase3Description: 'Experience real-time tracking, gamification, and AI-powered assistance.',
-      phase3Subtitle: 'Advanced features for real-time tracking, gamification, and AI assistance',
-      
       // Real-Time Tracking
       realTimeTracking: 'Real-Time Tracking',
       jobTracking: 'Job Tracking',
