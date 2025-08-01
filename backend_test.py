@@ -97,15 +97,17 @@ class FixMateAPITester:
     def test_create_user(self):
         """Test user creation"""
         import time
+        import random
         timestamp = str(int(time.time()))[-6:]  # Last 6 digits of timestamp
+        random_suffix = str(random.randint(100, 999))  # Add random suffix
         
         user_data = {
             "phone": f"+2782123{timestamp}",
             "first_name": "John",
             "last_name": "Doe",
-            "id_number": f"8001015009{timestamp[-3:]}",  # Valid SA ID format
+            "id_number": f"800101500{timestamp[-2:]}{random_suffix}",  # More unique SA ID format
             "town": "Cape Town",
-            "email": f"john.doe.{timestamp}@example.com",
+            "email": f"john.doe.{timestamp}{random_suffix}@example.com",
             "address": "123 Main St, Cape Town"
         }
         
@@ -121,7 +123,12 @@ class FixMateAPITester:
                 else:
                     self.log_result("Create User", False, "Invalid response format", response)
             else:
-                self.log_result("Create User", False, f"HTTP {response.status_code}", response)
+                try:
+                    error_data = response.json()
+                    error_detail = error_data.get('detail', 'Unknown error')
+                    self.log_result("Create User", False, f"HTTP {response.status_code} - {error_detail}", response)
+                except:
+                    self.log_result("Create User", False, f"HTTP {response.status_code} - {response.text[:200]}", response)
         except Exception as e:
             self.log_result("Create User", False, f"Request error: {str(e)}")
         return False
