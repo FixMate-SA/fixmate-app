@@ -68,7 +68,7 @@ const VoiceRecorder = ({ onTranscription, onError, onClose }) => {
       const response = await apiService.transcribeAudio(formData);
       
       if (response.data.transcription) {
-        onTranscription(response.data.transcription);
+        setTranscriptionResult(response.data.transcription);
       } else {
         onError('Could not transcribe audio. Please try again.');
       }
@@ -78,6 +78,22 @@ const VoiceRecorder = ({ onTranscription, onError, onClose }) => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleSendRecording = () => {
+    if (transcriptionResult) {
+      onTranscription(transcriptionResult);
+      if (onClose) onClose();
+    } else if (audioURL) {
+      // If no transcription yet, try to transcribe the current audio
+      const audioBlob = new Blob(audioChunks.current, { type: 'audio/wav' });
+      transcribeAudio(audioBlob);
+    }
+  };
+
+  const handleCancel = () => {
+    clearRecording();
+    if (onClose) onClose();
   };
 
   const formatTime = (seconds) => {
