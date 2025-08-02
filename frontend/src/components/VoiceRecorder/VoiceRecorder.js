@@ -105,6 +105,7 @@ const VoiceRecorder = ({ onTranscription, onError, onClose }) => {
   const clearRecording = () => {
     setAudioURL(null);
     setRecordingTime(0);
+    setTranscriptionResult('');
   };
 
   return (
