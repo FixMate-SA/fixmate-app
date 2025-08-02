@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
 
-const FixerPaymentManager = ({ fixerId, isAdmin = false }) => {
+const FixerPaymentManager = ({ fixerId: propFixerId, isAdmin = false }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,9 +16,15 @@ const FixerPaymentManager = ({ fixerId, isAdmin = false }) => {
     reference: ''
   });
 
+  // Use prop fixerId if provided (admin use), otherwise use current user's ID
+  const fixerId = propFixerId || user?.id;
+
   useEffect(() => {
     if (fixerId) {
       fetchPaymentData();
+    } else {
+      setError('No fixer ID available');
+      setLoading(false);
     }
   }, [fixerId]);
 
