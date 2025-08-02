@@ -167,6 +167,18 @@ function App() {
                 }
               />
 
+              {/* Admin Panel for admin-specific features */}
+              <Route
+                path="/admin/panel"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <AdminDashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
               {/* Legacy Dashboard Route - Redirect based on role */}
               <Route
                 path="/dashboard"
