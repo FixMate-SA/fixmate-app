@@ -27,11 +27,24 @@ const NavigationFixed = () => {
     }
   };
 
+  // Generate role-based path
+  const getRoleBasedPath = (basePath) => {
+    switch (userRole) {
+      case 'admin':
+        return `/admin${basePath}`;
+      case 'fixer':
+        return `/fixer${basePath}`;
+      case 'client':
+      default:
+        return `/client${basePath}`;
+    }
+  };
+
   // Navigation items matching system requirements document only
   const completeNavItems = [
     // Core Features  
     { 
-      path: '/dashboard', 
+      path: getRoleBasedPath('/dashboard'), 
       label: t('dashboard', 'Dashboard'), 
       icon: '📊',
       permission: null
