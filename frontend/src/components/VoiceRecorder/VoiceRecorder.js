@@ -171,6 +171,32 @@ const VoiceRecorder = ({ onTranscription, onError, onClose }) => {
           Our AI understands multiple South African languages including English, Afrikaans, Zulu, and Xhosa.
         </p>
       </div>
+
+      {/* Show transcription result if available */}
+      {transcriptionResult && (
+        <div className="mt-4 p-3 bg-green-50 rounded-md">
+          <p className="text-sm text-green-800">
+            <strong>✅ Transcription:</strong> {transcriptionResult}
+          </p>
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="mt-6 flex justify-end space-x-3">
+        <button
+          onClick={handleCancel}
+          className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSendRecording}
+          disabled={!audioURL || isProcessing}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {isProcessing ? 'Processing...' : 'Send Recording'}
+        </button>
+      </div>
     </div>
   );
 };
