@@ -135,6 +135,44 @@ function App() {
               <Route path="/become-fixer" element={<BecomeFixer />} />
               <Route path="/help-center" element={<HelpCenter />} />
 
+              {/* Role-based Dashboard Routes */}
+              <Route
+                path="/client/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fixer/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <FixerJobBoard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <AdminDashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Legacy Dashboard Route - Redirect based on role */}
+              <Route
+                path="/dashboard"
+                element={<Navigate to="/" replace />}
+              />
+
               {/* Core App Routes */}
               <Route
                 path="/dashboard"
