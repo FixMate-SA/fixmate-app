@@ -161,7 +161,7 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Layout>
-                      <AdminDashboard />
+                      <Dashboard />
                     </Layout>
                   </ProtectedRoute>
                 }
