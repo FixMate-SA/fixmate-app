@@ -77,15 +77,37 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Default route component
+// Role-based default route component
 const DefaultRoute = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, getUserRole, loading } = useAuth();
   
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="text-gray-600 font-medium">Loading...</div>
+        </div>
+      </div>
+    );
   }
   
-  return <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  // Role-based routing for authenticated users
+  const userRole = getUserRole();
+  
+  switch (userRole) {
+    case 'admin':
+      return <Navigate to="/admin/dashboard" replace />;
+    case 'fixer':
+      return <Navigate to="/fixer/dashboard" replace />;
+    case 'client':
+    default:
+      return <Navigate to="/client/dashboard" replace />;
+  }
 };
 
 // Main App Component with Full Routing
