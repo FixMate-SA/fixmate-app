@@ -2,6 +2,7 @@
   "name": "fixmate-sa-frontend",
   "version": "0.1.0",
   "private": true,
+  "homepage": "/",
   "dependencies": {
     "@babel/runtime": "^7.28.2",
     "axios": "^1.8.4",
