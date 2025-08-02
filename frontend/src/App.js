@@ -48,6 +48,13 @@ import FixerPaymentManager from "./components/Payment/FixerPaymentManager";
 import TermsOfService from "./components/Legal/TermsOfService";
 import PrivacyPolicy from "./components/Legal/PrivacyPolicy";
 
+// Quick Links Pages
+import AboutUs from "./components/Pages/AboutUs";
+import HowItWorks from "./components/Pages/HowItWorks";
+import SafetyTrust from "./components/Pages/SafetyTrust";
+import BecomeFixer from "./components/Pages/BecomeFixer";
+import HelpCenter from "./components/Pages/HelpCenter";
+
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
