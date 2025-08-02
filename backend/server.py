@@ -4267,9 +4267,42 @@ if static_path.exists():
         # For all other routes (including Quick Links), serve the React app
         index_path = static_path / "index.html"
         if index_path.exists():
-            return FileResponse(index_path, media_type="text/html")
+            # Read the index.html content and modify it for better routing support
+            with open(index_path, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+            
+            # Add base href for proper routing on Heroku
+            if '<base href="/">' not in html_content and '<base href=' not in html_content:
+                html_content = html_content.replace('<head>', '<head>\n    <base href="/">')
+            
+            return Response(content=html_content, media_type="text/html")
         else:
-            return {"message": "FixMate-SA API is running", "status": "ok", "frontend": "not built"}
+            # Fallback HTML for when React build is not available
+            fallback_html = f"""
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <title>FixMate-SA - Page Not Found</title>
+                <style>
+                    body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
+                    .container {{ max-width: 600px; margin: 0 auto; }}
+                    .error {{ color: #e74c3c; }}
+                    .back-link {{ color: #3498db; text-decoration: none; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>FixMate-SA</h1>
+                    <p class="error">Page not found: /{full_path}</p>
+                    <p>The React application is not properly built or deployed.</p>
+                    <a href="/" class="back-link">← Back to Home</a>
+                </div>
+            </body>
+            </html>
+            """
+            return Response(content=fallback_html, media_type="text/html")
 
 else:
     @app.get("/")
