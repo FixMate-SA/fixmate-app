@@ -341,6 +341,8 @@ function App() {
               <Route path="/business-compliance" element={<Navigate to="/" replace />} />
               <Route path="/sms" element={<Navigate to="/" replace />} />
               <Route path="/enterprise" element={<Navigate to="/" replace />} />
+              <Route path="/admin" element={<Navigate to="/" replace />} />
+              <Route path="/jobs" element={<Navigate to="/" replace />} />
 
               {/* Job Management Routes */}
               <Route
