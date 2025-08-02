@@ -93,10 +93,17 @@ const NavigationFixed = () => {
       permission: null
     },
     { 
-      path: '/admin', 
+      path: '/admin/panel', 
       label: t('admin', 'Admin Panel'), 
       icon: '⚙️',
       roles: ['admin'],
+      permission: null
+    },
+    { 
+      path: '/fixer/jobs', 
+      label: t('jobs', 'Available Jobs'), 
+      icon: '🔨',
+      roles: ['fixer'],
       permission: null
     },
     { 
@@ -116,7 +123,7 @@ const NavigationFixed = () => {
     
     // User Profile
     { 
-      path: '/profile', 
+      path: getRoleBasedPath('/profile'), 
       label: t('profile', 'Profile'), 
       icon: '👤',
       permission: null
