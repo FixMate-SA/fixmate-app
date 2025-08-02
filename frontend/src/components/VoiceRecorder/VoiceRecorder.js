@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { apiService } from '../../services/api';
 
-const VoiceRecorder = ({ onTranscription, onError }) => {
+const VoiceRecorder = ({ onTranscription, onError, onClose }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [transcriptionResult, setTranscriptionResult] = useState('');
   const mediaRecorder = useRef(null);
   const audioChunks = useRef([]);
   const timerRef = useRef(null);
