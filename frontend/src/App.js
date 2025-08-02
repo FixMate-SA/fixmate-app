@@ -151,7 +151,7 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Layout>
-                      <FixerJobBoard />
+                      <Dashboard />
                     </Layout>
                   </ProtectedRoute>
                 }
