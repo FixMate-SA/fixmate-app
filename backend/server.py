@@ -4207,9 +4207,29 @@ app.add_middleware(
 # Serve static files from React build if available
 static_path = Path(__file__).parent.parent / "frontend" / "build"
 if static_path.exists():
+    # Mount static files
     app.mount("/static", StaticFiles(directory=str(static_path / "static")), name="static")
     
-    # Serve React app for all non-API routes
+    # Mount other static assets
+    if (static_path / "assets").exists():
+        app.mount("/assets", StaticFiles(directory=str(static_path / "assets")), name="assets")
+    
+    # Serve manifest.json and other root-level files
+    @app.get("/manifest.json")
+    async def serve_manifest():
+        manifest_path = static_path / "manifest.json"
+        if manifest_path.exists():
+            return FileResponse(manifest_path)
+        raise HTTPException(status_code=404, detail="Manifest not found")
+    
+    @app.get("/favicon.ico")
+    async def serve_favicon():
+        favicon_path = static_path / "favicon.ico"
+        if favicon_path.exists():
+            return FileResponse(favicon_path)
+        raise HTTPException(status_code=404, detail="Favicon not found")
+    
+    # Serve React app for all non-API routes (MUST be last)
     @app.get("/{full_path:path}")
     async def serve_react_app(full_path: str):
         """Serve the React app for all non-API routes"""
@@ -4218,22 +4238,36 @@ if static_path.exists():
             raise HTTPException(status_code=404, detail="API endpoint not found")
         
         # Don't serve React app for WhatsApp webhook endpoints
-        if full_path == "whatsapp":
+        if full_path.startswith("whatsapp"):
             raise HTTPException(status_code=404, detail="WhatsApp endpoint not found")
         
-        # Don't serve React app for service worker endpoint - return 410 Gone directly
+        # Handle service worker endpoint - return 410 Gone directly
         if full_path == "sw.js":
             return Response(content="Gone", status_code=410, media_type="text/plain")
         
-        # Check if it's a static file request
-        static_file_path = static_path / full_path
-        if static_file_path.is_file():
-            return FileResponse(static_file_path)
+        # Handle robots.txt
+        if full_path == "robots.txt":
+            return Response(content="User-agent: *\nDisallow:", media_type="text/plain")
         
-        # For all other routes, serve the React app
+        # Check if it's a static file request first
+        static_file_path = static_path / full_path
+        if static_file_path.is_file() and not static_file_path.is_dir():
+            # Determine content type based on file extension
+            if full_path.endswith('.js'):
+                return FileResponse(static_file_path, media_type="application/javascript")
+            elif full_path.endswith('.css'):
+                return FileResponse(static_file_path, media_type="text/css")
+            elif full_path.endswith('.json'):
+                return FileResponse(static_file_path, media_type="application/json")
+            elif full_path.endswith(('.png', '.jpg', '.jpeg', '.gif', '.ico')):
+                return FileResponse(static_file_path)
+            else:
+                return FileResponse(static_file_path)
+        
+        # For all other routes (including Quick Links), serve the React app
         index_path = static_path / "index.html"
         if index_path.exists():
-            return FileResponse(index_path)
+            return FileResponse(index_path, media_type="text/html")
         else:
             return {"message": "FixMate-SA API is running", "status": "ok", "frontend": "not built"}
 
