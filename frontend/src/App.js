@@ -209,6 +209,74 @@ function App() {
               {/* Legacy Profile Route - Redirect to role-based */}
               <Route path="/profile" element={<Navigate to="/" replace />} />
 
+              {/* Role-based Learning Routes */}
+              <Route
+                path="/client/learning"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <LearningPlatform />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fixer/learning"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <LearningPlatform />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/learning"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <LearningPlatform />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Role-based Payment Routes */}
+              <Route
+                path="/client/payment"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <PaymentOptions />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fixer/payment"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <FixerPaymentManager />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/payment"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <PaymentOptions />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Legacy Route Redirects */}
+              <Route path="/learning" element={<Navigate to="/" replace />} />
+              <Route path="/payment" element={<Navigate to="/" replace />} />
+
               {/* Job Management Routes */}
               <Route
                 path="/jobs/create"
