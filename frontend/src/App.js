@@ -100,6 +100,19 @@ function App() {
               <Route path="/login" element={<LoginForm />} />
               <Route path="/signup" element={<SignupForm />} />
 
+              {/* Public Routes - Must be before protected routes */}
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              
+              {/* Public Quick Links Pages */}
+              <Route path="/about-us" element={<AboutUs />} />
+              <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/safety-trust" element={<SafetyTrust />} />
+              <Route path="/become-fixer" element={<BecomeFixer />} />
+              <Route path="/help-center" element={<HelpCenter />} />
+
               {/* Core App Routes */}
               <Route
                 path="/dashboard"
