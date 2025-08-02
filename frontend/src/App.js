@@ -277,6 +277,47 @@ function App() {
               <Route path="/learning" element={<Navigate to="/" replace />} />
               <Route path="/payment" element={<Navigate to="/" replace />} />
 
+              {/* Role-based Business Compliance Routes */}
+              <Route
+                path="/admin/business-compliance"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <BusinessCompliance />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Role-based SMS Routes */}
+              <Route
+                path="/admin/sms"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <SMSInterface />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Role-based Enterprise Routes */}
+              <Route
+                path="/admin/enterprise"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <B2BPortal />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Additional Legacy Route Redirects */}
+              <Route path="/business-compliance" element={<Navigate to="/" replace />} />
+              <Route path="/sms" element={<Navigate to="/" replace />} />
+              <Route path="/enterprise" element={<Navigate to="/" replace />} />
+
               {/* Job Management Routes */}
               <Route
                 path="/jobs/create"
