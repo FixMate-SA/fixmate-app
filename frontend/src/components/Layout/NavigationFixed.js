@@ -101,7 +101,7 @@ const NavigationFixed = () => {
     },
     { 
       path: '/fixer/jobs', 
-      label: t('jobs', 'Available Jobs'), 
+      label: t('jobs', 'Jobs'), 
       icon: '🔨',
       roles: ['fixer'],
       permission: null
