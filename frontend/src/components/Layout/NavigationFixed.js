@@ -79,14 +79,14 @@ const NavigationFixed = () => {
     
     // Business & Admin Features
     { 
-      path: '/enterprise', 
+      path: getRoleBasedPath('/enterprise'), 
       label: t('enterprise', 'Enterprise'), 
       icon: '🏢',
       roles: ['admin'],
       permission: null
     },
     { 
-      path: '/payment', 
+      path: getRoleBasedPath('/payment'), 
       label: t('payment', 'Payments'), 
       icon: '💳',
       roles: ['fixer', 'admin'],
