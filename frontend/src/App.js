@@ -281,7 +281,7 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Layout>
-                      <FixerPaymentManager />
+                      <PaymentOptions />
                     </Layout>
                   </ProtectedRoute>
                 }
