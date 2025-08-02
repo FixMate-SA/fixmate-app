@@ -175,16 +175,6 @@ function App() {
 
               {/* Core App Routes */}
               <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Dashboard />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
                 path="/profile"
                 element={
                   <ProtectedRoute>
