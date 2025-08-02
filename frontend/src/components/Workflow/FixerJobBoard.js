@@ -40,11 +40,50 @@ const FixerJobBoard = () => {
       const response = await fetch(`${API_BASE_URL}/fixers`);
       if (response.ok) {
         const data = await response.json();
-        const currentFixer = data.data?.find(f => f.phone === user.phone);
+        
+        // Try to find fixer by phone number
+        let currentFixer = data.data?.find(f => f.phone === user.phone);
+        
+        // If not found by phone, try to find by user ID or create a basic fixer profile
+        if (!currentFixer && user?.id) {
+          currentFixer = data.data?.find(f => f.user_id === user.id);
+        }
+        
+        // If still not found, create a basic fixer info from user data
+        if (!currentFixer) {
+          currentFixer = {
+            id: user.id,
+            phone: user.phone,
+            name: user.name || 'Fixer',
+            rating: user.rating || 5.0,
+            availability: 'available',
+            user_id: user.id
+          };
+        }
+        
         setFixerInfo(currentFixer);
+      } else {
+        // If API call fails, create basic fixer info from user data
+        setFixerInfo({
+          id: user.id,
+          phone: user.phone,
+          name: user.name || 'Fixer',
+          rating: user.rating || 5.0,
+          availability: 'available',
+          user_id: user.id
+        });
       }
     } catch (error) {
       console.error('Error fetching fixer info:', error);
+      // Fallback: create basic fixer info from user data
+      setFixerInfo({
+        id: user.id,
+        phone: user.phone,
+        name: user.name || 'Fixer',
+        rating: user.rating || 5.0,
+        availability: 'available',
+        user_id: user.id
+      });
     }
   };
 
