@@ -1,9 +1,15 @@
 import React from 'react';
+import BackButton from '../Common/BackButton';
 
 const BecomeFixer = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-6xl mx-auto px-4">
+        {/* Back Navigation */}
+        <div className="mb-8">
+          <BackButton text="← Back" />
+        </div>
+
         {/* Hero Section */}
         <section className="bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg p-12 mb-12 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Become a FixMate-SA Fixer</h1>
