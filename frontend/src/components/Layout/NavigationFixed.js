@@ -53,25 +53,28 @@ const NavigationFixed = () => {
       path: '/fixers', 
       label: t('fixers', 'Fixers'), 
       icon: '🔧',
-      permission: null
+      permission: null,
+      roles: ['client', 'admin'] // Only clients and admins should see fixers list
     },
     { 
-      path: '/learning', 
+      path: getRoleBasedPath('/learning'), 
       label: t('learning', 'Learning'), 
       icon: '🎓',
       permission: null
     },
     { 
-      path: '/business-compliance', 
+      path: getRoleBasedPath('/business-compliance'), 
       label: t('businessCompliance', 'Business Compliance'), 
       icon: '🏢',
-      permission: null
+      permission: null,
+      roles: ['admin'] // Only admins should see business compliance
     },
     { 
-      path: '/sms', 
+      path: getRoleBasedPath('/sms'), 
       label: t('sms', 'SMS Portal'), 
       icon: '📱',
-      permission: null
+      permission: null,
+      roles: ['admin'] // Only admins should see SMS portal
     },
     
     // Business & Admin Features
