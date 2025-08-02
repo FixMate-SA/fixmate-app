@@ -167,13 +167,25 @@ function App() {
                 }
               />
 
-              {/* Admin Panel for admin-specific features */}
+              {/* Admin Panel for admin-specific features */}              
               <Route
                 path="/admin/panel"
                 element={
                   <ProtectedRoute>
                     <Layout>
                       <AdminDashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Fixer Job Board for available jobs */}
+              <Route
+                path="/fixer/jobs"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <FixerJobBoard />
                     </Layout>
                   </ProtectedRoute>
                 }
