@@ -1,9 +1,15 @@
 import React from 'react';
+import BackButton from '../Common/BackButton';
 
 const SafetyTrust = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-6xl mx-auto px-4">
+        {/* Back Navigation */}
+        <div className="mb-8">
+          <BackButton text="← Back" />
+        </div>
+
         <header className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Safety & Trust</h1>
           <p className="text-xl text-gray-600">Your security is our top priority - built into every feature</p>
