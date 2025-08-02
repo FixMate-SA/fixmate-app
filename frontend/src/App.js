@@ -174,8 +174,9 @@ function App() {
               />
 
               {/* Core App Routes */}
+              {/* Role-based Profile Routes */}
               <Route
-                path="/profile"
+                path="/client/profile"
                 element={
                   <ProtectedRoute>
                     <Layout>
@@ -184,6 +185,29 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/fixer/profile"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Profile />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/profile"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Profile />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Legacy Profile Route - Redirect to role-based */}
+              <Route path="/profile" element={<Navigate to="/" replace />} />
 
               {/* Job Management Routes */}
               <Route
