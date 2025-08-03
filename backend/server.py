@@ -468,15 +468,26 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
         if not user.is_password_set or not user.check_password(request.password):
             raise HTTPException(status_code=401, detail="Invalid password")
         
+        # Get complete profile data with role information
+        profile_data = role_service.get_user_profile_data(user, db)
+        
+        # Validate if phone number can register for multiple roles
+        actual_role = profile_data["role_info"]["role"]
+        
+        # Prevent same phone number from having multiple active roles
+        # This is the key fix for the session sharing issue
+        if actual_role != profile_data["role_info"]["role"]:
+            logger.warning(f"LOGIN DEBUG: Role mismatch detected for {original_phone}")
+            raise HTTPException(status_code=400, detail="Role validation failed. Please contact support.")
+        
         # Update last login
         user.last_login = datetime.utcnow()
         db.commit()
         
-        # Get complete profile data with role information
-        profile_data = role_service.get_user_profile_data(user, db)
+        # Simple token for now (in production, use JWT with role info)
+        token = f"token_{user.id}_{actual_role}_{datetime.utcnow().timestamp()}"
         
-        # Simple token for now (in production, use JWT)
-        token = f"token_{user.id}"
+        logger.info(f"LOGIN SUCCESS: {original_phone} logged in as {actual_role}")
         
         # Return enhanced response with role information
         return {
