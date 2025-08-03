@@ -9,6 +9,13 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 // Core Components - Direct imports (no lazy loading for stability)
 import LoginForm from "./components/Auth/LoginForm";
 import SignupForm from "./components/Auth/SignupForm";
+
+// Role-specific Auth Components
+import ClientLogin from "./components/Auth/ClientLogin";
+import FixerLogin from "./components/Auth/FixerLogin";
+import AdminLogin from "./components/Auth/AdminLogin";
+import ClientSignup from "./components/Auth/ClientSignup";
+import FixerSignup from "./components/Auth/FixerSignup";
 import Dashboard from "./components/Dashboard/Dashboard";
 import Layout from "./components/Layout/Layout";
 
