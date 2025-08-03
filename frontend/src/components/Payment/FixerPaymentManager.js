@@ -269,7 +269,7 @@ const FixerPaymentManager = ({ fixerId: propFixerId, isAdmin = false }) => {
                             <button
                               onClick={() => handleSettlePayment(payment.id)}
                               disabled={!settlementData.payment_method || !settlementData.reference}
-                              className="flex-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:bg-gray-300"
+                              className="flex-1 px-3 py-1 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 disabled:bg-gray-300"
                             >
                               Settle
                             </button>
