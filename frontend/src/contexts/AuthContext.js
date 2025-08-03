@@ -91,18 +91,31 @@ export const AuthProvider = ({ children }) => {
         };
       }
       
+      // Clear any existing session data to prevent conflicts
+      localStorage.clear();
+      
       setUser(userData);
       setRoleInfo(roleData);
       setDisplayName(displayNameData);
       setWelcomeMessage(welcomeData);
       setToken(userToken);
       
-      // Store in localStorage
+      // Store in localStorage with role-specific keys to prevent conflicts
+      const sessionKey = `fixmate_${roleData?.role || 'client'}`;
+      localStorage.setItem(`${sessionKey}_user`, JSON.stringify(userData));
+      localStorage.setItem(`${sessionKey}_role_info`, JSON.stringify(roleData));
+      localStorage.setItem(`${sessionKey}_display_name`, displayNameData);
+      localStorage.setItem(`${sessionKey}_welcome_message`, welcomeData);
+      localStorage.setItem(`${sessionKey}_token`, userToken);
+      
+      // Also store in legacy keys for backward compatibility
       localStorage.setItem('fixmate_user', JSON.stringify(userData));
       localStorage.setItem('fixmate_role_info', JSON.stringify(roleData));
       localStorage.setItem('fixmate_display_name', displayNameData);
       localStorage.setItem('fixmate_welcome_message', welcomeData);
       localStorage.setItem('fixmate_token', userToken);
+      
+      console.log('✅ Login successful for role:', roleData?.role);
       
       return { success: true, user: userData, roleInfo: roleData };
     } catch (error) {
