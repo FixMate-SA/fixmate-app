@@ -89,7 +89,7 @@ const FixerPaymentManager = ({ fixerId: propFixerId, isAdmin = false }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'current':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'overdue':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'blocked':
