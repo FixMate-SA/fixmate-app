@@ -74,8 +74,9 @@ const Dashboard = () => {
           ],
           stats: [
             { label: 'Active Jobs', value: dashboardData?.stats?.active_jobs || 0, icon: '🔄' },
-            { label: 'Completed', value: dashboardData?.stats?.completed_jobs || 0, icon: '✅' },
-            { label: 'Total Spent', value: `R${dashboardData?.stats?.total_spent || 0}`, icon: '💰' }
+            { label: 'Completed Jobs', value: dashboardData?.stats?.completed_jobs || 0, icon: '✅' },
+            { label: 'Total Spent', value: `R${dashboardData?.stats?.total_spent || 0}`, icon: '💰' },
+            { label: 'Pending Jobs', value: dashboardData?.stats?.pending_jobs || 0, icon: '⏳' }
           ]
         };
       case 'fixer':
