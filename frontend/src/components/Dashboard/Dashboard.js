@@ -140,17 +140,25 @@ const Dashboard = () => {
               color: 'bg-indigo-600 hover:bg-indigo-700'
             },
             { 
+              title: 'Photo Verification', 
+              desc: 'Review fixer photos', 
+              path: '/admin/photo-verification', 
+              icon: '📸',
+              color: 'bg-blue-600 hover:bg-blue-700'
+            },
+            { 
               title: 'Business Tools', 
               desc: 'Business compliance features', 
-              path: '/admin/business', 
+              path: '/admin/business-compliance', 
               icon: '🏢',
               color: 'bg-gray-600 hover:bg-gray-700'
             }
           ],
           stats: [
             { label: 'Total Users', value: dashboardData?.stats?.total_users || 0, icon: '👥' },
-            { label: 'Active Jobs', value: dashboardData?.stats?.total_jobs || 0, icon: '🔄' },
-            { label: 'Platform Revenue', value: `R${dashboardData?.stats?.platform_revenue || 0}`, icon: '💰' }
+            { label: 'Active Jobs', value: dashboardData?.stats?.total_active_jobs || 0, icon: '🔄' },
+            { label: 'Platform Revenue', value: `R${dashboardData?.stats?.platform_revenue || 0}`, icon: '💰' },
+            { label: 'Success Rate', value: `${dashboardData?.stats?.success_rate || 0}%`, icon: '📈' }
           ]
         };
       default:
