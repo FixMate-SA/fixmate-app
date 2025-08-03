@@ -457,9 +457,9 @@ function App() {
                 path="/admin"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <AdminDashboard />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -467,9 +467,9 @@ function App() {
                 path="/admin/smart-matching"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <SmartMatchingDashboard />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -477,9 +477,9 @@ function App() {
                 path="/admin/photo-verification"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <AdminPhotoVerificationDashboard />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -489,9 +489,9 @@ function App() {
                 path="/business-compliance"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <BusinessCompliance />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
