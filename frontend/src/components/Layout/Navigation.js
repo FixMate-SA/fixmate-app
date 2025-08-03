@@ -223,7 +223,7 @@ const Navigation = () => {
               {item.roles && item.roles.length === 1 && item.roles[0] !== 'client' && (
                 <span className={`ml-1 px-1 py-0.5 text-xs rounded ${
                   item.roles[0] === 'admin' ? 'bg-red-100 text-red-600' : 
-                  item.roles[0] === 'fixer' ? 'bg-green-100 text-green-600' : ''
+                  item.roles[0] === 'fixer' ? 'bg-orange-100 text-orange-600' : ''
                 }`}>
                   {item.roles[0].charAt(0).toUpperCase()}
                 </span>
