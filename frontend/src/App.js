@@ -155,9 +155,9 @@ function App() {
                 path="/client/dashboard"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ResponsiveLayout>
                       <Dashboard />
-                    </Layout>
+                    </ResponsiveLayout>
                   </ProtectedRoute>
                 }
               />
@@ -165,9 +165,9 @@ function App() {
                 path="/fixer/dashboard"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ResponsiveLayout>
                       <Dashboard />
-                    </Layout>
+                    </ResponsiveLayout>
                   </ProtectedRoute>
                 }
               />
@@ -175,9 +175,9 @@ function App() {
                 path="/admin/dashboard"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ResponsiveLayout>
                       <Dashboard />
-                    </Layout>
+                    </ResponsiveLayout>
                   </ProtectedRoute>
                 }
               />
