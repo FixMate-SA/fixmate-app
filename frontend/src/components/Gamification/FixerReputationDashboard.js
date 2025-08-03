@@ -135,7 +135,7 @@ const FixerReputationDashboard = () => {
               }`}
             >
               <div className="text-3xl mb-2">{badge.icon}</div>
-              <div className={`text-sm font-medium ${badge.earned ? 'text-green-800' : 'text-gray-500'}`}>
+              <div className={`text-sm font-medium ${badge.earned ? 'text-orange-800' : 'text-gray-500'}`}>
                 {badge.name}
               </div>
               {badge.earned && (
