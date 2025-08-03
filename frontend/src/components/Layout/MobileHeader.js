@@ -20,7 +20,7 @@ const MobileHeader = () => {
   const getRoleColor = (role) => {
     switch (role) {
       case 'admin': return 'bg-red-600';
-      case 'fixer': return 'bg-green-600';
+      case 'fixer': return 'bg-orange-600';
       case 'client': return 'bg-blue-600';
       default: return 'bg-blue-600';
     }
@@ -29,7 +29,7 @@ const MobileHeader = () => {
   const getRoleBadgeColor = (role) => {
     switch (role) {
       case 'admin': return 'bg-red-100 text-red-700';
-      case 'fixer': return 'bg-green-100 text-green-700';
+      case 'fixer': return 'bg-orange-100 text-orange-700';
       case 'client': return 'bg-blue-100 text-blue-700';
       default: return 'bg-blue-100 text-blue-700';
     }
