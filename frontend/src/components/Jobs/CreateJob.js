@@ -115,6 +115,11 @@ const CreateJob = () => {
     setShowVoiceRecorder(false);
   };
 
+  const handleVoiceError = (errorMessage) => {
+    setError(errorMessage);
+    setShowVoiceRecorder(false);
+  };
+
   const findSmartMatches = async (jobId) => {
     if (!jobId) return;
     
