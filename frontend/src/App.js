@@ -499,9 +499,9 @@ function App() {
                 path="/enterprise"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <B2BPortal />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -509,9 +509,9 @@ function App() {
                 path="/learning"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <LearningPlatform />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -521,9 +521,9 @@ function App() {
                 path="/sms"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <SMSInterface />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -531,9 +531,9 @@ function App() {
                 path="/voice-recorder"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <VoiceRecorder />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -543,9 +543,9 @@ function App() {
                 path="/payment"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <PaymentOptions />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -553,9 +553,9 @@ function App() {
                 path="/fixer/payments"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <FixerPaymentManager />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
