@@ -308,7 +308,7 @@ function App() {
                   <ProtectedRoute>
                     <ProfessionalLayout>
                       <PaymentOptions />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
