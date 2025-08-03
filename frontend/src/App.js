@@ -405,9 +405,9 @@ function App() {
                 path="/jobs/enhanced-create"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <EnhancedJobCreation />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -415,9 +415,9 @@ function App() {
                 path="/jobs/:jobId/status"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <JobWorkflowStatus />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -425,9 +425,9 @@ function App() {
                 path="/fixer/job-board"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <FixerJobBoard />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -435,9 +435,9 @@ function App() {
                 path="/jobs/:jobId/complete"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <EnhancedJobCompletion />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -445,9 +445,9 @@ function App() {
                 path="/jobs/:jobId/dispute"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <DisputeCreation />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
