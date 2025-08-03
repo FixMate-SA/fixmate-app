@@ -122,7 +122,7 @@ const AdminDashboard = () => {
           <div className="text-gray-600">Total Users</div>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm">
-          <div className="text-3xl font-bold text-green-600">{stats.totalFixers}</div>
+          <div className="text-3xl font-bold text-orange-600">{stats.totalFixers}</div>
           <div className="text-gray-600">Total Fixers</div>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm">
