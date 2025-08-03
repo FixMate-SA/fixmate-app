@@ -47,13 +47,13 @@ const MobileBottomNav = () => {
     return location.pathname === path;
   };
 
-  const getRoleColor = (role, isActive = false) => {
+  const getRoleColor = (userRole, isActive = false) => {
     const colors = {
       admin: isActive ? 'text-red-600' : 'text-gray-500',
-      fixer: isActive ? 'text-green-600' : 'text-gray-500', 
+      fixer: isActive ? 'text-orange-600' : 'text-gray-500', 
       client: isActive ? 'text-blue-600' : 'text-gray-500'
     };
-    return colors[role] || colors.client;
+    return colors[userRole] || colors.client;
   };
 
   // Only show on mobile screens
