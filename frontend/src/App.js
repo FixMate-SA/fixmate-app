@@ -353,12 +353,9 @@ function App() {
                 }
               />
 
-              {/* Additional Legacy Route Redirects */}
-              <Route path="/business-compliance" element={<Navigate to="/" replace />} />
-              <Route path="/sms" element={<Navigate to="/" replace />} />
-              <Route path="/enterprise" element={<Navigate to="/" replace />} />
-              <Route path="/admin" element={<Navigate to="/" replace />} />
-              <Route path="/jobs" element={<Navigate to="/" replace />} />
+              {/* Additional Legacy Route Redirects - Only for truly legacy routes */}
+              <Route path="/dashboard" element={<Navigate to="/" replace />} />
+              <Route path="/profile" element={<Navigate to="/" replace />} />
 
               {/* Job Management Routes */}
               <Route
