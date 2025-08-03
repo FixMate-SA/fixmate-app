@@ -14,6 +14,12 @@ const FixerReputationDashboard = () => {
   // Get fixerId from the authenticated user
   const fixerId = user?.id;
 
+  useEffect(() => {
+    if (fixerId) {
+      fetchReputationData();
+    }
+  }, [fixerId]);
+
   // Fetch reputation data
   const fetchReputationData = async () => {
     try {
