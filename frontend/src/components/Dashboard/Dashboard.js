@@ -62,7 +62,7 @@ const Dashboard = () => {
               desc: 'Browse available service providers', 
               path: '/fixers', 
               icon: '🔧',
-              color: 'bg-green-600 hover:bg-green-700'
+              color: 'bg-orange-600 hover:bg-orange-700'
             },
             { 
               title: 'My Jobs', 
