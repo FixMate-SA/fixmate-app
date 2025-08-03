@@ -102,7 +102,7 @@ const FixerPaymentManager = ({ fixerId: propFixerId, isAdmin = false }) => {
   const getPaymentStatusColor = (status) => {
     switch (status) {
       case 'paid':
-        return 'bg-green-100 text-green-800';
+        return 'bg-orange-100 text-orange-800';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'overdue':
