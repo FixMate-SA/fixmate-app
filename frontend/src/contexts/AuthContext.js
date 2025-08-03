@@ -205,6 +205,8 @@ export const AuthProvider = ({ children }) => {
     hasPermission,
     isRole,
     getUserRole,
+    validateUserRole,
+    clearRoleConflicts,
     isAuthenticated: !!user && !!token,
     loading
   };
