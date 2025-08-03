@@ -48,6 +48,7 @@ import DisputeCreation from "./components/Disputes/DisputeCreation";
 // Communication Components
 import SMSInterface from "./components/SMS/SMSInterface";
 import VoiceRecorder from "./components/VoiceRecorder/VoiceRecorder";
+import FixerReputationDashboard from "./components/Gamification/FixerReputationDashboard";
 
 // Payment Components
 import PaymentOptions from "./components/Payment/PaymentOptions";
