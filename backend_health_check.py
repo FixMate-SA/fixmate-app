@@ -129,7 +129,8 @@ class HealthCheckTester:
         
         try:
             headers = {"Authorization": f"Bearer {self.test_data['admin_token']}"}
-            response = self.session.get(f"{API_BASE}/dashboard", headers=headers)
+            user_id = self.test_data['admin_user_id']
+            response = self.session.get(f"{API_BASE}/dashboard/{user_id}", headers=headers)
             
             if response.status_code == 200:
                 data = response.json()
