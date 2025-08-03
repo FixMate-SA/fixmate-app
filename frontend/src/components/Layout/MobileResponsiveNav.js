@@ -86,7 +86,7 @@ const MobileResponsiveNav = () => {
   const getRoleColor = (role) => {
     switch (role) {
       case 'admin': return 'border-red-500 bg-red-50';
-      case 'fixer': return 'border-green-500 bg-green-50';
+      case 'fixer': return 'border-orange-500 bg-orange-50';
       case 'client': return 'border-blue-500 bg-blue-50';
       default: return 'border-blue-500 bg-blue-50';
     }
@@ -95,7 +95,7 @@ const MobileResponsiveNav = () => {
   const getRoleActiveColor = (role) => {
     switch (role) {
       case 'admin': return 'bg-red-600 text-white border-red-600';
-      case 'fixer': return 'bg-green-600 text-white border-green-600';
+      case 'fixer': return 'bg-orange-600 text-white border-orange-600';
       case 'client': return 'bg-blue-600 text-white border-blue-600';
       default: return 'bg-blue-600 text-white border-blue-600';
     }
@@ -104,7 +104,7 @@ const MobileResponsiveNav = () => {
   const getRoleTextColor = (role) => {
     switch (role) {
       case 'admin': return 'text-red-700';
-      case 'fixer': return 'text-green-700';
+      case 'fixer': return 'text-orange-700';
       case 'client': return 'text-blue-700';
       default: return 'text-blue-700';
     }
