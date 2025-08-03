@@ -78,7 +78,7 @@ const MobileBottomNav = () => {
       </div>
       
       {/* Add padding to prevent content from being hidden behind bottom nav */}
-      <style jsx global>{`
+      <style jsx="true" global="true">{`
         @media (max-width: 768px) {
           .main-content {
             padding-bottom: 80px;
