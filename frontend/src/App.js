@@ -322,9 +322,9 @@ function App() {
                 path="/admin/business-compliance"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <BusinessCompliance />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -334,9 +334,9 @@ function App() {
                 path="/admin/sms"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <SMSInterface />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -346,9 +346,9 @@ function App() {
                 path="/admin/enterprise"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <B2BPortal />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
