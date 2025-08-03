@@ -376,7 +376,7 @@ async def validate_phone_for_role(request: dict, db: Session = Depends(get_db)):
 @api_router.post("/auth/signup")
 async def signup(request: SignupRequest, db: Session = Depends(get_db)):
     """
-    Complete user registration with detailed information
+    Complete user registration with detailed information and role validation
     """
     try:
         # Validate passwords match
@@ -395,14 +395,19 @@ async def signup(request: SignupRequest, db: Session = Depends(get_db)):
         elif not phone.startswith("whatsapp:"):
             phone = f"whatsapp:{phone}"
         
-        # Check if user already exists
+        # Enhanced check for existing user to prevent role conflicts
         existing_user = db.query(User).filter(
             or_(User.phone == phone, User.id_number == request.id_number)
         ).first()
         
         if existing_user:
             if existing_user.phone == phone:
-                raise HTTPException(status_code=400, detail="Phone number already registered")
+                # Check existing role to provide better error message
+                current_role = role_service.determine_user_role(phone, db)
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Phone number already registered as {current_role['role']}. Please use the correct login page."
+                )
             else:
                 raise HTTPException(status_code=400, detail="ID number already registered")
         
@@ -416,7 +421,7 @@ async def signup(request: SignupRequest, db: Session = Depends(get_db)):
             "email": request.email.strip() if request.email else None
         }
         
-        # Create user
+        # Create user with role validation
         user = role_service.create_or_update_user(user_data, db)
         
         # Set password
@@ -426,8 +431,11 @@ async def signup(request: SignupRequest, db: Session = Depends(get_db)):
         # Get complete profile data
         profile_data = role_service.get_user_profile_data(user, db)
         
-        # Generate token
-        token = f"token_{user.id}"
+        # Generate unique token with role and timestamp
+        actual_role = profile_data["role_info"]["role"]
+        token = f"token_{user.id}_{actual_role}_{datetime.utcnow().timestamp()}"
+        
+        logger.info(f"SIGNUP SUCCESS: {phone} registered as {actual_role}")
         
         return {
             "user": profile_data["user"],
