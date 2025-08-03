@@ -2,13 +2,13 @@
   "name": "fixmate-sa",
   "version": "1.0.0",
   "scripts": {
-    "build": "cd frontend && npm install && npm run build",
-    "heroku-postbuild": "npm run build",
+    "build": "cd frontend && yarn install && yarn build",
+    "heroku-postbuild": "yarn build",
     "start": "cd backend && python -m uvicorn server:app --host 0.0.0.0 --port $PORT --timeout-keep-alive 30"
   },
   "engines": {
     "node": "18.x",
-    "npm": "9.x"
+    "yarn": "1.22.x"
   },
   "dependencies": {},
   "devDependencies": {},
