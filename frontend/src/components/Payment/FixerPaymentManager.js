@@ -171,7 +171,7 @@ const FixerPaymentManager = ({ fixerId: propFixerId, isAdmin = false }) => {
               
               <div className={`p-4 rounded-lg border-2 ${
                 paymentStatus.can_receive_jobs 
-                  ? 'bg-green-100 text-green-800 border-green-200' 
+                  ? 'bg-orange-100 text-orange-800 border-orange-200' 
                   : 'bg-red-100 text-red-800 border-red-200'
               }`}>
                 <div className="text-sm font-medium">
