@@ -365,9 +365,9 @@ function App() {
                 path="/jobs/create"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <CreateJob />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -375,9 +375,9 @@ function App() {
                 path="/jobs"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <JobList />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -385,9 +385,9 @@ function App() {
                 path="/fixers"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <FixerList />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
