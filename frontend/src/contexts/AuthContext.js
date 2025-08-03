@@ -131,6 +131,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('fixmate_display_name');
     localStorage.removeItem('fixmate_welcome_message');
     localStorage.removeItem('fixmate_token');
+    
+    // Clear any cached data to prevent role conflicts
+    console.log('AuthContext: User logged out, session cleared');
   };
 
   const updateUser = async (userData) => {
