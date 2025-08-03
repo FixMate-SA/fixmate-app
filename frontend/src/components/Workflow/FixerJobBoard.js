@@ -358,7 +358,7 @@ const FixerJobBoard = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-green-600">
+                  <div className="text-lg font-bold text-orange-600">
                     R{job.estimated_price || 'TBD'}
                   </div>
                   <div className="text-xs text-gray-500">
