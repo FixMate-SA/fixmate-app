@@ -152,7 +152,7 @@ const FixerReputationDashboard = () => {
           {reputationData.recent_achievements.map((achievement, index) => (
             <div key={index} className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg">
               <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                <span className="text-green-600 text-sm">🎉</span>
+                <span className="text-orange-600 text-sm">🎉</span>
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">{achievement}</p>
