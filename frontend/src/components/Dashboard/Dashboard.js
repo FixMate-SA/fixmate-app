@@ -99,6 +99,13 @@ const Dashboard = () => {
               color: 'bg-blue-600 hover:bg-blue-700'
             },
             { 
+              title: 'Reputation', 
+              desc: 'View your reputation score', 
+              path: '/fixer/reputation', 
+              icon: '⭐',
+              color: 'bg-yellow-600 hover:bg-yellow-700'
+            },
+            { 
               title: 'Learning Center', 
               desc: 'Improve your skills', 
               path: '/fixer/learning', 
@@ -108,8 +115,9 @@ const Dashboard = () => {
           ],
           stats: [
             { label: 'Jobs Completed', value: dashboardData?.stats?.jobs_completed || 0, icon: '✅' },
-            { label: 'Rating', value: dashboardData?.stats?.rating || '5.0', icon: '⭐' },
-            { label: 'Total Earned', value: `R${dashboardData?.stats?.total_earned || 0}`, icon: '💰' }
+            { label: 'Current Rating', value: dashboardData?.stats?.rating || '5.0', icon: '⭐' },
+            { label: 'Total Earned', value: `R${dashboardData?.stats?.total_earned || 0}`, icon: '💰' },
+            { label: 'Active Jobs', value: dashboardData?.stats?.active_jobs || 0, icon: '🔄' }
           ]
         };
       case 'admin':
