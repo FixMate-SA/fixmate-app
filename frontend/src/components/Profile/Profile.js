@@ -364,7 +364,7 @@ const Profile = () => {
                           </div>
                           <div className="bg-purple-50 p-3 rounded-md text-center">
                             <div className={`text-2xl font-bold ${
-                              fixer.is_active ? 'text-green-600' : 'text-red-600'
+                              fixer.is_active ? 'text-orange-600' : 'text-red-600'
                             }`}>
                               {fixer.is_active ? '✓' : '✗'}
                             </div>
