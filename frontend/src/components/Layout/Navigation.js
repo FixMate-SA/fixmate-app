@@ -239,7 +239,7 @@ const Navigation = () => {
               <span>Logged in as:</span>
               <span className={`px-2 py-1 rounded-full font-medium ${
                 userRole === 'admin' ? 'bg-red-100 text-red-700' :
-                userRole === 'fixer' ? 'bg-green-100 text-green-700' :
+                userRole === 'fixer' ? 'bg-orange-100 text-orange-700' :
                 'bg-blue-100 text-blue-700'
               }`}>
                 {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
