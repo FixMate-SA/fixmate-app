@@ -32,7 +32,7 @@ const Header = () => {
   const getRoleTextColor = (role) => {
     switch (role) {
       case 'admin': return 'text-red-600';
-      case 'fixer': return 'text-green-600';  
+      case 'fixer': return 'text-orange-600';  
       case 'client': return 'text-blue-600';
       default: return 'text-blue-600';
     }
