@@ -130,7 +130,7 @@ const FixerReputationDashboard = () => {
               key={index}
               className={`p-4 rounded-lg text-center transition-all duration-200 ${
                 badge.earned 
-                  ? 'bg-green-50 border-2 border-green-200' 
+                  ? 'bg-orange-50 border-2 border-orange-200' 
                   : 'bg-gray-50 border-2 border-gray-200 opacity-50'
               }`}
             >
