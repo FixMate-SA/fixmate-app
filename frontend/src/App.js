@@ -18,6 +18,7 @@ import ClientSignup from "./components/Auth/ClientSignup";
 import FixerSignup from "./components/Auth/FixerSignup";
 import Dashboard from "./components/Dashboard/Dashboard";
 import Layout from "./components/Layout/Layout";
+import ResponsiveLayout from "./components/Layout/ResponsiveLayout";
 
 // Job Management Components
 import CreateJob from "./components/Jobs/CreateJob";
