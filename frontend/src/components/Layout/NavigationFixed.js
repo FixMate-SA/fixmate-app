@@ -154,7 +154,7 @@ const NavigationFixed = () => {
     
     switch (role) {
       case 'admin': return 'border-red-500 text-red-600';
-      case 'fixer': return 'border-green-500 text-green-600';
+      case 'fixer': return 'border-orange-500 text-orange-600';
       case 'client': return 'border-blue-500 text-blue-600';
       default: return 'border-blue-500 text-blue-600';
     }
