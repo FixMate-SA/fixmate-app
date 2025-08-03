@@ -162,201 +162,108 @@ const Dashboard = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-        {error}
-      </div>
-    );
-  }
-
-  const { recent_jobs = [], top_fixers = [], stats = {} } = dashboardData || {};
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'assigned':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'pending':
-        return 'bg-gray-100 text-gray-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const content = getRoleBasedContent();
 
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg p-6">
-        <h1 className="text-2xl font-bold mb-2">Welcome back, {user.name}!</h1>
-        <p className="text-blue-100">Find reliable fixers for all your home repair needs</p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-3 bg-blue-100 rounded-full">
-              <span className="text-2xl">📋</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Jobs</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total_jobs || 0}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-3 bg-green-100 rounded-full">
-              <span className="text-2xl">✅</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Completed</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.completed_jobs || 0}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-3 bg-yellow-100 rounded-full">
-              <span className="text-2xl">⭐</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Success Rate</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {stats.total_jobs > 0 ? Math.round((stats.completed_jobs / stats.total_jobs) * 100) : 0}%
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="flex flex-wrap gap-4">
-          <Link
-            to="/jobs/create"
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            <span className="mr-2">➕</span>
-            Create New Job
-          </Link>
-          <Link
-            to="/fixers"
-            className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-          >
-            <span className="mr-2">🔧</span>
-            Browse Fixers
-          </Link>
-          <Link
-            to="/jobs"
-            className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-          >
-            <span className="mr-2">📋</span>
-            View All Jobs
-          </Link>
-        </div>
-      </div>
-
-      {/* Recent Jobs */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Jobs</h2>
-          <Link
-            to="/jobs"
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-          >
-            View all
-          </Link>
-        </div>
+      {/* Header Section */}
+      <div className="dashboard-card">
+        <h1 className="dashboard-title">{content.title}</h1>
+        <p className="dashboard-subtitle">{content.subtitle}</p>
         
-        {recent_jobs.length === 0 ? (
-          <div className="text-center py-8">
-            <span className="text-4xl">📋</span>
-            <p className="text-gray-500 mt-2">No jobs yet</p>
-            <Link
-              to="/jobs/create"
-              className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Create your first job
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {recent_jobs.slice(0, 5).map((job) => (
-              <div key={job.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-md">
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{job.service}</h3>
-                  <p className="text-sm text-gray-600">{job.description}</p>
-                  <p className="text-sm text-gray-500 mt-1">📍 {job.location}</p>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(job.status)}`}>
-                    {job.status}
-                  </span>
-                  <Link
-                    to={`/jobs/${job.id}`}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                  >
-                    View
-                  </Link>
-                </div>
-              </div>
-            ))}
+        {error && (
+          <div className="alert alert-error">
+            <strong>Error:</strong> {error}
           </div>
         )}
       </div>
 
-      {/* Top Fixers */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Top Rated Fixers</h2>
-          <Link
-            to="/fixers"
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-          >
-            View all
-          </Link>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {top_fixers.slice(0, 6).map((fixer) => (
-            <div key={fixer.id} className="bg-gray-50 rounded-md p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-medium text-gray-900">{fixer.name}</h3>
-                <div className="flex items-center space-x-1">
-                  <span className="text-yellow-400">⭐</span>
-                  <span className="text-sm text-gray-600">{fixer.rating.toFixed(1)}</span>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 mb-2">📍 {fixer.location}</p>
-              <div className="flex flex-wrap gap-1">
-                {(() => {
-                  try {
-                    const services = fixer.services ? JSON.parse(fixer.services) : [];
-                    return Array.isArray(services) ? services.slice(0, 3).map((service, index) => (
-                      <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                        {service}
-                      </span>
-                    )) : [];
-                  } catch (error) {
-                    console.warn('Error parsing fixer services:', error, fixer.services);
-                    return [];
-                  }
-                })()}
-              </div>
+      {/* Stats Section */}
+      {content.stats.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {content.stats.map((stat, index) => (
+            <div key={index} className="stat-card">
+              <span className="text-2xl mb-2 block">{stat.icon}</span>
+              <span className="stat-number">{stat.value}</span>
+              <span className="stat-label">{stat.label}</span>
             </div>
           ))}
         </div>
+      )}
+
+      {/* Quick Actions */}
+      {content.quickActions.length > 0 && (
+        <div className="dashboard-card">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {content.quickActions.map((action, index) => (
+              <button
+                key={index}
+                onClick={() => navigate(action.path)}
+                className={`
+                  p-4 rounded-lg text-left transition-all duration-200 transform hover:scale-105 text-white
+                  ${action.color}
+                `}
+              >
+                <div className="flex items-center space-x-3 mb-2">
+                  <span className="text-2xl">{action.icon}</span>
+                  <h3 className="font-semibold">{action.title}</h3>
+                </div>
+                <p className="text-sm opacity-90">{action.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Activity */}
+      <div className="dashboard-card">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
+        {dashboardData?.recent_activity?.length > 0 ? (
+          <div className="space-y-3">
+            {dashboardData.recent_activity.slice(0, 5).map((activity, index) => (
+              <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-blue-600 text-sm">📋</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">{activity.title}</p>
+                  <p className="text-xs text-gray-500">{activity.timestamp}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <span className="text-4xl mb-4 block">📊</span>
+            <p className="text-gray-500">No recent activity to display</p>
+            <p className="text-sm text-gray-400 mt-2">Start using FixMate-SA to see your activity here</p>
+          </div>
+        )}
       </div>
+
+      {/* Welcome Card for New Users */}
+      {!dashboardData?.has_activity && (
+        <div className="dashboard-card bg-gradient-to-r from-blue-50 to-green-50 border-blue-200">
+          <div className="text-center py-6">
+            <span className="text-5xl mb-4 block">🎉</span>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Welcome to FixMate-SA!</h2>
+            <p className="text-gray-600 mb-4">
+              {userRole === 'client' && "Start creating jobs and connecting with trusted fixers."}
+              {userRole === 'fixer' && "Begin accepting jobs and growing your service business."}
+              {userRole === 'admin' && "Manage the platform and monitor operations."}
+            </p>
+            {content.quickActions.length > 0 && (
+              <button
+                onClick={() => navigate(content.quickActions[0].path)}
+                className="action-button"
+              >
+                Get Started
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
