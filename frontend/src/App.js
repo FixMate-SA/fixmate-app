@@ -313,9 +313,7 @@ function App() {
                 }
               />
 
-              {/* Legacy Route Redirects */}
-              <Route path="/learning" element={<Navigate to="/" replace />} />
-              <Route path="/payment" element={<Navigate to="/" replace />} />
+              {/* Legacy Route Redirects - Only keep non-conflicting ones */}
 
               {/* Role-based Business Compliance Routes */}
               <Route
