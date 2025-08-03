@@ -354,7 +354,6 @@ function App() {
               />
 
               {/* Additional Legacy Route Redirects - Only for truly legacy routes */}
-              <Route path="/dashboard" element={<Navigate to="/" replace />} />
               <Route path="/profile" element={<Navigate to="/" replace />} />
 
               {/* Job Management Routes */}
