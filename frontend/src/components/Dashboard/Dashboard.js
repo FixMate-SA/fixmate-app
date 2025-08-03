@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Logo from '../Common/Logo';
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, getUserRole } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  const userRole = getUserRole();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -40,10 +43,121 @@ const Dashboard = () => {
     }
   }, [user]);
 
+  const getRoleBasedContent = () => {
+    switch (userRole) {
+      case 'client':
+        return {
+          title: 'Client Dashboard',
+          subtitle: 'Manage your service requests and connect with trusted fixers',
+          quickActions: [
+            { 
+              title: 'Create New Job', 
+              desc: 'Post a new service request', 
+              path: '/jobs/create', 
+              icon: '➕',
+              color: 'bg-blue-600 hover:bg-blue-700'
+            },
+            { 
+              title: 'Find Fixers', 
+              desc: 'Browse available service providers', 
+              path: '/fixers', 
+              icon: '🔧',
+              color: 'bg-green-600 hover:bg-green-700'
+            },
+            { 
+              title: 'My Jobs', 
+              desc: 'View your job requests', 
+              path: '/jobs/list', 
+              icon: '📋',
+              color: 'bg-purple-600 hover:bg-purple-700'
+            }
+          ],
+          stats: [
+            { label: 'Active Jobs', value: dashboardData?.stats?.active_jobs || 0, icon: '🔄' },
+            { label: 'Completed', value: dashboardData?.stats?.completed_jobs || 0, icon: '✅' },
+            { label: 'Total Spent', value: `R${dashboardData?.stats?.total_spent || 0}`, icon: '💰' }
+          ]
+        };
+      case 'fixer':
+        return {
+          title: 'Fixer Dashboard',
+          subtitle: 'Manage your jobs and grow your service business',
+          quickActions: [
+            { 
+              title: 'Available Jobs', 
+              desc: 'Browse and accept new jobs', 
+              path: '/fixer/jobs', 
+              icon: '🔨',
+              color: 'bg-green-600 hover:bg-green-700'
+            },
+            { 
+              title: 'My Payments', 
+              desc: 'Track earnings and payments', 
+              path: '/fixer/payment', 
+              icon: '💳',
+              color: 'bg-blue-600 hover:bg-blue-700'
+            },
+            { 
+              title: 'Learning Center', 
+              desc: 'Improve your skills', 
+              path: '/fixer/learning', 
+              icon: '🎓',
+              color: 'bg-purple-600 hover:bg-purple-700'
+            }
+          ],
+          stats: [
+            { label: 'Jobs Completed', value: dashboardData?.stats?.jobs_completed || 0, icon: '✅' },
+            { label: 'Rating', value: dashboardData?.stats?.rating || '5.0', icon: '⭐' },
+            { label: 'Total Earned', value: `R${dashboardData?.stats?.total_earned || 0}`, icon: '💰' }
+          ]
+        };
+      case 'admin':
+        return {
+          title: 'Admin Dashboard',
+          subtitle: 'Manage the FixMate-SA platform and monitor operations',
+          quickActions: [
+            { 
+              title: 'Admin Panel', 
+              desc: 'Platform management tools', 
+              path: '/admin/panel', 
+              icon: '⚙️',
+              color: 'bg-red-600 hover:bg-red-700'
+            },
+            { 
+              title: 'Smart Matching', 
+              desc: 'View matching analytics', 
+              path: '/admin/smart-matching', 
+              icon: '🎯',
+              color: 'bg-indigo-600 hover:bg-indigo-700'
+            },
+            { 
+              title: 'Business Tools', 
+              desc: 'Business compliance features', 
+              path: '/admin/business', 
+              icon: '🏢',
+              color: 'bg-gray-600 hover:bg-gray-700'
+            }
+          ],
+          stats: [
+            { label: 'Total Users', value: dashboardData?.stats?.total_users || 0, icon: '👥' },
+            { label: 'Active Jobs', value: dashboardData?.stats?.total_jobs || 0, icon: '🔄' },
+            { label: 'Platform Revenue', value: `R${dashboardData?.stats?.platform_revenue || 0}`, icon: '💰' }
+          ]
+        };
+      default:
+        return {
+          title: 'Dashboard',
+          subtitle: 'Welcome to FixMate-SA',
+          quickActions: [],
+          stats: []
+        };
+    }
+  };
+
   if (loading) {
     return (
-      <div className="loading-mobile">
-        <div className="spinner-mobile"></div>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
       </div>
     );
   }
