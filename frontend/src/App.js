@@ -125,9 +125,16 @@ function App() {
         <Router>
           <div className="App">
             <Routes>
-              {/* Authentication Routes */}
-              <Route path="/login" element={<LoginForm />} />
-              <Route path="/signup" element={<SignupForm />} />
+              {/* Role-specific Authentication Routes */}
+              <Route path="/client-login" element={<ClientLogin />} />
+              <Route path="/fixers-login" element={<FixerLogin />} />
+              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route path="/client-signup" element={<ClientSignup />} />
+              <Route path="/fixer-signup" element={<FixerSignup />} />
+
+              {/* Legacy Authentication Routes - Redirect to client login */}
+              <Route path="/login" element={<Navigate to="/client-login" replace />} />
+              <Route path="/signup" element={<Navigate to="/client-signup" replace />} />
 
               {/* Public Routes - Must be before protected routes */}
               <Route path="/terms" element={<TermsOfService />} />
