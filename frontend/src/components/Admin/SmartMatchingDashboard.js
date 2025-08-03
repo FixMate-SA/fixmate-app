@@ -51,7 +51,7 @@ const SmartMatchingDashboard = () => {
     
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/api/admin/improve-matching`,
+        getApiUrl('/admin/improve-matching'),
         {
           method: 'POST',
           headers: {
