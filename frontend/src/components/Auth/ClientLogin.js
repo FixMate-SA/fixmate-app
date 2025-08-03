@@ -50,32 +50,32 @@ const ClientLogin = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-6">
         {/* Language Selector */}
         <div className="flex justify-end">
           <LanguageSelector />
         </div>
         
-        <div>
+        <div className="text-center">
           <Logo 
             size="large" 
             variant="login" 
             showText={true}
-            className="mb-8"
+            className="mb-6"
           />
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
             Client Login
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-sm text-gray-600">
             Access your client account to create jobs and hire fixers
           </p>
-          <p className="mt-1 text-center text-xs text-gray-500">
+          <p className="mt-1 text-xs text-gray-500">
             Enter your phone number and password to sign in
           </p>
         </div>
         
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+        <form className="mt-6 space-y-4" onSubmit={handleLogin}>
           <div className="space-y-4">
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
@@ -88,7 +88,7 @@ const ClientLogin = () => {
                 required
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="form-input appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-base"
                 placeholder="Enter your phone number (e.g., +27821234567)"
               />
             </div>
@@ -104,14 +104,14 @@ const ClientLogin = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="form-input appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-base"
                 placeholder="Enter your password"
               />
             </div>
           </div>
 
           {error && (
-            <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-md">
+            <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-lg">
               {error}
             </div>
           )}
@@ -120,9 +120,16 @@ const ClientLogin = () => {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              className="btn-mobile group relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Signing in...' : 'Sign in as Client'}
+              {loading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Signing in...</span>
+                </div>
+              ) : (
+                'Sign in as Client'
+              )}
             </button>
             
             <div className="text-center">
@@ -131,19 +138,19 @@ const ClientLogin = () => {
             
             <Link
               to="/client-signup"
-              className="group relative w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="btn-mobile group relative w-full flex justify-center py-3 px-4 border border-gray-300 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               Don't have an account? Sign up as Client
             </Link>
           </div>
           
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-3">
             <p className="text-xs text-gray-500">
               🔒 Your account is protected with secure password authentication
             </p>
-            <div className="text-xs text-gray-500 space-y-1">
-              <p>Are you a fixer? <Link to="/fixers-login" className="text-indigo-600 hover:text-indigo-500">Login as Fixer</Link></p>
-              <p>Are you an admin? <Link to="/admin-login" className="text-indigo-600 hover:text-indigo-500">Login as Admin</Link></p>
+            <div className="text-xs text-gray-500 space-y-2">
+              <p>Are you a fixer? <Link to="/fixers-login" className="text-indigo-600 hover:text-indigo-500 font-medium">Login as Fixer</Link></p>
+              <p>Are you an admin? <Link to="/admin-login" className="text-indigo-600 hover:text-indigo-500 font-medium">Login as Admin</Link></p>
             </div>
           </div>
         </form>
