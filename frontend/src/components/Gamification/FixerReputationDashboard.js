@@ -24,7 +24,7 @@ const FixerReputationDashboard = () => {
   const fetchReputationData = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/fixer/${fixerId}/reputation`);
+      const response = await apiService.get(`/fixer/${fixerId}/reputation`);
       
       if (response.data.success) {
         setReputationData(response.data.reputation);
@@ -46,7 +46,7 @@ const FixerReputationDashboard = () => {
   // Initialize reputation
   const initializeReputation = async () => {
     try {
-      const response = await api.post(`/fixer/${fixerId}/reputation/initialize`);
+      const response = await apiService.post(`/fixer/${fixerId}/reputation/initialize`);
       
       if (response.data.success) {
         await fetchReputationData();
