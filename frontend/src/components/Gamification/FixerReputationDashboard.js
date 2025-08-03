@@ -3,13 +3,16 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import api from '../../services/api';
 
-const FixerReputationDashboard = ({ fixerId }) => {
+const FixerReputationDashboard = () => {
   const { user } = useAuth();
   const { language, translations } = useLanguage();
   const [reputationData, setReputationData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showInitialize, setShowInitialize] = useState(false);
+
+  // Get fixerId from the authenticated user
+  const fixerId = user?.id;
 
   // Fetch reputation data
   const fetchReputationData = async () => {
