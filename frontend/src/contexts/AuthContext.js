@@ -174,6 +174,25 @@ export const AuthProvider = ({ children }) => {
     return roleInfo?.role || 'client';
   };
 
+  const validateUserRole = (expectedRole) => {
+    const currentRole = getUserRole();
+    return currentRole === expectedRole;
+  };
+
+  const clearRoleConflicts = () => {
+    // Clear all role-specific storage keys to prevent conflicts
+    const roles = ['client', 'fixer', 'admin'];
+    roles.forEach(role => {
+      const sessionKey = `fixmate_${role}`;
+      localStorage.removeItem(`${sessionKey}_user`);
+      localStorage.removeItem(`${sessionKey}_role_info`);
+      localStorage.removeItem(`${sessionKey}_display_name`);
+      localStorage.removeItem(`${sessionKey}_welcome_message`);
+      localStorage.removeItem(`${sessionKey}_token`);
+    });
+    console.log('AuthContext: Role conflicts cleared');
+  };
+
   const value = {
     user,
     roleInfo,
