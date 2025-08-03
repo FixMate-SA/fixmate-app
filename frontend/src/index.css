@@ -4,6 +4,7 @@
 
 /* Import mobile-specific styles */
 @import './styles/mobile.css';
+@import './styles/professional-mobile.css';
 
 body {
     margin: 0;
