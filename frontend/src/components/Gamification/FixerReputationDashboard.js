@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import api from '../../services/api';
+import { apiService } from '../../services/api';
 
 const FixerReputationDashboard = () => {
   const { user } = useAuth();
