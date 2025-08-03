@@ -173,7 +173,7 @@ const MobileResponsiveNav = () => {
       </div>
 
       {/* Hide scrollbar */}
-      <style jsx>{`
+      <style jsx="true">{`
         .scrollbar-hide {
           -ms-overflow-style: none;
           scrollbar-width: none;
