@@ -274,7 +274,7 @@ const FixerJobBoard = () => {
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className={`w-3 h-3 rounded-full ${currentJob ? 'bg-orange-500' : 'bg-green-500'}`}></div>
+            <div className={`w-3 h-3 rounded-full ${currentJob ? 'bg-orange-500' : 'bg-orange-500'}`}></div>
             <span className="text-sm font-medium text-gray-900">
               {t('fixerStatus', 'Status')}: {currentJob ? 'Busy with Job' : t('available', 'Available')}
             </span>
