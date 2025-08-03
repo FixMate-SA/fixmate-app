@@ -20,33 +20,33 @@ const MobileResponsiveNav = () => {
         label: 'Dashboard',
         icon: '📊',
         priority: 1
-      },
-      { 
-        path: `/${userRole}/profile`, 
-        label: 'Profile',
-        icon: '👤',
-        priority: 2
       }
     ];
 
     const roleSpecificItems = {
       client: [
-        { path: '/jobs/create', label: 'Create Job', icon: '➕', priority: 3 },
-        { path: '/fixers', label: 'Find Fixers', icon: '🔧', priority: 4 },
-        { path: '/jobs/list', label: 'My Jobs', icon: '📋', priority: 5 },
-        { path: `/${userRole}/learning`, label: 'Learning', icon: '🎓', priority: 6 }
+        { path: '/jobs/create', label: 'Create Job', icon: '➕', priority: 2 },
+        { path: '/fixers', label: 'Find Fixers', icon: '🔧', priority: 3 },
+        { path: '/jobs/list', label: 'My Jobs', icon: '📋', priority: 4 },
+        { path: `/${userRole}/learning`, label: 'Learning', icon: '🎓', priority: 5 },
+        { path: `/${userRole}/profile`, label: 'Profile', icon: '👤', priority: 6 }
       ],
       fixer: [
-        { path: '/fixer/jobs', label: 'Available Jobs', icon: '🔨', priority: 3 },
-        { path: '/fixer/payment', label: 'Payments', icon: '💳', priority: 4 },
-        { path: `/${userRole}/learning`, label: 'Learning', icon: '🎓', priority: 5 },
-        { path: '/fixer/reputation', label: 'Reputation', icon: '⭐', priority: 6 }
+        { path: '/fixer/jobs', label: 'Available Jobs', icon: '🔨', priority: 2 },
+        { path: '/fixer/payment', label: 'Payments', icon: '💳', priority: 3 },
+        { path: `/${userRole}/learning`, label: 'Learning', icon: '🎓', priority: 4 },
+        { path: '/fixer/reputation', label: 'Reputation', icon: '⭐', priority: 5 },
+        { path: `/${userRole}/profile`, label: 'Profile', icon: '👤', priority: 6 }
       ],
       admin: [
-        { path: '/admin/panel', label: 'Admin Panel', icon: '⚙️', priority: 3 },
-        { path: '/admin/smart-matching', label: 'Smart Matching', icon: '🎯', priority: 4 },
-        { path: '/admin/business', label: 'Business', icon: '🏢', priority: 5 },
-        { path: '/admin/sms', label: 'SMS Portal', icon: '📱', priority: 6 }
+        { path: '/admin/panel', label: 'Admin Panel', icon: '⚙️', priority: 2 },
+        { path: '/admin/smart-matching', label: 'Smart Matching', icon: '🎯', priority: 3 },
+        { path: '/admin/photo-verification', label: 'Photo Verification', icon: '📸', priority: 4 },
+        { path: '/admin/business-compliance', label: 'Business', icon: '🏢', priority: 5 },
+        { path: '/admin/enterprise', label: 'Enterprise', icon: '🏭', priority: 6 },
+        { path: '/admin/payment', label: 'Payments', icon: '💳', priority: 7 },
+        { path: `/${userRole}/learning`, label: 'Learning', icon: '🎓', priority: 8 },
+        { path: `/${userRole}/profile`, label: 'Profile', icon: '👤', priority: 9 }
       ]
     };
 
