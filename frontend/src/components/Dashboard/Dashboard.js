@@ -89,7 +89,7 @@ const Dashboard = () => {
               desc: 'Browse and accept new jobs', 
               path: '/fixer/jobs', 
               icon: '🔨',
-              color: 'bg-green-600 hover:bg-green-700'
+              color: 'bg-orange-600 hover:bg-orange-700'
             },
             { 
               title: 'My Payments', 
