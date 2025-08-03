@@ -477,6 +477,50 @@ function App() {
                 }
               />
 
+              {/* Admin-specific routes */}
+              <Route
+                path="/admin/business-compliance"
+                element={
+                  <ProtectedRoute>
+                    <ProfessionalLayout>
+                      <BusinessCompliance />
+                    </ProfessionalLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/enterprise"
+                element={
+                  <ProtectedRoute>
+                    <ProfessionalLayout>
+                      <B2BPortal />
+                    </ProfessionalLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Fixer-specific routes */}
+              <Route
+                path="/fixer/reputation"
+                element={
+                  <ProtectedRoute>
+                    <ProfessionalLayout>
+                      <FixerReputationDashboard />
+                    </ProfessionalLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/list"
+                element={
+                  <ProtectedRoute>
+                    <ProfessionalLayout>
+                      <JobList />
+                    </ProfessionalLayout>
+                  </ProtectedRoute>
+                }
+              />
+
               {/* Business & Enterprise Features */}
               <Route
                 path="/business-compliance"
