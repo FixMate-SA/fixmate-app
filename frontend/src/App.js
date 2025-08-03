@@ -200,9 +200,9 @@ function App() {
                 path="/fixer/jobs"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <FixerJobBoard />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -219,9 +219,9 @@ function App() {
                 path="/client/profile"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <Profile />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -229,9 +229,9 @@ function App() {
                 path="/fixer/profile"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <Profile />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -239,9 +239,9 @@ function App() {
                 path="/admin/profile"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <Profile />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -254,9 +254,9 @@ function App() {
                 path="/client/learning"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <LearningPlatform />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -264,9 +264,9 @@ function App() {
                 path="/fixer/learning"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <LearningPlatform />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -274,9 +274,9 @@ function App() {
                 path="/admin/learning"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <LearningPlatform />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -286,9 +286,9 @@ function App() {
                 path="/client/payment"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <PaymentOptions />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -296,9 +296,9 @@ function App() {
                 path="/fixer/payment"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <PaymentOptions />
-                    </Layout>
+                    </ProfessionalLayout>
                   </ProtectedRoute>
                 }
               />
@@ -306,7 +306,7 @@ function App() {
                 path="/admin/payment"
                 element={
                   <ProtectedRoute>
-                    <Layout>
+                    <ProfessionalLayout>
                       <PaymentOptions />
                     </Layout>
                   </ProtectedRoute>
