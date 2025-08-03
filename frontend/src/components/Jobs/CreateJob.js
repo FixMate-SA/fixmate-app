@@ -449,6 +449,7 @@ const CreateJob = () => {
           <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
             <VoiceRecorder 
               onTranscription={handleVoiceTranscription}
+              onError={handleVoiceError}
               onClose={() => setShowVoiceRecorder(false)}
             />
           </div>
