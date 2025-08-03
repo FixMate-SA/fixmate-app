@@ -139,7 +139,7 @@ const FixerReputationDashboard = () => {
                 {badge.name}
               </div>
               {badge.earned && (
-                <div className="text-xs text-green-600 mt-1">✅ Earned</div>
+                <div className="text-xs text-orange-600 mt-1">✅ Earned</div>
               )}
             </div>
           ))}
