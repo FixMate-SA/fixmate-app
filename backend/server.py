@@ -338,6 +338,41 @@ async def get_offline_status():
     }
 
 # Authentication endpoints
+@api_router.post("/auth/validate-phone")
+async def validate_phone_for_role(request: dict, db: Session = Depends(get_db)):
+    """
+    Validate if phone number can be used for a specific role.
+    Prevents same phone number from registering for multiple roles.
+    """
+    try:
+        phone = request.get('phone')
+        intended_role = request.get('role', 'client')
+        
+        if not phone:
+            raise HTTPException(status_code=400, detail="Phone number is required")
+        
+        # Check if phone number already exists
+        existing_user = db.query(User).filter(User.phone == phone).first()
+        if existing_user:
+            current_role = role_service.determine_user_role(phone, db)
+            if current_role["role"] != intended_role:
+                return {
+                    "valid": False,
+                    "error": f"This phone number is already registered as a {current_role['role']}. Please use the correct login page or contact support.",
+                    "existing_role": current_role["role"]
+                }
+            else:
+                return {
+                    "valid": False,
+                    "error": "This phone number is already registered. Please log in instead.",
+                    "existing_role": current_role["role"]
+                }
+        
+        return {"valid": True, "message": "Phone number available for registration"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Validation failed: {str(e)}")
+
 @api_router.post("/auth/signup")
 async def signup(request: SignupRequest, db: Session = Depends(get_db)):
     """
