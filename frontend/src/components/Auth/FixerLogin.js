@@ -141,6 +141,16 @@ const FixerLogin = () => {
             >
               {loading ? 'Signing in...' : 'Sign in as Fixer'}
             </button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setShowPasswordReset(true)}
+                className="text-sm text-orange-600 hover:text-orange-500"
+              >
+                Forgot your password?
+              </button>
+            </div>
             
             <div className="text-center">
               <span className="text-sm text-gray-600">or</span>
