@@ -133,6 +133,16 @@ const ClientLogin = () => {
                 'Sign in as Client'
               )}
             </button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setShowPasswordReset(true)}
+                className="text-sm text-blue-600 hover:text-blue-500"
+              >
+                Forgot your password?
+              </button>
+            </div>
             
             <div className="text-center">
               <span className="text-sm text-gray-600">or</span>
