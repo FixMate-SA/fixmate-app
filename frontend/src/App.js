@@ -228,6 +228,16 @@ function App() {
                 }
               />
               <Route
+                path="/client/rate-jobs"
+                element={
+                  <ProtectedRoute>
+                    <ProfessionalLayout>
+                      <ClientRateJobs />
+                    </ProfessionalLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/fixer/profile"
                 element={
                   <ProtectedRoute>
