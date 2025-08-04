@@ -198,23 +198,34 @@ async def fixer_accept_job(job_id: str, current_user: User = Depends(get_current
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
         
-        if job.status != "notifying_fixers":
-            raise HTTPException(status_code=400, detail="Job is no longer available")
+        # Allow acceptance for pending, notifying_fixers, or open status jobs
+        acceptable_statuses = ["pending", "notifying_fixers", "open", "created"]
+        if job.status not in acceptable_statuses:
+            raise HTTPException(status_code=400, detail=f"Job is no longer available (status: {job.status})")
         
         # Get fixer info
         fixer = db.query(Fixer).filter(Fixer.user_id == current_user.id).first()
         if not fixer:
             raise HTTPException(status_code=404, detail="Fixer profile not found")
         
+        # Check if job is already assigned to another fixer
+        if job.assigned_fixer_id and job.assigned_fixer_id != fixer.id:
+            raise HTTPException(status_code=400, detail="Job is already assigned to another fixer")
+        
         # Assign job to fixer
         job.assigned_fixer_id = fixer.id
+        job.fixer_id = fixer.id  # Also set the legacy field for compatibility
         job.status = "assigned"
         job.accepted_at = datetime.utcnow()
         
         db.commit()
         
         return {"success": True, "message": "Job accepted successfully", "job_id": job_id}
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
+        db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to accept job: {str(e)}")
 
 @api_router.post("/jobs/{job_id}/complete-work")
