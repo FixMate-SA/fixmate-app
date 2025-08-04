@@ -1430,7 +1430,7 @@ async def get_job(job_id: str, db: Session = Depends(get_db)):
         "fixer": {
             "id": job.fixer.id,
             "phone": job.fixer.phone,
-            "service": job.fixer.service,
+            "service": job.fixer.services,
             "rating": job.fixer.rating,
             "location": job.fixer.location
         } if job.fixer else None,
