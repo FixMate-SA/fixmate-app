@@ -102,6 +102,8 @@ const AdminDashboard = () => {
 
   const handleClientRequestSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    
     try {
       // First, find or create the client user
       let clientUser = users.find(u => u.phone === clientRequestForm.client_phone);
@@ -116,7 +118,7 @@ const AdminDashboard = () => {
         clientUser = userResponse.data;
       }
 
-      // Create the job request
+      // Create the job request using proper API service
       const jobData = {
         user_id: clientUser.id,
         service: clientRequestForm.service,
@@ -130,17 +132,11 @@ const AdminDashboard = () => {
         admin_created: true // Flag to indicate admin created this job
       };
 
-      const response = await fetch(`${API_BASE_URL}/jobs/workflow`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(jobData)
-      });
-
-      if (response.ok) {
-        const responseData = await response.json();
-        alert(`Service request created successfully for ${clientRequestForm.client_name}! Job ID: ${responseData.job_id}`);
+      const response = await apiService.createJob(jobData);
+      
+      if (response.success || response.data) {
+        const jobId = response.job_id || response.data?.id || 'unknown';
+        alert(`✅ Service request created successfully for ${clientRequestForm.client_name}! Job ID: ${jobId}`);
         
         // Reset form
         setClientRequestForm({
@@ -155,12 +151,13 @@ const AdminDashboard = () => {
         setShowClientRequestForm(false);
         fetchDashboardData(); // Refresh data
       } else {
-        const errorData = await response.json();
-        alert(`Failed to create service request: ${errorData.detail}`);
+        alert(`❌ Failed to create service request: ${response.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error creating client service request:', error);
-      alert('Failed to create service request');
+      alert(`❌ Failed to create service request: ${error.response?.data?.detail || error.message || 'Unknown error'}`);
+    } finally {
+      setLoading(false);
     }
   };
 
