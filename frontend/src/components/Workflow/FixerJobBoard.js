@@ -306,23 +306,23 @@ const FixerJobBoard = () => {
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-3 md:p-6">
           {activeTab === 'notifications' && (
             <FixerJobNotifications />
           )}
 
           {activeTab === 'active' && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Jobs</h3>
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Active Jobs</h3>
               {currentJob ? (
                 <div className="space-y-4">
-                  <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
-                    <div className="flex items-start justify-between mb-4">
+                  <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-3 md:p-6">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4">
                       <div className="flex-1">
-                        <h4 className="text-lg font-semibold text-blue-900 mb-2">
+                        <h4 className="text-base md:text-lg font-semibold text-blue-900 mb-2">
                           🔧 Current Job: {currentJob.service?.replace('_', ' ').toUpperCase()}
                         </h4>
-                        <div className="space-y-2 text-sm">
+                        <div className="space-y-2 text-sm md:text-base">
                           <p><strong>Location:</strong> {currentJob.location}</p>
                           <p><strong>Description:</strong> {currentJob.description}</p>
                           <p><strong>Status:</strong> {currentJob.status}</p>
@@ -347,7 +347,7 @@ const FixerJobBoard = () => {
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <div className="text-4xl mb-4">📭</div>
-                  <p>No active jobs at the moment.</p>
+                  <p className="text-sm md:text-base">No active jobs at the moment.</p>
                 </div>
               )}
             </div>
@@ -355,26 +355,24 @@ const FixerJobBoard = () => {
 
           {activeTab === 'available' && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Available Jobs</h3>
-              {/* Existing available jobs content */}
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Available Jobs</h3>
               {availableJobs.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <div className="text-6xl mb-4">📋</div>
-                  <h3 className="text-lg font-medium mb-2">{t('noJobsTitle', 'No Jobs Available')}</h3>
-                  <p className="max-w-md mx-auto">{t('noJobsDescription', 'Check back later for new job opportunities that match your skills and location.')}</p>
+                <div className="text-center py-8 md:py-12 text-gray-500">
+                  <div className="text-4xl md:text-6xl mb-4">📋</div>
+                  <h3 className="text-base md:text-lg font-medium mb-2">{t('noJobsTitle', 'No Jobs Available')}</h3>
+                  <p className="max-w-md mx-auto text-sm md:text-base">{t('noJobsDescription', 'Check back later for new job opportunities that match your skills and location.')}</p>
                 </div>
               ) : (
-                <div className="grid gap-6">
+                <div className="grid gap-4 md:gap-6">
                   {availableJobs.map((job) => (
-                    <div key={job.id} className="bg-white border border-gray-200 rounded-lg p-6">
-                      {/* Existing job card content */}
-                      <div className="flex justify-between items-start mb-4">
+                    <div key={job.id} className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
+                      <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4">
                         <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
                             {job.service?.replace('_', ' ').toUpperCase()}
                           </h3>
-                          <p className="text-gray-600 mb-3">{job.description}</p>
-                          <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                          <p className="text-gray-600 mb-3 text-sm md:text-base">{job.description}</p>
+                          <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm text-gray-500">
                             <span>📍 {job.location}</span>
                             {job.estimated_price && <span>💰 R{job.estimated_price}</span>}
                             <span>⏰ {new Date(job.created_at).toLocaleString()}</span>
@@ -390,10 +388,10 @@ const FixerJobBoard = () => {
 
           {activeTab === 'completed' && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Completed Jobs</h3>
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Completed Jobs</h3>
               <div className="text-center py-8 text-gray-500">
                 <div className="text-4xl mb-4">✅</div>
-                <p>Your completed jobs will appear here.</p>
+                <p className="text-sm md:text-base">Your completed jobs will appear here.</p>
               </div>
             </div>
           )}
