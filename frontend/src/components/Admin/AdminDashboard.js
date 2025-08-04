@@ -100,6 +100,77 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleClientRequestSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      // First, find or create the client user
+      let clientUser = users.find(u => u.phone === clientRequestForm.client_phone);
+      
+      if (!clientUser) {
+        // Create client user
+        const userResponse = await apiService.createUser({
+          phone: clientRequestForm.client_phone,
+          first_name: clientRequestForm.client_name,
+          role: 'client'
+        });
+        clientUser = userResponse.data;
+      }
+
+      // Create the job request
+      const jobData = {
+        user_id: clientUser.id,
+        service: clientRequestForm.service,
+        description: clientRequestForm.description,
+        location: clientRequestForm.location,
+        estimated_price: clientRequestForm.estimated_price ? parseFloat(clientRequestForm.estimated_price) : null,
+        scheduled_at: clientRequestForm.scheduled_at ? new Date(clientRequestForm.scheduled_at).toISOString() : null,
+        contact_number: clientRequestForm.client_phone,
+        latitude: null,
+        longitude: null,
+        admin_created: true // Flag to indicate admin created this job
+      };
+
+      const response = await fetch(`${API_BASE_URL}/jobs/workflow`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(jobData)
+      });
+
+      if (response.ok) {
+        const responseData = await response.json();
+        alert(`Service request created successfully for ${clientRequestForm.client_name}! Job ID: ${responseData.job_id}`);
+        
+        // Reset form
+        setClientRequestForm({
+          client_name: '',
+          client_phone: '',
+          service: '',
+          description: '',
+          location: '',
+          estimated_price: '',
+          scheduled_at: ''
+        });
+        setShowClientRequestForm(false);
+        fetchDashboardData(); // Refresh data
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to create service request: ${errorData.detail}`);
+      }
+    } catch (error) {
+      console.error('Error creating client service request:', error);
+      alert('Failed to create service request');
+    }
+  };
+
+  const serviceOptions = [
+    'Plumbing', 'Electrical', 'Carpentry', 'Painting', 'Cleaning', 
+    'Gardening', 'Handyman', 'Appliance Repair', 'Roofing', 'Flooring', 
+    'HVAC', 'Tech Support', 'Tutoring', 'Beauty Services', 'Catering', 
+    'Photography', 'Other'
+  ];
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
