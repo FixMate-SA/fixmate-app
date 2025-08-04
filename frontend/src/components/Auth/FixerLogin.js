@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getApiUrl } from '../../utils/api';
 import Logo from '../Common/Logo';
+import PasswordResetModal from './PasswordResetModal';
 import LanguageSelector from '../Common/LanguageSelector';
 
 const FixerLogin = () => {
