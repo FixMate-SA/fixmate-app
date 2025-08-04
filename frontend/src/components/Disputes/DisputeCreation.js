@@ -47,7 +47,7 @@ const DisputeCreation = () => {
 
   const fetchJobDetails = async () => {
     try {
-      const response = await fetch(`${import.meta.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}`);
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}`);
       if (response.ok) {
         const jobData = await response.json();
         setJob(jobData);
