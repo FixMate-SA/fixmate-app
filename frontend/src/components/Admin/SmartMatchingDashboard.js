@@ -24,7 +24,7 @@ const SmartMatchingDashboard = () => {
     
     try {
       const response = await fetch(
-        getApiUrl(`/admin/matching-performance?days=${selectedPeriod}`),
+        `${API_BASE_URL}/admin/matching-performance?days=${selectedPeriod}`,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`,
@@ -52,7 +52,7 @@ const SmartMatchingDashboard = () => {
     
     try {
       const response = await fetch(
-        getApiUrl('/admin/improve-matching'),
+        `${API_BASE_URL}/admin/improve-matching`,
         {
           method: 'POST',
           headers: {
