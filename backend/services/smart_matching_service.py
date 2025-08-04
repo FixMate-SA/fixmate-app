@@ -23,6 +23,34 @@ class SmartMatchingService:
         self.default_search_radius = 20  # km
         self.min_match_threshold = 30  # minimum score for consideration
         
+    async def find_eligible_fixers(self, job_id: str, db: Session) -> List[Fixer]:
+        """
+        Find eligible fixers for a specific job (for notification system)
+        
+        Args:
+            job_id: ID of the job to match fixers for  
+            db: Database session
+            
+        Returns:
+            List of eligible Fixer objects
+        """
+        try:
+            # Get the job
+            job = db.query(Job).filter(Job.id == job_id).first()
+            if not job:
+                logger.warning(f"Job {job_id} not found for fixer matching")
+                return []
+            
+            # Use existing _get_eligible_fixers method
+            eligible_fixers = self._get_eligible_fixers(db, job)
+            logger.info(f"Found {len(eligible_fixers)} eligible fixers for job {job_id}")
+            
+            return eligible_fixers
+            
+        except Exception as e:
+            logger.error(f"Error finding eligible fixers for job {job_id}: {str(e)}")
+            return []
+
     def find_best_fixers_for_job(self, db: Session, job: Job, limit: int = 10) -> List[Dict]:
         """
         Find and rank the best fixers for a specific job using AI-powered matching.
