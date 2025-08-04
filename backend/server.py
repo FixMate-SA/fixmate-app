@@ -902,6 +902,104 @@ async def change_password(request: ChangePasswordRequest, user_id: str = Form(..
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to change password: {str(e)}")
 
+# Password Reset System
+@api_router.post("/auth/request-password-reset")
+async def request_password_reset(phone: str = Form(...), db: Session = Depends(get_db)):
+    """Request password reset via phone number"""
+    try:
+        # Find user by phone
+        user = db.query(User).filter(User.phone == phone).first()
+        if not user:
+            # Return success even if user not found for security reasons
+            return {"success": True, "message": "If this phone number exists, you will receive reset instructions"}
+        
+        # Generate reset code (6-digit)
+        import random
+        reset_code = str(random.randint(100000, 999999))
+        
+        # Store reset code in user record (expires in 15 minutes)
+        user.password_reset_code = reset_code
+        user.password_reset_expires = datetime.utcnow() + timedelta(minutes=15)
+        
+        db.commit()
+        
+        # In production, send SMS here
+        # For development, just log the code
+        print(f"🔐 Password Reset Code for {phone}: {reset_code}")
+        
+        return {
+            "success": True, 
+            "message": "Password reset code sent to your phone",
+            "dev_code": reset_code  # Remove in production
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to request password reset: {str(e)}")
+
+@api_router.post("/auth/verify-reset-code")
+async def verify_reset_code(
+    phone: str = Form(...), 
+    reset_code: str = Form(...), 
+    db: Session = Depends(get_db)
+):
+    """Verify password reset code"""
+    try:
+        user = db.query(User).filter(User.phone == phone).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if not user.password_reset_code or user.password_reset_code != reset_code:
+            raise HTTPException(status_code=400, detail="Invalid reset code")
+        
+        if not user.password_reset_expires or user.password_reset_expires < datetime.utcnow():
+            raise HTTPException(status_code=400, detail="Reset code has expired")
+        
+        return {"success": True, "message": "Reset code verified successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to verify reset code: {str(e)}")
+
+@api_router.post("/auth/reset-password")
+async def reset_password(
+    phone: str = Form(...),
+    reset_code: str = Form(...),
+    new_password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Reset password with verified code"""
+    try:
+        user = db.query(User).filter(User.phone == phone).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if not user.password_reset_code or user.password_reset_code != reset_code:
+            raise HTTPException(status_code=400, detail="Invalid reset code")
+        
+        if not user.password_reset_expires or user.password_reset_expires < datetime.utcnow():
+            raise HTTPException(status_code=400, detail="Reset code has expired")
+        
+        if len(new_password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
+        
+        # Hash and update password
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        
+        user.hashed_password = pwd_context.hash(new_password)
+        user.password_reset_code = None
+        user.password_reset_expires = None
+        
+        db.commit()
+        
+        return {"success": True, "message": "Password reset successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to reset password: {str(e)}")
+
+# End Password Reset System
+
 # Emergency Alert endpoints
 @api_router.post("/emergency/alert")
 async def create_emergency_alert(
