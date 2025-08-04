@@ -318,62 +318,72 @@ const AdminDashboard = () => {
               </div>
               
               <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                <table className="min-w-full divide-y divide-gray-300">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Services</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rating</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {fixers.map((fixer) => (
-                      <tr key={fixer.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {fixer.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {fixer.phone}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">
-                          <div className="max-w-xs">
-                            {JSON.parse(fixer.services).slice(0, 2).map((service, i) => (
-                              <span key={i} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-1 mb-1">
-                                {service}
-                              </span>
-                            ))}
-                            {JSON.parse(fixer.services).length > 2 && (
-                              <span className="text-xs text-gray-500">+{JSON.parse(fixer.services).length - 2} more</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {fixer.rating.toFixed(1)}⭐ ({fixer.total_jobs} jobs)
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            fixer.is_active 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {fixer.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <button
-                            onClick={() => setSelectedFixer(fixer)}
-                            className="text-red-600 hover:text-red-900 font-medium"
-                          >
-                            Manage Payments
-                          </button>
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-300">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                        <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                        <th className="hidden sm:table-cell px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Services</th>
+                        <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rating</th>
+                        <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {fixers.map((fixer) => (
+                        <tr key={fixer.id}>
+                          <td className="px-3 md:px-6 py-4 text-sm font-medium text-gray-900">
+                            <div className="max-w-[100px] md:max-w-none truncate">
+                              {fixer.name}
+                            </div>
+                          </td>
+                          <td className="px-3 md:px-6 py-4 text-sm text-gray-500">
+                            <div className="max-w-[120px] md:max-w-none truncate">
+                              {fixer.phone}
+                            </div>
+                          </td>
+                          <td className="hidden sm:table-cell px-3 md:px-6 py-4 text-sm text-gray-500">
+                            <div className="max-w-xs">
+                              {JSON.parse(fixer.services).slice(0, 2).map((service, i) => (
+                                <span key={i} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-1 mb-1">
+                                  {service}
+                                </span>
+                              ))}
+                              {JSON.parse(fixer.services).length > 2 && (
+                                <span className="text-xs text-gray-500">+{JSON.parse(fixer.services).length - 2}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div className="text-xs md:text-sm">
+                              {fixer.rating.toFixed(1)}⭐
+                              <div className="md:hidden text-xs text-gray-400">({fixer.total_jobs})</div>
+                              <div className="hidden md:inline"> ({fixer.total_jobs} jobs)</div>
+                            </div>
+                          </td>
+                          <td className="px-3 md:px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              fixer.is_active 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {fixer.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <button
+                              onClick={() => setSelectedFixer(fixer)}
+                              className="text-red-600 hover:text-red-900 font-medium text-xs md:text-sm"
+                            >
+                              Manage
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
