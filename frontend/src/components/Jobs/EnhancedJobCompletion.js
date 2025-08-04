@@ -142,7 +142,7 @@ const EnhancedJobCompletion = () => {
       };
 
       const response = await fetch(
-        `${import.meta.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/complete-with-photos`,
+        `${process.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/complete-with-photos`,
         {
           method: 'POST',
           headers: {
