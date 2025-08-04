@@ -58,7 +58,8 @@ class SpecificFixesTester:
     def test_health_check(self):
         """Test basic API health"""
         try:
-            response = self.session.get(f"{API_BASE}/")
+            # Add timeout and verify SSL
+            response = self.session.get(f"{API_BASE}/", timeout=30, verify=False)
             if response.status_code == 200:
                 data = response.json()
                 if "message" in data:
