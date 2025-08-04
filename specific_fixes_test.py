@@ -283,7 +283,8 @@ class SpecificFixesTester:
         
         # Test 1: GET /api/compliance/admin/all-requests
         try:
-            response = self.session.get(f"{API_BASE}/compliance/admin/all-requests")
+            headers = {'Authorization': f"Bearer {self.test_data['admin_token']}"}
+            response = self.session.get(f"{API_BASE}/compliance/admin/all-requests", headers=headers)
             
             if response.status_code == 200:
                 data = response.json()
@@ -300,6 +301,8 @@ class SpecificFixesTester:
                     print(f"   ❌ GET /api/compliance/admin/all-requests - Invalid response format")
             else:
                 print(f"   ❌ GET /api/compliance/admin/all-requests failed - HTTP {response.status_code}")
+                if response.status_code == 401:
+                    print(f"      Authentication issue - Token: {self.test_data['admin_token'][:20]}...")
         except Exception as e:
             print(f"   ❌ GET /api/compliance/admin/all-requests error - {str(e)}")
         
