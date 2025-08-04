@@ -53,7 +53,7 @@ const FixerMatchTester = ({ fixerId, fixerName, onClose }) => {
 
     try {
       const response = await fetch(
-        `${import.meta.env.REACT_APP_BACKEND_URL}/api/fixer/${fixerId}/match-test`,
+        `${process.env.REACT_APP_BACKEND_URL}/api/fixer/${fixerId}/match-test`,
         {
           method: 'POST',
           headers: {
