@@ -32,18 +32,33 @@ const FixerLogin = () => {
       return;
     }
 
-    const result = await login(phone, password);
-    
-    if (result.success) {
-      // Verify this is a fixer account
-      if (result.roleInfo?.role === 'fixer') {
-        console.log('FixerLogin: Fixer login successful, navigating to fixer dashboard');
-        navigate('/fixer/dashboard', { replace: true });
+    try {
+      // Add timeout and retry logic for fixer login
+      const result = await Promise.race([
+        login(phone, password),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Login timeout')), 10000)
+        )
+      ]);
+      
+      if (result.success) {
+        // Verify this is a fixer account
+        if (result.roleInfo?.role === 'fixer') {
+          console.log('FixerLogin: Fixer login successful, navigating to fixer dashboard');
+          navigate('/fixer/dashboard', { replace: true });
+        } else {
+          setError(`This phone number is registered as a ${result.roleInfo?.role}. Please use the correct login page.`);
+        }
       } else {
-        setError(`This phone number is registered as a ${result.roleInfo?.role}. Please use the correct login page.`);
+        setError(result.error || 'Login failed. Please try again.');
       }
-    } else {
-      setError(result.error);
+    } catch (error) {
+      console.error('Fixer login error:', error);
+      if (error.message === 'Login timeout') {
+        setError('Login is taking too long. Please check your connection and try again.');
+      } else {
+        setError('Login failed. Please try again.');
+      }
     }
     
     setLoading(false);
