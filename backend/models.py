@@ -419,6 +419,7 @@ class Job(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     fixer_id = Column(String, ForeignKey("fixers.id"), nullable=True)
+    assigned_fixer_id = Column(String, ForeignKey("fixers.id"), nullable=True)  # Currently assigned fixer
     service = Column(String, nullable=False)
     description = Column(Text, nullable=False)
     location = Column(String, nullable=False)
