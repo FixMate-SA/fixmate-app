@@ -278,27 +278,28 @@ const FixerJobBoard = () => {
         </p>
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation - Mobile Responsive */}
       <div className="bg-white rounded-lg shadow-sm mb-6">
         <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-4 px-6 overflow-x-auto">
+          <nav className="-mb-px flex space-x-1 md:space-x-4 px-2 md:px-6 overflow-x-auto scrollbar-hide">
             {[
-              { id: 'notifications', label: 'Job Notifications', icon: '🔔' },
-              { id: 'active', label: 'Active Jobs', icon: '🔧' },
-              { id: 'available', label: 'Available Jobs', icon: '📋' },
-              { id: 'completed', label: 'Completed', icon: '✅' }
+              { id: 'notifications', label: 'Notifications', icon: '🔔', shortLabel: 'Notify' },
+              { id: 'active', label: 'Active Jobs', icon: '🔧', shortLabel: 'Active' },
+              { id: 'available', label: 'Available Jobs', icon: '📋', shortLabel: 'Jobs' },
+              { id: 'completed', label: 'Completed', icon: '✅', shortLabel: 'Done' }
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 whitespace-nowrap ${
+                className={`py-3 md:py-4 px-2 md:px-4 border-b-2 font-medium text-xs md:text-sm flex items-center space-x-1 md:space-x-2 whitespace-nowrap min-w-0 flex-shrink-0 ${
                   activeTab === tab.id
                     ? 'border-orange-500 text-orange-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                <span>{tab.icon}</span>
-                <span>{tab.label}</span>
+                <span className="text-sm md:text-base">{tab.icon}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden text-xs">{tab.shortLabel}</span>
               </button>
             ))}
           </nav>
