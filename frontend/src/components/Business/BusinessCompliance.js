@@ -26,7 +26,7 @@ const BusinessCompliance = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`${getApiUrl()}/compliance/categories`);
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/categories`);
       const data = await response.json();
       setCategories(data);
     } catch (error) {
@@ -36,8 +36,8 @@ const BusinessCompliance = () => {
 
   const fetchUserRequests = async () => {
     try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`${getApiUrl()}/compliance/requests`, {
+      const token = localStorage.getItem('fixmate_token');
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/requests`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
