@@ -416,57 +416,70 @@ const AdminDashboard = () => {
             <div className="space-y-6">
               <h3 className="text-lg font-medium">User Management</h3>
               <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                <table className="min-w-full divide-y divide-gray-300">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID Number</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {users.map((user) => (
-                      <tr key={user.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {user.first_name && user.last_name 
-                            ? `${user.first_name} ${user.last_name}`.trim()
-                            : user.first_name || user.last_name || 'No Name'
-                          }
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.phone}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.id_number || 'Not provided'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            user.role === 'admin' ? 'bg-red-100 text-red-800' :
-                            user.role === 'fixer' ? 'bg-orange-100 text-orange-800' :
-                            'bg-blue-100 text-blue-800'
-                          }`}>
-                            {user.role?.charAt(0)?.toUpperCase() + user.role?.slice(1)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            user.is_active 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {user.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-300">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                        <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                        <th className="hidden sm:table-cell px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID Number</th>
+                        <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                        <th className="hidden md:table-cell px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th className="hidden lg:table-cell px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {users.map((user) => (
+                        <tr key={user.id}>
+                          <td className="px-3 md:px-6 py-4 text-sm font-medium text-gray-900">
+                            <div className="max-w-[100px] md:max-w-none truncate">
+                              {user.first_name && user.last_name 
+                                ? `${user.first_name} ${user.last_name}`.trim()
+                                : user.first_name || user.last_name || 'No Name'
+                              }
+                            </div>
+                          </td>
+                          <td className="px-3 md:px-6 py-4 text-sm text-gray-500">
+                            <div className="max-w-[120px] md:max-w-none truncate">
+                              {user.phone}
+                            </div>
+                          </td>
+                          <td className="hidden sm:table-cell px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div className="max-w-[100px] truncate">
+                              {user.id_number || 'Not provided'}
+                            </div>
+                          </td>
+                          <td className="px-3 md:px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              user.role === 'admin' ? 'bg-red-100 text-red-800' :
+                              user.role === 'fixer' ? 'bg-orange-100 text-orange-800' :
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              <span className="md:hidden">
+                                {user.role?.charAt(0)?.toUpperCase()}
+                              </span>
+                              <span className="hidden md:inline">
+                                {user.role?.charAt(0)?.toUpperCase() + user.role?.slice(1)}
+                              </span>
+                            </span>
+                          </td>
+                          <td className="hidden md:table-cell px-3 md:px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              user.is_active 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {user.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="hidden lg:table-cell px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
