@@ -94,6 +94,8 @@ class SpecificFixesTester:
                     self.test_data['admin_user_id'] = data['user']['id']
                     # Set authorization header for subsequent requests
                     self.session.headers.update({'Authorization': f"Bearer {data['token']}"})
+                    print(f"   Debug: Admin token format: {data['token'][:50]}...")
+                    print(f"   Debug: Admin user ID: {data['user']['id']}")
                     self.log_result("Admin Login", True, f"Admin login successful, role: {data.get('role_info', {}).get('role', 'unknown')}")
                     return True
                 else:
