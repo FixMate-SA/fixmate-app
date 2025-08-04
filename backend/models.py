@@ -544,6 +544,7 @@ class FixerPayment(Base):
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     fixer_id = Column(String, ForeignKey("fixers.id"), nullable=False)
+    job_id = Column(String, ForeignKey("jobs.id"), nullable=True)  # Associated job
     amount = Column(Float, nullable=False)  # R20.00 service fee
     payment_type = Column(String, nullable=False)  # eft, airtime, cash, etc.
     payment_method = Column(String, nullable=True)  # card, bank_transfer, etc.
