@@ -488,6 +488,13 @@ class Job(Base):
     # Photo Verification Fields - Phase 2 Enhancement
     before_photos = Column(Text, nullable=True)  # JSON array of base64 before photos
     after_photos = Column(Text, nullable=True)   # JSON array of base64 after photos
+    before_image = Column(Text, nullable=True)   # Single before image (base64)
+    after_image = Column(Text, nullable=True)    # Single after image (base64) 
+    fixer_rating = Column(Integer, nullable=True)  # Client rating for fixer (1-5)
+    fixer_review = Column(Text, nullable=True)    # Client review for fixer
+    rated_at = Column(DateTime, nullable=True)    # When fixer was rated
+    completed_at = Column(DateTime, nullable=True) # When job was completed
+    accepted_at = Column(DateTime, nullable=True)  # When job was accepted by fixer
     photo_verification_status = Column(String, default="not_required")  # not_required, pending, verified, rejected
     photo_verified_at = Column(DateTime, nullable=True)  # When photos were verified
     photo_verified_by = Column(String, nullable=True)   # Admin ID who verified
