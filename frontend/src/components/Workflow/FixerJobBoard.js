@@ -125,6 +125,11 @@ const FixerJobBoard = () => {
     }
   };
 
+  const fetchJobsData = () => {
+    fetchAvailableJobs();
+    fetchCurrentJob();
+  };
+
   const cancelJob = async (jobId) => {
     if (!fixerInfo?.id || cancelling || !jobId) return;
 
