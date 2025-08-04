@@ -24,6 +24,7 @@ import ProfessionalLayout from "./components/Layout/ProfessionalLayout";
 // Job Management Components
 import CreateJob from "./components/Jobs/CreateJob";
 import JobList from "./components/Jobs/JobList";
+import ClientRateJobs from "./components/Jobs/ClientRateJobs";
 import FixerList from "./components/Fixers/FixerList";
 import Profile from "./components/Profile/Profile";
 
