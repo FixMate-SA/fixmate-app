@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getApiUrl } from '../../utils/api';
+import { apiService } from '../../services/api';
+import { API_BASE_URL } from '../../utils/apiConfig';
 
 const SmartMatchingDashboard = () => {
   const { user } = useAuth();
