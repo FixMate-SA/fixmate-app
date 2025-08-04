@@ -15,6 +15,7 @@ const FixerJobBoard = () => {
   const [accepting, setAccepting] = useState(null);
   const [cancelling, setCancelling] = useState(null);
   const [fixerInfo, setFixerInfo] = useState(null);
+  const [activeTab, setActiveTab] = useState('notifications');
 
   useEffect(() => {
     fetchFixerInfo();
