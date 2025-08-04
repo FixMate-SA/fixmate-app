@@ -112,7 +112,12 @@ async def get_current_user(authorization: Optional[str] = Header(None), token: s
     if not auth_token.startswith("token_"):
         raise HTTPException(status_code=401, detail="Invalid token format")
     
-    user_id = auth_token.replace("token_", "")
+    # Extract user_id from token format: token_{user_id}_{role}_{timestamp}
+    token_parts = auth_token.split("_")
+    if len(token_parts) < 2:
+        raise HTTPException(status_code=401, detail="Invalid token format")
+    
+    user_id = token_parts[1]  # Get the user_id part
     user = db.query(User).filter(User.id == user_id).first()
     
     if not user:
