@@ -118,7 +118,9 @@ const BusinessCompliance = () => {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('fixmate_token');
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/request`, {
+      const apiUrl = process.env.REACT_APP_BACKEND_URL || '/api';
+      
+      const response = await fetch(`${apiUrl}/api/compliance/request`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -127,23 +129,26 @@ const BusinessCompliance = () => {
         body: JSON.stringify(requestForm)
       });
 
-      const data = await response.json();
-      if (data.success) {
-        alert('Compliance request submitted successfully!');
-        setRequestForm({
-          category: '',
-          description: '',
-          urgency_level: 'normal',
-          contact_preference: 'whatsapp'
-        });
-        fetchUserRequests();
-        setActiveTab('requests');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          alert('✅ Compliance request submitted successfully!');
+          setRequestForm({
+            category: '',
+            description: '',
+            urgency_level: 'normal',
+            contact_preference: 'whatsapp'
+          });
+          fetchUserRequests(); // Refresh user requests
+          setActiveTab('requests'); // Switch to requests tab
+        }
       } else {
-        alert('Failed to submit request. Please try again.');
+        const errorData = await response.json();
+        alert(`❌ Failed to submit request: ${errorData.message || 'Please try again'}`);
       }
     } catch (error) {
-      console.error('Error submitting request:', error);
-      alert('Error submitting request. Please try again.');
+      console.error('❌ Error submitting compliance request:', error);
+      alert('❌ Network error. Please check your connection and try again.');
     } finally {
       setSubmitting(false);
     }
