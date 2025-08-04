@@ -268,180 +268,136 @@ const FixerJobBoard = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-6xl mx-auto p-6">
       <div className="mb-6">
         <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
-          🎯 {t('availableJobs', 'Available Jobs for Fixers')}
+          🎯 Fixer Job Management
         </h1>
         <p className="text-sm md:text-base text-gray-600">
-          {t('availableJobsDescription', 'First come, first serve! Accept jobs that match your skills and location.')}
+          Manage job notifications, active assignments, and complete work.
         </p>
       </div>
 
-      {/* Fixer Status */}
-      <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className={`w-3 h-3 rounded-full ${currentJob ? 'bg-orange-500' : 'bg-orange-500'}`}></div>
-            <span className="text-sm font-medium text-gray-900">
-              {t('fixerStatus', 'Status')}: {currentJob ? 'Busy with Job' : t('available', 'Available')}
-            </span>
-          </div>
-          <div className="text-sm text-gray-500">
-            {t('autoRefreshNote', 'Auto-refreshing every 5 seconds')}
-          </div>
-        </div>
-      </div>
-
-      {/* Current Job Section */}
-      {currentJob && (
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-6">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                🔧 Current Job: {currentJob.service?.replace('_', ' ').toUpperCase()}
-              </h3>
-              <div className="space-y-2 text-sm">
-                <p><strong>Location:</strong> {currentJob.location}</p>
-                <p><strong>Description:</strong> {currentJob.description}</p>
-                <p><strong>Price:</strong> R{currentJob.estimated_price || 'TBD'}</p>
-                <p><strong>Status:</strong> {currentJob.status}</p>
-              </div>
-            </div>
-            <div className="flex flex-col space-y-2">
+      {/* Tab Navigation */}
+      <div className="bg-white rounded-lg shadow-sm mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-4 px-6 overflow-x-auto">
+            {[
+              { id: 'notifications', label: 'Job Notifications', icon: '🔔' },
+              { id: 'active', label: 'Active Jobs', icon: '🔧' },
+              { id: 'available', label: 'Available Jobs', icon: '📋' },
+              { id: 'completed', label: 'Completed', icon: '✅' }
+            ].map((tab) => (
               <button
-                onClick={() => cancelJob(currentJob.id)}
-                disabled={cancelling === currentJob.id}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  cancelling === currentJob.id
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-red-600 text-white hover:bg-red-700'
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'border-orange-500 text-orange-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                {cancelling === currentJob.id ? 'Cancelling...' : 'Cancel Job'}
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
               </button>
-              <p className="text-xs text-gray-600 text-center">
-                ⚠️ Penalties apply
-              </p>
+            ))}
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        <div className="p-6">
+          {activeTab === 'notifications' && (
+            <FixerJobNotifications />
+          )}
+
+          {activeTab === 'active' && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Jobs</h3>
+              {currentJob ? (
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h4 className="text-lg font-semibold text-blue-900 mb-2">
+                          🔧 Current Job: {currentJob.service?.replace('_', ' ').toUpperCase()}
+                        </h4>
+                        <div className="space-y-2 text-sm">
+                          <p><strong>Location:</strong> {currentJob.location}</p>
+                          <p><strong>Description:</strong> {currentJob.description}</p>
+                          <p><strong>Status:</strong> {currentJob.status}</p>
+                          {currentJob.estimated_price && (
+                            <p><strong>Estimated Price:</strong> R{currentJob.estimated_price}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <JobCompletionForm 
+                        job={currentJob} 
+                        onComplete={() => {
+                          fetchJobsData();
+                          setActiveTab('completed');
+                        }} 
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="text-4xl mb-4">📭</div>
+                  <p>No active jobs at the moment.</p>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Jobs List */}
-      {availableJobs.length === 0 ? (
-        <div className="bg-gray-50 rounded-lg p-8 text-center">
-          <div className="text-4xl mb-4">🔍</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {currentJob ? 'No New Jobs Available' : t('noJobsAvailable', 'No Jobs Available')}
-          </h3>
-          <p className="text-gray-600">
-            {currentJob 
-              ? 'Complete your current job to see new opportunities.'
-              : t('noJobsMessage', 'There are currently no jobs available that match your profile. New jobs will appear here automatically.')
-            }
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {availableJobs.map((job) => (
-            <div
-              key={job.job_id}
-              className={`rounded-lg border-2 p-6 transition-all ${getPriorityColor(job.priority_level, job.is_emergency)}`}
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <span className="text-2xl">
-                    {getPriorityIcon(job.priority_level, job.is_emergency)}
-                  </span>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {job.service?.replace('_', ' ').toUpperCase()}
-                    </h3>
-                    {job.is_emergency && (
-                      <span className="inline-block bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">
-                        🚨 {t('emergency', 'EMERGENCY')}
-                      </span>
-                    )}
-                  </div>
+          {activeTab === 'available' && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Available Jobs</h3>
+              {/* Existing available jobs content */}
+              {availableJobs.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <div className="text-6xl mb-4">📋</div>
+                  <h3 className="text-lg font-medium mb-2">{t('noJobsTitle', 'No Jobs Available')}</h3>
+                  <p className="max-w-md mx-auto">{t('noJobsDescription', 'Check back later for new job opportunities that match your skills and location.')}</p>
                 </div>
-                <div className="text-right">
-                  <div className="text-lg font-bold text-orange-600">
-                    R{job.estimated_price || 'TBD'}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {formatTimeRemaining(job.assignment_timeout) && (
-                      <>⏰ {formatTimeRemaining(job.assignment_timeout)}</>
-                    )}
-                  </div>
+              ) : (
+                <div className="grid gap-6">
+                  {availableJobs.map((job) => (
+                    <div key={job.id} className="bg-white border border-gray-200 rounded-lg p-6">
+                      {/* Existing job card content */}
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            {job.service?.replace('_', ' ').toUpperCase()}
+                          </h3>
+                          <p className="text-gray-600 mb-3">{job.description}</p>
+                          <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                            <span>📍 {job.location}</span>
+                            {job.estimated_price && <span>💰 R{job.estimated_price}</span>}
+                            <span>⏰ {new Date(job.created_at).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
+            </div>
+          )}
 
-              <div className="space-y-3 mb-4">
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-1">
-                    📍 {t('location', 'Location')}
-                  </h4>
-                  <p className="text-sm text-gray-600">{job.location}</p>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-1">
-                    📝 {t('description', 'Description')}
-                  </h4>
-                  <p className="text-sm text-gray-600">{job.description}</p>
-                </div>
-
-                {job.scheduled_at && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-1">
-                      🕐 {t('scheduledTime', 'Scheduled Time')}
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      {new Date(job.scheduled_at).toLocaleString()}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between border-t pt-4">
-                <div className="text-xs text-gray-500">
-                  <span className="mr-4">
-                    👤 Client: {job.client_contact || t('anonymous', 'Anonymous')}
-                  </span>
-                  {job.distance && (
-                    <span className="mr-4">
-                      📍 Distance: {job.distance}km
-                    </span>
-                  )}
-                  <span>
-                    🎯 Match: {job.match_score}%
-                  </span>
-                </div>
-
-                <button
-                  onClick={() => acceptJob(job.job_id)}
-                  disabled={accepting === job.job_id || currentJob}
-                  className={`px-6 py-2 rounded-md font-medium transition-colors ${
-                    accepting === job.job_id || currentJob
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : job.is_emergency
-                      ? 'bg-red-600 text-white hover:bg-red-700'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-                >
-                  {accepting === job.job_id 
-                    ? t('accepting', 'Accepting...') 
-                    : currentJob 
-                    ? 'Complete Current Job'
-                    : t('acceptJob', 'Accept Job')
-                  }
-                </button>
+          {activeTab === 'completed' && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Completed Jobs</h3>
+              <div className="text-center py-8 text-gray-500">
+                <div className="text-4xl mb-4">✅</div>
+                <p>Your completed jobs will appear here.</p>
               </div>
             </div>
-          ))}
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
