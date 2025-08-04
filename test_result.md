@@ -839,12 +839,15 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Final validation testing completed successfully"
-    - "All system requirements validated and working"
-    - "Enhanced Job Assignment Workflow system production-ready"
+    - "Voice Recording Fix - Transcribe Audio Endpoint"
+    - "Admin Client Service Request - Job Workflow with Admin Created Flag"
+    - "Smart Matching Admin Access - Admin Endpoints"
+    - "Business Compliance Services - Admin Endpoints"
+    - "General API Health - Existing Functionality Verification"
+    - "Authentication Token Parsing Fix"
   stuck_tasks: []
   test_all: false
-  test_priority: "validation_complete"
+  test_priority: "specific_fixes_complete"
 
 agent_communication:
   - agent: "main"
