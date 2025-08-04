@@ -7,6 +7,7 @@ class RoleService:
         self.admin_phones = [
             "+27821234567",  # Default admin phone - you can change this
             "+27123456789",  # Additional admin phone
+            "+27800000001",  # Test admin phone for comprehensive testing
         ]
     
     def determine_user_role(self, phone: str, db: Session) -> Dict[str, Any]:
