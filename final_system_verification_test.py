@@ -72,15 +72,28 @@ class FinalSystemVerificationTester:
     def test_health_check(self):
         """Test API health check"""
         try:
-            response = self.session.get(f"{API_BASE}/")
-            if response.status_code == 200:
-                data = response.json()
-                if "message" in data:
-                    self.log_result("API Health Check", True, f"API is running: {data['message']}")
-                    return True
-            self.log_result("API Health Check", False, f"HTTP {response.status_code}", response)
+            # Add timeout and retry logic
+            import time
+            for attempt in range(3):
+                try:
+                    response = self.session.get(f"{API_BASE}/", timeout=10)
+                    if response.status_code == 200:
+                        data = response.json()
+                        if "message" in data:
+                            self.log_result("API Health Check", True, f"API is running: {data['message']}")
+                            return True
+                    self.log_result("API Health Check", False, f"HTTP {response.status_code}", response)
+                    return False
+                except requests.exceptions.ConnectionError as e:
+                    if attempt < 2:  # Retry up to 3 times
+                        print(f"   Connection attempt {attempt + 1} failed, retrying...")
+                        time.sleep(2)
+                        continue
+                    else:
+                        self.log_result("API Health Check", False, f"Connection error after 3 attempts: {str(e)}")
+                        return False
         except Exception as e:
-            self.log_result("API Health Check", False, f"Connection error: {str(e)}")
+            self.log_result("API Health Check", False, f"Unexpected error: {str(e)}")
         return False
     
     def create_test_accounts(self):
