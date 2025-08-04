@@ -237,25 +237,28 @@ const AdminDashboard = () => {
       {/* Admin Tabs */}
       <div className="bg-white rounded-lg shadow-sm">
         <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8 px-6">
+          <nav className="-mb-px flex space-x-2 md:space-x-8 px-2 md:px-6 overflow-x-auto">
             {[
               { id: 'overview', label: 'Overview', icon: '📊' },
-              { id: 'fixers', label: 'Fixer Management', icon: '🔧' },
-              { id: 'payments', label: 'Payment Management', icon: '💳' },
-              { id: 'users', label: 'User Management', icon: '👥' },
+              { id: 'client-request', label: 'Client Request', icon: '📞' },
+              { id: 'smart-matching', label: 'Smart Matching', icon: '🎯' },
+              { id: 'compliance', label: 'Compliance', icon: '🏢' },
+              { id: 'fixers', label: 'Fixer Mgmt', icon: '🔧' },
+              { id: 'payments', label: 'Payments', icon: '💳' },
+              { id: 'users', label: 'Users', icon: '👥' },
               { id: 'reports', label: 'Reports', icon: '📈' }
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                className={`py-3 md:py-4 px-1 md:px-2 border-b-2 font-medium text-xs md:text-sm flex items-center space-x-1 md:space-x-2 whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-red-500 text-red-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
                 <span>{tab.icon}</span>
-                <span>{tab.label}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
               </button>
             ))}
           </nav>
