@@ -131,7 +131,234 @@ async def get_current_user(authorization: Optional[str] = Header(None), token: s
     
     return user
 
-# Voice and AI endpoints
+# Complete Job Workflow Endpoints
+
+@api_router.post("/jobs/{job_id}/fixer/notify")
+async def notify_fixer_of_job(job_id: str, db: Session = Depends(get_db)):
+    """Notify available fixers about a new job"""
+    try:
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Find eligible fixers for this job
+        from services.smart_matching_service import SmartMatchingService
+        matching_service = SmartMatchingService()
+        eligible_fixers = await matching_service.find_eligible_fixers(job_id, db)
+        
+        notifications_sent = 0
+        for fixer in eligible_fixers:
+            # Create a notification record
+            from models import Notification
+            notification = Notification(
+                user_id=fixer.user_id,
+                type="job_available",
+                title=f"New {job.service} Job Available",
+                message=f"A new {job.service} job is available in {job.location}. Estimated: R{job.estimated_price or 'TBD'}",
+                job_id=job_id,
+                read=False
+            )
+            db.add(notification)
+            notifications_sent += 1
+        
+        db.commit()
+        return {"success": True, "notifications_sent": notifications_sent}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send notifications: {str(e)}")
+
+@api_router.get("/fixer/notifications")
+async def get_fixer_notifications(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Get notifications for the current fixer"""
+    try:
+        from models import Notification
+        notifications = db.query(Notification).filter(
+            Notification.user_id == current_user.id,
+            Notification.type == "job_available"
+        ).order_by(Notification.created_at.desc()).all()
+        
+        return [
+            {
+                "id": n.id,
+                "title": n.title,
+                "message": n.message,
+                "job_id": n.job_id,
+                "read": n.read,
+                "created_at": n.created_at.isoformat()
+            }
+            for n in notifications
+        ]
+    except Exception as e:
+        return []
+
+@api_router.post("/jobs/{job_id}/accept-fixer")
+async def fixer_accept_job(job_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Fixer accepts a job"""
+    try:
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        if job.status != "notifying_fixers":
+            raise HTTPException(status_code=400, detail="Job is no longer available")
+        
+        # Get fixer info
+        fixer = db.query(Fixer).filter(Fixer.user_id == current_user.id).first()
+        if not fixer:
+            raise HTTPException(status_code=404, detail="Fixer profile not found")
+        
+        # Assign job to fixer
+        job.assigned_fixer_id = fixer.id
+        job.status = "assigned"
+        job.accepted_at = datetime.utcnow()
+        
+        db.commit()
+        
+        return {"success": True, "message": "Job accepted successfully", "job_id": job_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to accept job: {str(e)}")
+
+@api_router.post("/jobs/{job_id}/complete-work")
+async def complete_job_with_images(
+    job_id: str,
+    before_image: UploadFile = File(...),
+    after_image: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Fixer completes job with before/after images"""
+    try:
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        fixer = db.query(Fixer).filter(Fixer.user_id == current_user.id).first()
+        if not fixer or job.assigned_fixer_id != fixer.id:
+            raise HTTPException(status_code=403, detail="Not authorized to complete this job")
+        
+        # Save images (convert to base64 for storage)
+        import base64
+        
+        before_image_data = await before_image.read()
+        after_image_data = await after_image.read()
+        
+        before_image_base64 = base64.b64encode(before_image_data).decode('utf-8')
+        after_image_base64 = base64.b64encode(after_image_data).decode('utf-8')
+        
+        # Update job with completion data
+        job.status = "completed"
+        job.completed_at = datetime.utcnow()
+        job.before_image = before_image_base64
+        job.after_image = after_image_base64
+        
+        # Create payment for fixer (R20)
+        from models import FixerPayment
+        payment = FixerPayment(
+            fixer_id=fixer.id,
+            job_id=job_id,
+            amount=20.00,  # R20 payment
+            description=f"Job completion payment for {job.service}",
+            status="pending"
+        )
+        db.add(payment)
+        
+        # Update fixer stats
+        fixer.jobs_completed = (fixer.jobs_completed or 0) + 1
+        fixer.total_earned = (fixer.total_earned or 0) + 20.00
+        
+        db.commit()
+        
+        return {
+            "success": True, 
+            "message": "Job completed successfully", 
+            "payment_amount": 20.00,
+            "job_id": job_id
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to complete job: {str(e)}")
+
+@api_router.post("/jobs/{job_id}/rate-fixer")
+async def client_rate_fixer(
+    job_id: str,
+    rating: int = Form(...),
+    review: str = Form(""),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Client rates fixer after job completion"""
+    try:
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        if job.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized to rate this job")
+        
+        if job.status != "completed":
+            raise HTTPException(status_code=400, detail="Job is not completed yet")
+        
+        if not (1 <= rating <= 5):
+            raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
+        
+        # Save rating and review
+        job.fixer_rating = rating
+        job.fixer_review = review
+        job.rated_at = datetime.utcnow()
+        
+        # Update fixer's overall rating
+        fixer = db.query(Fixer).filter(Fixer.id == job.assigned_fixer_id).first()
+        if fixer:
+            # Recalculate average rating
+            all_ratings = db.query(Job).filter(
+                Job.assigned_fixer_id == fixer.id,
+                Job.fixer_rating.isnot(None)
+            ).all()
+            
+            if all_ratings:
+                total_rating = sum(job.fixer_rating for job in all_ratings)
+                fixer.rating = total_rating / len(all_ratings)
+        
+        # Update client's money spent
+        client_spent = job.estimated_price or 0
+        current_user.money_spent = (current_user.money_spent or 0) + client_spent
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Rating submitted successfully",
+            "rating": rating,
+            "money_spent": client_spent
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to submit rating: {str(e)}")
+
+@api_router.get("/jobs/{job_id}/images")
+async def get_job_images(job_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Get before/after images for a completed job"""
+    try:
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Check if user has permission to view images
+        fixer = db.query(Fixer).filter(Fixer.user_id == current_user.id).first()
+        is_fixer = fixer and job.assigned_fixer_id == fixer.id
+        is_client = job.user_id == current_user.id
+        is_admin = current_user.role in ['admin', 'super_admin']
+        
+        if not (is_fixer or is_client or is_admin):
+            raise HTTPException(status_code=403, detail="Not authorized to view job images")
+        
+        return {
+            "job_id": job_id,
+            "before_image": job.before_image,
+            "after_image": job.after_image,
+            "completed_at": job.completed_at.isoformat() if job.completed_at else None
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get job images: {str(e)}")
+
+# End Complete Job Workflow Endpoints
 @api_router.post("/transcribe")
 async def transcribe_audio(audio: UploadFile = File(...)):
     """
