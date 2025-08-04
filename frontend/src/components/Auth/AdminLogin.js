@@ -148,6 +148,13 @@ const AdminLogin = () => {
             </div>
           </div>
         </form>
+
+        {/* Password Reset Modal */}
+        <PasswordResetModal
+          isOpen={showPasswordReset}
+          onClose={() => setShowPasswordReset(false)}
+          userType="admin"
+        />
       </div>
     </div>
   );
