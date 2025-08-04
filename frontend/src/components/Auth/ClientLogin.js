@@ -166,6 +166,13 @@ const ClientLogin = () => {
             </div>
           </div>
         </form>
+
+        {/* Password Reset Modal */}
+        <PasswordResetModal
+          isOpen={showPasswordReset}
+          onClose={() => setShowPasswordReset(false)}
+          userType="client"
+        />
       </div>
     </div>
   );
