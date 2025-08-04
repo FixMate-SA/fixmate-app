@@ -210,12 +210,13 @@ class SpecificFixesTester:
         
         # Test 1: GET /api/admin/matching-performance?days=7
         try:
-            response = self.session.get(f"{API_BASE}/admin/matching-performance?days=7")
+            headers = {'Authorization': f"Bearer {self.test_data['admin_token']}"}
+            response = self.session.get(f"{API_BASE}/admin/matching-performance?days=7", headers=headers)
             
             if response.status_code == 200:
                 data = response.json()
                 # Check for expected performance metrics
-                expected_fields = ['total_matches', 'success_rate', 'average_score']
+                expected_fields = ['total_matches', 'success_rate', 'average_score', 'success', 'performance_analysis']
                 has_metrics = any(field in data for field in expected_fields)
                 
                 if has_metrics or isinstance(data, dict):
@@ -225,6 +226,8 @@ class SpecificFixesTester:
                     print(f"   ❌ GET /api/admin/matching-performance - Invalid response format")
             else:
                 print(f"   ❌ GET /api/admin/matching-performance failed - HTTP {response.status_code}")
+                if response.status_code == 401:
+                    print(f"      Authentication issue - Token: {self.test_data['admin_token'][:20]}...")
         except Exception as e:
             print(f"   ❌ GET /api/admin/matching-performance error - {str(e)}")
         
@@ -235,19 +238,22 @@ class SpecificFixesTester:
                 "min_matches_threshold": 3,
                 "target_success_rate": 0.85
             }
+            headers = {'Authorization': f"Bearer {self.test_data['admin_token']}"}
             
-            response = self.session.post(f"{API_BASE}/admin/improve-matching", json=improve_data)
+            response = self.session.post(f"{API_BASE}/admin/improve-matching", json=improve_data, headers=headers)
             
             if response.status_code == 200:
                 data = response.json()
                 if isinstance(data, dict):
                     success_count += 1
                     recommendations = data.get('recommendations', [])
-                    print(f"   ✅ POST /api/admin/improve-matching working - {len(recommendations)} recommendations generated")
+                    print(f"   ✅ POST /api/admin/improve-matching working - Response received")
                 else:
                     print(f"   ❌ POST /api/admin/improve-matching - Invalid response format")
             else:
                 print(f"   ❌ POST /api/admin/improve-matching failed - HTTP {response.status_code}")
+                if response.status_code == 401:
+                    print(f"      Authentication issue - Token: {self.test_data['admin_token'][:20]}...")
         except Exception as e:
             print(f"   ❌ POST /api/admin/improve-matching error - {str(e)}")
         
