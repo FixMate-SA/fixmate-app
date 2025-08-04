@@ -481,6 +481,233 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
+
+          {activeTab === 'client-request' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">Client Service Request</h3>
+                <button
+                  onClick={() => setShowClientRequestForm(!showClientRequestForm)}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  {showClientRequestForm ? 'Cancel' : 'New Request'}
+                </button>
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-blue-800">Admin Client Request</h3>
+                    <div className="mt-2 text-sm text-blue-700">
+                      <p>Use this form to create service requests on behalf of clients who call in or need assistance logging requests.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {showClientRequestForm && (
+                <form onSubmit={handleClientRequestSubmit} className="bg-gray-50 p-6 rounded-lg space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Client Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={clientRequestForm.client_name}
+                        onChange={(e) => setClientRequestForm({...clientRequestForm, client_name: e.target.value})}
+                        required
+                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        placeholder="Enter client's full name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Client Phone *
+                      </label>
+                      <input
+                        type="tel"
+                        value={clientRequestForm.client_phone}
+                        onChange={(e) => setClientRequestForm({...clientRequestForm, client_phone: e.target.value})}
+                        required
+                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        placeholder="e.g., +27123456789"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Service Type *
+                    </label>
+                    <select
+                      value={clientRequestForm.service}
+                      onChange={(e) => setClientRequestForm({...clientRequestForm, service: e.target.value})}
+                      required
+                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    >
+                      <option value="">Select a service</option>
+                      {serviceOptions.map((service) => (
+                        <option key={service} value={service}>{service}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Description *
+                    </label>
+                    <textarea
+                      value={clientRequestForm.description}
+                      onChange={(e) => setClientRequestForm({...clientRequestForm, description: e.target.value})}
+                      required
+                      rows="3"
+                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="Describe what needs to be fixed or done..."
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Location *
+                      </label>
+                      <input
+                        type="text"
+                        value={clientRequestForm.location}
+                        onChange={(e) => setClientRequestForm({...clientRequestForm, location: e.target.value})}
+                        required
+                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        placeholder="Enter location/address"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Estimated Budget (R)
+                      </label>
+                      <input
+                        type="number"
+                        value={clientRequestForm.estimated_price}
+                        onChange={(e) => setClientRequestForm({...clientRequestForm, estimated_price: e.target.value})}
+                        min="0"
+                        step="0.01"
+                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        placeholder="Optional budget"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Preferred Date & Time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={clientRequestForm.scheduled_at}
+                      onChange={(e) => setClientRequestForm({...clientRequestForm, scheduled_at: e.target.value})}
+                      className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowClientRequestForm(false)}
+                      className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      Create Request
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'smart-matching' && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium">Smart Matching Dashboard</h3>
+              <SmartMatchingDashboard />
+            </div>
+          )}
+
+          {activeTab === 'compliance' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">Business Compliance Services</h3>
+                <div className="text-sm text-gray-600">
+                  {complianceRequests.length} total requests
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[
+                  { name: 'Company Registration', count: complianceRequests.filter(r => r.category === 'company_registration').length, color: 'blue' },
+                  { name: 'Tax Compliance', count: complianceRequests.filter(r => r.category === 'tax_compliance').length, color: 'green' },
+                  { name: 'Labour Law', count: complianceRequests.filter(r => r.category === 'labour_law').length, color: 'purple' },
+                  { name: 'B-BBEE Certification', count: complianceRequests.filter(r => r.category === 'bbbee_certification').length, color: 'orange' },
+                  { name: 'Licensing & Permits', count: complianceRequests.filter(r => r.category === 'licensing_permits').length, color: 'red' },
+                  { name: 'Financial Compliance', count: complianceRequests.filter(r => r.category === 'financial_compliance').length, color: 'indigo' }
+                ].map((service) => (
+                  <div key={service.name} className={`bg-${service.color}-50 border border-${service.color}-200 rounded-lg p-4`}>
+                    <div className={`text-2xl font-bold text-${service.color}-600`}>{service.count}</div>
+                    <div className="text-gray-600 text-sm">{service.name}</div>
+                    <div className={`text-xs text-${service.color}-500 mt-1`}>Active Requests</div>
+                  </div>
+                ))}
+              </div>
+
+              {complianceRequests.length > 0 && (
+                <div className="bg-white border border-gray-200 rounded-lg">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <h4 className="font-medium">Recent Compliance Requests</h4>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {complianceRequests.slice(0, 10).map((request) => (
+                          <tr key={request.id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {request.category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                request.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                request.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {request.status.replace('_', ' ')}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(request.created_at).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
