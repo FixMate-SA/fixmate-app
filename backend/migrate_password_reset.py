@@ -17,8 +17,13 @@ logger = logging.getLogger(__name__)
 def run_migration():
     """Run the migration to add password reset fields"""
     
+    # Get database URL and fix the dialect
+    db_url = os.environ.get('MONGO_URL', 'sqlite:///fixmate.db')
+    if db_url.startswith('postgres://'):
+        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    
     # Get database engine
-    engine = create_engine(os.environ.get('MONGO_URL', 'sqlite:///fixmate.db'))
+    engine = create_engine(db_url)
     
     logger.info("Starting password reset database migration...")
     
