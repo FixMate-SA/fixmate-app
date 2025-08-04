@@ -32,6 +32,10 @@ print("=" * 80)
 class SpecificFixesTester:
     def __init__(self):
         self.session = requests.Session()
+        # Disable SSL warnings and set timeout
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        self.session.verify = False
         self.test_data = {}
         self.results = {
             'passed': 0,
