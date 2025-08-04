@@ -174,6 +174,7 @@ class Fixer(Base):
     jobs_cancelled = Column(Integer, default=0)
     jobs_incomplete = Column(Integer, default=0)
     jobs_no_show = Column(Integer, default=0)
+    total_earned = Column(Float, default=0.0)  # Total money earned from jobs
     completion_percentage = Column(Float, default=100.0)  # Calculated completion rate
     
     # Cancellation and penalty tracking
