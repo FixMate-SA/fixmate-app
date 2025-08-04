@@ -1181,13 +1181,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Critical deployment configuration issue resolved"
-    - "Fixed mixed environment variable patterns (import.meta.env → process.env)"
-    - "All 6 components now use correct Create React App pattern"
-    - "Ready for successful Heroku deployment"
+    - "Frontend Login System Diagnostic - All Login Pages"
   stuck_tasks: []
   test_all: false
-  test_priority: "layout_migration_complete"
+  test_priority: "urgent_login_diagnostic_complete"
 
 agent_communication:
   - agent: "main"
