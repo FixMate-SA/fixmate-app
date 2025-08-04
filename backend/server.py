@@ -95,8 +95,7 @@ from typing import Optional
 
 async def get_current_user(authorization: Optional[str] = Header(None), token: str = None, db: Session = Depends(get_db)):
     """
-    Get current user from token (simplified for demo)
-    In production, use proper JWT validation
+    Get current user from token with dynamic role determination
     """
     # Try to get token from Authorization header first, then from parameter
     auth_token = None
@@ -122,6 +121,13 @@ async def get_current_user(authorization: Optional[str] = Header(None), token: s
     
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
+    
+    # Get dynamic role from role service
+    role_info = role_service.determine_user_role(user.phone, db)
+    
+    # Update user's role attribute with the dynamic role for this request
+    # This doesn't change the database, just the object for this request
+    user.role = role_info["role"]
     
     return user
 
