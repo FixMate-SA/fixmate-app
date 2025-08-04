@@ -328,9 +328,13 @@ async def client_rate_fixer(
                 total_rating = sum(job.fixer_rating for job in all_ratings)
                 fixer.rating = total_rating / len(all_ratings)
         
-        # Update client's money spent
-        client_spent = job.estimated_price or 0
-        current_user.money_spent = (current_user.money_spent or 0) + client_spent
+        # Update client's money spent (with safe default handling)
+        client_spent = job.estimated_price or 0.0
+        if hasattr(current_user, 'money_spent') and current_user.money_spent is not None:
+            current_user.money_spent = current_user.money_spent + client_spent
+        else:
+            # Initialize money_spent if it doesn't exist
+            current_user.money_spent = client_spent
         
         db.commit()
         
@@ -340,7 +344,11 @@ async def client_rate_fixer(
             "rating": rating,
             "money_spent": client_spent
         }
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
+        db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to submit rating: {str(e)}")
 
 @api_router.get("/jobs/{job_id}/images")
