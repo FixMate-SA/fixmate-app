@@ -24,6 +24,7 @@ class User(Base):
     role = Column(String, default="client")      # client, fixer, admin, super_admin
     is_active = Column(Boolean, default=True)
     last_login = Column(DateTime, nullable=True)
+    money_spent = Column(Float, default=0.0)     # Total money spent by client
     
     # WhatsApp conversation state management - UNIFIED FROM run.py
     conversation_state = Column(String, nullable=True)  # Current conversation state
