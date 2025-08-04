@@ -26,6 +26,10 @@ class User(Base):
     last_login = Column(DateTime, nullable=True)
     money_spent = Column(Float, default=0.0)     # Total money spent by client
     
+    # Password reset fields
+    password_reset_code = Column(String, nullable=True)  # 6-digit reset code
+    password_reset_expires = Column(DateTime, nullable=True)  # Reset code expiration
+    
     # WhatsApp conversation state management - UNIFIED FROM run.py
     conversation_state = Column(String, nullable=True)  # Current conversation state
     service_request_cache = Column(Text, nullable=True)  # Cached service request data (JSON)
