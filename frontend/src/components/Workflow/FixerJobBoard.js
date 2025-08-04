@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { API_BASE_URL } from '../../utils/apiConfig';
+import FixerJobNotifications from '../Fixers/FixerJobNotifications';
+import JobCompletionForm from '../Jobs/JobCompletionForm';
 
 const FixerJobBoard = () => {
   const { user } = useAuth();
