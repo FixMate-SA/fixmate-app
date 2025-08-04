@@ -203,7 +203,7 @@ class Fixer(Base):
     # Relationships
     user = relationship("User", foreign_keys=[user_id])
     application = relationship("FixerApplication", foreign_keys=[application_id])
-    jobs = relationship("Job", back_populates="fixer")
+    jobs = relationship("Job", back_populates="fixer", foreign_keys="Job.fixer_id")
     reviews = relationship("Review", back_populates="fixer")
     payments = relationship("FixerPayment", back_populates="fixer")
     verification = relationship("FixerVerification", back_populates="fixer", uselist=False)
