@@ -358,6 +358,47 @@ async def get_job_images(job_id: str, current_user: User = Depends(get_current_u
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get job images: {str(e)}")
 
+@api_router.get("/jobs/completed")
+async def get_completed_jobs(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Get completed jobs for the current user"""
+    try:
+        completed_jobs = db.query(Job).filter(
+            Job.status == "completed"
+        ).order_by(Job.completed_at.desc()).all()
+        
+        # Filter based on user role
+        if current_user.role == 'client':
+            completed_jobs = [job for job in completed_jobs if job.user_id == current_user.id]
+        elif current_user.role == 'fixer':
+            fixer = db.query(Fixer).filter(Fixer.user_id == current_user.id).first()
+            if fixer:
+                completed_jobs = [job for job in completed_jobs if job.assigned_fixer_id == fixer.id]
+            else:
+                completed_jobs = []
+        
+        return [
+            {
+                "id": job.id,
+                "service": job.service,
+                "description": job.description,
+                "location": job.location,
+                "status": job.status,
+                "user_id": job.user_id,
+                "assigned_fixer_id": job.assigned_fixer_id,
+                "estimated_price": job.estimated_price,
+                "before_image": job.before_image,
+                "after_image": job.after_image,
+                "fixer_rating": job.fixer_rating,
+                "fixer_review": job.fixer_review,
+                "created_at": job.created_at.isoformat() if job.created_at else None,
+                "completed_at": job.completed_at.isoformat() if job.completed_at else None,
+                "rated_at": job.rated_at.isoformat() if job.rated_at else None
+            }
+            for job in completed_jobs
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get completed jobs: {str(e)}")
+
 # End Complete Job Workflow Endpoints
 @api_router.post("/transcribe")
 async def transcribe_audio(audio: UploadFile = File(...)):
