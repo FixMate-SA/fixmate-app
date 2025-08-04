@@ -61,8 +61,8 @@ const BusinessCompliance = () => {
 
     setSubmitting(true);
     try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`${getApiUrl()}/compliance/request`, {
+      const token = localStorage.getItem('fixmate_token');
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/request`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
