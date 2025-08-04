@@ -86,7 +86,7 @@ const EnhancedJobCompletion = () => {
 
   const loadExistingPhotos = async () => {
     try {
-      const response = await fetch(`${import.meta.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/photo-verification`);
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/photo-verification`);
       if (response.ok) {
         const data = await response.json();
         if (data.verification) {
