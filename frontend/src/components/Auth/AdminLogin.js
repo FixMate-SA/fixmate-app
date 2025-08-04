@@ -126,6 +126,16 @@ const AdminLogin = () => {
             >
               {loading ? 'Signing in...' : 'Sign in as Admin'}
             </button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setShowPasswordReset(true)}
+                className="text-sm text-red-600 hover:text-red-500"
+              >
+                Forgot your password?
+              </button>
+            </div>
           </div>
           
           <div className="text-center space-y-2">
