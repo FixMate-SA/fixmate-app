@@ -157,13 +157,22 @@ const BusinessCompliance = () => {
   const fetchChecklist = async (category) => {
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/checklist/${category}`);
-      const data = await response.json();
-      if (data.success) {
-        setChecklist(data.data);
+      const apiUrl = process.env.REACT_APP_BACKEND_URL || '/api';
+      const response = await fetch(`${apiUrl}/api/compliance/checklist/${category}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setChecklist(data.data);
+          console.log('✅ Compliance checklist loaded for:', category);
+        }
+      } else {
+        console.warn('⚠️ Could not fetch checklist for:', category);
+        setChecklist(null);
       }
     } catch (error) {
-      console.error('Error fetching checklist:', error);
+      console.error('❌ Error fetching compliance checklist:', error);
+      setChecklist(null);
     } finally {
       setLoading(false);
     }
