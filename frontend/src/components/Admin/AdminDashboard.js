@@ -54,6 +54,17 @@ const AdminDashboard = () => {
       setFixers(fixersResponse.data || []);
       setUsers(usersResponse.data || []);
       
+      // Fetch business compliance requests
+      try {
+        const complianceResponse = await fetch(`${API_BASE_URL}/compliance/admin/all-requests`);
+        if (complianceResponse.ok) {
+          const complianceData = await complianceResponse.json();
+          setComplianceRequests(complianceData.requests || []);
+        }
+      } catch (error) {
+        console.error('Error fetching compliance requests:', error);
+      }
+      
       // Calculate stats
       const totalFixers = fixersResponse.data?.length || 0;
       const activeFixers = fixersResponse.data?.filter(f => f.is_active)?.length || 0;
