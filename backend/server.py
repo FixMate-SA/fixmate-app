@@ -986,7 +986,7 @@ async def reset_password(
         from passlib.context import CryptContext
         pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         
-        user.hashed_password = pwd_context.hash(new_password)
+        user.password_hash = pwd_context.hash(new_password)
         user.password_reset_code = None
         user.password_reset_expires = None
         
