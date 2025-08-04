@@ -70,6 +70,13 @@ const Dashboard = () => {
               path: '/jobs/list', 
               icon: '📋',
               color: 'bg-purple-600 hover:bg-purple-700'
+            },
+            { 
+              title: 'Rate Completed Jobs', 
+              desc: 'Rate your fixer experiences', 
+              path: '/client/rate-jobs', 
+              icon: '⭐',
+              color: 'bg-yellow-600 hover:bg-yellow-700'
             }
           ],
           stats: [
