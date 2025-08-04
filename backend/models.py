@@ -523,6 +523,27 @@ class Job(Base):
     notifications = relationship("JobNotification", back_populates="job")
     disputes = relationship("JobDispute", back_populates="job")  # New relationship
 
+class Notification(Base):
+    """Simple notification model for fixer job notifications"""
+    __tablename__ = "notifications"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    type = Column(String, nullable=False)  # job_available, job_assigned, job_completed, etc.
+    title = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    job_id = Column(String, ForeignKey("jobs.id"), nullable=True)
+    read = Column(Boolean, default=False)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User")
+    job = relationship("Job")
+    
+    def __repr__(self):
+        return f"<Notification(id='{self.id}', type='{self.type}', read='{self.read}')>"
+
 class Review(Base):
     __tablename__ = "reviews"
     
