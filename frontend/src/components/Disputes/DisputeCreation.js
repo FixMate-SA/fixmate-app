@@ -116,7 +116,7 @@ const DisputeCreation = () => {
       };
 
       const response = await fetch(
-        `${import.meta.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/dispute`,
+        `${process.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/dispute`,
         {
           method: 'POST',
           headers: {
