@@ -26,11 +26,57 @@ const BusinessCompliance = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/categories`);
+      const apiUrl = process.env.REACT_APP_BACKEND_URL || '/api';
+      const response = await fetch(`${apiUrl}/api/compliance/categories`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       setCategories(data);
+      console.log('✅ Business compliance categories loaded:', Object.keys(data).length);
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error('❌ Error fetching business compliance categories:', error);
+      // Set fallback categories if API fails
+      setCategories({
+        company_registration: {
+          name: 'Company Registration',
+          description: 'Assistance with registering new companies (Pty Ltd, CC, etc.)',
+          cost_range: 'R1,500 - R3,500',
+          processing_time: '10-15 business days'
+        },
+        sars_registration: {
+          name: 'SARS Registration & Tax Compliance', 
+          description: 'VAT registration, PAYE, UIF, SDL registration and compliance',
+          cost_range: 'R800 - R2,500',
+          processing_time: '5-10 business days'
+        },
+        labour_compliance: {
+          name: 'Labour Law Compliance',
+          description: 'Employment contracts, labour law compliance, CCMA assistance',
+          cost_range: 'R1,000 - R2,000',
+          processing_time: '3-7 business days'
+        },
+        bbbee_certification: {
+          name: 'B-BBEE Certification',
+          description: 'B-BBEE certificate applications and compliance management',
+          cost_range: 'R3,000 - R8,000',
+          processing_time: '15-30 business days'
+        },
+        licensing_permits: {
+          name: 'Licensing & Permits',
+          description: 'Trading licenses, municipal permits, industry-specific licenses',
+          cost_range: 'R500 - R3,000',
+          processing_time: '10-20 business days'
+        },
+        financial_compliance: {
+          name: 'Financial Compliance',
+          description: 'Annual returns, financial statements, audit compliance',
+          cost_range: 'R2,000 - R5,000',
+          processing_time: '5-15 business days'
+        }
+      });
     }
   };
 
