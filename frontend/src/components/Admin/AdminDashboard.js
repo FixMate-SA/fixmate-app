@@ -13,9 +13,20 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({});
   const [fixers, setFixers] = useState([]);
   const [users, setUsers] = useState([]);
+  const [complianceRequests, setComplianceRequests] = useState([]);
   const [selectedFixer, setSelectedFixer] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
+  const [showClientRequestForm, setShowClientRequestForm] = useState(false);
+  const [clientRequestForm, setClientRequestForm] = useState({
+    client_name: '',
+    client_phone: '',
+    service: '',
+    description: '',
+    location: '',
+    estimated_price: '',
+    scheduled_at: ''
+  });
 
   // Redirect if not admin
   if (!isRole('admin')) {
