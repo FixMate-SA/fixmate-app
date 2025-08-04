@@ -174,6 +174,13 @@ const FixerLogin = () => {
             </div>
           </div>
         </form>
+
+        {/* Password Reset Modal */}
+        <PasswordResetModal
+          isOpen={showPasswordReset}
+          onClose={() => setShowPasswordReset(false)}
+          userType="fixer"
+        />
       </div>
     </div>
   );
