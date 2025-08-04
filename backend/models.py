@@ -517,7 +517,7 @@ class Job(Base):
     
     # Relationships
     user = relationship("User", back_populates="jobs")
-    fixer = relationship("Fixer", back_populates="jobs")
+    fixer = relationship("Fixer", back_populates="jobs", foreign_keys=[fixer_id])
     reviews = relationship("Review", back_populates="job")
     emergency_alerts = relationship("EmergencyAlert", back_populates="job")
     assignment_history = relationship("JobAssignmentHistory", back_populates="job")
