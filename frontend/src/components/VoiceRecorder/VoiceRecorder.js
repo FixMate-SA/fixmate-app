@@ -65,16 +65,22 @@ const VoiceRecorder = ({ onTranscription, onError, onClose }) => {
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.wav');
       
-      const response = await apiService.transcribeAudio(formData);
+      const response = await apiService.transcribeAudio(audioBlob);
       
-      if (response.data.transcription) {
+      if (response.data && response.data.transcription) {
         setTranscriptionResult(response.data.transcription);
+      } else if (response.data && response.data.detail) {
+        setTranscriptionResult(response.data.detail);
       } else {
         onError('Could not transcribe audio. Please try again.');
       }
     } catch (error) {
       console.error('Transcription error:', error);
-      onError('Error processing audio. Please try again.');
+      if (error.response && error.response.data && error.response.data.detail) {
+        onError(`Error: ${error.response.data.detail}`);
+      } else {
+        onError('Error processing audio. Please try again.');
+      }
     } finally {
       setIsProcessing(false);
     }
