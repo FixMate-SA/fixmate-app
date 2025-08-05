@@ -305,13 +305,14 @@ class FixMateBackendTester:
     
     def test_dashboard_endpoint(self):
         """Test dashboard data endpoint"""
-        if 'admin' not in self.tokens:
-            self.log_result("Dashboard Endpoint", False, "No admin token available")
+        if 'admin' not in self.tokens or 'admin_user' not in self.test_data:
+            self.log_result("Dashboard Endpoint", False, "No admin token or user data available")
             return False
         
         try:
             headers = {"Authorization": f"Bearer {self.tokens['admin']}"}
-            response = self.session.get(f"{API_BASE}/dashboard", headers=headers)
+            user_id = self.test_data['admin_user']['id']
+            response = self.session.get(f"{API_BASE}/dashboard/{user_id}", headers=headers)
             
             if response.status_code == 200:
                 dashboard_data = response.json()
