@@ -13,6 +13,10 @@ const Header = () => {
   
   // Get available languages
   const availableLanguages = getAvailableLanguageOptions();
+  
+  // Debug logging
+  console.log('Header - availableLanguages:', availableLanguages);
+  console.log('Header - availableLanguages length:', availableLanguages?.length);
 
   const handleLogout = () => {
     logout();
