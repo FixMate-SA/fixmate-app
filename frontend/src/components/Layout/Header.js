@@ -10,6 +10,12 @@ const Header = () => {
   const { currentLanguage, changeLanguage, getAvailableLanguageOptions } = useLanguage();
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const navigate = useNavigate();
+  
+  // Debug: Log available language options
+  React.useEffect(() => {
+    const options = getAvailableLanguageOptions();
+    console.log('Header - Available language options:', options);
+  }, [getAvailableLanguageOptions]);
 
   const handleLogout = () => {
     logout();
