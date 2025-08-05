@@ -800,6 +800,17 @@ export const languages = {
       loadingJobs: 'Laai beskikbare werk...',
       expired: 'Verstryk',
       jobAcceptErrorGeneric: 'Fout het voorgekom tydens aanvaarding van werk. Probeer asseblief weer.',
+      
+      // Admin Dashboard
+      totalFixers: 'Totale Herstellers',
+      activeFixers: 'Aktiewe Herstellers',
+      inactiveFixers: 'Onaktiewe Herstellers',
+      avgRating: 'Gem Gradering',
+      clientRequest: 'Kliënt Versoek',
+      compliance: 'Nakoming',
+      fixerMgmt: 'Hersteller Bestuur',
+      users: 'Gebruikers',
+      reports: 'Verslae',
       fixerLogin: 'Hersteller Aanmeld',
       adminLogin: 'Admin Aanmeld',
       clientLoginSubtitle: 'Verkry toegang tot jou diensversoeke en verbind met herstellers',
