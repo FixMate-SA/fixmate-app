@@ -152,7 +152,7 @@ const VoiceRecorder = ({ onTranscription, onError, onClose }) => {
           {isProcessing ? (
             <div className="flex items-center space-x-2">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              <span className="text-sm text-gray-600">Processing audio...</span>
+              <span className="text-sm text-gray-600">{t('processingAudio', 'Processing audio...')}</span>
             </div>
           ) : audioURL ? (
             <div className="flex items-center space-x-2">
