@@ -91,8 +91,24 @@ export const AuthProvider = ({ children }) => {
         };
       }
       
-      // Clear any existing session data to prevent conflicts
+      // Clear only auth-related session data, preserve language and other preferences
+      const savedLanguage = localStorage.getItem('fixmate_language');
+      const keysToPreserve = ['fixmate_language']; // Add other keys to preserve as needed
+      
+      // Store preserved values
+      const preservedValues = {};
+      keysToPreserve.forEach(key => {
+        const value = localStorage.getItem(key);
+        if (value) preservedValues[key] = value;
+      });
+      
+      // Clear localStorage
       localStorage.clear();
+      
+      // Restore preserved values
+      Object.keys(preservedValues).forEach(key => {
+        localStorage.setItem(key, preservedValues[key]);
+      });
       
       setUser(userData);
       setRoleInfo(roleData);
