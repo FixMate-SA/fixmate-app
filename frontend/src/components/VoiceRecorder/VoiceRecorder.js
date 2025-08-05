@@ -119,9 +119,9 @@ const VoiceRecorder = ({ onTranscription, onError, onClose }) => {
   return (
     <div className="voice-recorder bg-white p-4 rounded-lg shadow-sm border border-gray-200">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium text-gray-900">Voice Request</h3>
+        <h3 className="text-lg font-medium text-gray-900">{t('voiceRequest', 'Voice Request')}</h3>
         <span className="text-sm text-gray-500">
-          {isRecording ? `Recording: ${formatTime(recordingTime)}` : 'Ready to record'}
+          {isRecording ? `${t('recording', 'Recording')}: ${formatTime(recordingTime)}` : t('readyToRecord', 'Ready to record')}
         </span>
       </div>
 
