@@ -326,6 +326,7 @@ export const languages = {
       welcomeMessage: 'Welcome to FixMate-SA',
       quickActions: 'Quick Actions',
       recentActivity: 'Recent Activity',
+      noRecentActivity: 'No recent activity to display',
       totalJobs: 'Total Jobs',
       activeJobs: 'Active Jobs',
       completedJobs: 'Completed Jobs',
