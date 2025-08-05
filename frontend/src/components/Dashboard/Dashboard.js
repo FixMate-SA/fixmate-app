@@ -221,7 +221,7 @@ const Dashboard = () => {
       {/* Quick Actions */}
       {content.quickActions.length > 0 && (
         <div className="dashboard-card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('quickActions')}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {content.quickActions.map((action, index) => (
               <button
