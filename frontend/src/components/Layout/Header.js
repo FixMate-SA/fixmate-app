@@ -19,6 +19,7 @@ const Header = () => {
   console.log('Header - rawLanguages length:', rawLanguages?.length);
   console.log('Header - first language:', rawLanguages?.[0]);
   console.log('Header - first language structure:', JSON.stringify(rawLanguages?.[0]));
+  console.log('Header - showLanguageDropdown:', showLanguageDropdown);
   
   // Use the actual data
   const availableLanguages = rawLanguages;
