@@ -168,7 +168,7 @@ const VoiceRecorder = ({ onTranscription, onError, onClose }) => {
             </div>
           ) : (
             <p className="text-sm text-gray-500">
-              {isRecording ? 'Recording in progress...' : 'Click the microphone to start recording'}
+              {isRecording ? t('recordingInProgress', 'Recording in progress...') : t('clickMicrophoneToStart', 'Click the microphone to start recording')}
             </p>
           )}
         </div>
