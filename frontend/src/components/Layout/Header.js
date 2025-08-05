@@ -99,7 +99,7 @@ const Header = () => {
               {showLanguageDropdown && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50">
                   <div className="py-1">
-                    {availableLanguages.map((language) => (
+                    {testLanguages.map((language) => (
                       <button
                         key={language.code}
                         onClick={() => {
