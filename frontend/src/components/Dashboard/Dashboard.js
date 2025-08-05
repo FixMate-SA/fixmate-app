@@ -49,135 +49,136 @@ const Dashboard = () => {
     switch (userRole) {
       case 'client':
         return {
-          title: 'Client Dashboard',
-          subtitle: 'Manage your service requests and connect with trusted fixers',
+          title: t('dashboard') + ' - ' + t('client', 'Client'),
+          subtitle: t('manageServiceRequests', 'Manage your service requests and connect with trusted fixers'),
           quickActions: [
             { 
-              title: 'Create New Job', 
-              desc: 'Post a new service request', 
+              title: t('createJob'), 
+              desc: t('postNewServiceRequest', 'Post a new service request'), 
               path: '/jobs/create', 
               icon: '➕',
               color: 'bg-blue-600 hover:bg-blue-700'
             },
             { 
-              title: 'Find Fixers', 
-              desc: 'Browse available service providers', 
+              title: t('findFixers'), 
+              desc: t('browseServiceProviders', 'Browse available service providers'), 
               path: '/fixers', 
               icon: '🔧',
               color: 'bg-orange-600 hover:bg-orange-700'
             },
             { 
-              title: 'My Jobs', 
-              desc: 'View your job requests', 
+              title: t('myJobs', 'My Jobs'), 
+              desc: t('viewJobRequests', 'View your job requests'), 
               path: '/jobs/list', 
               icon: '📋',
               color: 'bg-purple-600 hover:bg-purple-700'
             },
             { 
-              title: 'Rate Completed Jobs', 
-              desc: 'Rate your fixer experiences', 
+              title: t('rateCompletedJobs', 'Rate Completed Jobs'), 
+              desc: t('rateFixerExperiences', 'Rate your fixer experiences'), 
               path: '/client/rate-jobs', 
               icon: '⭐',
               color: 'bg-yellow-600 hover:bg-yellow-700'
             }
           ],
           stats: [
-            { label: 'Active Jobs', value: dashboardData?.stats?.active_jobs || 0, icon: '🔄' },
-            { label: 'Completed Jobs', value: dashboardData?.stats?.completed_jobs || 0, icon: '✅' },
-            { label: 'Total Spent', value: `R${dashboardData?.stats?.total_spent || 0}`, icon: '💰' },
-            { label: 'Pending Jobs', value: dashboardData?.stats?.pending_jobs || 0, icon: '⏳' }
+            { label: t('activeJobs'), value: dashboardData?.stats?.active_jobs || 0, icon: '🔄' },
+            { label: t('completedJobs'), value: dashboardData?.stats?.completed_jobs || 0, icon: '✅' },
+            { label: t('totalSpent', 'Total Spent'), value: `R${dashboardData?.stats?.total_spent || 0}`, icon: '💰' },
+            { label: t('pendingJobs', 'Pending Jobs'), value: dashboardData?.stats?.pending_jobs || 0, icon: '⏳' }
           ]
         };
       case 'fixer':
         return {
-          title: 'Fixer Dashboard',
-          subtitle: 'Manage your jobs and grow your service business',
+          title: t('dashboard') + ' - ' + t('fixer', 'Fixer'),
+          subtitle: t('manageJobsGrowBusiness', 'Manage your jobs and grow your service business'),
           quickActions: [
             { 
-              title: 'Available Jobs', 
-              desc: 'Browse and accept new jobs', 
+              title: t('availableJobs'), 
+              desc: t('browseAcceptJobs', 'Browse and accept new jobs'), 
               path: '/fixer/jobs', 
               icon: '🔨',
               color: 'bg-orange-600 hover:bg-orange-700'
             },
             { 
-              title: 'My Payments', 
-              desc: 'Track earnings and payments', 
+              title: t('myPayments', 'My Payments'), 
+              desc: t('trackEarningsPayments', 'Track earnings and payments'), 
               path: '/fixer/payment', 
               icon: '💳',
               color: 'bg-blue-600 hover:bg-blue-700'
             },
             { 
-              title: 'Reputation', 
-              desc: 'View your reputation score', 
+              title: t('reputation'), 
+              desc: t('viewReputationScore', 'View your reputation score'), 
               path: '/fixer/reputation', 
               icon: '⭐',
               color: 'bg-yellow-600 hover:bg-yellow-700'
             },
             { 
-              title: 'Learning Center', 
-              desc: 'Improve your skills', 
+              title: t('learningCenter', 'Learning Center'), 
+              desc: t('improveSkills', 'Improve your skills'), 
               path: '/fixer/learning', 
               icon: '🎓',
               color: 'bg-purple-600 hover:bg-purple-700'
             }
           ],
           stats: [
-            { label: 'Jobs Completed', value: dashboardData?.stats?.jobs_completed || 0, icon: '✅' },
-            { label: 'Current Rating', value: dashboardData?.stats?.rating || '5.0', icon: '⭐' },
-            { label: 'Total Earned', value: `R${dashboardData?.stats?.total_earned || 0}`, icon: '💰' },
-            { label: 'Active Jobs', value: dashboardData?.stats?.active_jobs || 0, icon: '🔄' }
+            { label: t('jobsCompleted'), value: dashboardData?.stats?.jobs_completed || 0, icon: '✅' },
+            { label: t('currentRating', 'Current Rating'), value: dashboardData?.stats?.rating || '5.0', icon: '⭐' },
+            { label: t('totalEarnings'), value: `R${dashboardData?.stats?.total_earned || 0}`, icon: '💰' },
+            { label: t('activeJobs'), value: dashboardData?.stats?.active_jobs || 0, icon: '🔄' }
           ]
         };
       case 'admin':
         return {
-          title: 'Admin Dashboard',
-          subtitle: 'Manage the FixMate-SA platform and monitor operations',
+          title: t('dashboard') + ' - ' + t('admin', 'Admin'),
+          subtitle: t('managePlatformOperations', 'Manage the FixMate-SA platform and monitor operations'),
           quickActions: [
             { 
-              title: 'Admin Panel', 
-              desc: 'Platform management tools', 
+              title: t('adminPanel'), 
+              desc: t('platformManagementTools', 'Platform management tools'), 
               path: '/admin/panel', 
               icon: '⚙️',
               color: 'bg-red-600 hover:bg-red-700'
             },
             { 
-              title: 'Smart Matching', 
-              desc: 'View matching analytics', 
+              title: t('smartMatching', 'Smart Matching'), 
+              desc: t('viewMatchingAnalytics', 'View matching analytics'), 
               path: '/admin/smart-matching', 
               icon: '🎯',
               color: 'bg-indigo-600 hover:bg-indigo-700'
             },
             { 
-              title: 'Photo Verification', 
-              desc: 'Review fixer photos', 
+              title: t('photoVerification', 'Photo Verification'), 
+              desc: t('reviewFixerPhotos', 'Review fixer photos'), 
               path: '/admin/photo-verification', 
               icon: '📸',
               color: 'bg-blue-600 hover:bg-blue-700'
             },
             { 
-              title: 'Business Tools', 
-              desc: 'Business compliance features', 
+              title: t('businessTools', 'Business Tools'), 
+              desc: t('businessComplianceFeatures', 'Business compliance features'), 
               path: '/admin/business-compliance', 
               icon: '🏢',
               color: 'bg-gray-600 hover:bg-gray-700'
             }
           ],
           stats: [
-            { label: 'Total Users', value: dashboardData?.stats?.total_users || 0, icon: '👥' },
-            { label: 'Active Jobs', value: dashboardData?.stats?.total_active_jobs || 0, icon: '🔄' },
-            { label: 'Platform Revenue', value: `R${dashboardData?.stats?.platform_revenue || 0}`, icon: '💰' },
-            { label: 'Success Rate', value: `${dashboardData?.stats?.success_rate || 0}%`, icon: '📈' }
+            { label: t('totalUsers', 'Total Users'), value: dashboardData?.stats?.total_users || 0, icon: '👥' },
+            { label: t('activeJobs'), value: dashboardData?.stats?.total_active_jobs || 0, icon: '🔄' },
+            { label: t('platformRevenue', 'Platform Revenue'), value: `R${dashboardData?.stats?.platform_revenue || 0}`, icon: '💰' },
+            { label: t('successRate', 'Success Rate'), value: `${dashboardData?.stats?.success_rate || 0}%`, icon: '📈' }
           ]
         };
       default:
         return {
-          title: 'Dashboard',
-          subtitle: 'Welcome to FixMate-SA',
+          title: t('dashboard'),
+          subtitle: t('welcomeMessage'),
           quickActions: [],
           stats: []
         };
     }
+  };
   };
 
   if (loading) {
