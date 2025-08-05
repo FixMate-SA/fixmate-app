@@ -388,10 +388,10 @@ const FixerJobBoard = () => {
 
           {activeTab === 'completed' && (
             <div>
-              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Completed Jobs</h3>
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">{t('completedJobs')}</h3>
               <div className="text-center py-8 text-gray-500">
                 <div className="text-4xl mb-4">✅</div>
-                <p className="text-sm md:text-base">Your completed jobs will appear here.</p>
+                <p className="text-sm md:text-base">{t('completedJobsWillAppear', 'Your completed jobs will appear here.')}</p>
               </div>
             </div>
           )}
