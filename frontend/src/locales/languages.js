@@ -388,6 +388,17 @@ export const languages = {
       loadingJobs: 'Loading available jobs...',
       expired: 'Expired',
       jobAcceptErrorGeneric: 'An error occurred while accepting the job. Please try again.',
+      
+      // Admin Dashboard
+      totalFixers: 'Total Fixers',
+      activeFixers: 'Active Fixers', 
+      inactiveFixers: 'Inactive Fixers',
+      avgRating: 'Avg Rating',
+      clientRequest: 'Client Request',
+      compliance: 'Compliance',
+      fixerMgmt: 'Fixer Mgmt',
+      users: 'Users',
+      reports: 'Reports',
       fixerLogin: 'Fixer Login',
       adminLogin: 'Admin Login',
       clientLoginSubtitle: 'Access your service requests and connect with fixers',
