@@ -629,6 +629,7 @@ export const languages = {
       pendingInvoices: 'Hangende Fakture',
       overview: 'Oorsig',
       bulkBookings: 'Grootmaat Besprekings',
+      bookings: 'Besprekings',
       contracts: 'Kontrakte',
       analytics: 'Analiese',
       invoicing: 'Fakturering',
