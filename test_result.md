@@ -914,11 +914,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Language System Complete Localization Testing - CRITICAL ISSUE IDENTIFIED"
+    - "Language System Complete Localization Testing - ROUTING ISSUE IDENTIFIED"
   stuck_tasks: 
-    - "Language System Complete Localization Testing - CRITICAL ISSUE IDENTIFIED"
+    - "Language System Complete Localization Testing - ROUTING ISSUE IDENTIFIED"
   test_all: false
-  test_priority: "language_localization_critical_fix_needed"
+  test_priority: "routing_fix_needed_for_complete_language_testing"
 
   - task: "Enterprise Portal Mobile Responsiveness - Navigation Tabs"
     implemented: true
