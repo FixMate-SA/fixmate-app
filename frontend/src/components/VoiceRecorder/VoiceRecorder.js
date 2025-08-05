@@ -74,7 +74,7 @@ const VoiceRecorder = ({ onTranscription, onError, onClose }) => {
       } else if (response.data && response.data.detail) {
         setTranscriptionResult(response.data.detail);
       } else {
-        onError('Could not transcribe audio. Please try again.');
+        onError(t('transcriptionFailed', 'Could not transcribe audio. Please try again.'));
       }
     } catch (error) {
       console.error('Transcription error:', error);
