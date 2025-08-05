@@ -932,10 +932,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Job Creation Translation After Fresh Build - URGENT VERIFICATION"
+    - "Final Comprehensive Afrikaans Translation Verification - COMPLETED"
   stuck_tasks: []
   test_all: false
-  test_priority: "job_creation_translation_verification_completed"
+  test_priority: "comprehensive_afrikaans_translation_verification_completed"
 
   - task: "Enterprise Portal Mobile Responsiveness - Navigation Tabs"
     implemented: true
