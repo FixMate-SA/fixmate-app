@@ -932,14 +932,12 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Final Comprehensive Afrikaans Translation Verification - COMPLETED"
+    - "Complete Remaining Afrikaans Translations and Language Persistence Testing"
   stuck_tasks: 
-    - "Jobs List Translation Implementation"
-    - "Profile Translation Implementation" 
-    - "Job Creation Translation Implementation"
-    - "Client Login Missing Translation Keys"
+    - "Language Persistence After Login (localStorage.clear() issue)"
+    - "Verify Translation Keys Actually Working"
   test_all: false
-  test_priority: "translation_implementation_fixes_needed"
+  test_priority: "complete_afrikaans_translation_and_test_persistence"
 
   - task: "Enterprise Portal Mobile Responsiveness - Navigation Tabs"
     implemented: true
