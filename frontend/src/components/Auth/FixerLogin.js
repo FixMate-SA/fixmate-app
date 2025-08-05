@@ -1,187 +1,166 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { getApiUrl } from '../../utils/api';
-import Logo from '../Common/Logo';
+import { useNavigate } from 'react-router-dom';
 import PasswordResetModal from './PasswordResetModal';
+import Logo from '../Common/Logo';
 import LanguageSelector from '../Common/LanguageSelector';
 
 const FixerLogin = () => {
-  const [phone, setPhone] = useState('');
+  const { t } = useLanguage();
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const { login } = useAuth();
-  const { t } = useLanguage();
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!phoneNumber.trim()) {
+      setError(t('phoneNumberRequired', 'Phone number is required'));
+      return;
+    }
+    if (!password.trim()) {
+      setError(t('passwordRequired', 'Password is required'));
+      return;
+    }
+
     setLoading(true);
     setError('');
 
-    if (!phone.trim()) {
-      setError('Please enter your phone number');
-      setLoading(false);
-      return;
-    }
-
-    if (!password.trim()) {
-      setError('Please enter your password');
-      setLoading(false);
-      return;
-    }
-
     try {
-      // Add timeout and retry logic for fixer login
-      const result = await Promise.race([
-        login(phone, password),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Login timeout')), 10000)
-        )
-      ]);
-      
-      if (result.success) {
-        // Verify this is a fixer account
-        if (result.roleInfo?.role === 'fixer') {
-          console.log('FixerLogin: Fixer login successful, navigating to fixer dashboard');
-          navigate('/fixer/dashboard', { replace: true });
-        } else {
-          setError(`This phone number is registered as a ${result.roleInfo?.role}. Please use the correct login page.`);
-        }
+      const success = await login(phoneNumber, password);
+      if (success) {
+        navigate('/fixer/dashboard');
       } else {
-        setError(result.error || 'Login failed. Please try again.');
+        setError(t('invalidCredentials', 'Invalid phone number or password'));
       }
-    } catch (error) {
-      console.error('Fixer login error:', error);
-      if (error.message === 'Login timeout') {
-        setError('Login is taking too long. Please check your connection and try again.');
-      } else {
-        setError('Login failed. Please try again.');
-      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(t('loginError', 'An error occurred during login. Please try again.'));
     }
-    
+
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-yellow-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-600 to-orange-800 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        {/* Language Selector */}
-        <div className="flex justify-end">
-          <LanguageSelector />
-        </div>
-        
         <div>
-          <Logo 
-            size="large" 
-            variant="login" 
-            showText={true}
-            className="mb-8"
-          />
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Fixer Login
+          <div className="mx-auto h-20 w-20 flex justify-center">
+            <Logo />
+          </div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
+            {t('fixerLogin')}
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Access your fixer account to manage jobs and view assignments
-          </p>
-          <p className="mt-1 text-center text-xs text-gray-500">
-            Enter your phone number and password to sign in
+          <p className="mt-2 text-center text-sm text-orange-100">
+            {t('fixerLoginSubtitle', 'Access your jobs and grow your service business')}
           </p>
         </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number
-              </label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm"
-                placeholder="Enter your phone number (e.g., +27821234567)"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm"
-                placeholder="Enter your password"
-              />
-            </div>
+
+        <div className="bg-white rounded-xl shadow-2xl p-8 space-y-6">
+          {/* Language Selector */}
+          <div className="flex justify-center">
+            <LanguageSelector />
           </div>
 
-          {error && (
-            <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-md">
-              {error}
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                {t('phoneNumber')}
+              </label>
+              <div className="mt-1">
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  required
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                  placeholder={t('enterPhoneNumber', 'Enter your phone number')}
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                />
+              </div>
             </div>
-          )}
 
-          <div className="space-y-3">
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50"
-            >
-              {loading ? 'Signing in...' : 'Sign in as Fixer'}
-            </button>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                {t('password')}
+              </label>
+              <div className="mt-1">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                  placeholder={t('enterPassword', 'Enter your password')}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
 
-            <div className="text-center">
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <div className="text-sm text-red-600">{error}</div>
+              </div>
+            )}
+
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:bg-orange-300 disabled:cursor-not-allowed"
+              >
+                {loading ? t('signingIn', 'Signing in...') : t('signIn')}
+              </button>
+            </div>
+
+            <div className="text-center space-y-2">
               <button
                 type="button"
                 onClick={() => setShowPasswordReset(true)}
-                className="text-sm text-orange-600 hover:text-orange-500"
+                className="text-sm text-orange-600 hover:text-orange-800 underline"
               >
-                Forgot your password?
+                {t('forgotPassword', 'Forgot your password?')}
               </button>
+              
+              <div className="text-sm text-gray-600">
+                {t('dontHaveAccount', "Don't have an account?")}{' '}
+                <a
+                  href="/fixer-signup"
+                  className="font-medium text-orange-600 hover:text-orange-800"
+                >
+                  {t('signUpHere', 'Sign up here')}
+                </a>
+              </div>
             </div>
-            
-            <div className="text-center">
-              <span className="text-sm text-gray-600">or</span>
-            </div>
-            
-            <Link
-              to="/fixer-signup"
-              className="group relative w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-            >
-              Don't have an account? Apply as Fixer
-            </Link>
-          </div>
-          
-          <div className="text-center space-y-2">
-            <p className="text-xs text-gray-500">
-              🔒 Your account is protected with secure password authentication
-            </p>
-            <div className="text-xs text-gray-500 space-y-1">
-              <p>Are you a client? <Link to="/client-login" className="text-orange-600 hover:text-orange-500">Login as Client</Link></p>
-              <p>Are you an admin? <Link to="/admin-login" className="text-orange-600 hover:text-orange-500">Login as Admin</Link></p>
-            </div>
-          </div>
-        </form>
+          </form>
+        </div>
 
-        {/* Password Reset Modal */}
+        <div className="text-center">
+          <div className="text-orange-100 text-sm space-x-4">
+            <a href="/client-login" className="hover:text-white">
+              {t('clientLogin')}
+            </a>
+            <span>•</span>
+            <a href="/admin-login" className="hover:text-white">
+              {t('adminLogin')}
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {showPasswordReset && (
         <PasswordResetModal
           isOpen={showPasswordReset}
           onClose={() => setShowPasswordReset(false)}
           userType="fixer"
         />
-      </div>
+      )}
     </div>
   );
 };

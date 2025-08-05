@@ -1,179 +1,166 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { getApiUrl } from '../../utils/api';
-import Logo from '../Common/Logo';
+import { useNavigate } from 'react-router-dom';
 import PasswordResetModal from './PasswordResetModal';
+import Logo from '../Common/Logo';
 import LanguageSelector from '../Common/LanguageSelector';
 
 const ClientLogin = () => {
-  const [phone, setPhone] = useState('');
+  const { t } = useLanguage();
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const { login } = useAuth();
-  const { t } = useLanguage();
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!phoneNumber.trim()) {
+      setError(t('phoneNumberRequired', 'Phone number is required'));
+      return;
+    }
+    if (!password.trim()) {
+      setError(t('passwordRequired', 'Password is required'));
+      return;
+    }
+
     setLoading(true);
     setError('');
 
-    if (!phone.trim()) {
-      setError('Please enter your phone number');
-      setLoading(false);
-      return;
-    }
-
-    if (!password.trim()) {
-      setError('Please enter your password');
-      setLoading(false);
-      return;
-    }
-
-    const result = await login(phone, password);
-    
-    if (result.success) {
-      // Verify this is a client account
-      if (result.roleInfo?.role === 'client') {
-        console.log('ClientLogin: Client login successful, navigating to client dashboard');
-        navigate('/client/dashboard', { replace: true });
+    try {
+      const success = await login(phoneNumber, password);
+      if (success) {
+        navigate('/client/dashboard');
       } else {
-        setError(`This phone number is registered as a ${result.roleInfo?.role}. Please use the correct login page.`);
+        setError(t('invalidCredentials', 'Invalid phone number or password'));
       }
-    } else {
-      setError(result.error);
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(t('loginError', 'An error occurred during login. Please try again.'));
     }
-    
+
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 py-6 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-6">
-        {/* Language Selector */}
-        <div className="flex justify-end">
-          <LanguageSelector />
-        </div>
-        
-        <div className="text-center">
-          <Logo 
-            size="large" 
-            variant="login" 
-            showText={true}
-            className="mb-6"
-          />
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
-            Client Login
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <div className="mx-auto h-20 w-20 flex justify-center">
+            <Logo />
+          </div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
+            {t('clientLogin')}
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Access your client account to create jobs and hire fixers
-          </p>
-          <p className="mt-1 text-xs text-gray-500">
-            Enter your phone number and password to sign in
+          <p className="mt-2 text-center text-sm text-blue-100">
+            {t('clientLoginSubtitle', 'Access your service requests and connect with fixers')}
           </p>
         </div>
-        
-        <form className="mt-6 space-y-4" onSubmit={handleLogin}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number
-              </label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="form-input appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-base"
-                placeholder="Enter your phone number (e.g., +27821234567)"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="form-input appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-base"
-                placeholder="Enter your password"
-              />
-            </div>
+
+        <div className="bg-white rounded-xl shadow-2xl p-8 space-y-6">
+          {/* Language Selector */}
+          <div className="flex justify-center">
+            <LanguageSelector />
           </div>
 
-          {error && (
-            <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-lg">
-              {error}
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                {t('phoneNumber')}
+              </label>
+              <div className="mt-1">
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  required
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={t('enterPhoneNumber', 'Enter your phone number')}
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                />
+              </div>
             </div>
-          )}
 
-          <div className="space-y-3">
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-mobile group relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Signing in...</span>
-                </div>
-              ) : (
-                'Sign in as Client'
-              )}
-            </button>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                {t('password')}
+              </label>
+              <div className="mt-1">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={t('enterPassword', 'Enter your password')}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
 
-            <div className="text-center">
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <div className="text-sm text-red-600">{error}</div>
+              </div>
+            )}
+
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300 disabled:cursor-not-allowed"
+              >
+                {loading ? t('signingIn', 'Signing in...') : t('signIn')}
+              </button>
+            </div>
+
+            <div className="text-center space-y-2">
               <button
                 type="button"
                 onClick={() => setShowPasswordReset(true)}
-                className="text-sm text-blue-600 hover:text-blue-500"
+                className="text-sm text-blue-600 hover:text-blue-800 underline"
               >
-                Forgot your password?
+                {t('forgotPassword', 'Forgot your password?')}
               </button>
+              
+              <div className="text-sm text-gray-600">
+                {t('dontHaveAccount', "Don't have an account?")}{' '}
+                <a
+                  href="/client-signup"
+                  className="font-medium text-blue-600 hover:text-blue-800"
+                >
+                  {t('signUpHere', 'Sign up here')}
+                </a>
+              </div>
             </div>
-            
-            <div className="text-center">
-              <span className="text-sm text-gray-600">or</span>
-            </div>
-            
-            <Link
-              to="/client-signup"
-              className="btn-mobile group relative w-full flex justify-center py-3 px-4 border border-gray-300 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Don't have an account? Sign up as Client
-            </Link>
-          </div>
-          
-          <div className="text-center space-y-3">
-            <p className="text-xs text-gray-500">
-              🔒 Your account is protected with secure password authentication
-            </p>
-            <div className="text-xs text-gray-500 space-y-2">
-              <p>Are you a fixer? <Link to="/fixers-login" className="text-indigo-600 hover:text-indigo-500 font-medium">Login as Fixer</Link></p>
-              <p>Are you an admin? <Link to="/admin-login" className="text-indigo-600 hover:text-indigo-500 font-medium">Login as Admin</Link></p>
-            </div>
-          </div>
-        </form>
+          </form>
+        </div>
 
-        {/* Password Reset Modal */}
+        <div className="text-center">
+          <div className="text-blue-100 text-sm space-x-4">
+            <a href="/fixer-login" className="hover:text-white">
+              {t('fixerLogin')}
+            </a>
+            <span>•</span>
+            <a href="/admin-login" className="hover:text-white">
+              {t('adminLogin')}
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {showPasswordReset && (
         <PasswordResetModal
           isOpen={showPasswordReset}
           onClose={() => setShowPasswordReset(false)}
           userType="client"
         />
-      </div>
+      )}
     </div>
   );
 };
