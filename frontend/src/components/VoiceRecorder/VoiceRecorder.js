@@ -184,7 +184,7 @@ const VoiceRecorder = ({ onTranscription, onError, onClose }) => {
       {transcriptionResult && (
         <div className="mt-4 p-3 bg-green-50 rounded-md">
           <p className="text-sm text-green-800">
-            <strong>✅ Transcription:</strong> {transcriptionResult}
+            <strong>✅ {t('transcription', 'Transcription')}:</strong> {transcriptionResult}
           </p>
         </div>
       )}
