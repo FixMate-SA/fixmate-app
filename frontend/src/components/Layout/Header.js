@@ -12,19 +12,16 @@ const Header = () => {
   const navigate = useNavigate();
   
   // Get available languages
-  const availableLanguages = getAvailableLanguageOptions() || [];
+  const rawLanguages = getAvailableLanguageOptions() || [];
   
   // Debug logging
-  console.log('Header - availableLanguages:', availableLanguages);
-  console.log('Header - availableLanguages length:', availableLanguages?.length);
-  console.log('Header - first language:', availableLanguages?.[0]);
+  console.log('Header - rawLanguages:', rawLanguages);
+  console.log('Header - rawLanguages length:', rawLanguages?.length);
+  console.log('Header - first language:', rawLanguages?.[0]);
+  console.log('Header - first language structure:', JSON.stringify(rawLanguages?.[0]));
   
-  // TEMPORARY: Fallback for testing
-  const testLanguages = availableLanguages.length > 0 ? availableLanguages : [
-    { code: 'en', name: 'English', flag: '🇿🇦' },
-    { code: 'af', name: 'Afrikaans', flag: '🇿🇦' },
-    { code: 'zu', name: 'Zulu', flag: '🇿🇦' }
-  ];
+  // Use the actual data
+  const availableLanguages = rawLanguages;
 
   const handleLogout = () => {
     logout();
