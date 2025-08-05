@@ -18,8 +18,6 @@ const Header = () => {
     logout();
     navigate('/login');
   };
-
-  const availableLanguages = getAvailableLanguageOptions();
   const userRole = getUserRole();
 
   // Role-specific styling
