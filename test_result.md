@@ -911,10 +911,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Language System Dropdown Functionality - CRITICAL DIAGNOSTIC COMPLETED"
-  stuck_tasks: []
+    - "Language System Complete Localization Testing - CRITICAL ISSUE IDENTIFIED"
+  stuck_tasks: 
+    - "Language System Complete Localization Testing - CRITICAL ISSUE IDENTIFIED"
   test_all: false
-  test_priority: "language_system_diagnostic_complete"
+  test_priority: "language_localization_critical_fix_needed"
 
   - task: "Enterprise Portal Mobile Responsiveness - Navigation Tabs"
     implemented: true
