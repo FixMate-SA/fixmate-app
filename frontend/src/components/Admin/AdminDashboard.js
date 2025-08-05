@@ -211,23 +211,23 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="text-3xl font-bold text-blue-600">{stats.totalUsers}</div>
-          <div className="text-gray-600">Total Users</div>
+          <div className="text-gray-600">{t('totalUsers')}</div>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="text-3xl font-bold text-orange-600">{stats.totalFixers}</div>
-          <div className="text-gray-600">Total Fixers</div>
+          <div className="text-gray-600">{t('totalFixers', 'Total Fixers')}</div>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="text-3xl font-bold text-emerald-600">{stats.activeFixers}</div>
-          <div className="text-gray-600">Active Fixers</div>
+          <div className="text-gray-600">{t('activeFixers', 'Active Fixers')}</div>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="text-3xl font-bold text-red-600">{stats.inactiveFixers}</div>
-          <div className="text-gray-600">Inactive Fixers</div>
+          <div className="text-gray-600">{t('inactiveFixers', 'Inactive Fixers')}</div>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="text-3xl font-bold text-yellow-600">{stats.avgFixerRating}⭐</div>
-          <div className="text-gray-600">Avg Rating</div>
+          <div className="text-gray-600">{t('avgRating', 'Avg Rating')}</div>
         </div>
       </div>
 
