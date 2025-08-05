@@ -933,9 +933,13 @@ metadata:
 test_plan:
   current_focus:
     - "Final Comprehensive Afrikaans Translation Verification - COMPLETED"
-  stuck_tasks: []
+  stuck_tasks: 
+    - "Jobs List Translation Implementation"
+    - "Profile Translation Implementation" 
+    - "Job Creation Translation Implementation"
+    - "Client Login Missing Translation Keys"
   test_all: false
-  test_priority: "comprehensive_afrikaans_translation_verification_completed"
+  test_priority: "translation_implementation_fixes_needed"
 
   - task: "Enterprise Portal Mobile Responsiveness - Navigation Tabs"
     implemented: true
