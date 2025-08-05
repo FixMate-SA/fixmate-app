@@ -263,7 +263,7 @@ const Dashboard = () => {
         ) : (
           <div className="text-center py-8">
             <span className="text-4xl mb-4 block">📊</span>
-            <p className="text-gray-500">No recent activity to display</p>
+            <p className="text-gray-500">{t('noRecentActivity', 'No recent activity to display')}</p>
             <p className="text-sm text-gray-400 mt-2">Start using FixMate-SA to see your activity here</p>
           </div>
         )}
