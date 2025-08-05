@@ -7,6 +7,7 @@ import Logo from '../Common/Logo';
 
 const Dashboard = () => {
   const { user, getUserRole } = useAuth();
+  const { t } = useLanguage();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
