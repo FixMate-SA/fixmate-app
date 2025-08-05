@@ -131,6 +131,7 @@ function App() {
             <Routes>
               {/* Role-specific Authentication Routes */}
               <Route path="/client-login" element={<ClientLogin />} />
+              <Route path="/fixer-login" element={<FixerLogin />} />
               <Route path="/fixers-login" element={<FixerLogin />} />
               <Route path="/admin-login" element={<AdminLogin />} />
               <Route path="/client-signup" element={<ClientSignup />} />
