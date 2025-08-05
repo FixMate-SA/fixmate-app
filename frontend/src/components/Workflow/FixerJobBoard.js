@@ -271,10 +271,10 @@ const FixerJobBoard = () => {
     <div className="max-w-6xl mx-auto p-2 md:p-6">
       <div className="mb-4 md:mb-6">
         <h1 className="text-lg md:text-2xl font-bold text-gray-900 mb-2">
-          🎯 Fixer Job Management
+          🎯 {t('fixerJobManagement', 'Fixer Job Management')}
         </h1>
         <p className="text-sm md:text-base text-gray-600">
-          Manage job notifications, active assignments, and complete work.
+          {t('fixerJobManagementDesc', 'Manage job notifications, active assignments, and complete work.')}
         </p>
       </div>
 
@@ -283,10 +283,10 @@ const FixerJobBoard = () => {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-1 md:space-x-4 px-2 md:px-6 overflow-x-auto scrollbar-hide">
             {[
-              { id: 'notifications', label: 'Notifications', icon: '🔔', shortLabel: 'Notify' },
-              { id: 'active', label: 'Active Jobs', icon: '🔧', shortLabel: 'Active' },
-              { id: 'available', label: 'Available Jobs', icon: '📋', shortLabel: 'Jobs' },
-              { id: 'completed', label: 'Completed', icon: '✅', shortLabel: 'Done' }
+              { id: 'notifications', label: t('notifications'), icon: '🔔', shortLabel: t('notify', 'Notify') },
+              { id: 'active', label: t('activeJobs'), icon: '🔧', shortLabel: t('active', 'Active') },
+              { id: 'available', label: t('availableJobs'), icon: '📋', shortLabel: t('jobs', 'Jobs') },
+              { id: 'completed', label: t('completed'), icon: '✅', shortLabel: t('done', 'Done') }
             ].map((tab) => (
               <button
                 key={tab.id}
