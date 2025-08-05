@@ -347,19 +347,20 @@ const B2BPortal = () => {
 
       {/* Navigation Tabs */}
       <div className="bg-white rounded-lg shadow-sm border mb-6">
-        <div className="flex space-x-1 p-1">
+        <div className="flex overflow-x-auto scrollbar-hide p-1">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === tab.id
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
-              <span>{tab.icon}</span>
-              <span className="font-medium">{tab.name}</span>
+              <span className="text-lg">{tab.icon}</span>
+              <span className="font-medium hidden sm:inline">{tab.name}</span>
+              <span className="font-medium sm:hidden">{tab.shortName}</span>
             </button>
           ))}
         </div>
