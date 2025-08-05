@@ -899,10 +899,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Business Compliance Services - Frontend Testing"
+    - "Enterprise Portal Mobile Responsiveness - Navigation Tabs"
   stuck_tasks: []
   test_all: false
-  test_priority: "business_compliance_verification_complete"
+  test_priority: "enterprise_portal_mobile_testing_complete"
 
   - task: "Enterprise Portal Mobile Responsiveness - Navigation Tabs"
     implemented: true
