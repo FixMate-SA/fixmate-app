@@ -355,7 +355,7 @@ const FixerJobBoard = () => {
 
           {activeTab === 'available' && (
             <div>
-              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Available Jobs</h3>
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">{t('availableJobs')}</h3>
               {availableJobs.length === 0 ? (
                 <div className="text-center py-8 md:py-12 text-gray-500">
                   <div className="text-4xl md:text-6xl mb-4">📋</div>
