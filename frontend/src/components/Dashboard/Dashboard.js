@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { apiService } from '../../services/api';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '../Common/Logo';
