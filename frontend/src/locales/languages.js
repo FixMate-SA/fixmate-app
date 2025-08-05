@@ -644,6 +644,7 @@ export const languages = {
       welcomeMessage: 'Welkom by FixMate-SA',
       quickActions: 'Vinnige Aksies',
       recentActivity: 'Onlangse Aktiwiteit',
+      noRecentActivity: 'Geen onlangse aktiwiteit om te vertoon',
       totalJobs: 'Totale Werk',
       activeJobs: 'Aktiewe Werk',
       completedJobs: 'Voltooide Werk',
