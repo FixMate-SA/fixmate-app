@@ -176,8 +176,7 @@ const VoiceRecorder = ({ onTranscription, onError, onClose }) => {
 
       <div className="mt-4 p-3 bg-blue-50 rounded-md">
         <p className="text-sm text-blue-800">
-          <strong>💡 Tip:</strong> Speak clearly and describe your service needs. 
-          Our AI understands multiple South African languages including English, Afrikaans, Zulu, and Xhosa.
+          <strong>💡 {t('tip', 'Tip')}:</strong> {t('speakClearlyTip', 'Speak clearly and describe your service needs. Our AI understands multiple South African languages including English, Afrikaans, Zulu, and Xhosa.')}
         </p>
       </div>
 
