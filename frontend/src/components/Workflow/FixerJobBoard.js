@@ -347,7 +347,7 @@ const FixerJobBoard = () => {
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <div className="text-4xl mb-4">📭</div>
-                  <p className="text-sm md:text-base">No active jobs at the moment.</p>
+                  <p className="text-sm md:text-base">{t('noActiveJobs', 'No active jobs at the moment.')}</p>
                 </div>
               )}
             </div>
