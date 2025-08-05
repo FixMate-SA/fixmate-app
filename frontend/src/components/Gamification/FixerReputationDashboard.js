@@ -1,199 +1,302 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { apiService } from '../../services/api';
 
 const FixerReputationDashboard = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [reputationData, setReputationData] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const fixerId = user?.id;
-
   useEffect(() => {
-    if (fixerId) {
-      fetchReputationData();
-    }
-  }, [fixerId]);
+    fetchReputationData();
+  }, []);
 
   const fetchReputationData = async () => {
     try {
       setLoading(true);
-      setError('');
       
-      let response;
-      try {
-        response = await apiService.getDashboard(fixerId);
-      } catch (err) {
-        response = { data: { stats: {} } };
+      // Fetch dashboard data which contains fixer information
+      const dashboardResponse = await apiService.getDashboard();
+      setDashboardData(dashboardResponse.data);
+      
+      if (dashboardResponse.data?.fixer_info?.id) {
+        // Fetch reputation data using the fixer ID
+        const reputationResponse = await apiService.getFixerReputation(dashboardResponse.data.fixer_info.id);
+        setReputationData(reputationResponse.data);
+      } else {
+        setError(t('fixerProfileNotSetup', 'Fixer profile not set up. Please complete your profile first.'));
       }
-      
-      const mockReputationData = {
-        current_tier: 'Expert',
-        current_score: response.data?.stats?.rating || 4.8,
-        jobs_completed: response.data?.stats?.jobs_completed || 0,
-        success_rate: response.data?.stats?.success_rate || 95,
-        total_earnings: response.data?.stats?.total_earned || 0,
-        client_reviews: response.data?.stats?.total_reviews || 0,
-        badges: [
-          { name: 'Reliable Worker', icon: '🎯', earned: true },
-          { name: 'Quality Expert', icon: '⭐', earned: true },
-          { name: 'Fast Response', icon: '⚡', earned: true },
-          { name: 'Customer Favorite', icon: '❤️', earned: false }
-        ],
-        recent_achievements: [
-          'Completed 10+ jobs this month',
-          'Maintained 4.8+ rating',
-          'Quick response time under 2 hours'
-        ]
-      };
-      
-      setReputationData(mockReputationData);
     } catch (err) {
       console.error('Error fetching reputation data:', err);
-      setError('Unable to load reputation data. Please try again later.');
+      setError(t('errorFetchingReputation', 'Error fetching reputation data. Please try again.'));
     } finally {
       setLoading(false);
     }
   };
 
+  const getTierColor = (tier) => {
+    switch (tier?.toLowerCase()) {
+      case 'bronze':
+        return 'text-amber-700 bg-amber-100 border-amber-200';
+      case 'silver':
+        return 'text-gray-700 bg-gray-100 border-gray-200';
+      case 'gold':
+        return 'text-yellow-700 bg-yellow-100 border-yellow-200';
+      case 'platinum':
+        return 'text-purple-700 bg-purple-100 border-purple-200';
+      default:
+        return 'text-gray-700 bg-gray-100 border-gray-200';
+    }
+  };
+
+  const getTierIcon = (tier) => {
+    switch (tier?.toLowerCase()) {
+      case 'bronze':
+        return '🥉';
+      case 'silver':
+        return '🥈';
+      case 'gold':
+        return '🥇';
+      case 'platinum':
+        return '💎';
+      default:
+        return '🏆';
+    }
+  };
+
+  const getNextTierInfo = () => {
+    const tiers = ['bronze', 'silver', 'gold', 'platinum'];
+    const currentTierIndex = tiers.indexOf(reputationData?.tier?.toLowerCase() || 'bronze');
+    
+    if (currentTierIndex < tiers.length - 1) {
+      const nextTier = tiers[currentTierIndex + 1];
+      return {
+        name: nextTier,
+        icon: getTierIcon(nextTier),
+        jobsNeeded: ((currentTierIndex + 2) * 5) - (reputationData?.stats?.jobs_completed || 0)
+      };
+    }
+    return null;
+  };
+
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+        <p className="ml-4 text-lg text-gray-600">{t('loadingReputation', 'Loading reputation data...')}</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="dashboard-card">
-        <div className="alert alert-error">
-          <strong>Error:</strong> {error}
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="text-sm text-red-600">{error}</div>
         </div>
       </div>
     );
   }
 
-  if (!reputationData) {
-    return (
-      <div className="dashboard-card">
-        <div className="text-center py-8">
-          <span className="text-4xl mb-4 block">⭐</span>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Reputation Dashboard</h2>
-          <p className="text-gray-600 mb-4">
-            Complete more jobs to build your reputation and unlock achievements!
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const nextTier = getNextTierInfo();
 
   return (
-    <div className="space-y-6">
-      <div className="dashboard-card">
-        <h1 className="dashboard-title">Fixer Reputation Dashboard</h1>
-        <p className="dashboard-subtitle">Track your reputation, achievements, and performance metrics</p>
-      </div>
-
-      <div className="dashboard-card">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Current Status</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="stat-card">
-            <span className="text-2xl mb-2 block">🏆</span>
-            <span className="stat-number">{reputationData.current_tier}</span>
-            <span className="stat-label">Current Tier</span>
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {t('reputation')} {t('dashboard')}
+            </h1>
+            <p className="text-gray-600 mt-2">
+              {t('trackReputationProgress', 'Track your reputation and progress on FixMate-SA')}
+            </p>
           </div>
-          <div className="stat-card">
-            <span className="text-2xl mb-2 block">⭐</span>
-            <span className="stat-number">{reputationData.current_score}</span>
-            <span className="stat-label">Rating Score</span>
-          </div>
-          <div className="stat-card">
-            <span className="text-2xl mb-2 block">✅</span>
-            <span className="stat-number">{reputationData.jobs_completed}</span>
-            <span className="stat-label">Jobs Completed</span>
-          </div>
-          <div className="stat-card">
-            <span className="text-2xl mb-2 block">📈</span>
-            <span className="stat-number">{reputationData.success_rate}%</span>
-            <span className="stat-label">Success Rate</span>
+          <div className="text-4xl">
+            {getTierIcon(reputationData?.tier)}
           </div>
         </div>
       </div>
 
-      <div className="dashboard-card">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Badges & Achievements</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          {reputationData.badges.map((badge, index) => (
-            <div
-              key={index}
-              className={`p-4 rounded-lg text-center transition-all duration-200 ${
-                badge.earned 
-                  ? 'bg-orange-50 border-2 border-orange-200' 
-                  : 'bg-gray-50 border-2 border-gray-200 opacity-50'
-              }`}
-            >
-              <div className="text-3xl mb-2">{badge.icon}</div>
-              <div className={`text-sm font-medium ${badge.earned ? 'text-orange-800' : 'text-gray-500'}`}>
-                {badge.name}
-              </div>
-              {badge.earned && (
-                <div className="text-xs text-orange-600 mt-1">✅ Earned</div>
-              )}
+      {/* Current Tier Status */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+          {t('currentStatus', 'Current Status')}
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Current Tier */}
+          <div className="text-center">
+            <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium border ${getTierColor(reputationData?.tier)}`}>
+              <span className="mr-2">{getTierIcon(reputationData?.tier)}</span>
+              {t(`tier${reputationData?.tier?.charAt(0).toUpperCase() + reputationData?.tier?.slice(1)}`, reputationData?.tier || 'Bronze')} {t('tier', 'Tier')}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      <div className="dashboard-card">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Achievements</h2>
-        <div className="space-y-3">
-          {reputationData.recent_achievements.map((achievement, index) => (
-            <div key={index} className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg">
-              <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                <span className="text-orange-600 text-sm">🎉</span>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">{achievement}</p>
-              </div>
+          {/* Overall Rating */}
+          <div className="text-center">
+            <div className="text-3xl font-bold text-orange-600">
+              {reputationData?.stats?.average_rating?.toFixed(1) || '0.0'}⭐
             </div>
-          ))}
-        </div>
-      </div>
+            <p className="text-gray-600">{t('overallRating', 'Overall Rating')}</p>
+          </div>
 
-      <div className="dashboard-card">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Performance Summary</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="text-blue-600 text-2xl mb-2">💰</div>
-            <div className="text-blue-900 font-semibold">R{reputationData.total_earnings}</div>
-            <div className="text-blue-600 text-sm">Total Earnings</div>
-          </div>
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <div className="text-purple-600 text-2xl mb-2">📝</div>
-            <div className="text-purple-900 font-semibold">{reputationData.client_reviews}</div>
-            <div className="text-purple-600 text-sm">Client Reviews</div>
-          </div>
-          <div className="bg-orange-50 p-4 rounded-lg">
-            <div className="text-orange-600 text-2xl mb-2">🔥</div>
-            <div className="text-orange-900 font-semibold">Active</div>
-            <div className="text-orange-600 text-sm">Current Status</div>
+          {/* Jobs Completed */}
+          <div className="text-center">
+            <div className="text-3xl font-bold text-blue-600">
+              {reputationData?.stats?.jobs_completed || 0}
+            </div>
+            <p className="text-gray-600">{t('jobsCompleted')}</p>
           </div>
         </div>
       </div>
 
-      <div className="dashboard-card bg-gradient-to-r from-blue-50 to-green-50 border-blue-200">
-        <div className="text-center py-6">
-          <span className="text-4xl mb-4 block">🚀</span>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Keep Growing!</h2>
-          <p className="text-gray-600 mb-4">
-            Complete more jobs, maintain high quality, and respond quickly to improve your reputation.
-          </p>
-          <div className="text-sm text-gray-500 space-y-1">
-            <p>• Aim for 5-star ratings on every job</p>
-            <p>• Respond to job requests within 2 hours</p>
-            <p>• Upload quality before/after photos</p>
+      {/* Progress to Next Tier */}
+      {nextTier && (
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+            {t('progressToNextTier', 'Progress to Next Tier')}
+          </h2>
+          
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <span className="mr-2">{nextTier.icon}</span>
+              <span className="font-medium">
+                {t(`tier${nextTier.name.charAt(0).toUpperCase() + nextTier.name.slice(1)}`, nextTier.name)} {t('tier', 'Tier')}
+              </span>
+            </div>
+            <div className="text-sm text-gray-600">
+              {nextTier.jobsNeeded > 0 
+                ? `${nextTier.jobsNeeded} ${t('moreJobsNeeded', 'more jobs needed')}`
+                : t('eligible', 'Eligible!')
+              }
+            </div>
+          </div>
+
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-orange-600 h-2 rounded-full transition-all duration-300"
+              style={{ 
+                width: `${Math.min(100, ((reputationData?.stats?.jobs_completed || 0) / ((nextTier.name === 'silver' ? 10 : nextTier.name === 'gold' ? 15 : 20))) * 100)}%`
+              }}
+            ></div>
+          </div>
+        </div>
+      )}
+
+      {/* Detailed Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="text-2xl font-bold text-green-600">
+            {reputationData?.stats?.total_earned ? `R${reputationData.stats.total_earned}` : 'R0'}
+          </div>
+          <p className="text-gray-600">{t('totalEarnings')}</p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="text-2xl font-bold text-purple-600">
+            {reputationData?.stats?.response_rate ? `${(reputationData.stats.response_rate * 100).toFixed(0)}%` : '0%'}
+          </div>
+          <p className="text-gray-600">{t('responseRate', 'Response Rate')}</p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="text-2xl font-bold text-indigo-600">
+            {reputationData?.stats?.completion_rate ? `${(reputationData.stats.completion_rate * 100).toFixed(0)}%` : '0%'}
+          </div>
+          <p className="text-gray-600">{t('completionRate', 'Completion Rate')}</p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="text-2xl font-bold text-red-600">
+            {reputationData?.stats?.total_reviews || 0}
+          </div>
+          <p className="text-gray-600">{t('totalReviews', 'Total Reviews')}</p>
+        </div>
+      </div>
+
+      {/* Recent Reviews */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+          {t('recentReviews', 'Recent Reviews')}
+        </h2>
+        
+        {reputationData?.recent_reviews && reputationData.recent_reviews.length > 0 ? (
+          <div className="space-y-4">
+            {reputationData.recent_reviews.map((review, index) => (
+              <div key={index} className="border-b border-gray-200 pb-4 last:border-b-0">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center">
+                    <span className="text-yellow-500">
+                      {'⭐'.repeat(review.rating)}
+                    </span>
+                    <span className="ml-2 text-sm text-gray-600">
+                      {review.rating}/5
+                    </span>
+                  </div>
+                  <span className="text-sm text-gray-500">
+                    {new Date(review.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <p className="text-gray-700">{review.comment}</p>
+                {review.client_name && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    - {review.client_name}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <div className="text-4xl mb-4">💬</div>
+            <p>{t('noReviewsYet', 'No reviews yet. Complete your first job to get reviews!')}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Tips for Improvement */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+          {t('tipsForImprovement', 'Tips for Improvement')}
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-start">
+            <div className="text-2xl mr-3">📞</div>
+            <div>
+              <h3 className="font-semibold text-gray-900">{t('respondQuickly', 'Respond Quickly')}</h3>
+              <p className="text-gray-600 text-sm">{t('respondQuicklyDesc', 'Reply to job requests within 30 minutes to improve your response rate.')}</p>
+            </div>
+          </div>
+
+          <div className="flex items-start">
+            <div className="text-2xl mr-3">✅</div>
+            <div>
+              <h3 className="font-semibold text-gray-900">{t('completeJobs', 'Complete Jobs')}</h3>
+              <p className="text-gray-600 text-sm">{t('completeJobsDesc', 'Always complete accepted jobs to maintain a high completion rate.')}</p>
+            </div>
+          </div>
+
+          <div className="flex items-start">
+            <div className="text-2xl mr-3">💡</div>
+            <div>
+              <h3 className="font-semibold text-gray-900">{t('qualityWork', 'Quality Work')}</h3>
+              <p className="text-gray-600 text-sm">{t('qualityWorkDesc', 'Deliver excellent service to receive 5-star reviews from clients.')}</p>
+            </div>
+          </div>
+
+          <div className="flex items-start">
+            <div className="text-2xl mr-3">📱</div>
+            <div>
+              <h3 className="font-semibold text-gray-900">{t('stayActive', 'Stay Active')}</h3>
+              <p className="text-gray-600 text-sm">{t('stayActiveDesc', 'Keep your profile updated and availability status current.')}</p>
+            </div>
           </div>
         </div>
       </div>
