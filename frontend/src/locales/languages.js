@@ -469,6 +469,9 @@ export const languages = {
       microphoneAccessError: 'Unable to access microphone. Please check permissions.',
       transcriptionFailed: 'Could not transcribe audio. Please try again.',
       transcriptionError: 'Transcription failed. Please try again.',
+      
+      // Authentication & Login
+      clientLogin: 'Client Login',
       fixerLogin: 'Fixer Login',
       adminLogin: 'Admin Login',
       clientLoginSubtitle: 'Access your service requests and connect with fixers',
