@@ -917,10 +917,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Comprehensive Afrikaans Translation Progress Test - Major Components"
+    - "Job Creation Translation After Fresh Build - URGENT VERIFICATION"
   stuck_tasks: []
   test_all: false
-  test_priority: "afrikaans_translation_comprehensive_assessment_completed"
+  test_priority: "job_creation_translation_verification_completed"
 
   - task: "Enterprise Portal Mobile Responsiveness - Navigation Tabs"
     implemented: true
