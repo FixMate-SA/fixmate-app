@@ -81,7 +81,7 @@ const VoiceRecorder = ({ onTranscription, onError, onClose }) => {
       if (error.response && error.response.data && error.response.data.detail) {
         onError(`Error: ${error.response.data.detail}`);
       } else {
-        onError('Error processing audio. Please try again.');
+        onError(t('transcriptionError', 'Error processing audio. Please try again.'));
       }
     } finally {
       setIsProcessing(false);
