@@ -86,7 +86,7 @@ const Header = () => {
                 onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
                 className={`flex items-center space-x-2 ${getRoleColor(userRole)} hover:opacity-80 px-3 py-2 rounded-md text-sm font-medium transition-colors bg-black bg-opacity-20`}
               >
-                <span>{testLanguages.find(lang => lang.code === currentLanguage)?.flag || '🇿🇦'}</span>
+                <span>{availableLanguages.find(lang => lang.code === currentLanguage)?.flag || '🇿🇦'}</span>
                 <span className="hidden sm:inline">{currentLanguage.toUpperCase()}</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
