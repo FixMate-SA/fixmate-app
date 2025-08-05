@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { apiService } from '../../services/api';
 
 const VoiceRecorder = ({ onTranscription, onError, onClose }) => {
+  const { t } = useLanguage();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
