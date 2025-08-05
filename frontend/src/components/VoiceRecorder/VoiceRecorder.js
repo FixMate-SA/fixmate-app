@@ -195,7 +195,7 @@ const VoiceRecorder = ({ onTranscription, onError, onClose }) => {
           onClick={handleCancel}
           className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
         >
-          Cancel
+          {t('cancel')}
         </button>
         <button
           onClick={handleSendRecording}
