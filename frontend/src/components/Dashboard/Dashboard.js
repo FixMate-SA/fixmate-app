@@ -200,7 +200,7 @@ const Dashboard = () => {
         
         {error && (
           <div className="alert alert-error">
-            <strong>Error:</strong> {error}
+            <strong>{t('error')}:</strong> {error}
           </div>
         )}
       </div>
