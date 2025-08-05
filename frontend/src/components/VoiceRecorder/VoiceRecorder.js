@@ -48,7 +48,7 @@ const VoiceRecorder = ({ onTranscription, onError, onClose }) => {
       }, 1000);
     } catch (error) {
       console.error('Error starting recording:', error);
-      onError('Unable to access microphone. Please check permissions.');
+      onError(t('microphoneAccessError', 'Unable to access microphone. Please check permissions.'));
     }
   };
 
