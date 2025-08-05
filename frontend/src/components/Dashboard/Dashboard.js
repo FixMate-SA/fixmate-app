@@ -245,7 +245,7 @@ const Dashboard = () => {
 
       {/* Recent Activity */}
       <div className="dashboard-card">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('recentActivity')}</h2>
         {dashboardData?.recent_activity?.length > 0 ? (
           <div className="space-y-3">
             {dashboardData.recent_activity.slice(0, 5).map((activity, index) => (
