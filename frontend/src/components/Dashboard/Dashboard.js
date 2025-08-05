@@ -184,6 +184,7 @@ const Dashboard = () => {
     return (
       <div className="loading-container">
         <div className="loading-spinner"></div>
+        <p>{t('loading')}</p>
       </div>
     );
   }
