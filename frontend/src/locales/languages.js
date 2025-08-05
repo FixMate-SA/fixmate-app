@@ -314,6 +314,7 @@ export const languages = {
       pendingInvoices: 'Pending Invoices',
       overview: 'Overview',
       bulkBookings: 'Bulk Bookings',
+      bookings: 'Bookings',
       contracts: 'Contracts',
       analytics: 'Analytics',
       invoicing: 'Invoicing',
