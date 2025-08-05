@@ -510,6 +510,8 @@ export const languages = {
       fixers: 'Herstellers',
       learning: 'Leer',
       smsPortal: 'SMS Portaal',
+      sms: 'SMS Portaal',
+      payment: 'Betalings',
       businessCompliance: 'Besigheidsvoldoening',
       enterprise: 'Onderneming',
       payments: 'Betalings',
