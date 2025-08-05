@@ -83,7 +83,11 @@ const Header = () => {
             {/* Language Selector */}
             <div className="relative">
               <button
-                onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                onClick={() => {
+                  console.log('Language button clicked! Current state:', showLanguageDropdown);
+                  setShowLanguageDropdown(!showLanguageDropdown);
+                  console.log('New state will be:', !showLanguageDropdown);
+                }}
                 className={`flex items-center space-x-2 ${getRoleColor(userRole)} hover:opacity-80 px-3 py-2 rounded-md text-sm font-medium transition-colors bg-black bg-opacity-20`}
               >
                 <span>{availableLanguages.find(lang => lang.code === currentLanguage)?.flag || '🇿🇦'}</span>
