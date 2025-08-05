@@ -10,6 +10,8 @@ export const languages = {
       fixers: 'Fixers',
       learning: 'Learning',
       smsPortal: 'SMS Portal',
+      sms: 'SMS Portal',
+      payment: 'Payments',
       businessCompliance: 'Business Compliance',
       enterprise: 'Enterprise',
       payments: 'Payments',
