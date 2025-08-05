@@ -14,12 +14,12 @@ const B2BPortal = () => {
   const [loading, setLoading] = useState(true);
 
   const tabs = [
-    { id: 'overview', name: 'Overview', icon: '📊' },
-    { id: 'bookings', name: 'Bulk Bookings', icon: '📋' },
-    { id: 'contracts', name: 'Contracts', icon: '📄' },
-    { id: 'analytics', name: 'Analytics', icon: '📈' },
-    { id: 'invoicing', name: 'Invoicing', icon: '💰' },
-    { id: 'settings', name: 'Settings', icon: '⚙️' }
+    { id: 'overview', name: 'Overview', shortName: 'Overview', icon: '📊' },
+    { id: 'bookings', name: 'Bulk Bookings', shortName: 'Bookings', icon: '📋' },
+    { id: 'contracts', name: 'Contracts', shortName: 'Contracts', icon: '📄' },
+    { id: 'analytics', name: 'Analytics', shortName: 'Analytics', icon: '📈' },
+    { id: 'invoicing', name: 'Invoicing', shortName: 'Invoicing', icon: '💰' },
+    { id: 'settings', name: 'Settings', shortName: 'Settings', icon: '⚙️' }
   ];
 
   const servicePackages = [
