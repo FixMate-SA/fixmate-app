@@ -12,12 +12,19 @@ const Header = () => {
   const navigate = useNavigate();
   
   // Get available languages
-  const availableLanguages = getAvailableLanguageOptions();
+  const availableLanguages = getAvailableLanguageOptions() || [];
   
   // Debug logging
   console.log('Header - availableLanguages:', availableLanguages);
   console.log('Header - availableLanguages length:', availableLanguages?.length);
   console.log('Header - first language:', availableLanguages?.[0]);
+  
+  // TEMPORARY: Fallback for testing
+  const testLanguages = availableLanguages.length > 0 ? availableLanguages : [
+    { code: 'en', name: 'English', flag: '🇿🇦' },
+    { code: 'af', name: 'Afrikaans', flag: '🇿🇦' },
+    { code: 'zu', name: 'Zulu', flag: '🇿🇦' }
+  ];
 
   const handleLogout = () => {
     logout();
