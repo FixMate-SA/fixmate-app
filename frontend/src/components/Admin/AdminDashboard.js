@@ -236,14 +236,14 @@ const AdminDashboard = () => {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-2 md:space-x-8 px-2 md:px-6 overflow-x-auto">
             {[
-              { id: 'overview', label: 'Overview', icon: '📊' },
-              { id: 'client-request', label: 'Client Request', icon: '📞' },
-              { id: 'smart-matching', label: 'Smart Matching', icon: '🎯' },
-              { id: 'compliance', label: 'Compliance', icon: '🏢' },
-              { id: 'fixers', label: 'Fixer Mgmt', icon: '🔧' },
-              { id: 'payments', label: 'Payments', icon: '💳' },
-              { id: 'users', label: 'Users', icon: '👥' },
-              { id: 'reports', label: 'Reports', icon: '📈' }
+              { id: 'overview', label: t('overview'), icon: '📊' },
+              { id: 'client-request', label: t('clientRequest', 'Client Request'), icon: '📞' },
+              { id: 'smart-matching', label: t('smartMatching'), icon: '🎯' },
+              { id: 'compliance', label: t('compliance', 'Compliance'), icon: '🏢' },
+              { id: 'fixers', label: t('fixerMgmt', 'Fixer Mgmt'), icon: '🔧' },
+              { id: 'payments', label: t('payment'), icon: '💳' },
+              { id: 'users', label: t('users', 'Users'), icon: '👥' },
+              { id: 'reports', label: t('reports', 'Reports'), icon: '📈' }
             ].map((tab) => (
               <button
                 key={tab.id}
