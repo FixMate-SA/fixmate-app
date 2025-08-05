@@ -17,6 +17,7 @@ const Header = () => {
   // Debug logging
   console.log('Header - availableLanguages:', availableLanguages);
   console.log('Header - availableLanguages length:', availableLanguages?.length);
+  console.log('Header - first language:', availableLanguages?.[0]);
 
   const handleLogout = () => {
     logout();
