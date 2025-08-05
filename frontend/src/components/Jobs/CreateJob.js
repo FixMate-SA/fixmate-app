@@ -1,460 +1,378 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { apiService } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import VoiceRecorder from '../VoiceRecorder/VoiceRecorder';
-import TermsAcceptance from '../Workflow/TermsAcceptance';
-import { API_BASE_URL } from '../../utils/apiConfig';
 
 const CreateJob = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
-  
-  const [formData, setFormData] = useState({
-    service: '',
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const [jobData, setJobData] = useState({
+    title: '',
     description: '',
     location: '',
-    estimated_price: '',
-    scheduled_at: '',
+    urgency: 'medium',
+    budget_min: '',
+    budget_max: '',
+    preferred_date: '',
+    preferred_time: '',
+    category: '',
+    images: []
   });
-  
-  const [loading, setLoading] = useState(false);
-  const [smartMatchLoading, setSmartMatchLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
-  const [smartMatches, setSmartMatches] = useState([]);
-  const [matchInsights, setMatchInsights] = useState(null);
-  const [showSmartMatching, setShowSmartMatching] = useState(false);
-  const [createdJobId, setCreatedJobId] = useState(null);
-  const [showTermsModal, setShowTermsModal] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [jobBeingCancelled, setJobBeingCancelled] = useState(null);
 
-  const serviceOptions = [
-    'Plumbing',
-    'Electrical',
-    'Carpentry',
-    'Painting',
-    'Cleaning',
-    'Gardening',
-    'Handyman',
-    'Appliance Repair',
-    'Roofing',
-    'Flooring',
-    'HVAC',
-    'Tech Support',
-    'Tutoring',
-    'Beauty Services',
-    'Catering',
-    'Photography',
-    'Other'
+  const categories = [
+    { value: 'plumbing', label: t('plumbing', 'Plumbing') },
+    { value: 'electrical', label: t('electrical', 'Electrical') },
+    { value: 'carpentry', label: t('carpentry', 'Carpentry') },
+    { value: 'painting', label: t('painting', 'Painting') },
+    { value: 'gardening', label: t('gardening', 'Gardening') },
+    { value: 'cleaning', label: t('cleaning', 'Cleaning') },
+    { value: 'appliance_repair', label: t('applianceRepair', 'Appliance Repair') },
+    { value: 'other', label: t('other', 'Other') }
   ];
 
-  useEffect(() => {
-    // Check terms acceptance status on component mount
-    checkTermsAcceptance();
-  }, [user]);
+  const urgencyLevels = [
+    { value: 'low', label: t('low', 'Low'), color: 'text-green-600' },
+    { value: 'medium', label: t('medium', 'Medium'), color: 'text-yellow-600' },
+    { value: 'high', label: t('high', 'High'), color: 'text-orange-600' },
+    { value: 'urgent', label: t('urgent', 'Urgent'), color: 'text-red-600' }
+  ];
 
-  const checkTermsAcceptance = async () => {
-    if (!user?.id) return;
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/terms/check/${user.id}`);
-      const data = await response.json();
-      setTermsAccepted(data.has_accepted);
-    } catch (error) {
-      console.error('Error checking terms acceptance:', error);
-    }
-  };
-
-  const handleTermsAcceptance = (accepted) => {
-    setTermsAccepted(accepted);
-    setShowTermsModal(false);
-  };
-
-  const cancelJob = async (jobId) => {
-    if (!jobId) return;
-    
-    setJobBeingCancelled(jobId);
-    try {
-      const response = await fetch(`${API_BASE_URL}/jobs/${jobId}/cancel`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          cancelled_by: 'client',
-          reason: 'Client cancelled service request'
-        })
-      });
-
-      if (response.ok) {
-        setCreatedJobId(null);
-        setShowSmartMatching(false);
-        alert('Job cancelled successfully. No fees charged.');
-      } else {
-        const errorData = await response.json();
-        alert(`Failed to cancel job: ${errorData.detail || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error('Error cancelling job:', error);
-      alert('Failed to cancel job. Please try again.');
-    } finally {
-      setJobBeingCancelled(null);
-    }
-  };
-
-  const handleChange = (e) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setJobData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleVoiceTranscription = async (transcription) => {
-    setFormData(prev => ({ ...prev, description: transcription }));
-    setShowVoiceRecorder(false);
-  };
-
-  const handleVoiceError = (errorMessage) => {
-    setError(errorMessage);
-    setShowVoiceRecorder(false);
-  };
-
-  const findSmartMatches = async (jobId) => {
-    if (!jobId) return;
-    
-    setSmartMatchLoading(true);
-    try {
-      // Get smart matches
-      const matchResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/smart-match`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          limit: 10,
-          auto_notify: false
-        })
-      });
-
-      if (matchResponse.ok) {
-        const matchData = await matchResponse.json();
-        setSmartMatches(matchData.matches || []);
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setJobData(prev => ({
+            ...prev,
+            images: [...prev.images, e.target.result]
+          }));
+        };
+        reader.readAsDataURL(file);
       }
+    });
+  };
 
-      // Get match insights
-      const insightsResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/match-insights`);
-      if (insightsResponse.ok) {
-        const insightsData = await insightsResponse.json();
-        setMatchInsights(insightsData.insights);
-      }
+  const removeImage = (index) => {
+    setJobData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+  };
 
-      setShowSmartMatching(true);
-    } catch (err) {
-      console.error('Error finding smart matches:', err);
-      setError('Failed to find smart matches. Job created successfully.');
-    } finally {
-      setSmartMatchLoading(false);
-    }
+  const handleVoiceTranscription = (transcription) => {
+    setJobData(prev => ({
+      ...prev,
+      description: prev.description + ' ' + transcription
+    }));
+  };
+
+  const handleVoiceError = (error) => {
+    console.error('Voice recording error:', error);
+    setError(t('voiceRecordingError', 'Voice recording failed. Please try again.'));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    // Check if terms are accepted before proceeding
-    if (!termsAccepted) {
-      setShowTermsModal(true);
-      setLoading(false);
+    
+    if (!jobData.title.trim() || !jobData.description.trim()) {
+      setError(t('titleDescriptionRequired', 'Title and description are required'));
       return;
     }
 
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
     try {
-      const jobData = {
-        ...formData,
-        user_id: user.id,
-        estimated_price: formData.estimated_price ? parseFloat(formData.estimated_price) : null,
-        scheduled_at: formData.scheduled_at ? new Date(formData.scheduled_at).toISOString() : null,
-        contact_number: user.phone, // Use user's phone as contact
-        latitude: null, // TODO: Add GPS integration
-        longitude: null
+      const jobDataToSubmit = {
+        ...jobData,
+        client_id: user.id,
+        budget_min: parseFloat(jobData.budget_min) || 0,
+        budget_max: parseFloat(jobData.budget_max) || 0
       };
 
-      // Use the enhanced workflow API instead of regular job creation
-      const response = await fetch(`${API_BASE_URL}/jobs/workflow`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(jobData)
-      });
-
-      if (response.ok) {
-        const responseData = await response.json();
-        const jobId = responseData.job_id;
-        setCreatedJobId(jobId);
-        
-        // Show success message with workflow information
-        alert(`Job created successfully! ${responseData.message}`);
-        
-        // Automatically show workflow status
-        setShowSmartMatching(true);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.detail || 'Failed to create job');
-      }
+      const response = await apiService.createJob(jobDataToSubmit);
       
-    } catch (err) {
-      console.error('Error creating job:', err);
-      setError('Failed to create job. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleNotifyFixers = async () => {
-    if (!createdJobId) return;
-    
-    try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs/${createdJobId}/smart-match`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          auto_notify: true,
-          limit: 5
-        })
+      setSuccess(t('jobCreatedSuccessfully', 'Job created successfully! You will be notified when fixers apply.'));
+      
+      // Reset form
+      setJobData({
+        title: '',
+        description: '',
+        location: '',
+        urgency: 'medium',
+        budget_min: '',
+        budget_max: '',
+        preferred_date: '',
+        preferred_time: '',
+        category: '',
+        images: []
       });
 
-      if (response.ok) {
-        alert('Fixers have been notified about your job!');
-        // Navigate to job list or dashboard
-        navigate('/jobs');
-      } else {
-        const errorData = await response.json();
-        setError(errorData.detail || 'Failed to notify fixers');
-      }
+      // Navigate to job list after a delay
+      setTimeout(() => {
+        navigate('/jobs/list');
+      }, 2000);
+
     } catch (err) {
-      console.error('Error notifying fixers:', err);
-      setError('Failed to notify fixers');
+      console.error('Job creation error:', err);
+      setError(err.response?.data?.detail || t('jobCreationError', 'Failed to create job. Please try again.'));
     }
+
+    setLoading(false);
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Request a Service</h2>
-      
-      {/* Terms Acceptance Modal */}
-      {showTermsModal && (
-        <TermsAcceptance 
-          showModal={true}
-          onAccept={handleTermsAcceptance}
-          onClose={() => setShowTermsModal(false)}
-        />
-      )}
+    <div className="max-w-4xl mx-auto p-6">
+      <div className="bg-white rounded-lg shadow-md p-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">
+          {t('createNewJob')}
+        </h1>
 
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-          {error}
-        </div>
-      )}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+            <div className="text-sm text-red-600">{error}</div>
+          </div>
+        )}
 
-      {!termsAccepted && (
-        <div className="mb-4 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
-          ⚠️ You must accept our terms and conditions before creating a job request.
-          <button 
-            onClick={() => setShowTermsModal(true)}
-            className="ml-2 text-blue-600 underline hover:text-blue-800"
-          >
-            Review Terms
-          </button>
-        </div>
-      )}
+        {success && (
+          <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
+            <div className="text-sm text-green-600">{success}</div>
+          </div>
+        )}
 
-      {!showSmartMatching ? (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Job Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Service Type *
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+              {t('jobTitle')} <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              value={jobData.title}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder={t('enterJobTitle', 'Enter a clear, descriptive title')}
+              required
+            />
+          </div>
+
+          {/* Category */}
+          <div>
+            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+              {t('category')}
             </label>
             <select
-              name="service"
-              value={formData.service}
-              onChange={handleChange}
-              required
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              id="category"
+              name="category"
+              value={jobData.category}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="">Select a service</option>
-              {serviceOptions.map((service) => (
-                <option key={service} value={service}>
-                  {service}
-                </option>
+              <option value="">{t('selectCategory', 'Select a category')}</option>
+              {categories.map(cat => (
+                <option key={cat.value} value={cat.value}>{cat.label}</option>
               ))}
             </select>
           </div>
 
+          {/* Job Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description *
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+              {t('jobDescription')} <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Describe what needs to be fixed or done..."
-                required
-                rows="4"
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            <textarea
+              id="description"
+              name="description"
+              value={jobData.description}
+              onChange={handleInputChange}
+              rows="5"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder={t('describeJobDetails', 'Describe the job in detail - what needs to be done, any specific requirements, etc.')}
+              required
+            />
+            
+            {/* Voice Recorder */}
+            <div className="mt-2">
+              <VoiceRecorder 
+                onTranscription={handleVoiceTranscription}
+                onError={handleVoiceError}
               />
-              <button
-                type="button"
-                onClick={() => setShowVoiceRecorder(true)}
-                className="absolute bottom-2 right-2 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 transition-colors"
-                title="Use voice input"
-              >
-                🎤
-              </button>
             </div>
           </div>
 
+          {/* Location */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Location *
+            <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+              {t('location')}
             </label>
             <input
               type="text"
+              id="location"
               name="location"
-              value={formData.location}
-              onChange={handleChange}
-              placeholder="Enter your location"
-              required
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={jobData.location}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder={t('enterLocation', 'Enter the job location')}
             />
           </div>
 
+          {/* Urgency */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Estimated Budget (R)
+            <label htmlFor="urgency" className="block text-sm font-medium text-gray-700 mb-2">
+              {t('urgency')}
             </label>
-            <input
-              type="number"
-              name="estimated_price"
-              value={formData.estimated_price}
-              onChange={handleChange}
-              placeholder="Enter estimated budget"
-              min="0"
-              step="0.01"
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Preferred Date & Time
-            </label>
-            <input
-              type="datetime-local"
-              name="scheduled_at"
-              value={formData.scheduled_at}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading || !termsAccepted}
-            className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
-              loading || !termsAccepted
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
-          >
-            {loading ? 'Creating Job Request...' : 'Submit Job Request'}
-          </button>
-        </form>
-      ) : (
-        <div className="space-y-6">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-green-800 mb-2">
-              🎉 Job Request Created Successfully!
-            </h3>
-            <p className="text-green-700">
-              Your job has been created and eligible fixers have been notified via WhatsApp and app notifications.
-              The first fixer to accept will get the job (first-come, first-served).
-            </p>
-          </div>
-
-          {/* Cancel Service Button - System Requirement */}
-          <div className="flex gap-4 justify-center">
-            <button
-              onClick={() => cancelJob(createdJobId)}
-              disabled={jobBeingCancelled === createdJobId}
-              className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:bg-gray-400"
+            <select
+              id="urgency"
+              name="urgency"
+              value={jobData.urgency}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              {jobBeingCancelled === createdJobId ? 'Cancelling...' : 'Cancel Service'}
-            </button>
+              {urgencyLevels.map(level => (
+                <option key={level.value} value={level.value}>{level.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Budget Range */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="budget_min" className="block text-sm font-medium text-gray-700 mb-2">
+                {t('minimumBudget')}
+              </label>
+              <input
+                type="number"
+                id="budget_min"
+                name="budget_min"
+                value={jobData.budget_min}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="0"
+                min="0"
+              />
+            </div>
+            <div>
+              <label htmlFor="budget_max" className="block text-sm font-medium text-gray-700 mb-2">
+                {t('maximumBudget')}
+              </label>
+              <input
+                type="number"
+                id="budget_max"
+                name="budget_max"
+                value={jobData.budget_max}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="0"
+                min="0"
+              />
+            </div>
+          </div>
+
+          {/* Preferred Date & Time */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="preferred_date" className="block text-sm font-medium text-gray-700 mb-2">
+                {t('preferredDate')}
+              </label>
+              <input
+                type="date"
+                id="preferred_date"
+                name="preferred_date"
+                value={jobData.preferred_date}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="preferred_time" className="block text-sm font-medium text-gray-700 mb-2">
+                {t('preferredTime')}
+              </label>
+              <input
+                type="time"
+                id="preferred_time"
+                name="preferred_time"
+                value={jobData.preferred_time}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Image Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('jobImages')}
+            </label>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
             
-            <button
-              onClick={() => navigate('/jobs')}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              View My Jobs
-            </button>
-          </div>
-
-          {smartMatches.length > 0 && (
-            <div className="mt-6">
-              <h4 className="text-lg font-semibold mb-3">Available Fixers</h4>
-              <div className="grid gap-4">
-                {smartMatches.map((match, index) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h5 className="font-medium">{match.fixer_name}</h5>
-                        <p className="text-sm text-gray-600">Rating: {match.rating}/5</p>
-                        <p className="text-sm text-gray-600">Match Score: {match.match_score}%</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-gray-500">
-                          Distance: {match.distance ? `${match.distance}km` : 'N/A'}
-                        </p>
-                      </div>
-                    </div>
+            {/* Image Preview */}
+            {jobData.images.length > 0 && (
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+                {jobData.images.map((image, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={image}
+                      alt={`${t('jobImage')} ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-md"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                    >
+                      ×
+                    </button>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {matchInsights && (
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="font-semibold text-blue-800 mb-2">Match Insights</h4>
-              <div className="text-sm text-blue-700 space-y-1">
-                <p>Total Fixers: {matchInsights.total_fixers}</p>
-                <p>Eligible Fixers: {matchInsights.eligible_fixers}</p>
-                <p>Average Match Score: {matchInsights.average_score}%</p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Voice Recorder Modal */}
-      {showVoiceRecorder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-            <VoiceRecorder 
-              onTranscription={handleVoiceTranscription}
-              onError={handleVoiceError}
-              onClose={() => setShowVoiceRecorder(false)}
-            />
+            )}
           </div>
-        </div>
-      )}
+
+          {/* Submit Button */}
+          <div className="flex items-center justify-between pt-6">
+            <button
+              type="button"
+              onClick={() => navigate('/client/dashboard')}
+              className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              {t('cancel')}
+            </button>
+            
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-2 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300 disabled:cursor-not-allowed"
+            >
+              {loading ? t('creating', 'Creating...') : t('createJob')}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
