@@ -954,6 +954,9 @@ export const languages = {
       microphoneAccessError: 'Kan nie toegang tot mikrofoon kry nie. Gaan asseblief toestemmings na.',
       transcriptionFailed: 'Kon nie oudio transkribeer nie. Probeer asseblief weer.',
       transcriptionError: 'Transkripsie het gefaal. Probeer asseblief weer.',
+      
+      // Authentication & Login
+      clientLogin: 'Kliënt Aanmeld',
       fixerLogin: 'Hersteller Aanmeld',
       adminLogin: 'Admin Aanmeld',
       clientLoginSubtitle: 'Verkry toegang tot jou diensversoeke en verbind met herstellers',
