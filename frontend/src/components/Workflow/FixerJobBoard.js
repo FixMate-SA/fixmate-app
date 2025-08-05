@@ -313,7 +313,7 @@ const FixerJobBoard = () => {
 
           {activeTab === 'active' && (
             <div>
-              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Active Jobs</h3>
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">{t('activeJobs')}</h3>
               {currentJob ? (
                 <div className="space-y-4">
                   <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-3 md:p-6">
