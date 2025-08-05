@@ -899,10 +899,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Enterprise Portal Mobile Responsiveness - Navigation Tabs"
+    - "Language System Dropdown Functionality - CRITICAL DIAGNOSTIC COMPLETED"
   stuck_tasks: []
   test_all: false
-  test_priority: "enterprise_portal_mobile_testing_complete"
+  test_priority: "language_system_diagnostic_complete"
 
   - task: "Enterprise Portal Mobile Responsiveness - Navigation Tabs"
     implemented: true
