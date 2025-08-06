@@ -19,16 +19,46 @@ const FixerReputationDashboard = () => {
     try {
       setLoading(true);
       
-      // Fetch dashboard data which contains fixer information
-      const dashboardResponse = await apiService.getDashboard();
-      setDashboardData(dashboardResponse.data);
+      // First, get the current user's information
+      if (!user || !user.id) {
+        setError(t('userNotLoggedIn', 'User not logged in. Please login first.'));
+        return;
+      }
       
-      if (dashboardResponse.data?.fixer_info?.id) {
-        // Fetch reputation data using the fixer ID
-        const reputationResponse = await apiService.getFixerReputation(dashboardResponse.data.fixer_info.id);
-        setReputationData(reputationResponse.data);
-      } else {
-        setError(t('fixerProfileNotSetup', 'Fixer profile not set up. Please complete your profile first.'));
+      // Try to get fixer data directly from fixers API
+      try {
+        const fixersResponse = await apiService.getFixers();
+        const currentUserFixer = fixersResponse.data?.find(fixer => 
+          fixer.user_id === user.id || fixer.phone === user.phone
+        );
+        
+        if (currentUserFixer?.id) {
+          console.log('Found fixer ID:', currentUserFixer.id);
+          // Fetch reputation data using the fixer ID
+          const reputationResponse = await apiService.getFixerReputation(currentUserFixer.id);
+          console.log('Reputation response:', reputationResponse);
+          
+          if (reputationResponse.data?.reputation) {
+            setReputationData(reputationResponse.data.reputation);
+          } else if (reputationResponse.data?.success) {
+            // Initialize reputation if not found
+            console.log('Initializing reputation for fixer:', currentUserFixer.id);
+            await apiService.initializeFixerReputation(currentUserFixer.id);
+            
+            // Try fetching again after initialization
+            const retryResponse = await apiService.getFixerReputation(currentUserFixer.id);
+            if (retryResponse.data?.reputation) {
+              setReputationData(retryResponse.data.reputation);
+            } else {
+              setError(t('reputationInitializationFailed', 'Failed to initialize reputation data. Please try again.'));
+            }
+          }
+        } else {
+          setError(t('fixerProfileNotSetup', 'Fixer profile not set up. Please complete your profile first.'));
+        }
+      } catch (fixerError) {
+        console.error('Error getting fixer data:', fixerError);
+        setError(t('errorFetchingFixerData', 'Error fetching fixer profile. Please try again.'));
       }
     } catch (err) {
       console.error('Error fetching reputation data:', err);
