@@ -31,9 +31,15 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      console.log('AdminLogin: Admin login successful, navigating to admin dashboard');
-      const success = await login(phoneNumber, password);
-      if (success) {
+      const result = await login(phoneNumber, password);
+      if (result && result.success) {
+        // Check if user has admin role
+        const userRole = result.roleInfo?.role;
+        if (userRole !== 'admin') {
+          setError(t('wrongLoginPage', `This phone number is registered as a ${userRole}. Please use the correct login page.`));
+          setLoading(false);
+          return;
+        }
         navigate('/admin/dashboard');
       } else {
         setError(t('invalidCredentials', 'Invalid phone number or password'));
