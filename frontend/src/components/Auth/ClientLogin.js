@@ -40,7 +40,12 @@ const ClientLogin = () => {
           setLoading(false);
           return;
         }
-        navigate('/client/dashboard');
+        const userRole = result.roleInfo?.role;
+        if (userRole !== 'client') {
+          setError(t('wrongLoginPage', `This phone number is registered as a ${userRole}. Please use the correct login page.`));
+          setLoading(false);
+          return;
+        }
       } else {
         setError(t('invalidCredentials', 'Invalid phone number or password'));
       }
