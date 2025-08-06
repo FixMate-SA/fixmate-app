@@ -244,6 +244,7 @@ export const languages = {
       createPassword: 'Create a strong password',
       confirmPassword: 'Confirm your password',
       createAccountSignIn: 'Create Account & Sign In',
+      wrongLoginPage: 'This phone number is registered for a different role. Please use the correct login page.',
       
       // Jobs
       createJob: 'Create Job',
