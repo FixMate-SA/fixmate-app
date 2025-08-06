@@ -31,8 +31,15 @@ const ClientLogin = () => {
     setError('');
 
     try {
-      const success = await login(phoneNumber, password);
-      if (success) {
+      const result = await login(phoneNumber, password);
+      if (result && result.success) {
+        // Check if user has client role
+        const userRole = result.roleInfo?.role;
+        if (userRole !== 'client') {
+          setError(t('wrongLoginPage', `This phone number is registered as a ${userRole}. Please use the correct login page.`));
+          setLoading(false);
+          return;
+        }
         navigate('/client/dashboard');
       } else {
         setError(t('invalidCredentials', 'Invalid phone number or password'));
