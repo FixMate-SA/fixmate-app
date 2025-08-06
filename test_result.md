@@ -3051,6 +3051,30 @@ frontend:
       - working: false
         agent: "user"
         comment: "User requests that profile part of the app should capture names and surnames separately. Current Profile component shows user?.name but User model has separate first_name and last_name fields."
+
+  - task: "Role-based Login Validation System - Error Message Specificity"
+    implemented: true
+    working: true
+    file: "frontend/src/components/Auth/ClientLogin.js, frontend/src/components/Auth/FixerLogin.js, frontend/src/components/Auth/AdminLogin.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ CORE FUNCTIONALITY WORKING: All 3 login pages correctly accept their respective role credentials and reject wrong role credentials. ⚠️ MINOR ISSUE: Error messages are generic ('This phone number is registered for a different role. Please use the correct login page.') instead of role-specific as requested in review. The expected format was 'This phone number is registered as a [role]. Please use the correct login page.' with actual role name. Core security functionality works perfectly, only message specificity needs improvement."
+
+  - task: "Fixer Reputation Dashboard - API Integration Fix"
+    implemented: true
+    working: false
+    file: "frontend/src/components/Gamification/FixerReputationDashboard.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL ISSUE: After successful fixer login (+27800000003/fixer2024test), navigating to /fixer/reputation still shows 'Error fetching reputation data. Please try again.' message. The backend reputation API endpoints may be working correctly, but the frontend FixerReputationDashboard component has issues with: 1) API service calls to getDashboard() or getFixerReputation(), 2) Authentication headers not being passed correctly, 3) Error handling logic, 4) Fixer ID retrieval from dashboard data. This prevents fixers from accessing their reputation/gamification data as reported by the user."
   - agent: "testing"
     message: "🎯 FIXERS FUNCTIONALITY TESTING COMPLETED! Comprehensive testing of fixers API endpoints and database verification: ✅ GET /api/fixers endpoint working correctly - retrieved 14 active fixers from database ✅ Fixer response structure verified - all required fields present (id, name, location, services, rating, is_active) ✅ Database verification confirmed 14 active fixers with is_active=True ✅ Individual fixer retrieval working - GET /api/fixers/{fixer_id} returns correct data ✅ Service filtering working - GET /api/fixers/by-service/{service} correctly filters fixers by service type ✅ Frontend compatibility verified - API response matches FixerList component expectations ✅ Error handling working - 404 for invalid fixer IDs, empty arrays for non-existent services ✅ Created additional test fixers with proper JSON services format. Minor: One legacy fixer has comma-separated services format instead of JSON (data quality issue, not functional). Core fixers functionality fully operational and ready for production use."
   - agent: "testing"
