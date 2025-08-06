@@ -532,6 +532,9 @@ export const languages = {
       maximize: 'Maximize',
       fullscreen: 'Fullscreen',
       exitFullscreen: 'Exit Fullscreen',
+      userNotLoggedIn: 'User not logged in. Please login first.',
+      reputationInitializationFailed: 'Failed to initialize reputation data. Please try again.',
+      errorFetchingFixerData: 'Error fetching fixer profile. Please try again.',
       
       // Form Elements
       required: 'Required',
