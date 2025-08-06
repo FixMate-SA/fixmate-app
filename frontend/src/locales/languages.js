@@ -730,6 +730,7 @@ export const languages = {
       createPassword: 'Skep \'n sterk wagwoord',
       confirmPassword: 'Bevestig jou wagwoord',
       createAccountSignIn: 'Skep Rekening & Meld Aan',
+      wrongLoginPage: 'Hierdie telefoonnommer is geregistreer vir \'n ander rol. Gebruik asseblief die korrekte aanmeldblad.',
       
       // Jobs
       createJob: 'Skep Werk',
