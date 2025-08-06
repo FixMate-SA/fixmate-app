@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the newly implemented Phase 2: Trust & Reliability systems in FixMate-SA backend. Focus on Photo Verification and Dispute Resolution functionality."
+user_problem_statement: "Test the specific issues reported by the user: 1. Role-based Login Validation Testing - Test that client login page now properly rejects admin/fixer credentials, Test that fixer login page rejects client/admin credentials, Test that admin login page rejects client/fixer credentials, Verify proper error messages are shown for wrong role attempts. 2. Fixer Reputation API Testing - Test the GET /api/fixer/{fixer_id}/reputation endpoint, Check if the gamification service is working, Test with existing fixer accounts to see if reputation data is available, Debug why the reputation section is showing 'Error fetching reputation data'."
 
 backend:
   - task: "Photo Verification System - Photo Submission (Before/After/Progress)"
