@@ -4682,6 +4682,43 @@ if static_path.exists():
         if favicon_path.exists():
             return FileResponse(favicon_path)
         raise HTTPException(status_code=404, detail="Favicon not found")
+
+    # Website static files and routes
+    website_path = Path(__file__).parent.parent / "website"
+    
+    @app.get("/website")
+    async def serve_website_root():
+        """Serve the marketing website homepage"""
+        index_path = website_path / "index.html"
+        if index_path.exists():
+            return FileResponse(index_path, media_type="text/html")
+        raise HTTPException(status_code=404, detail="Website not found")
+    
+    @app.get("/website/")
+    async def serve_website_root_slash():
+        """Serve the marketing website homepage with trailing slash"""
+        index_path = website_path / "index.html"
+        if index_path.exists():
+            return FileResponse(index_path, media_type="text/html")
+        raise HTTPException(status_code=404, detail="Website not found")
+    
+    @app.get("/website/{filename}")
+    async def serve_website_files(filename: str):
+        """Serve website static files (CSS, JS, etc.)"""
+        file_path = website_path / filename
+        if file_path.exists() and file_path.is_file():
+            # Determine content type based on file extension
+            if filename.endswith('.css'):
+                return FileResponse(file_path, media_type="text/css")
+            elif filename.endswith('.js'):
+                return FileResponse(file_path, media_type="application/javascript")
+            elif filename.endswith('.html'):
+                return FileResponse(file_path, media_type="text/html")
+            elif filename.endswith(('.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg')):
+                return FileResponse(file_path)
+            else:
+                return FileResponse(file_path)
+        raise HTTPException(status_code=404, detail=f"Website file not found: {filename}")
     
     # Serve React app for all non-API routes (MUST be last)
     @app.get("/{full_path:path}")
