@@ -82,7 +82,7 @@ const translations = {
         'network-desc': 'Join a trusted community of verified professionals with reputation management tools.',
         'join-now': 'Join as Professional Now',
         'avg-weekly-earnings': 'Avg. Weekly Earnings',
-        'fixer-satisfaction': 'Fixer Satisfaction',
+        'professional-satisfaction': 'Professional Satisfaction',
         
         // Safety
         'safety-title': 'Safety & Trust First',
