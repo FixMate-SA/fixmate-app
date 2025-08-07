@@ -700,6 +700,8 @@ export const languages = {
       payments: 'Betalings',
       adminPanel: 'Admin Paneel',
       profile: 'Profiel',
+      whatsapp: 'WhatsApp',
+      whatsappIntegration: 'WhatsApp Besigheidsintegrasie',
       
       // Common
       welcome: 'Welkom',
