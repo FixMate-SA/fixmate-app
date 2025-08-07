@@ -65,8 +65,8 @@ const translations = {
         'step3-professional': 'Build Your Reputation',
         'step3-professional-desc': 'Complete services, earn ratings, and climb our gamification tiers. Higher tiers = more opportunities and better earnings, regardless of your profession.',
         
-        // For Fixers
-        'grow-business': 'Grow Your Business',
+        // For Professionals
+        'grow-business': 'Grow Your Service Business',
         'grow-business-desc': 'Join thousands of successful fixers earning more with FixMate-SA\'s advanced platform',
         'gamification-system': 'Gamification System',
         'gamification-desc': 'Earn Bronze, Silver, Gold, and Platinum tiers. Higher tiers get priority job notifications and better rates.',
