@@ -271,7 +271,8 @@ class WhatsAppIntegrationTester:
                 "message": "Test message from FixMate-SA API"
             }
             
-            response = self.session.post(f"{self.api_base}/whatsapp/send-message", data=payload)
+            # Use form data for this endpoint
+            response = requests.post(f"{self.api_base}/whatsapp/send-message", data=payload)
             
             if response.status_code == 200:
                 data = response.json()
