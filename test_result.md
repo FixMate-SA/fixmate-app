@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the specific issues reported by the user: 1. Role-based Login Validation Testing - Test that client login page now properly rejects admin/fixer credentials, Test that fixer login page rejects client/admin credentials, Test that admin login page rejects client/fixer credentials, Verify proper error messages are shown for wrong role attempts. 2. Fixer Reputation API Testing - Test the GET /api/fixer/{fixer_id}/reputation endpoint, Check if the gamification service is working, Test with existing fixer accounts to see if reputation data is available, Debug why the reputation section is showing 'Error fetching reputation data'."
+user_problem_statement: "Implement enhanced 360Dialog WhatsApp integration for FixMate-SA platform. Integration details: WhatsApp Business Number: 27754466571, Channel ID: KYS4TkCH, API Key: fAZcu5FIR9j4xexivP2sry3gAK, Callback URL: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/whatsapp. The WhatsApp feature must be aligned with current flow to avoid errors and provide seamless customer service interaction through WhatsApp messaging."
 
 backend:
   - task: "Role-based Login Validation System"
