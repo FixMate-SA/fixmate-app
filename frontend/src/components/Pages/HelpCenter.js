@@ -175,7 +175,7 @@ const HelpCenter = () => {
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Phone</h3>
               <p className="text-gray-600 mb-4">Speak directly with support</p>
-              <a href="tel:+27123456789" className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 transition inline-block">Call Now</a>
+              <a href="tel:+27754466571" className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 transition inline-block">Call Now</a>
               <div className="text-sm text-gray-500 mt-2">Mo-Su 6AM-10PM</div>
             </div>
 
