@@ -4709,9 +4709,13 @@ if static_path.exists():
         if file_path.exists() and file_path.is_file():
             # Determine content type based on file extension
             if filename.endswith('.css'):
-                return FileResponse(file_path, media_type="text/css")
+                response = FileResponse(file_path, media_type="text/css")
+                response.headers["Cache-Control"] = "public, max-age=31536000"
+                return response
             elif filename.endswith('.js'):
-                return FileResponse(file_path, media_type="application/javascript")
+                response = FileResponse(file_path, media_type="application/javascript")
+                response.headers["Cache-Control"] = "public, max-age=31536000"
+                return response
             elif filename.endswith('.html'):
                 return FileResponse(file_path, media_type="text/html")
             elif filename.endswith(('.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg')):
