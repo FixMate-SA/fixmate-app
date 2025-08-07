@@ -307,7 +307,7 @@ class WhatsAppIntegrationTester:
                     "message": f"Test formatting for {phone}"
                 }
                 
-                response = self.session.post(f"{self.api_base}/whatsapp/send-message", data=payload)
+                response = requests.post(f"{self.api_base}/whatsapp/send-message", data=payload)
                 
                 if response.status_code == 200:
                     self.log_test(
