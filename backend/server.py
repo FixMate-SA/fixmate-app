@@ -4685,7 +4685,7 @@ async def process_whatsapp_conversation(message_data: dict, db: Session):
         is_greeting = processed_content.get('is_greeting', False)
         
         if detected_services:
-            await handle_service_request(from_number, content, detected_services, is_urgent, db)
+            await redirect_to_webapp_for_service(from_number, content, detected_services, is_urgent)
         elif is_greeting:
             await send_welcome_message(from_number)
         elif 'help' in content.lower() or 'info' in content.lower():
