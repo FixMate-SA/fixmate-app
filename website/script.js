@@ -80,7 +80,7 @@ const translations = {
         'support-desc': 'Access learning resources, business compliance tools, and dedicated fixer support team.',
         'verified-network': 'Verified Professional Network',
         'network-desc': 'Join a trusted community of verified professionals with reputation management tools.',
-        'join-now': 'Join as Fixer Now',
+        'join-now': 'Join as Professional Now',
         'avg-weekly-earnings': 'Avg. Weekly Earnings',
         'fixer-satisfaction': 'Fixer Satisfaction',
         
