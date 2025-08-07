@@ -1119,3 +1119,42 @@ class NotificationQueue(Base):
     
     def __repr__(self):
         return f"<NotificationQueue(id='{self.id}', type='{self.notification_type}', status='{self.delivery_status}')>"
+
+class WhatsAppStatistic(Base):
+    """
+    Model for tracking WhatsApp message statistics for admin dashboard.
+    Records real-time messaging data for business analytics.
+    """
+    __tablename__ = "whatsapp_statistics"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    
+    # Message Details
+    event_type = Column(String, nullable=False)  # 'message_sent', 'message_received', 'service_request', 'conversation_started', 'conversation_ended'
+    phone_number = Column(String, nullable=True)  # Customer phone number (anonymized for privacy)
+    message_type = Column(String, nullable=True)  # 'text', 'image', 'audio', 'location', 'interactive'
+    
+    # Content Analysis
+    service_detected = Column(String, nullable=True)  # Detected service type (plumber, electrician, etc.)
+    is_urgent = Column(Boolean, default=False)  # If urgency was detected
+    is_greeting = Column(Boolean, default=False)  # If it was a greeting message
+    response_type = Column(String, nullable=True)  # 'welcome', 'redirect', 'help', 'general'
+    
+    # Business Metrics
+    conversation_duration = Column(Integer, nullable=True)  # Duration in minutes
+    messages_in_conversation = Column(Integer, default=1)  # Number of messages in conversation
+    led_to_webapp_redirect = Column(Boolean, default=False)  # If user was redirected to web app
+    
+    # Status Tracking
+    status = Column(String, default='active')  # 'active', 'completed', 'abandoned'
+    conversation_id = Column(String, nullable=True)  # To group messages in conversations
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Data retention compliance (POPIA)
+    data_retention_expires = Column(DateTime, nullable=True)  # When to delete this record
+    
+    def __repr__(self):
+        return f"<WhatsAppStatistic(id='{self.id}', event='{self.event_type}', service='{self.service_detected}')>"
