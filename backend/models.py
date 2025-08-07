@@ -900,40 +900,107 @@ class FraudAlertLog(Base):
     fixer = relationship("Fixer")
     reviewer = relationship("User", foreign_keys=[reviewed_by])
 
-# ======= PHASE 4: MOBILE & PWA MODELS =======
+# Phase 4: PWA & Mobile Enhancements Models
 
 class PushSubscription(Base):
-    """
-    Model for managing push notification subscriptions for PWA functionality.
-    Stores device subscription information for real-time notifications.
-    """
+    """Push notification subscription for PWA"""
     __tablename__ = "push_subscriptions"
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     
-    # Push Subscription Details
-    endpoint = Column(String, nullable=False)  # Push service endpoint URL
-    keys = Column(Text, nullable=False)  # JSON string containing p256dh and auth keys
-    user_agent = Column(String, nullable=True)  # Device/browser info
+    # Subscription details
+    endpoint = Column(Text, nullable=False)
+    p256dh_key = Column(String, nullable=False)  # Public key
+    auth_key = Column(String, nullable=False)    # Auth secret
     
-    # Subscription Status
+    # Device/browser info
+    user_agent = Column(Text, nullable=True)
+    device_type = Column(String, nullable=True)  # mobile, desktop, tablet
+    
+    # Status
     is_active = Column(Boolean, default=True)
+    last_used = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    last_used = Column(DateTime, nullable=True)  # Last successful notification
-    
-    # Notification Preferences
-    enable_job_notifications = Column(Boolean, default=True)
-    enable_payment_notifications = Column(Boolean, default=True)
-    enable_system_notifications = Column(Boolean, default=True)
-    enable_marketing_notifications = Column(Boolean, default=False)
     
     # Relationships
     user = relationship("User", back_populates="push_subscriptions")
     
     def __repr__(self):
         return f"<PushSubscription(id='{self.id}', user_id='{self.user_id}', active='{self.is_active}')>"
+
+# ======= ANNOUNCEMENT SYSTEM MODELS =======
+
+class Announcement(Base):
+    """
+    Model for platform announcements that can be targeted to specific user groups
+    """
+    __tablename__ = "announcements"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    
+    # Announcement content
+    title = Column(String, nullable=False)  # Announcement title
+    content = Column(Text, nullable=False)  # Announcement content/message
+    
+    # Targeting options
+    target_audience = Column(String, nullable=False)  # 'clients', 'fixers', 'all'
+    
+    # Admin information
+    created_by = Column(String, ForeignKey("users.id"), nullable=False)  # Admin who created
+    
+    # Status and visibility
+    is_active = Column(Boolean, default=True)  # If announcement is currently active
+    is_pinned = Column(Boolean, default=False)  # If announcement should be pinned at top
+    priority = Column(String, default="normal")  # 'high', 'normal', 'low'
+    
+    # Chat settings for this announcement
+    chat_enabled = Column(Boolean, default=True)  # If chat/replies are allowed
+    admin_only_chat = Column(Boolean, default=False)  # If only admin can respond in chat
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)  # Optional expiration date
+    
+    # Relationships
+    created_by_user = relationship("User", foreign_keys=[created_by])
+    chat_messages = relationship("AnnouncementChat", back_populates="announcement", cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f"<Announcement(id='{self.id}', title='{self.title}', target='{self.target_audience}')>"
+
+class AnnouncementChat(Base):
+    """
+    Model for chat messages related to announcements
+    """
+    __tablename__ = "announcement_chats"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    announcement_id = Column(String, ForeignKey("announcements.id"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    
+    # Message content
+    message = Column(Text, nullable=False)  # Chat message content
+    
+    # Message type and context
+    message_type = Column(String, default="user")  # 'user', 'admin_response', 'system'
+    is_admin_message = Column(Boolean, default=False)  # If message is from admin
+    
+    # Status
+    is_deleted = Column(Boolean, default=False)  # Soft delete for moderation
+    is_edited = Column(Boolean, default=False)  # If message was edited
+    edited_at = Column(DateTime, nullable=True)  # When message was last edited
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    announcement = relationship("Announcement", back_populates="chat_messages")
+    user = relationship("User")
+    
+    def __repr__(self):
+        return f"<AnnouncementChat(id='{self.id}', announcement_id='{self.announcement_id}', user_id='{self.user_id}')>"
 
 # ======= PHASE 3 ENHANCEMENTS: AUTOMATION & ENGAGEMENT MODELS =======
 
