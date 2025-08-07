@@ -16,7 +16,7 @@ import re
 from datetime import datetime, timedelta
 
 from database import get_db, drop_and_recreate_tables
-from models import User, Fixer, Job, Review, FixerPayment, FixerVerification, EmergencyAlert, FixerApplication, DataInsight, FixerAvailability, Notification
+from models import User, Fixer, Job, Review, FixerPayment, FixerVerification, EmergencyAlert, FixerApplication, DataInsight, FixerAvailability, Notification, Announcement, AnnouncementChat
 from schemas import (
     UserCreate, UserResponse, FixerCreate, FixerResponse,
     JobCreate, JobUpdate, JobResponse, ReviewCreate, ReviewResponse,
