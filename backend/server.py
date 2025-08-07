@@ -4830,6 +4830,11 @@ app.add_middleware(
 
 # Serve static files from React build if available
 static_path = Path(__file__).parent.parent / "frontend" / "build"
+print(f"🔍 Static path: {static_path}")
+print(f"🔍 Static path exists: {static_path.exists()}")
+if static_path.exists():
+    print(f"🔍 Contents: {list(static_path.iterdir())}")
+    
 if static_path.exists():
     # Mount static files
     app.mount("/static", StaticFiles(directory=str(static_path / "static")), name="static")
