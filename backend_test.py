@@ -495,8 +495,7 @@ class WhatsAppIntegrationTester:
         try:
             payload = {
                 "to_number": "invalid_phone",
-                "message": "Test message",
-                "message_type": "text"
+                "message": "Test message"
             }
             
             response = self.session.post(f"{self.api_base}/whatsapp/send-message", data=payload)
