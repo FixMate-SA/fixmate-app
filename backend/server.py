@@ -4573,6 +4573,98 @@ async def whatsapp_business_webhook_verify(hub_challenge: str = None):
     
     return {"success": True, "message": "FixMate-SA WhatsApp Business webhook active"}
 
+# WhatsApp Statistics API endpoint
+@api_router.get("/whatsapp/statistics")
+async def get_whatsapp_statistics(
+    hours: int = Query(default=24, description="Number of hours to look back"),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get WhatsApp messaging statistics for admin dashboard.
+    Requires admin role for access.
+    """
+    try:
+        # Verify admin access
+        if current_user.get('role') not in ['admin', 'super_admin']:
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        from models import WhatsAppStatistic
+        from sqlalchemy import func, text
+        from datetime import datetime, timedelta
+        
+        # Calculate time range
+        time_cutoff = datetime.now() - timedelta(hours=hours)
+        
+        print(f"📊 Fetching WhatsApp statistics for last {hours} hours...")
+        
+        # Messages sent count
+        messages_sent = db.query(WhatsAppStatistic).filter(
+            WhatsAppStatistic.event_type == 'message_sent',
+            WhatsAppStatistic.created_at >= time_cutoff
+        ).count()
+        
+        # Messages received count
+        messages_received = db.query(WhatsAppStatistic).filter(
+            WhatsAppStatistic.event_type == 'message_received',
+            WhatsAppStatistic.created_at >= time_cutoff
+        ).count()
+        
+        # Service requests count
+        service_requests = db.query(WhatsAppStatistic).filter(
+            WhatsAppStatistic.service_detected.isnot(None),
+            WhatsAppStatistic.created_at >= time_cutoff
+        ).count()
+        
+        # Active conversations (unique phone numbers in time period)
+        active_conversations = db.query(
+            func.count(func.distinct(WhatsAppStatistic.phone_number))
+        ).filter(
+            WhatsAppStatistic.created_at >= time_cutoff
+        ).scalar() or 0
+        
+        # Additional analytics
+        top_services = db.execute(text("""
+            SELECT service_detected, COUNT(*) as count
+            FROM whatsapp_statistics 
+            WHERE service_detected IS NOT NULL 
+            AND created_at >= :time_cutoff
+            GROUP BY service_detected 
+            ORDER BY count DESC 
+            LIMIT 5
+        """), {"time_cutoff": time_cutoff}).fetchall()
+        
+        # Urgency stats
+        urgent_requests = db.query(WhatsAppStatistic).filter(
+            WhatsAppStatistic.is_urgent == True,
+            WhatsAppStatistic.created_at >= time_cutoff
+        ).count()
+        
+        # Web app redirects
+        webapp_redirects = db.query(WhatsAppStatistic).filter(
+            WhatsAppStatistic.led_to_webapp_redirect == True,
+            WhatsAppStatistic.created_at >= time_cutoff
+        ).count()
+        
+        statistics = {
+            "messages_sent": messages_sent,
+            "messages_received": messages_received, 
+            "service_requests": service_requests,
+            "active_conversations": active_conversations,
+            "urgent_requests": urgent_requests,
+            "webapp_redirects": webapp_redirects,
+            "top_services": [{"service": row[0], "count": row[1]} for row in top_services],
+            "time_period": f"{hours}h",
+            "last_updated": datetime.now().isoformat()
+        }
+        
+        print(f"✅ WhatsApp statistics retrieved: {statistics}")
+        return statistics
+        
+    except Exception as e:
+        print(f"❌ Error fetching WhatsApp statistics: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching statistics: {str(e)}")
+
 # WhatsApp webhook endpoints WITHOUT /api prefix for Facebook integration
 # Facebook/WhatsApp Business API expects the webhook at /whatsapp not /api/whatsapp
 
