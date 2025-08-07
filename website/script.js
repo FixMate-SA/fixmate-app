@@ -161,15 +161,15 @@ const translations = {
         
         // Hero Section
         'hero-title': 'Suid-Afrika se Premier<br><span class="highlight">Diens Platform</span>',
-        'hero-subtitle': 'Verbind met geverifieerde, betroubare herstellers regoor Suid-Afrika. Van loodgieterynoodeisies tot elektriese herstelwerk, vind die regte professionele persoon met intydse opsporing, KI-aangedrewe passing, en deursigtige R20 pryse.',
-        'verified-fixers': 'Geverifieerde Herstellers',
+        'hero-subtitle': 'Verbind met geverifieerde, bekwame professionele persone regoor Suid-Afrika vir ENIGE diens wat jy nodig het. Van huis herstelwerk en skoonheids dienste tot IT ondersteuning en onderrig - vind die regte kundige met intydse opsporing, KI-aangedrewe passing, en deursigtige R20 pryse.',
+        'verified-professionals': 'Geverifieerde Professionele',
         'real-time-tracking': 'Intydse Opsporing',
         'multi-language': 'Multi-taal Ondersteuning',
         'ai-powered': 'KI-aangedrewe Passing',
-        'find-fixers': 'Vind Herstellers Nou',
-        'join-fixers': 'Sluit Aan as Hersteller',
+        'find-services': 'Vind Dienste Nou',
+        'join-professionals': 'Sluit Aan as Professionele',
         'verified-professionals': 'Geverifieerde Professionele',
-        'jobs-completed': 'Werk Voltooi',
+        'jobs-completed': 'Dienste Voltooi',
         'average-rating': 'Gemiddelde Gradering',
         
         // Features
