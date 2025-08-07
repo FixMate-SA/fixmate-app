@@ -3,7 +3,7 @@ import json
 import requests
 import tempfile
 from datetime import datetime
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from geopy.distance import geodesic
