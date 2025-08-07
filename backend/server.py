@@ -4744,6 +4744,45 @@ FixMate-SA Team 🛠️"""
         error_msg = "Sorry, there was an issue processing your request. Please try again or call us directly."
         whatsapp_service.send_whatsapp_message(phone, error_msg)
 
+async def redirect_to_webapp_for_service(phone: str, description: str, services: list, is_urgent: bool):
+    """Redirect users to the web app for service requests."""
+    try:
+        print(f"🔧 Redirecting service request: {services} from {phone} to web app (urgent: {is_urgent})")
+        
+        service_type = services[0] if services else "general"
+        urgency_text = "🚨 Urgent" if is_urgent else "📅 Normal"
+        
+        # Send redirect message to customer
+        redirect_msg = f"""🛠️ Service Request Detected!
+
+🔧 Service: {service_type.title()}
+📋 Description: {description[:100]}{'...' if len(description) > 100 else ''}
+🕒 Priority: {urgency_text}
+
+To complete your service request and get matched with qualified professionals, please visit our web app:
+
+📱 **Complete Your Request:**
+👉 https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login
+
+**Why use the web app?**
+✅ Instant professional matching
+✅ Real-time job tracking
+✅ Secure payment options
+✅ Rate and review system
+✅ 24/7 support
+
+Need help? Reply "help" for assistance.
+
+FixMate-SA Team 🛠️"""
+
+        whatsapp_service.send_whatsapp_message(phone, redirect_msg)
+        print(f"✅ Service request redirect sent to {phone}")
+        
+    except Exception as e:
+        print(f"❌ Service redirect error: {str(e)}")
+        error_msg = "Sorry, there was an issue processing your request. Please visit https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login to submit your service request."
+        whatsapp_service.send_whatsapp_message(phone, error_msg)
+
 async def send_welcome_message(phone: str):
     """Send welcome message to new customers."""
     welcome_msg = f"""👋 Welcome to FixMate-SA!
