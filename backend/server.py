@@ -4811,27 +4811,31 @@ async def send_help_message(phone: str):
     """Send help information."""
     help_msg = f"""ℹ️ FixMate-SA Help
 
-Here's how to use our service:
+**How to request a service:**
 
-1️⃣ **Request a Service**
-   Just tell me what you need:
+1️⃣ **Tell us what you need:**
    • "I need a plumber"
    • "Electrical problem"  
    • "House cleaning needed"
 
-2️⃣ **Emergency Service**
-   Add "urgent" or "emergency":
-   • "Urgent plumber needed"
+2️⃣ **We'll guide you to our web app** for:
+   ✅ Account creation
+   ✅ Service request completion
+   ✅ Professional matching
+   ✅ Secure payments
 
-3️⃣ **Get Updates**
-   We'll send you:
-   • Professional contact details
-   • Job status updates
-   • Completion confirmations
+3️⃣ **Quick Links:**
+   📱 **Create Account & Request Service:**
+   👉 https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login
+   
+   🌐 **Learn More:**
+   👉 https://fixmate-sa-app-a448c751e1d2.herokuapp.com/website
 
-📱 **Need more help?**
-Visit: https://fixmate-sa-app-a448c751e1d2.herokuapp.com
-Call: Support available 24/7
+**Why use the web app?**
+✅ Better professional matching
+✅ Secure payment options
+✅ Real-time job tracking
+✅ Review and rating system
 
 What service do you need? 🔧"""
 
