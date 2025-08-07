@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FixMate-SA - South Africa's Premier Service Platform | Connect with Verified Fixers</title>
+    <meta name="description" content="Find reliable, verified fixers in South Africa. From plumbing to electrical, home repairs made easy with real-time tracking, AI matching, and R20 transparent pricing.">
+    <meta name="keywords" content="South Africa fixers, home repair, plumbing, electrical, handyman, contractor, job platform, Afrikaans">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://fixmate-sa-app-a448c751e1d2.herokuapp.com/">
+    <meta property="og:title" content="FixMate-SA - South Africa's Premier Service Platform">
+    <meta property="og:description" content="Connect with verified fixers across South Africa. Real-time tracking, AI matching, multi-language support.">
+    <meta property="og:image" content="https://fixmate-sa-app-a448c751e1d2.herokuapp.com/fixmate-logo.jpg">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://fixmate-sa-app-a448c751e1d2.herokuapp.com/">
+    <meta property="twitter:title" content="FixMate-SA - South Africa's Premier Service Platform">
+    <meta property="twitter:description" content="Connect with verified fixers across South Africa. Real-time tracking, AI matching, multi-language support.">
+    <meta property="twitter:image" content="https://fixmate-sa-app-a448c751e1d2.herokuapp.com/fixmate-logo.jpg">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/fixmate-logo.jpg">
+    <link rel="apple-touch-icon" href="/fixmate-logo.jpg">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Language Toggle -->
+    <div class="language-toggle">
+        <button id="lang-toggle" class="lang-btn">
+            <span class="flag">🇿🇦</span>
+            <span id="current-lang">English</span>
+            <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="lang-dropdown" id="lang-dropdown">
+            <div class="lang-option" data-lang="en">🇿🇦 English</div>
+            <div class="lang-option" data-lang="af">🇿🇦 Afrikaans</div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <img src="/fixmate-logo.jpg" alt="FixMate-SA Logo" class="nav-logo">
+                <span class="brand-text">FixMate-SA</span>
+            </div>
+            
+            <div class="nav-menu" id="nav-menu">
+                <a href="#home" class="nav-link" data-translate="home">Home</a>
+                <a href="#features" class="nav-link" data-translate="features">Features</a>
+                <a href="#how-it-works" class="nav-link" data-translate="how-it-works">How It Works</a>
+                <a href="#for-fixers" class="nav-link" data-translate="for-fixers">For Fixers</a>
+                <a href="#safety" class="nav-link" data-translate="safety">Safety</a>
+                <a href="#pricing" class="nav-link" data-translate="pricing">Pricing</a>
+                <a href="#contact" class="nav-link" data-translate="contact">Contact</a>
+            </div>
+            
+            <div class="nav-cta">
+                <a href="#app-download" class="btn btn-primary" data-translate="get-started">Get Started</a>
+            </div>
+            
+            <div class="nav-toggle" id="nav-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1 class="hero-title" data-translate="hero-title">
+                        South Africa's Premier<br>
+                        <span class="highlight">Service Platform</span>
+                    </h1>
+                    <p class="hero-subtitle" data-translate="hero-subtitle">
+                        Connect with verified, reliable fixers across South Africa. From plumbing emergencies to electrical repairs, find the right professional with real-time tracking, AI-powered matching, and transparent R20 pricing.
+                    </p>
+                    <div class="hero-features">
+                        <div class="hero-feature">
+                            <i class="fas fa-shield-alt"></i>
+                            <span data-translate="verified-fixers">Verified Fixers</span>
+                        </div>
+                        <div class="hero-feature">
+                            <i class="fas fa-clock"></i>
+                            <span data-translate="real-time-tracking">Real-Time Tracking</span>
+                        </div>
+                        <div class="hero-feature">
+                            <i class="fas fa-language"></i>
+                            <span data-translate="multi-language">Multi-Language Support</span>
+                        </div>
+                        <div class="hero-feature">
+                            <i class="fas fa-robot"></i>
+                            <span data-translate="ai-powered">AI-Powered Matching</span>
+                        </div>
+                    </div>
+                    <div class="hero-cta">
+                        <a href="#app-download" class="btn btn-primary btn-large" data-translate="find-fixers">Find Fixers Now</a>
+                        <a href="#for-fixers" class="btn btn-secondary btn-large" data-translate="join-fixers">Join as Fixer</a>
+                    </div>
+                </div>
+                <div class="hero-image">
+                    <img src="https://images.unsplash.com/photo-1587052694737-a972e4186288?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHwxfHxjb250cmFjdG9yfGVufDB8fHx8MTc1NDU0MjE1MHww&ixlib=rb-4.1.0&q=85" alt="Professional South African Contractor" class="hero-img">
+                    <div class="hero-stats">
+                        <div class="stat">
+                            <h3>5000+</h3>
+                            <p data-translate="verified-professionals">Verified Professionals</p>
+                        </div>
+                        <div class="stat">
+                            <h3>50,000+</h3>
+                            <p data-translate="jobs-completed">Jobs Completed</p>
+                        </div>
+                        <div class="stat">
+                            <h3>4.9★</h3>
+                            <p data-translate="average-rating">Average Rating</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title" data-translate="features-title">Why Choose FixMate-SA?</h2>
+                <p class="section-subtitle" data-translate="features-subtitle">Advanced technology meets reliable service for the perfect home repair experience</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-search-location"></i>
+                    </div>
+                    <h3 data-translate="smart-matching">Smart Matching</h3>
+                    <p data-translate="smart-matching-desc">AI-powered system matches you with the most suitable fixers based on location, skills, ratings, and availability. No more endless searching.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <h3 data-translate="real-time-tracking">Real-Time Tracking</h3>
+                    <p data-translate="real-time-tracking-desc">Track your fixer's location and job progress in real-time. Know exactly when they'll arrive and stay updated throughout the service.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-check"></i>
+                    </div>
+                    <h3 data-translate="verification-safety">Verification & Safety</h3>
+                    <p data-translate="verification-safety-desc">All fixers are verified with background checks, ID verification, and skill assessments. Your safety is our priority.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3 data-translate="whatsapp-integration">WhatsApp Integration</h3>
+                    <p data-translate="whatsapp-integration-desc">No smartphone? No problem! Request services via WhatsApp or SMS. Full conversation flow for all users.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-language"></i>
+                    </div>
+                    <h3 data-translate="multi-language-support">Multi-Language Support</h3>
+                    <p data-translate="multi-language-support-desc">Available in English and Afrikaans with more South African languages coming soon. Use in your preferred language.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <h3 data-translate="transparent-pricing">Transparent Pricing</h3>
+                    <p data-translate="transparent-pricing-desc">Simple R20 platform fee per job. No hidden costs, no surprises. Fair pricing for quality service.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3 data-translate="ai-assistant">AI Assistant</h3>
+                    <p data-translate="ai-assistant-desc">24/7 multilingual AI assistant helps with job descriptions, price estimates, and technical guidance.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-gavel"></i>
+                    </div>
+                    <h3 data-translate="dispute-resolution">Dispute Resolution</h3>
+                    <p data-translate="dispute-resolution-desc">Fair and fast dispute resolution system ensures satisfaction for both clients and fixers.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <h3 data-translate="enterprise-solution">Enterprise Solutions</h3>
+                    <p data-translate="enterprise-solution-desc">B2B portal for businesses needing multiple services. Bulk bookings, compliance management, and dedicated support.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title" data-translate="how-it-works-title">How FixMate-SA Works</h2>
+                <p class="section-subtitle" data-translate="how-it-works-subtitle">Simple, fast, and reliable - get your repairs done in 3 easy steps</p>
+            </div>
+            
+            <div class="process-tabs">
+                <button class="tab-btn active" data-tab="client" data-translate="for-clients">For Clients</button>
+                <button class="tab-btn" data-tab="fixer" data-translate="for-fixers">For Fixers</button>
+            </div>
+            
+            <div class="process-content">
+                <div class="process-tab active" id="client-process">
+                    <div class="process-steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h3 data-translate="step1-client">Describe Your Job</h3>
+                                <p data-translate="step1-client-desc">Tell us what needs fixing using voice recording, photos, or text. Our AI helps create detailed job descriptions.</p>
+                                <div class="step-image">
+                                    <img src="https://images.unsplash.com/photo-1551650975-87deedd944c3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwxfHxtb2JpbGUlMjBhcHB8ZW58MHx8fHwxNzU0NTQyMTY1fDA&ixlib=rb-4.1.0&q=85" alt="Mobile App Job Creation">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h3 data-translate="step2-client">Get Matched</h3>
+                                <p data-translate="step2-client-desc">Our AI instantly finds nearby verified fixers. First-come-first-serve notifications ensure quick responses.</p>
+                                <div class="step-image">
+                                    <img src="https://images.unsplash.com/photo-1645651964715-d200ce0939cc?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHwyfHxjb250cmFjdG9yfGVufDB8fHx8MTc1NDU0MjE1MHww&ixlib=rb-4.1.0&q=85" alt="Professional Tools">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h3 data-translate="step3-client">Track & Pay</h3>
+                                <p data-translate="step3-client-desc">Track your fixer's arrival in real-time. Pay securely after job completion with our transparent R20 platform fee.</p>
+                                <div class="step-image">
+                                    <img src="https://images.unsplash.com/photo-1505798577917-a65157d3320a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzR8MHwxfHNlYXJjaHwxfHxob21lJTIwcmVwYWlyfGVufDB8fHx8MTc1NDU0MjE1N3ww&ixlib=rb-4.1.0&q=85" alt="Home Repair Work">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="process-tab" id="fixer-process">
+                    <div class="process-steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h3 data-translate="step1-fixer">Complete Verification</h3>
+                                <p data-translate="step1-fixer-desc">Upload ID, proof of skills, and complete background checks. Join our verified network of trusted professionals.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h3 data-translate="step2-fixer">Receive Job Notifications</h3>
+                                <p data-translate="step2-fixer-desc">Get notified of nearby jobs matching your skills. First-come-first-serve system ensures fair opportunities.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h3 data-translate="step3-fixer">Build Your Reputation</h3>
+                                <p data-translate="step3-fixer-desc">Complete jobs, earn ratings, and climb our gamification tiers. Higher tiers = more job opportunities and better earnings.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- For Fixers Section -->
+    <section id="for-fixers" class="for-fixers">
+        <div class="container">
+            <div class="fixers-content">
+                <div class="fixers-text">
+                    <h2 class="section-title" data-translate="grow-business">Grow Your Business</h2>
+                    <p class="section-subtitle" data-translate="grow-business-desc">Join thousands of successful fixers earning more with FixMate-SA's advanced platform</p>
+                    
+                    <div class="fixers-benefits">
+                        <div class="benefit">
+                            <i class="fas fa-trophy"></i>
+                            <div>
+                                <h4 data-translate="gamification-system">Gamification System</h4>
+                                <p data-translate="gamification-desc">Earn Bronze, Silver, Gold, and Platinum tiers. Higher tiers get priority job notifications and better rates.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="benefit">
+                            <i class="fas fa-bell"></i>
+                            <div>
+                                <h4 data-translate="instant-notifications">Instant Job Notifications</h4>
+                                <p data-translate="notifications-desc">Real-time notifications for nearby jobs. First-come-first-serve system ensures fair opportunities.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="benefit">
+                            <i class="fas fa-credit-card"></i>
+                            <div>
+                                <h4 data-translate="secure-payments">Secure Payments</h4>
+                                <p data-translate="payments-desc">Get paid quickly and securely. Transparent payment system with dispute protection.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="benefit">
+                            <i class="fas fa-chart-line"></i>
+                            <div>
+                                <h4 data-translate="performance-analytics">Performance Analytics</h4>
+                                <p data-translate="analytics-desc">Track your earnings, ratings, completion rates, and optimize your business performance.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="benefit">
+                            <i class="fas fa-headset"></i>
+                            <div>
+                                <h4 data-translate="support-training">Support & Training</h4>
+                                <p data-translate="support-desc">Access learning resources, business compliance tools, and dedicated fixer support team.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="benefit">
+                            <i class="fas fa-users"></i>
+                            <div>
+                                <h4 data-translate="verified-network">Verified Professional Network</h4>
+                                <p data-translate="network-desc">Join a trusted community of verified professionals with reputation management tools.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="fixers-cta">
+                        <a href="#app-download" class="btn btn-primary btn-large" data-translate="join-now">Join as Fixer Now</a>
+                        <div class="fixer-stats">
+                            <div class="stat">
+                                <h4>R2,500</h4>
+                                <p data-translate="avg-weekly-earnings">Avg. Weekly Earnings</p>
+                            </div>
+                            <div class="stat">
+                                <h4>4.8★</h4>
+                                <p data-translate="fixer-satisfaction">Fixer Satisfaction</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="fixers-image">
+                    <img src="https://images.pexels.com/photos/3862135/pexels-photo-3862135.jpeg" alt="Professional Construction Team" class="fixers-img">
+                    <div class="tier-badges">
+                        <div class="tier-badge bronze">
+                            <i class="fas fa-award"></i>
+                            <span>Bronze</span>
+                        </div>
+                        <div class="tier-badge silver">
+                            <i class="fas fa-medal"></i>
+                            <span>Silver</span>
+                        </div>
+                        <div class="tier-badge gold">
+                            <i class="fas fa-trophy"></i>
+                            <span>Gold</span>
+                        </div>
+                        <div class="tier-badge platinum">
+                            <i class="fas fa-crown"></i>
+                            <span>Platinum</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Safety & Trust Section -->
+    <section id="safety" class="safety">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title" data-translate="safety-title">Safety & Trust First</h2>
+                <p class="section-subtitle" data-translate="safety-subtitle">Your security and satisfaction are our top priorities</p>
+            </div>
+            
+            <div class="safety-grid">
+                <div class="safety-feature">
+                    <div class="safety-icon">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <h3 data-translate="id-verification">ID Verification</h3>
+                    <p data-translate="id-verification-desc">All fixers must provide valid South African ID documents and undergo thorough background checks.</p>
+                </div>
+                
+                <div class="safety-feature">
+                    <div class="safety-icon">
+                        <i class="fas fa-certificate"></i>
+                    </div>
+                    <h3 data-translate="skill-assessment">Skill Assessment</h3>
+                    <p data-translate="skill-assessment-desc">Comprehensive skill verification ensures fixers are qualified for the services they offer.</p>
+                </div>
+                
+                <div class="safety-feature">
+                    <div class="safety-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <h3 data-translate="rating-system">Rating System</h3>
+                    <p data-translate="rating-system-desc">Transparent rating and review system helps you choose the best fixers based on real customer feedback.</p>
+                </div>
+                
+                <div class="safety-feature">
+                    <div class="safety-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 data-translate="fraud-protection">AI Fraud Protection</h3>
+                    <p data-translate="fraud-protection-desc">Advanced AI monitors all transactions and interactions to prevent fraud and ensure platform integrity.</p>
+                </div>
+                
+                <div class="safety-feature">
+                    <div class="safety-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h3 data-translate="support-24-7">24/7 Support</h3>
+                    <p data-translate="support-24-7-desc">Round-the-clock customer support and emergency assistance whenever you need help.</p>
+                </div>
+                
+                <div class="safety-feature">
+                    <div class="safety-icon">
+                        <i class="fas fa-balance-scale"></i>
+                    </div>
+                    <h3 data-translate="dispute-resolution">Fair Dispute Resolution</h3>
+                    <p data-translate="dispute-resolution-desc">Impartial dispute resolution process ensures fair outcomes for both clients and fixers.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title" data-translate="pricing-title">Transparent Pricing</h2>
+                <p class="section-subtitle" data-translate="pricing-subtitle">Simple, fair, and transparent - no hidden fees</p>
+            </div>
+            
+            <div class="pricing-card">
+                <div class="pricing-header">
+                    <h3 data-translate="platform-fee">Platform Fee</h3>
+                    <div class="price">
+                        <span class="currency">R</span>
+                        <span class="amount">20</span>
+                        <span class="period" data-translate="per-job">per job</span>
+                    </div>
+                </div>
+                
+                <div class="pricing-features">
+                    <div class="feature">
+                        <i class="fas fa-check"></i>
+                        <span data-translate="pricing-feature-1">AI-powered fixer matching</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-check"></i>
+                        <span data-translate="pricing-feature-2">Real-time job tracking</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-check"></i>
+                        <span data-translate="pricing-feature-3">Secure payment processing</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-check"></i>
+                        <span data-translate="pricing-feature-4">24/7 customer support</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-check"></i>
+                        <span data-translate="pricing-feature-5">Dispute resolution service</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-check"></i>
+                        <span data-translate="pricing-feature-6">Multi-language support</span>
+                    </div>
+                </div>
+                
+                <div class="pricing-note">
+                    <p data-translate="pricing-note">You pay the fixer directly for their work. The R20 platform fee covers our technology, safety, and support services.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- App Download Section -->
+    <section id="app-download" class="app-download">
+        <div class="container">
+            <div class="download-content">
+                <div class="download-text">
+                    <h2 class="section-title" data-translate="download-title">Get Started Today</h2>
+                    <p class="section-subtitle" data-translate="download-subtitle">Download the app or access via web browser. Available in English and Afrikaans.</p>
+                    
+                    <div class="download-options">
+                        <a href="https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login" class="btn btn-primary btn-large" data-translate="web-app">Open Web App</a>
+                        <a href="https://fixmate-sa-app-a448c751e1d2.herokuapp.com/fixer-login" class="btn btn-secondary btn-large" data-translate="fixer-portal">Fixer Portal</a>
+                    </div>
+                    
+                    <div class="access-methods">
+                        <h4 data-translate="multiple-ways">Multiple Ways to Access:</h4>
+                        <div class="methods">
+                            <div class="method">
+                                <i class="fas fa-globe"></i>
+                                <span data-translate="web-browser">Web Browser</span>
+                            </div>
+                            <div class="method">
+                                <i class="fab fa-whatsapp"></i>
+                                <span data-translate="whatsapp">WhatsApp</span>
+                            </div>
+                            <div class="method">
+                                <i class="fas fa-sms"></i>
+                                <span data-translate="sms">SMS/USSD</span>
+                            </div>
+                            <div class="method">
+                                <i class="fas fa-phone"></i>
+                                <span data-translate="voice-support">Voice Support</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="download-demo">
+                    <div class="phone-mockup">
+                        <img src="https://images.unsplash.com/photo-1551650975-87deedd944c3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwxfHxtb2JpbGUlMjBhcHB8ZW58MHx8fHwxNzU0NTQyMTY1fDA&ixlib=rb-4.1.0&q=85" alt="FixMate-SA App Interface">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-brand">
+                        <img src="/fixmate-logo.jpg" alt="FixMate-SA Logo" class="footer-logo">
+                        <h3>FixMate-SA</h3>
+                        <p data-translate="footer-description">South Africa's premier service platform connecting clients with verified, reliable fixers across the country.</p>
+                    </div>
+                </div>
+                
+                <div class="footer-section">
+                    <h4 data-translate="quick-links">Quick Links</h4>
+                    <ul>
+                        <li><a href="#features" data-translate="features">Features</a></li>
+                        <li><a href="#how-it-works" data-translate="how-it-works">How It Works</a></li>
+                        <li><a href="#for-fixers" data-translate="for-fixers">For Fixers</a></li>
+                        <li><a href="#safety" data-translate="safety">Safety</a></li>
+                        <li><a href="#pricing" data-translate="pricing">Pricing</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4 data-translate="services">Services</h4>
+                    <ul>
+                        <li data-translate="plumbing">Plumbing</li>
+                        <li data-translate="electrical">Electrical</li>
+                        <li data-translate="carpentry">Carpentry</li>
+                        <li data-translate="painting">Painting</li>
+                        <li data-translate="appliance-repair">Appliance Repair</li>
+                        <li data-translate="emergency-services">Emergency Services</li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4 data-translate="support">Support</h4>
+                    <ul>
+                        <li><a href="mailto:support@fixmate-sa.co.za" data-translate="contact-support">Contact Support</a></li>
+                        <li><a href="#" data-translate="help-center">Help Center</a></li>
+                        <li><a href="#" data-translate="terms-service">Terms of Service</a></li>
+                        <li><a href="#" data-translate="privacy-policy">Privacy Policy</a></li>
+                        <li><a href="#" data-translate="business-compliance">Business Compliance</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4 data-translate="contact">Contact</h4>
+                    <div class="contact-info">
+                        <p><i class="fas fa-envelope"></i> support@fixmate-sa.co.za</p>
+                        <p><i class="fas fa-phone"></i> +27 11 123 4567</p>
+                        <p><i class="fas fa-map-marker-alt"></i> Cape Town, South Africa</p>
+                    </div>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <div class="footer-legal">
+                    <p>&copy; 2025 FixMate-SA. <span data-translate="all-rights-reserved">All rights reserved.</span></p>
+                </div>
+                <div class="footer-certifications">
+                    <span data-translate="certified-secure">🔒 Certified Secure</span>
+                    <span data-translate="sa-compliant">🇿🇦 SA Compliant</span>
+                    <span data-translate="verified-platform">✓ Verified Platform</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+</body>
+</html>
