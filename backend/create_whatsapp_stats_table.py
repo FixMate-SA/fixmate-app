@@ -38,14 +38,9 @@ def create_whatsapp_statistics_table():
             connection.execute(text("DROP TABLE IF EXISTS whatsapp_statistics;"))
             logger.info("📝 Dropped existing whatsapp_statistics table if it existed")
             
-            # Create the table using SQLAlchemy
-            WhatsAppStatistic.__table__.create(engine, checkfirst=True)
-            logger.info("✅ Created whatsapp_statistics table successfully")
-            
-            # Verify table creation
-            result = connection.execute(text("SELECT COUNT(*) FROM whatsapp_statistics;"))
-            count = result.scalar()
-            logger.info(f"📊 WhatsApp statistics table created with {count} records")
+        # Create the table using SQLAlchemy
+        WhatsAppStatistic.__table__.create(engine, checkfirst=True)
+        logger.info("✅ Created whatsapp_statistics table successfully")
             
         logger.info("🎉 WhatsApp statistics table migration completed successfully!")
         return True
