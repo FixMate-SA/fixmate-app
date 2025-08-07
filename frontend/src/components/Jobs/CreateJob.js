@@ -23,7 +23,9 @@ const CreateJob = () => {
     preferred_date: '',
     preferred_time: '',
     category: '',
-    images: []
+    images: [],
+    communication_preference: 'phone',
+    whatsapp_notifications: true
   });
 
   const categories = [
