@@ -361,10 +361,13 @@ class WhatsAppService:
                 
                 # Track received message statistics
                 processed_content = result["processed_content"]
+                detected_services = processed_content.get('detected_services', [])
+                first_service = detected_services[0] if detected_services else None
+                
                 self._track_whatsapp_statistic('message_received', {
                     'phone_number': from_number,
                     'message_type': msg_type,
-                    'service_detected': processed_content.get('detected_services', [None])[0],
+                    'service_detected': first_service,
                     'is_urgent': processed_content.get('is_urgent', False),
                     'is_greeting': processed_content.get('is_greeting', False),
                     'conversation_id': f"{from_number}_{datetime.now().date()}"
