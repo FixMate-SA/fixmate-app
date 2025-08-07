@@ -4762,53 +4762,108 @@ async def process_whatsapp_conversation(message_data: dict, db: Session):
     except Exception as e:
         print(f"❌ Conversation processing error: {str(e)}")
 
-async def handle_service_request(phone: str, description: str, services: list, is_urgent: bool, db: Session):
-    """Handle incoming service requests via WhatsApp."""
+async def redirect_to_webapp_for_service(phone: str, description: str, services: list, is_urgent: bool):
+    """Enhanced service request handler with comprehensive user guidance."""
     try:
-        print(f"🔧 Service request: {services} from {phone} (urgent: {is_urgent})")
+        print(f"🔧 Service request detected: {services} from {phone} (urgent: {is_urgent})")
         
-        # Create a service request in the database
-        from models import Job
+        # Determine service type for messaging
+        if services and services[0] != 'general_service':
+            service_type = services[0].replace('_', ' ').title()
+            service_emoji = get_service_emoji(services[0])
+        else:
+            service_type = "Service"
+            service_emoji = "🔧"
         
-        urgency = "urgent" if is_urgent else "normal"
-        service_type = services[0] if services else "general"
+        # Create comprehensive guidance message
+        urgency_text = "🚨 **URGENT REQUEST** " if is_urgent else ""
         
-        # Create job entry
-        new_job = Job(
-            service=service_type,
-            description=description,
-            client_contact_number=phone,
-            status='pending',
-            urgency=urgency,
-            created_via='whatsapp'
-        )
-        
-        db.add(new_job)
-        db.commit()
-        
-        # Send confirmation to customer
-        confirmation_msg = f"""✅ Service request received!
+        guidance_msg = f"""{urgency_text}✅ **{service_type} Request Received!**
 
-🔧 Service: {service_type.title()}
-📋 Description: {description[:100]}{'...' if len(description) > 100 else ''}
-🕒 Priority: {'🚨 Urgent' if is_urgent else '📅 Normal'}
+{service_emoji} **Service Needed:** {service_type}
+📝 **Your Message:** "{description[:100]}{'...' if len(description) > 100 else ''}"
 
-We're finding qualified professionals in your area. You'll receive contact details shortly.
+📱 **Next Steps - Choose Your Option:**
 
-Job ID: #{new_job.id}
-Track: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/jobs/{new_job.id}
+🆕 **NEW USER? Sign Up First:**
+👉 Create Account: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-signup
+• Quick 2-minute registration
+• Verify your phone number
+• Complete your profile
 
-FixMate-SA Team 🛠️"""
+🔐 **RETURNING USER? Log In:**
+👉 Client Login: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login
+• Use your registered phone number
+• Enter your password
+• Access your dashboard instantly
 
-        whatsapp_service.send_whatsapp_message(phone, confirmation_msg)
-        
-        # TODO: Notify relevant fixers
-        print(f"✅ Service request #{new_job.id} created for {phone}")
+🔄 **FORGOT PASSWORD? Reset It:**
+👉 Password Reset: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login
+• Click "Forgot Password"
+• Enter your phone number
+• Follow reset instructions
+
+🌐 **Learn More About Our Platform:**
+👉 Website: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/website
+
+✅ **Why Use Our Web App?**
+• 🎯 Better professional matching
+• 💳 Secure payment options  
+• 📍 Real-time job tracking
+• ⭐ Review and rating system
+• 🔒 Account security & history
+
+{"🚨 **For urgent requests, please complete your registration quickly!**" if is_urgent else ""}
+
+**Need help?** Reply with "help" for more assistance.
+
+FixMate-SA - Your Complete Service Solution 🛠️"""
+
+        whatsapp_service.send_whatsapp_message(phone, guidance_msg)
+        print(f"✅ Service guidance sent for {service_type} request to {phone}")
         
     except Exception as e:
-        print(f"❌ Service request handling error: {str(e)}")
-        error_msg = "Sorry, there was an issue processing your request. Please try again or call us directly."
-        whatsapp_service.send_whatsapp_message(phone, error_msg)
+        print(f"❌ Error in service request handling: {str(e)}")
+        fallback_msg = """⚠️ Service request received!
+
+To proceed, please visit our web app:
+
+🆕 **New users:** Sign up at https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-signup
+
+🔐 **Returning users:** Login at https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login
+
+FixMate-SA Team 🛠️"""
+        
+        whatsapp_service.send_whatsapp_message(phone, fallback_msg)
+
+def get_service_emoji(service_type: str) -> str:
+    """Get appropriate emoji for service type."""
+    service_emojis = {
+        'plumber': '🚿',
+        'electrician': '⚡',
+        'cleaner': '🧹',
+        'gardener': '🌱',
+        'carpenter': '🔨',
+        'painter': '🎨',
+        'handyman': '🔧',
+        'mechanic': '🚗',
+        'builder': '🏗️',
+        'roofer': '🏠',
+        'tiler': '🔲',
+        'pest_control': '🐛',
+        'security': '🔒',
+        'aircon': '❄️',
+        'pool': '🏊',
+        'locksmith': '🗝️',
+        'appliance': '🔌',
+        'moving': '📦',
+        'it_tech': '💻',
+        'tutor': '📚',
+        'beauty': '💄',
+        'catering': '🍽️',
+        'general_service': '🔧'
+    }
+    return service_emojis.get(service_type, '🔧')
 
 async def redirect_to_webapp_for_service(phone: str, description: str, services: list, is_urgent: bool):
     """Redirect users to the web app for service requests."""
