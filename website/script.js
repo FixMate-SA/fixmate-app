@@ -422,7 +422,8 @@ function initializeTabSwitching() {
             
             // Add active class to clicked button and corresponding tab
             this.classList.add('active');
-            document.getElementById(targetTab + '-process').classList.add('active');
+            const targetTabId = targetTab + '-process';
+            document.getElementById(targetTabId).classList.add('active');
         });
     });
 }
