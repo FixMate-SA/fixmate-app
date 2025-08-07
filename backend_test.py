@@ -328,19 +328,12 @@ class WhatsAppIntegrationTester:
         
         # Test 3c: Job notification endpoint
         try:
-            job_data = {
-                "id": "test_job_123",
-                "description": "Test plumbing job",
-                "area": "Cape Town",
-                "client_contact": "+27821234567"
-            }
-            
             payload = {
-                "phone_number": "+27821234567",
-                "job_data": job_data
+                "job_id": "test_job_123",
+                "phone_number": "+27821234567"
             }
             
-            response = self.session.post(f"{self.api_base}/whatsapp/send-job-notification", json=payload)
+            response = self.session.post(f"{self.api_base}/whatsapp/send-job-notification", data=payload)
             
             if response.status_code == 200:
                 self.log_test(
