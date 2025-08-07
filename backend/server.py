@@ -4905,24 +4905,52 @@ FixMate-SA Team 🛠️"""
         whatsapp_service.send_whatsapp_message(phone, error_msg)
 
 async def send_welcome_message(phone: str):
-    """Send welcome message to new customers."""
-    welcome_msg = f"""👋 Welcome to FixMate-SA!
+    """Send comprehensive welcome message with user journey guidance."""
+    welcome_msg = f"""👋 **Welcome to FixMate-SA!**
 
-🛠️ Your trusted service platform in South Africa.
+🛠️ **South Africa's Premier Service Platform**
 
-I can help you find:
-🔧 Plumbers
-⚡ Electricians  
-🧹 Cleaners
-🌱 Gardeners
-🔨 Handymen
-🎨 Painters
-And many more services!
+We connect you with verified professionals for **ANY service you need** - from home repairs and beauty services to IT support and tutoring.
 
-Simply tell me what you need (e.g., "I need a plumber" or "Electrical repair needed").
+🔧 **Request ANY Service:**
+Just tell us what you need in your own words:
+• Home repairs & maintenance
+• Cleaning & domestic services  
+• Beauty & wellness
+• Tutoring & education
+• IT & tech support
+• Catering & events
+• Transportation & moving
+• Security & safety
+• ...and much more!
 
-💬 You can also visit our app: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login
-Website: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/website
+🚀 **Getting Started:**
+
+🆕 **New to FixMate-SA?**
+👉 **Sign Up:** https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-signup
+• Quick 2-minute registration
+• Verify phone & complete profile
+• Start requesting services immediately
+
+🔐 **Already have an account?**
+👉 **Log In:** https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login
+• Access your dashboard instantly
+• View service history
+• Manage active requests
+
+🔄 **Forgot your password?**
+👉 **Reset:** https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login
+• Click "Forgot Password"
+• Enter your phone number
+• Follow reset instructions
+
+🌐 **Learn More About Our Platform:**
+👉 **Website:** https://fixmate-sa-app-a448c751e1d2.herokuapp.com/website
+
+💬 **Ready to get started?** 
+Simply describe the service you need, and I'll guide you to the right place!
+
+**Examples:** "I need house cleaning", "Looking for a tutor", "My car needs repair", "Need catering for party" 
 
 How can I help you today? 😊"""
 
