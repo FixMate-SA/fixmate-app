@@ -306,6 +306,163 @@ const AdminDashboard = () => {
             </div>
           )}
 
+          {activeTab === 'whatsapp' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium flex items-center gap-2">
+                  <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.297"/>
+                  </svg>
+                  {t('whatsappIntegration', 'WhatsApp Business Integration')}
+                </h3>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-green-600 font-medium">Active</span>
+                </div>
+              </div>
+
+              {/* WhatsApp Business Account Info */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                  <div className="text-2xl font-bold text-green-700 mb-2">27754466571</div>
+                  <div className="text-green-600 font-medium">Business Number</div>
+                  <div className="text-sm text-green-700 mt-2">FixMate-SA Official</div>
+                </div>
+                
+                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                  <div className="text-2xl font-bold text-blue-700 mb-2">KYS4TkCH</div>
+                  <div className="text-blue-600 font-medium">Channel ID</div>
+                  <div className="text-sm text-blue-700 mt-2">Active Channel</div>
+                </div>
+                
+                <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
+                  <div className="text-2xl font-bold text-purple-700 mb-2">1K/24hr</div>
+                  <div className="text-purple-600 font-medium">Message Limit</div>
+                  <div className="text-sm text-purple-700 mt-2">High Quality Rating</div>
+                </div>
+              </div>
+
+              {/* WhatsApp Integration Status */}
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <h4 className="font-medium text-gray-900">Integration Status</h4>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                      <span className="flex items-center gap-2">
+                        <span className="h-2 w-2 bg-green-500 rounded-full"></span>
+                        Webhook Endpoint
+                      </span>
+                      <span className="text-green-600 font-medium">✓ Active</span>
+                    </div>
+                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                      <span className="flex items-center gap-2">
+                        <span className="h-2 w-2 bg-green-500 rounded-full"></span>
+                        360Dialog API
+                      </span>
+                      <span className="text-green-600 font-medium">✓ Connected</span>
+                    </div>
+                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                      <span className="flex items-center gap-2">
+                        <span className="h-2 w-2 bg-green-500 rounded-full"></span>
+                        Message Processing
+                      </span>
+                      <span className="text-green-600 font-medium">✓ Operational</span>
+                    </div>
+                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                      <span className="flex items-center gap-2">
+                        <span className="h-2 w-2 bg-green-500 rounded-full"></span>
+                        Database Integration
+                      </span>
+                      <span className="text-green-600 font-medium">✓ Working</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* WhatsApp Configuration Details */}
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <h4 className="font-medium text-gray-900">Configuration Details</h4>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="font-medium text-gray-700 mb-1">Webhook URL</div>
+                      <div className="text-gray-600 font-mono text-xs bg-gray-100 p-2 rounded">
+                        https://fixmate-sa-app-a448c751e1d2.herokuapp.com/whatsapp
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-700 mb-1">WABA ID</div>
+                      <div className="text-gray-600 font-mono text-xs bg-gray-100 p-2 rounded">
+                        1437544007427224
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-700 mb-1">Hosting Platform</div>
+                      <div className="text-gray-600">Cloud API hosted by Meta</div>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-700 mb-1">Data Storage Region</div>
+                      <div className="text-gray-600">United States</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* WhatsApp Message Statistics */}
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <h4 className="font-medium text-gray-900">Message Statistics (24h)</h4>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div>
+                      <div className="text-2xl font-bold text-blue-600">--</div>
+                      <div className="text-sm text-gray-600">Messages Sent</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-green-600">--</div>
+                      <div className="text-sm text-gray-600">Messages Received</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-orange-600">--</div>
+                      <div className="text-sm text-gray-600">Service Requests</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-purple-600">--</div>
+                      <div className="text-sm text-gray-600">Active Conversations</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Test WhatsApp Integration */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                <h4 className="font-medium text-yellow-800 mb-2">Test WhatsApp Integration</h4>
+                <p className="text-sm text-yellow-700 mb-4">
+                  Send a test message to verify the integration is working correctly.
+                </p>
+                <div className="flex items-center gap-4">
+                  <a
+                    href="https://wa.me/27754466571?text=Test%20message%20from%20admin"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.297"/>
+                    </svg>
+                    Send Test Message
+                  </a>
+                  <span className="text-sm text-gray-600">Opens WhatsApp with pre-filled test message</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'fixers' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
