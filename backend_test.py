@@ -326,9 +326,9 @@ class WhatsAppIntegrationTester:
         
         # Test 3c: Job notification endpoint
         try:
+            # Use an existing job ID from the database
             payload = {
-                "job_id": "test_job_123",
-                "phone_number": "+27821234567"
+                "job_id": "4234a4c4-80f7-4a10-8a55-d0653f24ad06"
             }
             
             response = requests.post(f"{self.api_base}/whatsapp/send-job-notification", data=payload)
