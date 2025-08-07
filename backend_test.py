@@ -39,7 +39,6 @@ class WhatsAppIntegrationTester:
         self.test_results = []
         self.session = requests.Session()
         self.session.headers.update({
-            'Content-Type': 'application/json',
             'User-Agent': 'FixMate-SA-WhatsApp-Tester/1.0'
         })
         
