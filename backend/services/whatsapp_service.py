@@ -65,9 +65,9 @@ class WhatsAppService:
         recipient_number = self._format_phone_number(to_number)
 
         # Base payload structure for 360Dialog Cloud API
+        # 360Dialog uses phone_number_id in the URL, not the payload
         payload = {
             "messaging_product": "whatsapp",
-            "recipient_type": "individual", 
             "to": recipient_number
         }
 
@@ -75,8 +75,7 @@ class WhatsAppService:
         if message_type == "text" and message_body:
             payload["type"] = "text"
             payload["text"] = {
-                "body": message_body,
-                "preview_url": True  # Enable URL previews
+                "body": message_body
             }
         elif message_type == "image" and media_url:
             payload["type"] = "image"
@@ -93,6 +92,8 @@ class WhatsAppService:
             return False
 
         print(f"🔄 Sending to 360Dialog: {json.dumps(payload, indent=2)}")
+        print(f"🔗 API URL: {self.messages_url}")
+        print(f"🔑 API Key: {'***' + (self.api_key[-4:] if self.api_key and len(self.api_key) > 4 else 'None')}")
 
         try:
             response = requests.post(self.messages_url, headers=headers, json=payload, timeout=30)
