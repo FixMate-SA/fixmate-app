@@ -4847,13 +4847,17 @@ async def send_general_response(phone: str, message: str):
 
 I understand you said: "{message[:50]}{'...' if len(message) > 50 else ''}"
 
-To help you better, please tell me what service you need:
+To request a service, please tell me what you need and I'll guide you to our web app:
 
 🔧 **Examples:**
 • "I need a plumber"
 • "Electrical work needed"
 • "Looking for house cleaner"
 • "Garden maintenance needed"
+
+📱 **Quick Access:**
+👉 Create Account: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login
+👉 Learn More: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/website
 
 Or type "help" for more information.
 
