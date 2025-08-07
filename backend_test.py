@@ -273,7 +273,7 @@ class WhatsAppIntegrationTester:
                 "message_type": "text"
             }
             
-            response = self.session.post(f"{self.api_base}/whatsapp/send-message", json=payload)
+            response = self.session.post(f"{self.api_base}/whatsapp/send-message", data=payload)
             
             if response.status_code == 200:
                 data = response.json()
