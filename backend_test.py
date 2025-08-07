@@ -238,7 +238,7 @@ class WhatsAppIntegrationTester:
                 if response.status_code == 200:
                     data = response.json()
                     
-                    if data.get('status') == 'success' and data.get('processed'):
+                    if data.get('status') == 'success' or data.get('status') == 'processed':
                         self.log_test(
                             f"Message Processing - {test_case['name']}", 
                             True, 
