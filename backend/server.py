@@ -12,6 +12,7 @@ from typing import List, Optional
 import json
 import uuid
 import random
+import re
 from datetime import datetime, timedelta
 
 from database import get_db, drop_and_recreate_tables
