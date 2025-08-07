@@ -255,6 +255,15 @@ export const languages = {
       estimatedPrice: 'Estimated Price',
       serviceName: 'Service Name',
       
+      // Communication Preferences
+      communicationPreferences: 'Communication Preferences',
+      preferredContactMethod: 'Preferred Contact Method',
+      phone: 'Phone Call',
+      sms: 'SMS',
+      email: 'Email',
+      enableWhatsAppNotifications: 'Enable WhatsApp notifications for job updates',
+      communicationNote: 'Fixers will be notified about your preferences. WhatsApp notifications are recommended for faster responses.',
+      
       // Services
       plumbing: 'Plumbing',
       electrical: 'Electrical',
