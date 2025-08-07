@@ -331,7 +331,7 @@ class WhatsAppIntegrationTester:
                 "phone_number": "+27821234567"
             }
             
-            response = self.session.post(f"{self.api_base}/whatsapp/send-job-notification", data=payload)
+            response = requests.post(f"{self.api_base}/whatsapp/send-job-notification", data=payload)
             
             if response.status_code == 200:
                 self.log_test(
