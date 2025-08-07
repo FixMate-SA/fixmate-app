@@ -4944,6 +4944,11 @@ if static_path.exists():
             if '<base href="/">' not in html_content and '<base href=' not in html_content:
                 html_content = html_content.replace('<head>', '<head>\n    <base href="/">')
             
+            # Add cache-busting for deployment issues
+            import time
+            cache_buster = str(int(time.time()))
+            html_content = html_content.replace('</head>', f'    <meta name="cache-version" content="{cache_buster}">\n</head>')
+            
             return Response(content=html_content, media_type="text/html")
         else:
             # Fallback HTML for when React build is not available
