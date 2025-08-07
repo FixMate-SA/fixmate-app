@@ -57,7 +57,7 @@ def create_whatsapp_statistics_table():
 def create_indexes():
     """Create indexes for better performance"""
     try:
-        database_url = os.getenv('MONGO_URL')
+        database_url = os.getenv('DATABASE_URL')
         engine = create_engine(database_url)
         
         with engine.begin() as connection:
