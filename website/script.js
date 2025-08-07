@@ -15,15 +15,15 @@ const translations = {
         
         // Hero Section
         'hero-title': 'South Africa\'s Premier<br><span class="highlight">Service Platform</span>',
-        'hero-subtitle': 'Connect with verified, reliable fixers across South Africa. From plumbing emergencies to electrical repairs, find the right professional with real-time tracking, AI-powered matching, and transparent R20 pricing.',
-        'verified-fixers': 'Verified Fixers',
+        'hero-subtitle': 'Connect with verified, skilled professionals across South Africa for ANY service you need. From home repairs and beauty services to IT support and tutoring - find the right expert with real-time tracking, AI-powered matching, and transparent R20 pricing.',
+        'verified-professionals': 'Verified Professionals',
         'real-time-tracking': 'Real-Time Tracking',
         'multi-language': 'Multi-Language Support',
         'ai-powered': 'AI-Powered Matching',
-        'find-fixers': 'Find Fixers Now',
-        'join-fixers': 'Join as Fixer',
+        'find-services': 'Find Services Now',
+        'join-professionals': 'Join as Professional',
         'verified-professionals': 'Verified Professionals',
-        'jobs-completed': 'Jobs Completed',
+        'jobs-completed': 'Services Completed',
         'average-rating': 'Average Rating',
         
         // Features
