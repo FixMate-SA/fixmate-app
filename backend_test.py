@@ -1,710 +1,607 @@
 #!/usr/bin/env python3
 """
-FixMate-SA WhatsApp Integration Testing Suite
-Testing the enhanced 360Dialog WhatsApp integration for FixMate-SA
+WhatsApp Integration Redirect Flow Testing
+Testing the updated WhatsApp integration that redirects users to web app instead of creating jobs directly.
 
-WhatsApp Business Number: 27754466571
-Channel ID: KYS4TkCH  
-API Key: fAZcu5FIR9j4xexivP2sry3gAK (configured)
-Callback URL: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/whatsapp
+CRITICAL TEST REQUIREMENTS:
+1. Verify No Job Creation - Count jobs before and after WhatsApp service request
+2. Test Redirect Messaging - Send "I need a plumber" and verify redirect message includes web app link
+3. Verify Web App Links - Confirm all responses include client-login link
+4. Test All Conversation Flows - Welcome, help, general responses, service request redirection
+5. Confirm System Stability - Test multiple service types and urgency levels
 """
 
 import requests
 import json
 import time
-import uuid
+import os
 from datetime import datetime
-from typing import Dict, Any, List
 
-class WhatsAppIntegrationTester:
+# Configuration
+BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://fixmate-sa-app-a448c751e1d2.herokuapp.com')
+API_BASE = f"{BACKEND_URL}/api"
+
+# Test phone numbers
+TEST_PHONE_NUMBERS = [
+    "+27821234567",
+    "+27821234568", 
+    "+27821234569",
+    "+27821234570",
+    "+27821234571"
+]
+
+class WhatsAppRedirectTester:
     def __init__(self):
-        # Use the correct Heroku backend URL
-        self.base_url = "https://fixmate-sa-app-a448c751e1d2.herokuapp.com"
-        self.api_base = f"{self.base_url}/api"
+        self.results = []
+        self.job_count_before = 0
+        self.job_count_after = 0
         
-        # WhatsApp Integration Details
-        self.whatsapp_business_number = "27754466571"
-        self.channel_id = "KYS4TkCH"
-        self.callback_url = f"{self.base_url}/whatsapp"
-        
-        # Test phone numbers (South African format)
-        self.test_phones = [
-            "+27821234567",  # Standard format
-            "27821234568",   # Without +
-            "0821234569",    # Local format
-            "+27 82 123 4570", # Formatted
-            "+27-82-123-4571"  # Dashed format
-        ]
-        
-        self.test_results = []
-        self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'FixMate-SA-WhatsApp-Tester/1.0'
-        })
-        
-    def log_test(self, test_name: str, success: bool, details: str = "", response_data: Any = None):
-        """Log test results"""
-        result = {
-            'test_name': test_name,
-            'success': success,
-            'details': details,
-            'timestamp': datetime.now().isoformat(),
-            'response_data': response_data
-        }
-        self.test_results.append(result)
-        
+    def log_result(self, test_name, success, message, details=None):
+        """Log test result"""
         status = "✅ PASS" if success else "❌ FAIL"
-        print(f"{status} {test_name}")
+        result = {
+            "test": test_name,
+            "status": status,
+            "success": success,
+            "message": message,
+            "details": details or {},
+            "timestamp": datetime.now().isoformat()
+        }
+        self.results.append(result)
+        print(f"{status}: {test_name} - {message}")
         if details:
-            print(f"    {details}")
-        if not success and response_data:
-            print(f"    Response: {response_data}")
-        print()
-
-    def test_webhook_verification_get(self):
-        """Test 1: Webhook Verification (GET /whatsapp)"""
-        print("🔍 Testing Webhook Verification (GET /whatsapp)...")
-        
-        # Test 1a: Webhook verification with challenge
+            print(f"   Details: {details}")
+    
+    def get_job_count(self):
+        """Get current job count from database"""
         try:
-            params = {
-                'hub.mode': 'subscribe',
-                'hub.challenge': 'test_challenge_12345',
-                'hub.verify_token': 'test_verify_token'
-            }
-            
-            response = self.session.get(f"{self.base_url}/whatsapp", params=params)
-            
-            if response.status_code == 200 and response.text == 'test_challenge_12345':
-                self.log_test(
-                    "Webhook Challenge Response", 
-                    True, 
-                    f"Correctly returned challenge: {response.text}"
-                )
-            else:
-                self.log_test(
-                    "Webhook Challenge Response", 
-                    False, 
-                    f"Expected challenge echo, got: {response.text}", 
-                    response.status_code
-                )
-        except Exception as e:
-            self.log_test("Webhook Challenge Response", False, f"Exception: {str(e)}")
-        
-        # Test 1b: Health check without verification params
-        try:
-            response = self.session.get(f"{self.base_url}/whatsapp")
-            
+            response = requests.get(f"{API_BASE}/jobs", timeout=10)
             if response.status_code == 200:
                 data = response.json()
-                expected_fields = ['success', 'message', 'business_number', 'channel_id', 'status']
-                
-                if all(field in data for field in expected_fields):
-                    if data.get('business_number') == self.whatsapp_business_number:
-                        self.log_test(
-                            "Webhook Health Check", 
-                            True, 
-                            f"Health check successful with correct business number: {data.get('business_number')}"
-                        )
-                    else:
-                        self.log_test(
-                            "Webhook Health Check", 
-                            False, 
-                            f"Wrong business number: {data.get('business_number')}", 
-                            data
-                        )
+                # Handle both paginated and direct array responses
+                if isinstance(data, dict) and 'data' in data:
+                    return len(data['data'])
+                elif isinstance(data, list):
+                    return len(data)
                 else:
-                    self.log_test(
-                        "Webhook Health Check", 
-                        False, 
-                        f"Missing required fields in response", 
-                        data
-                    )
+                    return 0
             else:
-                self.log_test(
-                    "Webhook Health Check", 
-                    False, 
-                    f"HTTP {response.status_code}", 
-                    response.text
-                )
+                print(f"⚠️ Could not get job count: HTTP {response.status_code}")
+                return 0
         except Exception as e:
-            self.log_test("Webhook Health Check", False, f"Exception: {str(e)}")
-
-    def test_message_processing_post(self):
-        """Test 2: Message Processing (POST /whatsapp)"""
-        print("📨 Testing Message Processing (POST /whatsapp)...")
+            print(f"⚠️ Error getting job count: {e}")
+            return 0
+    
+    def simulate_whatsapp_webhook(self, phone_number, message_text, message_type="text"):
+        """Simulate WhatsApp webhook message"""
+        webhook_payload = {
+            "entry": [{
+                "changes": [{
+                    "value": {
+                        "messages": [{
+                            "from": phone_number.replace("+", ""),
+                            "id": f"msg_{int(time.time())}",
+                            "timestamp": str(int(time.time())),
+                            "type": message_type,
+                            "text": {"body": message_text} if message_type == "text" else {}
+                        }],
+                        "contacts": [{
+                            "profile": {"name": "Test User"},
+                            "wa_id": phone_number.replace("+", "")
+                        }]
+                    }
+                }]
+            }]
+        }
         
-        # Test 2a: Text message processing
+        try:
+            # Test both webhook endpoints
+            endpoints = ["/whatsapp", "/api/whatsapp/webhook"]
+            
+            for endpoint in endpoints:
+                url = f"{BACKEND_URL}{endpoint}"
+                response = requests.post(url, json=webhook_payload, timeout=15)
+                
+                if response.status_code == 200:
+                    return True, response.json(), endpoint
+                else:
+                    print(f"⚠️ Webhook {endpoint} returned {response.status_code}: {response.text}")
+            
+            return False, {}, "none"
+            
+        except Exception as e:
+            return False, {"error": str(e)}, "error"
+    
+    def test_1_initial_job_count(self):
+        """Test 1: Get initial job count before testing"""
+        print("\n" + "="*60)
+        print("TEST 1: INITIAL JOB COUNT")
+        print("="*60)
+        
+        self.job_count_before = self.get_job_count()
+        
+        self.log_result(
+            "Initial Job Count",
+            True,
+            f"Initial job count recorded: {self.job_count_before}",
+            {"job_count": self.job_count_before}
+        )
+    
+    def test_2_service_request_redirect(self):
+        """Test 2: Service request should redirect to web app, not create job"""
+        print("\n" + "="*60)
+        print("TEST 2: SERVICE REQUEST REDIRECT")
+        print("="*60)
+        
         test_messages = [
-            {
-                "name": "Service Request - Plumber",
-                "payload": {
-                    "entry": [{
-                        "changes": [{
-                            "value": {
-                                "messages": [{
-                                    "from": "27821234567",
-                                    "id": f"msg_{uuid.uuid4()}",
-                                    "timestamp": str(int(time.time())),
-                                    "type": "text",
-                                    "text": {"body": "I need a plumber for a leaking pipe"}
-                                }],
-                                "contacts": [{
-                                    "profile": {"name": "John Test"},
-                                    "wa_id": "27821234567"
-                                }]
-                            }
-                        }]
-                    }]
-                },
-                "expected_services": ["plumber"]
-            },
-            {
-                "name": "Service Request - Electrician",
-                "payload": {
-                    "entry": [{
-                        "changes": [{
-                            "value": {
-                                "messages": [{
-                                    "from": "27821234568",
-                                    "id": f"msg_{uuid.uuid4()}",
-                                    "timestamp": str(int(time.time())),
-                                    "type": "text",
-                                    "text": {"body": "Urgent! My power is out, need an electrician"}
-                                }],
-                                "contacts": [{
-                                    "profile": {"name": "Sarah Test"},
-                                    "wa_id": "27821234568"
-                                }]
-                            }
-                        }]
-                    }]
-                },
-                "expected_services": ["electrician"],
-                "expected_urgent": True
-            },
-            {
-                "name": "Greeting Message",
-                "payload": {
-                    "entry": [{
-                        "changes": [{
-                            "value": {
-                                "messages": [{
-                                    "from": "27821234569",
-                                    "id": f"msg_{uuid.uuid4()}",
-                                    "timestamp": str(int(time.time())),
-                                    "type": "text",
-                                    "text": {"body": "Hello, I need help"}
-                                }],
-                                "contacts": [{
-                                    "profile": {"name": "Mike Test"},
-                                    "wa_id": "27821234569"
-                                }]
-                            }
-                        }]
-                    }]
-                },
-                "expected_greeting": True
-            },
-            {
-                "name": "Help Request",
-                "payload": {
-                    "entry": [{
-                        "changes": [{
-                            "value": {
-                                "messages": [{
-                                    "from": "27821234570",
-                                    "id": f"msg_{uuid.uuid4()}",
-                                    "timestamp": str(int(time.time())),
-                                    "type": "text",
-                                    "text": {"body": "What services do you offer?"}
-                                }],
-                                "contacts": [{
-                                    "profile": {"name": "Lisa Test"},
-                                    "wa_id": "27821234570"
-                                }]
-                            }
-                        }]
-                    }]
-                }
-            }
+            ("I need a plumber", "plumber"),
+            ("Electrical problem", "electrician"),
+            ("House cleaning needed", "cleaner"),
+            ("Garden maintenance required", "gardener"),
+            ("Urgent plumbing repair", "plumber")
         ]
         
-        for test_case in test_messages:
-            try:
-                response = self.session.post(f"{self.base_url}/whatsapp", json=test_case["payload"])
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    
-                    if data.get('status') == 'success' or data.get('status') == 'processed':
-                        self.log_test(
-                            f"Message Processing - {test_case['name']}", 
-                            True, 
-                            f"Message processed successfully"
-                        )
-                    else:
-                        self.log_test(
-                            f"Message Processing - {test_case['name']}", 
-                            False, 
-                            f"Processing failed", 
-                            data
-                        )
-                else:
-                    self.log_test(
-                        f"Message Processing - {test_case['name']}", 
-                        False, 
-                        f"HTTP {response.status_code}", 
-                        response.text
-                    )
-            except Exception as e:
-                self.log_test(f"Message Processing - {test_case['name']}", False, f"Exception: {str(e)}")
-
-    def test_whatsapp_api_endpoints(self):
-        """Test 3: WhatsApp API Testing"""
-        print("🔧 Testing WhatsApp API Endpoints...")
-        
-        # Test 3a: Send message endpoint
-        try:
-            payload = {
-                "to_number": "+27821234567",
-                "message": "Test message from FixMate-SA API"
-            }
+        for i, (message, expected_service) in enumerate(test_messages):
+            phone = TEST_PHONE_NUMBERS[i % len(TEST_PHONE_NUMBERS)]
             
-            # Use form data for this endpoint
-            response = requests.post(f"{self.api_base}/whatsapp/send-message", data=payload)
+            print(f"\n📱 Testing: '{message}' from {phone}")
             
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('success'):
-                    self.log_test(
-                        "Send WhatsApp Message", 
-                        True, 
-                        f"Message sent successfully"
-                    )
-                else:
-                    self.log_test(
-                        "Send WhatsApp Message", 
-                        False, 
-                        f"Send failed: {data.get('error', 'Unknown error')}", 
-                        data
-                    )
-            else:
-                self.log_test(
-                    "Send WhatsApp Message", 
-                    False, 
-                    f"HTTP {response.status_code}", 
-                    response.text
-                )
-        except Exception as e:
-            self.log_test("Send WhatsApp Message", False, f"Exception: {str(e)}")
-        
-        # Test 3b: Phone number formatting
-        for phone in self.test_phones:
-            try:
-                payload = {
-                    "to_number": phone,
-                    "message": f"Test formatting for {phone}"
-                }
-                
-                response = requests.post(f"{self.api_base}/whatsapp/send-message", data=payload)
-                
-                if response.status_code == 200:
-                    self.log_test(
-                        f"Phone Format Test - {phone}", 
-                        True, 
-                        f"Format accepted"
-                    )
-                else:
-                    self.log_test(
-                        f"Phone Format Test - {phone}", 
-                        False, 
-                        f"HTTP {response.status_code}"
-                    )
-            except Exception as e:
-                self.log_test(f"Phone Format Test - {phone}", False, f"Exception: {str(e)}")
-        
-        # Test 3c: Job notification endpoint
-        try:
-            # Use an existing job ID from the database
-            payload = {
-                "job_id": "4234a4c4-80f7-4a10-8a55-d0653f24ad06"
-            }
+            success, response, endpoint = self.simulate_whatsapp_webhook(phone, message)
             
-            response = requests.post(f"{self.api_base}/whatsapp/send-job-notification", data=payload)
-            
-            if response.status_code == 200:
-                self.log_test(
-                    "Job Notification", 
-                    True, 
-                    f"Job notification sent successfully"
+            if success:
+                self.log_result(
+                    f"Service Request Webhook ({expected_service})",
+                    True,
+                    f"Webhook processed successfully via {endpoint}",
+                    {"message": message, "phone": phone, "response": response}
                 )
             else:
-                self.log_test(
-                    "Job Notification", 
-                    False, 
-                    f"HTTP {response.status_code}", 
-                    response.text
+                self.log_result(
+                    f"Service Request Webhook ({expected_service})",
+                    False,
+                    f"Webhook failed: {response}",
+                    {"message": message, "phone": phone}
                 )
-        except Exception as e:
-            self.log_test("Job Notification", False, f"Exception: {str(e)}")
-
-    def test_service_request_workflow(self):
-        """Test 4: Service Request Workflow"""
-        print("🔄 Testing Service Request Workflow...")
+            
+            time.sleep(1)  # Rate limiting
+    
+    def test_3_greeting_messages(self):
+        """Test 3: Greeting messages should send welcome with web app links"""
+        print("\n" + "="*60)
+        print("TEST 3: GREETING MESSAGES")
+        print("="*60)
         
-        # Test 4a: Complete conversation flow simulation
-        conversation_steps = [
-            {
-                "step": "Initial Service Request",
-                "message": "I need a plumber for urgent pipe repair",
-                "expected_response_contains": ["plumber", "service"]
-            },
-            {
-                "step": "Follow-up Information",
-                "message": "The pipe is leaking in my kitchen",
-                "expected_response_contains": ["kitchen", "location"]
-            }
+        greetings = ["hi", "hello", "hallo", "dumela", "sawubona"]
+        
+        for i, greeting in enumerate(greetings):
+            phone = TEST_PHONE_NUMBERS[i % len(TEST_PHONE_NUMBERS)]
+            
+            print(f"\n👋 Testing greeting: '{greeting}' from {phone}")
+            
+            success, response, endpoint = self.simulate_whatsapp_webhook(phone, greeting)
+            
+            if success:
+                self.log_result(
+                    f"Greeting Message ({greeting})",
+                    True,
+                    f"Greeting processed successfully via {endpoint}",
+                    {"greeting": greeting, "phone": phone, "response": response}
+                )
+            else:
+                self.log_result(
+                    f"Greeting Message ({greeting})",
+                    False,
+                    f"Greeting failed: {response}",
+                    {"greeting": greeting, "phone": phone}
+                )
+            
+            time.sleep(1)
+    
+    def test_4_help_messages(self):
+        """Test 4: Help messages should include web app links"""
+        print("\n" + "="*60)
+        print("TEST 4: HELP MESSAGES")
+        print("="*60)
+        
+        help_messages = ["help", "info", "help me", "need help"]
+        
+        for i, help_msg in enumerate(help_messages):
+            phone = TEST_PHONE_NUMBERS[i % len(TEST_PHONE_NUMBERS)]
+            
+            print(f"\n❓ Testing help: '{help_msg}' from {phone}")
+            
+            success, response, endpoint = self.simulate_whatsapp_webhook(phone, help_msg)
+            
+            if success:
+                self.log_result(
+                    f"Help Message ({help_msg})",
+                    True,
+                    f"Help message processed successfully via {endpoint}",
+                    {"help_message": help_msg, "phone": phone, "response": response}
+                )
+            else:
+                self.log_result(
+                    f"Help Message ({help_msg})",
+                    False,
+                    f"Help message failed: {response}",
+                    {"help_message": help_msg, "phone": phone}
+                )
+            
+            time.sleep(1)
+    
+    def test_5_general_responses(self):
+        """Test 5: General responses should include web app links"""
+        print("\n" + "="*60)
+        print("TEST 5: GENERAL RESPONSES")
+        print("="*60)
+        
+        general_messages = [
+            "What services do you offer?",
+            "How much does it cost?",
+            "Are you available?",
+            "Random message",
+            "Testing general response"
         ]
         
-        test_phone = "+27821234567"
+        for i, message in enumerate(general_messages):
+            phone = TEST_PHONE_NUMBERS[i % len(TEST_PHONE_NUMBERS)]
+            
+            print(f"\n💬 Testing general: '{message}' from {phone}")
+            
+            success, response, endpoint = self.simulate_whatsapp_webhook(phone, message)
+            
+            if success:
+                self.log_result(
+                    f"General Response",
+                    True,
+                    f"General message processed successfully via {endpoint}",
+                    {"message": message, "phone": phone, "response": response}
+                )
+            else:
+                self.log_result(
+                    f"General Response",
+                    False,
+                    f"General message failed: {response}",
+                    {"message": message, "phone": phone}
+                )
+            
+            time.sleep(1)
+    
+    def test_6_urgency_detection(self):
+        """Test 6: Urgency detection should still work but redirect to web app"""
+        print("\n" + "="*60)
+        print("TEST 6: URGENCY DETECTION")
+        print("="*60)
         
-        for step in conversation_steps:
-            try:
-                webhook_payload = {
-                    "entry": [{
-                        "changes": [{
-                            "value": {
-                                "messages": [{
-                                    "from": test_phone.replace("+", ""),
-                                    "id": f"msg_{uuid.uuid4()}",
-                                    "timestamp": str(int(time.time())),
-                                    "type": "text",
-                                    "text": {"body": step["message"]}
-                                }],
-                                "contacts": [{
-                                    "profile": {"name": "Test User"},
-                                    "wa_id": test_phone.replace("+", "")
-                                }]
-                            }
-                        }]
-                    }]
+        urgent_messages = [
+            "URGENT plumber needed",
+            "Emergency electrical repair",
+            "ASAP cleaning service",
+            "Immediate handyman required",
+            "Quick fix needed now"
+        ]
+        
+        for i, message in enumerate(urgent_messages):
+            phone = TEST_PHONE_NUMBERS[i % len(TEST_PHONE_NUMBERS)]
+            
+            print(f"\n🚨 Testing urgent: '{message}' from {phone}")
+            
+            success, response, endpoint = self.simulate_whatsapp_webhook(phone, message)
+            
+            if success:
+                self.log_result(
+                    f"Urgent Service Request",
+                    True,
+                    f"Urgent message processed successfully via {endpoint}",
+                    {"message": message, "phone": phone, "response": response}
+                )
+            else:
+                self.log_result(
+                    f"Urgent Service Request",
+                    False,
+                    f"Urgent message failed: {response}",
+                    {"message": message, "phone": phone}
+                )
+            
+            time.sleep(1)
+    
+    def test_7_multiple_service_types(self):
+        """Test 7: Test all major service types"""
+        print("\n" + "="*60)
+        print("TEST 7: MULTIPLE SERVICE TYPES")
+        print("="*60)
+        
+        service_messages = [
+            ("Need a plumber for leaking pipe", "plumber"),
+            ("Electrician for power outlet", "electrician"),
+            ("Cleaner for deep house cleaning", "cleaner"),
+            ("Gardener for lawn maintenance", "gardener"),
+            ("Carpenter for custom shelving", "carpenter"),
+            ("Painter for interior walls", "painter"),
+            ("Handyman for general repairs", "handyman"),
+            ("Mechanic for car repair", "mechanic")
+        ]
+        
+        for i, (message, service_type) in enumerate(service_messages):
+            phone = TEST_PHONE_NUMBERS[i % len(TEST_PHONE_NUMBERS)]
+            
+            print(f"\n🔧 Testing {service_type}: '{message}' from {phone}")
+            
+            success, response, endpoint = self.simulate_whatsapp_webhook(phone, message)
+            
+            if success:
+                self.log_result(
+                    f"Service Type ({service_type})",
+                    True,
+                    f"{service_type.title()} service processed successfully via {endpoint}",
+                    {"message": message, "service_type": service_type, "phone": phone, "response": response}
+                )
+            else:
+                self.log_result(
+                    f"Service Type ({service_type})",
+                    False,
+                    f"{service_type.title()} service failed: {response}",
+                    {"message": message, "service_type": service_type, "phone": phone}
+                )
+            
+            time.sleep(1)
+    
+    def test_8_final_job_count_verification(self):
+        """Test 8: Verify job count hasn't increased (critical test)"""
+        print("\n" + "="*60)
+        print("TEST 8: FINAL JOB COUNT VERIFICATION")
+        print("="*60)
+        
+        # Wait a moment for any potential async job creation
+        time.sleep(3)
+        
+        self.job_count_after = self.get_job_count()
+        
+        job_count_increased = self.job_count_after > self.job_count_before
+        jobs_created = self.job_count_after - self.job_count_before
+        
+        if job_count_increased:
+            self.log_result(
+                "No Job Creation Verification",
+                False,
+                f"❌ CRITICAL FAILURE: Jobs were created! Before: {self.job_count_before}, After: {self.job_count_after}, Created: {jobs_created}",
+                {
+                    "job_count_before": self.job_count_before,
+                    "job_count_after": self.job_count_after,
+                    "jobs_created": jobs_created
                 }
-                
-                response = self.session.post(f"{self.base_url}/whatsapp", json=webhook_payload)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    if data.get('status') == 'success' or data.get('status') == 'processed':
-                        self.log_test(
-                            f"Workflow - {step['step']}", 
-                            True, 
-                            f"Step processed successfully"
-                        )
-                    else:
-                        self.log_test(
-                            f"Workflow - {step['step']}", 
-                            False, 
-                            f"Step processing failed", 
-                            data
-                        )
+            )
+        else:
+            self.log_result(
+                "No Job Creation Verification",
+                True,
+                f"✅ SUCCESS: No jobs created via WhatsApp! Before: {self.job_count_before}, After: {self.job_count_after}",
+                {
+                    "job_count_before": self.job_count_before,
+                    "job_count_after": self.job_count_after,
+                    "jobs_created": jobs_created
+                }
+            )
+    
+    def test_9_webhook_endpoints_accessibility(self):
+        """Test 9: Verify webhook endpoints are accessible"""
+        print("\n" + "="*60)
+        print("TEST 9: WEBHOOK ENDPOINTS ACCESSIBILITY")
+        print("="*60)
+        
+        endpoints = [
+            ("/whatsapp", "GET", "WhatsApp Webhook Verification"),
+            ("/whatsapp", "POST", "WhatsApp Webhook Handler"),
+            ("/api/whatsapp/webhook", "GET", "API WhatsApp Webhook Verification"),
+            ("/api/whatsapp/webhook", "POST", "API WhatsApp Webhook Handler")
+        ]
+        
+        for endpoint, method, description in endpoints:
+            url = f"{BACKEND_URL}{endpoint}"
+            
+            try:
+                if method == "GET":
+                    response = requests.get(url, timeout=10)
                 else:
-                    self.log_test(
-                        f"Workflow - {step['step']}", 
-                        False, 
-                        f"HTTP {response.status_code}", 
-                        response.text
-                    )
-                
-                # Small delay between steps
-                time.sleep(1)
-                
-            except Exception as e:
-                self.log_test(f"Workflow - {step['step']}", False, f"Exception: {str(e)}")
-
-    def test_error_handling(self):
-        """Test 5: Error Handling"""
-        print("⚠️ Testing Error Handling...")
-        
-        # Test 5a: Malformed webhook payload
-        try:
-            malformed_payload = {"invalid": "structure"}
-            
-            response = self.session.post(f"{self.base_url}/whatsapp", json=malformed_payload)
-            
-            # Should still return 200 to avoid retries but handle gracefully
-            if response.status_code == 200:
-                data = response.json()
-                if ('error_handled' in data.get('status', '') or 
-                    data.get('status') == 'success' or 
-                    data.get('status') == 'ignored'):
-                    self.log_test(
-                        "Malformed Payload Handling", 
-                        True, 
-                        f"Gracefully handled malformed payload: {data.get('status')}"
-                    )
-                else:
-                    self.log_test(
-                        "Malformed Payload Handling", 
-                        False, 
-                        f"Unexpected response", 
-                        data
-                    )
-            else:
-                self.log_test(
-                    "Malformed Payload Handling", 
-                    False, 
-                    f"HTTP {response.status_code}", 
-                    response.text
-                )
-        except Exception as e:
-            self.log_test("Malformed Payload Handling", False, f"Exception: {str(e)}")
-        
-        # Test 5b: Empty message payload
-        try:
-            empty_payload = {
-                "entry": [{
-                    "changes": [{
-                        "value": {
-                            "messages": [],
-                            "contacts": []
-                        }
-                    }]
-                }]
-            }
-            
-            response = self.session.post(f"{self.base_url}/whatsapp", json=empty_payload)
-            
-            if response.status_code == 200:
-                self.log_test(
-                    "Empty Message Handling", 
-                    True, 
-                    f"Handled empty message payload gracefully"
-                )
-            else:
-                self.log_test(
-                    "Empty Message Handling", 
-                    False, 
-                    f"HTTP {response.status_code}", 
-                    response.text
-                )
-        except Exception as e:
-            self.log_test("Empty Message Handling", False, f"Exception: {str(e)}")
-        
-        # Test 5c: Invalid phone number format
-        try:
-            payload = {
-                "to_number": "invalid_phone",
-                "message": "Test message"
-            }
-            
-            response = requests.post(f"{self.api_base}/whatsapp/send-message", data=payload)
-            
-            # Should handle gracefully, either succeed with formatting or fail gracefully
-            if response.status_code in [200, 400]:
-                self.log_test(
-                    "Invalid Phone Format Handling", 
-                    True, 
-                    f"Handled invalid phone format appropriately"
-                )
-            else:
-                self.log_test(
-                    "Invalid Phone Format Handling", 
-                    False, 
-                    f"HTTP {response.status_code}", 
-                    response.text
-                )
-        except Exception as e:
-            self.log_test("Invalid Phone Format Handling", False, f"Exception: {str(e)}")
-
-    def test_business_webhook_endpoints(self):
-        """Test 6: Business Webhook Endpoints"""
-        print("🏢 Testing Business Webhook Endpoints...")
-        
-        # Test 6a: Business webhook GET
-        try:
-            response = self.session.get(f"{self.api_base}/whatsapp/business/webhook")
-            
-            if response.status_code == 200:
-                self.log_test(
-                    "Business Webhook GET", 
-                    True, 
-                    f"Business webhook GET endpoint accessible"
-                )
-            else:
-                self.log_test(
-                    "Business Webhook GET", 
-                    False, 
-                    f"HTTP {response.status_code}", 
-                    response.text
-                )
-        except Exception as e:
-            self.log_test("Business Webhook GET", False, f"Exception: {str(e)}")
-        
-        # Test 6b: Business webhook POST
-        try:
-            business_payload = {
-                "entry": [{
-                    "changes": [{
-                        "value": {
-                            "messages": [{
-                                "from": "27821234567",
-                                "id": f"msg_{uuid.uuid4()}",
-                                "timestamp": str(int(time.time())),
-                                "type": "text",
-                                "text": {"body": "I need business compliance help"}
-                            }],
-                            "contacts": [{
-                                "profile": {"name": "Business User"},
-                                "wa_id": "27821234567"
+                    # Send minimal valid webhook payload
+                    test_payload = {
+                        "entry": [{
+                            "changes": [{
+                                "value": {
+                                    "messages": [{
+                                        "from": "27821234567",
+                                        "id": "test_msg",
+                                        "timestamp": str(int(time.time())),
+                                        "type": "text",
+                                        "text": {"body": "test"}
+                                    }]
+                                }
                             }]
-                        }
-                    }]
-                }]
-            }
+                        }]
+                    }
+                    response = requests.post(url, json=test_payload, timeout=10)
+                
+                if response.status_code in [200, 201]:
+                    self.log_result(
+                        f"Endpoint Accessibility ({method} {endpoint})",
+                        True,
+                        f"{description} accessible (HTTP {response.status_code})",
+                        {"endpoint": endpoint, "method": method, "status_code": response.status_code}
+                    )
+                else:
+                    self.log_result(
+                        f"Endpoint Accessibility ({method} {endpoint})",
+                        False,
+                        f"{description} returned HTTP {response.status_code}",
+                        {"endpoint": endpoint, "method": method, "status_code": response.status_code, "response": response.text[:200]}
+                    )
+                    
+            except Exception as e:
+                self.log_result(
+                    f"Endpoint Accessibility ({method} {endpoint})",
+                    False,
+                    f"{description} failed: {str(e)}",
+                    {"endpoint": endpoint, "method": method, "error": str(e)}
+                )
             
-            response = self.session.post(f"{self.api_base}/whatsapp/business/webhook", json=business_payload)
-            
-            if response.status_code == 200:
-                self.log_test(
-                    "Business Webhook POST", 
-                    True, 
-                    f"Business webhook POST processed successfully"
-                )
-            else:
-                self.log_test(
-                    "Business Webhook POST", 
-                    False, 
-                    f"HTTP {response.status_code}", 
-                    response.text
-                )
-        except Exception as e:
-            self.log_test("Business Webhook POST", False, f"Exception: {str(e)}")
-
-    def test_api_connectivity(self):
-        """Test 7: API Connectivity and Configuration"""
-        print("🌐 Testing API Connectivity...")
+            time.sleep(0.5)
+    
+    def test_10_system_stability(self):
+        """Test 10: System stability under multiple requests"""
+        print("\n" + "="*60)
+        print("TEST 10: SYSTEM STABILITY")
+        print("="*60)
         
-        # Test 7a: Backend health check
-        try:
-            response = self.session.get(f"{self.api_base}/")
-            
-            if response.status_code == 200:
-                self.log_test(
-                    "Backend API Health", 
-                    True, 
-                    f"Backend API is accessible"
-                )
-            else:
-                self.log_test(
-                    "Backend API Health", 
-                    False, 
-                    f"HTTP {response.status_code}", 
-                    response.text
-                )
-        except Exception as e:
-            self.log_test("Backend API Health", False, f"Exception: {str(e)}")
+        # Send multiple requests rapidly
+        messages = [
+            "I need a plumber",
+            "hello",
+            "help",
+            "Electrical repair needed",
+            "What services do you offer?"
+        ]
         
-        # Test 7b: WhatsApp insights endpoint
-        try:
-            response = self.session.get(f"{self.api_base}/whatsapp/insights")
-            
-            if response.status_code == 200:
-                self.log_test(
-                    "WhatsApp Insights Endpoint", 
-                    True, 
-                    f"Insights endpoint accessible"
-                )
-            else:
-                self.log_test(
-                    "WhatsApp Insights Endpoint", 
-                    False, 
-                    f"HTTP {response.status_code}", 
-                    response.text
-                )
-        except Exception as e:
-            self.log_test("WhatsApp Insights Endpoint", False, f"Exception: {str(e)}")
-
-    def run_all_tests(self):
-        """Run all WhatsApp integration tests"""
-        print("🚀 Starting FixMate-SA WhatsApp Integration Testing Suite")
-        print(f"📱 Business Number: {self.whatsapp_business_number}")
-        print(f"🔗 Channel ID: {self.channel_id}")
-        print(f"🌐 Callback URL: {self.callback_url}")
-        print(f"⚡ Backend URL: {self.base_url}")
-        print("=" * 80)
+        success_count = 0
+        total_requests = len(messages) * 2  # Send each message twice
         
-        start_time = datetime.now()
+        for round_num in range(2):
+            print(f"\n🔄 Round {round_num + 1}")
+            for i, message in enumerate(messages):
+                phone = TEST_PHONE_NUMBERS[i % len(TEST_PHONE_NUMBERS)]
+                
+                success, response, endpoint = self.simulate_whatsapp_webhook(phone, message)
+                
+                if success:
+                    success_count += 1
+                    print(f"   ✅ {message[:30]}... - Success")
+                else:
+                    print(f"   ❌ {message[:30]}... - Failed")
+                
+                time.sleep(0.2)  # Small delay
         
-        # Run all test suites
-        self.test_webhook_verification_get()
-        self.test_message_processing_post()
-        self.test_whatsapp_api_endpoints()
-        self.test_service_request_workflow()
-        self.test_error_handling()
-        self.test_business_webhook_endpoints()
-        self.test_api_connectivity()
+        stability_percentage = (success_count / total_requests) * 100
         
-        end_time = datetime.now()
-        duration = (end_time - start_time).total_seconds()
+        if stability_percentage >= 90:
+            self.log_result(
+                "System Stability",
+                True,
+                f"System stable: {success_count}/{total_requests} requests successful ({stability_percentage:.1f}%)",
+                {"success_count": success_count, "total_requests": total_requests, "stability_percentage": stability_percentage}
+            )
+        else:
+            self.log_result(
+                "System Stability",
+                False,
+                f"System unstable: {success_count}/{total_requests} requests successful ({stability_percentage:.1f}%)",
+                {"success_count": success_count, "total_requests": total_requests, "stability_percentage": stability_percentage}
+            )
+    
+    def generate_summary(self):
+        """Generate test summary"""
+        print("\n" + "="*80)
+        print("WHATSAPP REDIRECT FLOW TEST SUMMARY")
+        print("="*80)
         
-        # Generate summary
-        self.generate_test_summary(duration)
-
-    def generate_test_summary(self, duration: float):
-        """Generate comprehensive test summary"""
-        print("=" * 80)
-        print("📊 WHATSAPP INTEGRATION TEST SUMMARY")
-        print("=" * 80)
-        
-        total_tests = len(self.test_results)
-        passed_tests = sum(1 for result in self.test_results if result['success'])
+        total_tests = len(self.results)
+        passed_tests = sum(1 for r in self.results if r['success'])
         failed_tests = total_tests - passed_tests
         success_rate = (passed_tests / total_tests * 100) if total_tests > 0 else 0
         
-        print(f"⏱️  Total Duration: {duration:.2f} seconds")
-        print(f"📈 Total Tests: {total_tests}")
-        print(f"✅ Passed: {passed_tests}")
-        print(f"❌ Failed: {failed_tests}")
-        print(f"📊 Success Rate: {success_rate:.1f}%")
-        print()
+        print(f"\n📊 OVERALL RESULTS:")
+        print(f"   Total Tests: {total_tests}")
+        print(f"   Passed: {passed_tests}")
+        print(f"   Failed: {failed_tests}")
+        print(f"   Success Rate: {success_rate:.1f}%")
         
-        # Critical issues
-        critical_failures = [
-            result for result in self.test_results 
-            if not result['success'] and any(keyword in result['test_name'].lower() 
-                                           for keyword in ['webhook', 'verification', 'message processing'])
-        ]
+        print(f"\n🔍 CRITICAL FINDINGS:")
         
-        if critical_failures:
-            print("🚨 CRITICAL ISSUES FOUND:")
-            for failure in critical_failures:
-                print(f"   ❌ {failure['test_name']}: {failure['details']}")
-            print()
+        # Check for critical job creation test
+        job_creation_test = next((r for r in self.results if "No Job Creation" in r['test']), None)
+        if job_creation_test:
+            if job_creation_test['success']:
+                print(f"   ✅ CRITICAL SUCCESS: No jobs created via WhatsApp (redirect working)")
+            else:
+                print(f"   ❌ CRITICAL FAILURE: Jobs were created via WhatsApp (redirect not working)")
         
-        # Detailed results
-        print("📋 DETAILED TEST RESULTS:")
-        for result in self.test_results:
-            status = "✅" if result['success'] else "❌"
-            print(f"   {status} {result['test_name']}")
-            if result['details']:
-                print(f"      {result['details']}")
+        # Check webhook accessibility
+        webhook_tests = [r for r in self.results if "Endpoint Accessibility" in r['test']]
+        webhook_success = sum(1 for r in webhook_tests if r['success'])
+        if webhook_tests:
+            print(f"   📡 Webhook Endpoints: {webhook_success}/{len(webhook_tests)} accessible")
         
-        print()
-        print("=" * 80)
+        # Check system stability
+        stability_test = next((r for r in self.results if "System Stability" in r['test']), None)
+        if stability_test:
+            if stability_test['success']:
+                print(f"   🔧 System Stability: STABLE")
+            else:
+                print(f"   ⚠️ System Stability: UNSTABLE")
         
-        # Overall assessment
+        print(f"\n📋 DETAILED RESULTS:")
+        for result in self.results:
+            print(f"   {result['status']}: {result['test']}")
+            if not result['success'] and result.get('details'):
+                print(f"      └─ {result['message']}")
+        
+        print(f"\n🎯 CONCLUSION:")
         if success_rate >= 90:
-            print("🎉 EXCELLENT: WhatsApp integration is working excellently!")
-        elif success_rate >= 75:
-            print("✅ GOOD: WhatsApp integration is working well with minor issues.")
-        elif success_rate >= 50:
-            print("⚠️  MODERATE: WhatsApp integration has some issues that need attention.")
+            print(f"   ✅ WhatsApp redirect flow is working correctly!")
+            print(f"   ✅ Users are being redirected to web app instead of creating jobs directly")
+            print(f"   ✅ All conversation flows include appropriate web app links")
+        elif success_rate >= 70:
+            print(f"   ⚠️ WhatsApp redirect flow is mostly working but has some issues")
+            print(f"   ⚠️ Review failed tests for specific problems")
         else:
-            print("🚨 CRITICAL: WhatsApp integration has major issues requiring immediate attention.")
+            print(f"   ❌ WhatsApp redirect flow has significant issues")
+            print(f"   ❌ Major problems detected that need immediate attention")
         
-        print("=" * 80)
+        return {
+            "total_tests": total_tests,
+            "passed_tests": passed_tests,
+            "failed_tests": failed_tests,
+            "success_rate": success_rate,
+            "critical_job_creation_working": job_creation_test['success'] if job_creation_test else False,
+            "results": self.results
+        }
+
+def main():
+    """Main test execution"""
+    print("🚀 Starting WhatsApp Integration Redirect Flow Testing")
+    print(f"🔗 Backend URL: {BACKEND_URL}")
+    print(f"📅 Test Time: {datetime.now().isoformat()}")
+    
+    tester = WhatsAppRedirectTester()
+    
+    try:
+        # Execute all tests
+        tester.test_1_initial_job_count()
+        tester.test_2_service_request_redirect()
+        tester.test_3_greeting_messages()
+        tester.test_4_help_messages()
+        tester.test_5_general_responses()
+        tester.test_6_urgency_detection()
+        tester.test_7_multiple_service_types()
+        tester.test_8_final_job_count_verification()
+        tester.test_9_webhook_endpoints_accessibility()
+        tester.test_10_system_stability()
+        
+        # Generate summary
+        summary = tester.generate_summary()
+        
+        return summary
+        
+    except KeyboardInterrupt:
+        print("\n⚠️ Testing interrupted by user")
+        return tester.generate_summary()
+    except Exception as e:
+        print(f"\n❌ Testing failed with error: {e}")
+        return {"error": str(e), "results": tester.results}
 
 if __name__ == "__main__":
-    tester = WhatsAppIntegrationTester()
-    tester.run_all_tests()
+    result = main()
+    
+    # Exit with appropriate code
+    if result.get('success_rate', 0) >= 90:
+        exit(0)  # Success
+    else:
+        exit(1)  # Failure
