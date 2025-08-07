@@ -4008,10 +4008,11 @@ frontend:
 
 test_plan:
   current_focus:
-    - "360Dialog WhatsApp API Fix Testing - COMPLETED SUCCESSFULLY"
-  stuck_tasks: []
+    - "WhatsApp Integration - Updated Redirect Flow (Cost-Effective Approach)"
+  stuck_tasks:
+    - "WhatsApp Integration - Updated Redirect Flow (Cost-Effective Approach)"
   test_all: false
-  test_priority: "360dialog_api_fix_verified"
+  test_priority: "critical_whatsapp_redirect_implementation"
 
 agent_communication:
   - agent: "testing"
