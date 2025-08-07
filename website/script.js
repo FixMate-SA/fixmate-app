@@ -174,12 +174,12 @@ const translations = {
         
         // Features
         'features-title': 'Hoekom FixMate-SA Kies?',
-        'features-subtitle': 'Gevorderde tegnologie ontmoet betroubare diens vir die perfekte huis herstel ervaring',
+        'features-subtitle': 'Gevorderde tegnologie ontmoet betroubare diens vir die perfekte professionele diens ervaring',
         'smart-matching': 'Slim Passing',
-        'smart-matching-desc': 'KI-aangedrewe stelsel pas jou by die mees geskikte herstellers gebaseer op ligging, vaardighede, graderings, en beskikbaarheid. Geen eindelose soektog meer nie.',
-        'real-time-tracking-desc': 'Spoor jou hersteller se ligging en werk vordering in intyd. Weet presies wanneer hulle sal aankom en bly opgedateer gedurende die diens.',
+        'smart-matching-desc': 'KI-aangedrewe stelsel pas jou by die perfekte diens professionele gebaseer op ligging, vaardighede, graderings, en beskikbaarheid. Of jy \'n loodgieter, haarkapster, onderwyser, of IT kundige nodig het - geen eindelose soektog meer nie.',
+        'real-time-tracking-desc': 'Spoor jou diens professionele se ligging en vordering in intyd. Weet presies wanneer hulle sal aankom en bly opgedateer gedurende jou afspraak - van huis herstelwerk tot skoonheids behandelings.',
         'verification-safety': 'Verifikasie & Veiligheid',
-        'verification-safety-desc': 'Alle herstellers word geverifieer met agtergrond kontroles, ID verifikasie, en vaardigheids assesserings. Jou veiligheid is ons prioriteit.',
+        'verification-safety-desc': 'Alle diens professionele word geverifieer met agtergrond kontroles, ID verifikasie, en vaardigheids assesserings. Of dit \'n skoonheids terapeut, meganikus, of onderwyser is - jou veiligheid is ons prioriteit.',
         'whatsapp-integration': 'WhatsApp Integrasie',
         'whatsapp-integration-desc': 'Geen slimfoon nie? Geen probleem! Versoek dienste via WhatsApp of SMS. Volledige gespreksvloei vir alle gebruikers.',
         'multi-language-support': 'Multi-taal Ondersteuning',
