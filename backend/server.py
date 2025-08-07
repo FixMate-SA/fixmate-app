@@ -4929,36 +4929,59 @@ How can I help you today? 😊"""
     whatsapp_service.send_whatsapp_message(phone, welcome_msg)
 
 async def send_help_message(phone: str):
-    """Send help information."""
-    help_msg = f"""ℹ️ FixMate-SA Help
+    """Send comprehensive help information with user journey guidance."""
+    help_msg = f"""ℹ️ **FixMate-SA Help Guide**
 
-**How to request a service:**
+🔧 **How to Request ANY Service:**
 
-1️⃣ **Tell us what you need:**
-   • "I need a plumber"
-   • "Electrical problem"  
-   • "House cleaning needed"
+**Simply describe what you need in your own words:**
+• "I need someone to fix my leaking tap"
+• "Looking for house cleaning service"
+• "Require electrical work done"
+• "Need help with garden maintenance" 
+• "Want to hire a painter"
+• "My car needs servicing"
+• "Looking for a tutor for my child"
+• "Need catering for an event"
+• "Require pest control"
+• ...and ANY other service!
 
-2️⃣ **We'll guide you to our web app** for:
-   ✅ Account creation
-   ✅ Service request completion
-   ✅ Professional matching
-   ✅ Secure payments
+🚀 **Getting Started:**
 
-3️⃣ **Quick Links:**
-   📱 **Create Account & Request Service:**
-   👉 https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login
-   
-   🌐 **Learn More:**
-   👉 https://fixmate-sa-app-a448c751e1d2.herokuapp.com/website
+🆕 **First-time user?**
+1. Sign up: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-signup
+2. Verify your phone number
+3. Complete your profile
+4. Start requesting services!
 
-**Why use the web app?**
+🔐 **Returning user?**
+1. Login: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login  
+2. Access your dashboard
+3. View your service history
+4. Manage active requests
+
+🔄 **Forgot your password?**
+1. Go to: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login
+2. Click "Forgot Password"
+3. Enter your phone number
+4. Follow the reset instructions
+
+💡 **Why Use Our Web App?**
+✅ Access to ALL service types (not just examples)
 ✅ Better professional matching
-✅ Secure payment options
-✅ Real-time job tracking
-✅ Review and rating system
+✅ Secure payment processing
+✅ Real-time job tracking & updates  
+✅ Rate and review professionals
+✅ Service history and receipts
+✅ Account security and privacy
 
-What service do you need? 🔧"""
+📞 **Emergency Services:**
+For truly urgent emergencies, call emergency services first, then use our app for follow-up repairs.
+
+🌐 **Learn More:**
+👉 Visit: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/website
+
+**What service do you need today? Just describe it!** 🔧"""
 
     whatsapp_service.send_whatsapp_message(phone, help_msg)
 
