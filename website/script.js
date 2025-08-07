@@ -67,7 +67,7 @@ const translations = {
         
         // For Professionals
         'grow-business': 'Grow Your Service Business',
-        'grow-business-desc': 'Join thousands of successful fixers earning more with FixMate-SA\'s advanced platform',
+        'grow-business-desc': 'Join thousands of successful service professionals earning more with FixMate-SA\'s advanced platform - from hairdressers and tutors to mechanics and cleaners',
         'gamification-system': 'Gamification System',
         'gamification-desc': 'Earn Bronze, Silver, Gold, and Platinum tiers. Higher tiers get priority job notifications and better rates.',
         'instant-notifications': 'Instant Job Notifications',
