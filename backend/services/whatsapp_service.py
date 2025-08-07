@@ -43,71 +43,125 @@ class WhatsAppService:
             'AWAITING_RATING_COMMENT': 'awaiting_rating_comment'
         }
     
-    def send_whatsapp_message(self, to_number: str, message_body: str, media_url: str = None) -> bool:
+    def send_whatsapp_message(self, to_number: str, message_body: str, media_url: str = None, message_type: str = "text") -> bool:
         """
-        Send WhatsApp message via 360dialog API using the proven working implementation.
+        Enhanced WhatsApp message sending via 360Dialog API with better error handling.
         """
-        print("--- Attempting to send WhatsApp message ---")
+        print(f"📱 Sending WhatsApp message to {to_number}")
         
         if not self.api_key:
-            print("❌ API key not set.")
+            print("❌ API key not configured.")
             print(f"MOCK: Would send WhatsApp message to {to_number}: {message_body}")
-            return True  # Return True for development
+            return False
         
+        # Enhanced headers with proper API key format
         headers = {
             "D360-API-KEY": self.api_key,
             "Content-Type": "application/json"
         }
 
-        # Format recipient number (remove whatsapp: prefix and +)
-        recipient_number = to_number.replace("whatsapp:+", "").replace("whatsapp:", "").replace("+", "").strip()
+        # Enhanced number formatting for South African numbers
+        recipient_number = self._format_phone_number(to_number)
 
+        # Base payload structure for 360Dialog Cloud API
         payload = {
             "messaging_product": "whatsapp",
-            "recipient_type": "individual",
+            "recipient_type": "individual", 
             "to": recipient_number
         }
 
-        if message_body:
+        # Message content based on type
+        if message_type == "text" and message_body:
             payload["type"] = "text"
-            payload["text"] = {"body": message_body}
-        elif media_url:
+            payload["text"] = {
+                "body": message_body,
+                "preview_url": True  # Enable URL previews
+            }
+        elif message_type == "image" and media_url:
             payload["type"] = "image"
-            payload["image"] = {"link": media_url}
+            payload["image"] = {
+                "link": media_url,
+                "caption": message_body if message_body else ""
+            }
+        elif message_type == "template":
+            # For template messages (future enhancement)
+            payload["type"] = "template"
+            # Template structure would go here
         else:
-            print("❌ ERROR: No valid content provided.")
+            print("❌ ERROR: Invalid message type or missing content.")
             return False
 
-        print(f"🔁 Payload: {json.dumps(payload)}")
+        print(f"🔄 Sending to 360Dialog: {json.dumps(payload, indent=2)}")
 
         try:
-            response = requests.post(self.messages_url, headers=headers, json=payload)
-            print(f"✅ HTTP Status Code: {response.status_code}")
-            print(f"🔽 Response: {response.text}")
-
+            response = requests.post(self.messages_url, headers=headers, json=payload, timeout=30)
+            print(f"📊 HTTP Status: {response.status_code}")
+            
             if response.status_code == 200:
                 data = response.json()
                 message_id = data.get("messages", [{}])[0].get("id", "N/A")
-                print(f"✅ Message sent! ID: {message_id}")
+                print(f"✅ Message sent successfully! Message ID: {message_id}")
+                
+                # Log successful message for monitoring
+                self._log_message_success(to_number, message_id, message_body)
                 return True
+                
             elif response.status_code == 401:
-                print(f"WhatsApp API authentication failed. Using mock mode.")
-                print(f"MOCK: Would send WhatsApp message to {to_number}: {message_body}")
-                return True  # Return True for development to allow testing conversation flow
+                print(f"🔐 Authentication failed - check API key")
+                self._log_message_error(to_number, "AUTH_FAILED", response.text)
+                return False
+                
+            elif response.status_code == 429:
+                print(f"⚠️ Rate limit exceeded")
+                self._log_message_error(to_number, "RATE_LIMIT", response.text)
+                return False
+                
             else:
-                print(f"❌ ERROR sending WhatsApp message: {response.status_code} - {response.text}")
-                print(f"MOCK: Would send WhatsApp message to {to_number}: {message_body}")
-                return True  # Return True for development
+                print(f"❌ Message sending failed: {response.status_code}")
+                print(f"Response: {response.text}")
+                self._log_message_error(to_number, f"HTTP_{response.status_code}", response.text)
+                return False
 
-        except requests.exceptions.RequestException as e:
-            print(f"❌ ERROR sending WhatsApp message: {e}")
-            if hasattr(e, 'response') and e.response is not None:
-                try:
-                    print("🔽 Error Details:", e.response.json())
-                except:
-                    pass
-            print(f"MOCK: Would send WhatsApp message to {to_number}: {message_body}")
-            return True  # Return True for development
+        except requests.exceptions.Timeout:
+            print(f"⏱️ Request timeout - message may still be delivered")
+            self._log_message_error(to_number, "TIMEOUT", "Request timeout")
+            return False
+            
+        except requests.exceptions.ConnectionError:
+            print(f"🌐 Connection error - check network")
+            self._log_message_error(to_number, "CONNECTION_ERROR", "Network connection failed")
+            return False
+            
+        except Exception as e:
+            print(f"❌ Unexpected error: {str(e)}")
+            self._log_message_error(to_number, "UNKNOWN_ERROR", str(e))
+            return False
+    
+    def _format_phone_number(self, phone_number: str) -> str:
+        """
+        Enhanced phone number formatting for South African numbers.
+        """
+        # Remove common prefixes and formatting
+        clean_number = phone_number.replace("whatsapp:+", "").replace("whatsapp:", "").replace("+", "").replace(" ", "").replace("-", "").strip()
+        
+        # Handle South African number formats
+        if clean_number.startswith("27"):
+            return clean_number  # Already in international format
+        elif clean_number.startswith("0") and len(clean_number) == 10:
+            return f"27{clean_number[1:]}"  # Convert from local to international
+        elif len(clean_number) == 9:
+            return f"27{clean_number}"  # Add country code
+        else:
+            # Return as-is for other international numbers
+            return clean_number
+    
+    def _log_message_success(self, to_number: str, message_id: str, content: str):
+        """Log successful message sending for monitoring."""
+        print(f"📊 MESSAGE_SUCCESS: {to_number} | ID: {message_id} | Content: {content[:50]}...")
+    
+    def _log_message_error(self, to_number: str, error_type: str, error_details: str):
+        """Log message sending errors for monitoring."""
+        print(f"📊 MESSAGE_ERROR: {to_number} | Type: {error_type} | Details: {error_details}")
     
     def download_media(self, media_id: str) -> bytes:
         """
