@@ -359,6 +359,17 @@ class WhatsAppService:
                 result["content"] = text_body
                 result["processed_content"] = self._process_text_content(text_body)
                 
+                # Track received message statistics
+                processed_content = result["processed_content"]
+                self._track_whatsapp_statistic('message_received', {
+                    'phone_number': from_number,
+                    'message_type': msg_type,
+                    'service_detected': processed_content.get('detected_services', [None])[0],
+                    'is_urgent': processed_content.get('is_urgent', False),
+                    'is_greeting': processed_content.get('is_greeting', False),
+                    'conversation_id': f"{from_number}_{datetime.now().date()}"
+                })
+                
             elif msg_type == 'audio':
                 audio_id = message.get('audio', {}).get('id')
                 result["media_id"] = audio_id
