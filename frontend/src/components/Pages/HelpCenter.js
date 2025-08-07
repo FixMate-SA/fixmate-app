@@ -187,7 +187,7 @@ const HelpCenter = () => {
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">WhatsApp</h3>
               <p className="text-gray-600 mb-4">Message us on WhatsApp</p>
-              <a href="https://wa.me/27123456789" className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition inline-block">Message</a>
+              <a href="https://wa.me/27754466571" className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition inline-block">Message</a>
               <div className="text-sm text-gray-500 mt-2">Quick responses</div>
             </div>
           </div>
