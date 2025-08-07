@@ -160,10 +160,66 @@ class WhatsAppService:
     def _log_message_success(self, to_number: str, message_id: str, content: str):
         """Log successful message sending for monitoring."""
         print(f"📊 MESSAGE_SUCCESS: {to_number} | ID: {message_id} | Content: {content[:50]}...")
+        
+        # Track statistics in database
+        self._track_whatsapp_statistic('message_sent', {
+            'phone_number': to_number,
+            'message_id': message_id,
+            'content_preview': content[:100],
+            'response_type': self._detect_response_type(content)
+        })
     
     def _log_message_error(self, to_number: str, error_type: str, error_details: str):
         """Log message sending errors for monitoring."""
         print(f"📊 MESSAGE_ERROR: {to_number} | Type: {error_type} | Details: {error_details}")
+    
+    def _track_whatsapp_statistic(self, event_type: str, data: dict):
+        """Track WhatsApp statistics for admin dashboard"""
+        try:
+            from models import WhatsAppStatistic
+            from database import get_db
+            from datetime import datetime, timedelta
+            
+            # Get database session
+            db = next(get_db())
+            
+            # Create statistics record
+            stat = WhatsAppStatistic(
+                event_type=event_type,
+                phone_number=self._anonymize_phone(data.get('phone_number', '')),
+                message_type=data.get('message_type', 'text'),
+                service_detected=data.get('service_detected'),
+                is_urgent=data.get('is_urgent', False),
+                is_greeting=data.get('is_greeting', False),
+                response_type=data.get('response_type'),
+                conversation_id=data.get('conversation_id'),
+                led_to_webapp_redirect=data.get('led_to_webapp_redirect', False),
+                data_retention_expires=datetime.now() + timedelta(days=365)  # POPIA compliance
+            )
+            
+            db.add(stat)
+            db.commit()
+            
+        except Exception as e:
+            print(f"⚠️ Error tracking WhatsApp statistics: {str(e)}")
+    
+    def _anonymize_phone(self, phone: str) -> str:
+        """Anonymize phone number for privacy compliance"""
+        if len(phone) > 4:
+            return phone[:4] + "****" + phone[-2:] if len(phone) > 6 else phone[:2] + "****"
+        return phone
+    
+    def _detect_response_type(self, content: str) -> str:
+        """Detect the type of response being sent"""
+        content_lower = content.lower()
+        if 'welcome' in content_lower:
+            return 'welcome'
+        elif 'help' in content_lower or 'how to' in content_lower:
+            return 'help'
+        elif 'client-login' in content_lower or 'web app' in content_lower:
+            return 'redirect'
+        else:
+            return 'general'
     
     def download_media(self, media_id: str) -> bytes:
         """
