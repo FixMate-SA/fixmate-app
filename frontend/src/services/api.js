@@ -261,6 +261,12 @@ export const apiService = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+  
+  // WhatsApp Statistics
+  getWhatsAppStatistics: (hours = 24) => {
+    return api.get(`/whatsapp/statistics?hours=${hours}`).then(response => response.data);
+  },
+  
   // Generic methods for easier access
   get: (url, config = {}) => api.get(url, config).then(response => response.data),
   post: (url, data, config = {}) => api.post(url, data, config).then(response => response.data),
