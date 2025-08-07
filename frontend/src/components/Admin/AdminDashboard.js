@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { apiService } from '../../services/api';
+import WhatsAppStatistics from './WhatsAppStatistics';
 import FixerPaymentManager from '../Payment/FixerPaymentManager';
 import SmartMatchingDashboard from './SmartMatchingDashboard';
 import Logo from '../Common/Logo';
