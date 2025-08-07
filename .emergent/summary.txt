@@ -1,17 +1,20 @@
 <analysis>
-The previous AI engineer's work on FixMate-SA spanned critical areas including deployment stability, UI/UX enhancements, and core feature development, culminating in a significant focus on robust language localization. Initially, the engineer tackled Heroku deployment issues, PWA configuration, and refined API usage, alongside implementing a comprehensive role-based routing system. UI/UX improvements, like standardizing the fixer app's orange theme and mobile responsiveness, were key. A complete job workflow and password reset functionality were integrated and stabilized. The most recent and challenging phase involved addressing persistent login failures (traced to data configuration) and then a full-scale language localization for Afrikaans. This required meticulous debugging, from resolving a UI-blocking emergency modal and fixing an empty language dropdown, to systematically replacing hardcoded English strings with translatable keys across numerous components. A pivotal discovery was the  call in , which was identified and fixed as the root cause of language preferences not persisting after login. The engineer demonstrated strong iterative debugging and problem-solving, leveraging testing agents at each step.
+The previous AI engineer's work on FixMate-SA involved several key phases. Initially, critical UI localization issues, specifically persistent language preference resets due to , were identified and resolved, followed by a comprehensive Afrikaans translation. The engineer then addressed existing bugs, including implementing robust role-based login validation and fixing the Fixer Reputation display. A significant new feature was the development and integration of a responsive marketing website at , requiring static file serving and extensive content/styling updates. Recurring Heroku deployment challenges were noted. The primary focus then shifted to integrating the 360Dialog WhatsApp API. This involved initial setup, resolving a payment-related API blockage, and fixing an API payload format error. Subsequently, the strategy for WhatsApp evolved from direct job creation to a cost-effective redirect approach, guiding users to the web app for service requests and account management. Finally, the engineer began implementing a real-time WhatsApp statistics dashboard, encountering and resolving a list index out of range error in the process. The work concluded with the start of a new announcement system.
 </analysis>
 
 <product_requirements>
-FixMate-SA is a mobile/web application designed to connect clients with fixers in South Africa. Its core functionality revolves around a FixMate Job Request and Assignment Workflow, which includes features such as client terms acceptance, real-time fixer screening based on proximity, debt, and rating, a First-Come-First-Served (FCFS) notification system, real-time job tracking, a 180-minute job timeout with re-assignment capabilities, and a R20 platform fee. The application also incorporates AI for fraud prevention and allows for admin overrides. Key features encompass robust user authentication, comprehensive job management, detailed fixer profiles, and a rating system. Support for non-smartphone users is provided via SMS/MMS (USSD), and a learning platform is integrated. Recent developments have established comprehensive role-based routing for Admin, Fixer, and Client users, enhancing scalability and security. Features like Phase 3, PWA Status, and Performance have been deprecated. Significant effort has been dedicated to resolving UI/UX issues, including standardizing the fixer app's theme to orange, improving overall mobile responsiveness, fixing a blank Reputation section, and resolving voice recording malfunctions. A complete job lifecycle, from notifications and acceptance to image uploads, payments, and client ratings, has been implemented, alongside a multi-user password reset function. All minor issues and persistent login problems have been successfully addressed, with a focus on comprehensive Afrikaans language localization as the latest priority to ensure every screen element is fully translated.
+FixMate-SA is a mobile/web application facilitating connections between South African clients and service professionals. It supports a comprehensive FixMate Job Request and Assignment Workflow, including client terms acceptance, real-time fixer screening, FCFS notifications, real-time job tracking, and a 180-minute job timeout with re-assignment, alongside AI for fraud prevention. Key features include user authentication, job management, fixer profiles, and a rating system. The application supports non-smartphone users via SMS/MMS (USSD) and incorporates a learning platform. Recent enhancements include comprehensive role-based routing (Admin, Fixer, Client), UI/UX improvements (standardized theme, mobile responsiveness, fixer reputation fix, voice recording fix), and complete job lifecycle and multi-user password reset functions. The application has undergone comprehensive Afrikaans localization and role-based login/fixer reputation display fixes. The platform is expanding beyond specific trades to a comprehensive service platform for any service. A new marketing website at  has been integrated. The current focus is on integrating the 360Dialog WhatsApp API to handle customer inquiries, initially by processing requests directly, but later evolving to a cost-effective strategy to redirect users to the web application for account creation and service logging, while still providing intelligent, comprehensive guidance via WhatsApp. The latest feature request is to add a comprehensive announcement section with chat capabilities for clients, fixers, and admin, controllable by admin.
 </product_requirements>
 
 <key_technical_concepts>
 - **Full-stack**: React.js (frontend), FastAPI (backend), MongoDB (database).
 - **API Communication**: REST API, Kubernetes ingress ( prefix), environment-aware URL handling.
-- **Cloud Deployment**: Heroku, Supervisor, Procfile, build scripts.
-- **Authentication**: JWT, React Context, role-based access control.
-- **Internationalization**: Custom language context () and translation utilities.
+- **Cloud Deployment**: Heroku, Supervisor, Procfile, manual deployment.
+- **Authentication**: JWT, React Context (), role-based access control.
+- **Internationalization**: , .
+- **Static File Serving**: FastAPI .
+- **Messaging API**: 360Dialog WhatsApp API.
+- **Database**: PostgreSQL (for new WhatsApp stats).
 </key_technical_concepts>
 
 <code_architecture>
@@ -19,66 +22,72 @@ The application uses a standard full-stack architecture with a React frontend an
 
 
 
-**Key Files and Changes:**
-
-*   ****:
-    *   **Importance**: Handles the Enterprise Portal UI, including navigation tabs.
-    *   **Changes**: Modified to implement mobile-responsive tab navigation with horizontal scrolling and shortened labels (e.g., Bookings instead of Bulk Bookings). Later, updated to use  for translation of tab names and other text.
-*   ****:
-    *   **Importance**: Defines React Router routes and integrates authentication and language contexts.
-    *   **Changes**: Integrated public and role-based routes (). Ensured  wraps the entire application. Added routes for  and  for correct routing.
-*   ****:
-    *   **Importance**: Manages user authentication state and session.
-    *   **Changes**: Removed a  call that was inadvertently deleting all local storage data, including language preferences, causing authenticated pages to revert to English.
-*   ****:
-    *   **Importance**: Provides language context and translation functions () to components.
-    *   **Changes**: Contains the core logic for fetching and managing available language options, and the  function for the language selector.
-*   ****:
-    *   **Importance**: Stores all translation keys and their corresponding localized strings for various South African languages (English and Afrikaans primarily).
-    *   **Changes**: Extensively updated with new translation keys and Afrikaans translations for numerous UI elements across login pages, dashboards, job creation, profile, and other components, ensuring comprehensive localization.
-*   ****:
-    *   **Importance**: The main application header, including the language selector.
-    *   **Changes**: Debugging efforts focused here to fix the empty language dropdown. Ensured the  state was correctly managed and that  (fetched from ) were properly rendered as selectable options. Debugging logs were added and removed.
-*   ****:
-    *   **Importance**: Displays an emergency alert modal.
-    *   **Changes**: Temporarily modified to prevent the emergency modal from appearing in development mode, as it was blocking UI elements during language testing.
-*   **, , **:
-    *   **Importance**: Separate login forms for different user roles.
-    *   **Changes**: Systematically updated to replace all hardcoded English text (e.g., Phone Number, Password, Sign In) with  translation calls, ensuring complete Afrikaans localization.
-*   ****:
-    *   **Importance**: The main dashboard for authenticated users (Admin, Client, Fixer).
-    *   **Changes**: Translated hardcoded text for quick actions, stats, and section titles using the  function to ensure Afrikaans localization.
-*   ****:
-    *   **Importance**: Component for clients to create new job requests.
-    *   **Changes**: Confirmed and ensured that all UI text, form labels, and messages were utilizing the  translation function for comprehensive localization.
-*   ****:
-    *   **Importance**: Displays job listings and notifications for fixers.
-    *   **Changes**: Translated tab labels (e.g., Notifications, Active Jobs, Completed Jobs) and other hardcoded text sections within the component using .
-*   ****:
-    *   **Importance**: The main dashboard for administrators.
-    *   **Changes**: Updated tab labels (e.g., User Management, Jobs, Analytics) to use  for translation.
-*   ****:
-    *   **Importance**: User profile management interface.
-    *   **Changes**: Ensured that titles and other textual elements like My Profile were correctly translated using .
-*   ****:
-    *   **Importance**: Handles voice recording and transcription for job descriptions.
-    *   **Changes**: Integrated the  hook and replaced all hardcoded UI elements, error messages, and button texts with  translations.
-*   ****:
-    *   **Importance**: Displays a list of jobs.
-    *   **Changes**: Fixed a runtime error where  could fail if  was not an array, by ensuring the  state is always initialized as an array. Confirmed usage of  for titles like My Jobs.
+- ****:
+    - **Importance**: The central FastAPI application handling API endpoints, authentication, and serving static content.
+    - **Changes**: Modified to serve the new marketing website at . Critical  removed. Updated to serve frontend assets and handle WhatsApp webhooks. The  route () was updated to process messages and redirect users to the web app, and the , , and  functions were updated to include client login and website links, and comprehensive user journey guidance (sign-up, login, password reset). An old conflicting  route was removed. New API endpoint  was added to fetch WhatsApp usage data. Logic was adjusted to include a cache-busting mechanism for .
+- ****:
+    - **Importance**: Manages user authentication and session state for the React frontend.
+    - **Changes**: The problematic  call was removed to prevent language preference resets.
+- ****:
+    - **Importance**: Stores all translation keys and their localized strings.
+    - **Changes**: Extensively updated for comprehensive Afrikaans localization, including new keys for role-based login errors, general service platform messaging, WhatsApp related terms, and communication preferences in job creation.
+- **, , **:
+    - **Importance**: Dedicated login forms for different user roles.
+    - **Changes**: Updated to enforce role-based login validation, displaying errors if the user attempts to log in with incorrect credentials for the specific role page.
+- ****:
+    - **Importance**: Displays a fixer's reputation tier and performance metrics.
+    - **Changes**: Fixed to correctly fetch and display fixer reputation data by passing the  from the authenticated user's context to the API call.
+- ****:
+    - **Importance**: The main HTML file for the marketing website.
+    - **Changes**: Modified to reflect FixMate-SA as a comprehensive service platform with updated value propositions, CTA buttons, and revised descriptions. WhatsApp contact information was added to the footer.
+- ****:
+    - **Importance**: The CSS stylesheet for the marketing website.
+    - **Changes**: Completely rewritten and optimized for enhanced aesthetics and responsiveness.
+- ****:
+    - **Importance**: Provides JavaScript functionality for the marketing website.
+    - **Changes**: Updated to align with the new, comprehensive service terminology for dynamic content and interactive elements.
+- ****:
+    - **Importance**: Handles core WhatsApp messaging logic, integration with 360Dialog API.
+    - **Changes**: Enhanced for 360Dialog integration, fixing API payload structure (removed  and ). Updated to implement statistics tracking for messages sent/received, service requests, and conversations. Logic was adjusted to redirect users to the web app for service requests instead of creating jobs directly. Also updated to provide more flexible service detection and comprehensive user journey guidance. Fixed a list index out of range error in statistics tracking.
+- ****:
+    - **Importance**: An older WhatsApp service that directly created jobs.
+    - **Changes**: This file was identified as a conflicting service that was still creating jobs directly, and its import and usage in  were removed to ensure the new redirect-based flow was correctly applied.
+- ****:
+    - **Importance**: Defines the database schemas.
+    - **Changes**: A new  model was added to track real-time WhatsApp interactions and analytics.
+- ** (NEW)**:
+    - **Importance**: Migration script for the new  table.
+    - **Changes**: Created to add the  table to the database. Required fixes for environment variable names ( vs ) and handling PostgreSQL driver.
+- ****:
+    - **Importance**: Provides help and contact information to users.
+    - **Changes**: Updated to display the actual WhatsApp business number instead of a placeholder.
+- ****:
+    - **Importance**: Form for clients to create new job requests.
+    - **Changes**: Added options for WhatsApp communication preferences during job creation. The  function was updated to correctly handle checkbox inputs.
+- ****:
+    - **Importance**: Central dashboard for admin users.
+    - **Changes**: A new WhatsApp tab was added to the admin dashboard, intended to display real-time WhatsApp statistics. The new  component is imported and rendered within this tab.
+- ** (NEW)**:
+    - **Importance**: Displays real-time WhatsApp statistics for admins.
+    - **Changes**: A new React component was created to fetch and display various WhatsApp metrics (messages sent/received, service requests, conversations, conversion rates) from the backend API. It includes time period filtering and a refresh button.
+- ****:
+    - **Importance**: Frontend service for making API calls to the backend.
+    - **Changes**: A new  function was added to fetch data from the  endpoint.
 </code_architecture>
 
 <pending_tasks>
-- Complete remaining Afrikaans translations for:
-    - Jobs List.
-    - Profile page.
-    - Client Login (addressing any remaining untranslated items).
+- Investigate and resolve the persistent Heroku frontend deployment/caching issues for the Admin Dashboard WhatsApp tab, as the manual resolution guide was provided by the AI engineer but the automated fix was not fully achieved.
+- Continue implementing the announcement section for clients, fixers and admin, including a chat section with admin controls.
 </pending_tasks>
 
 <current_work>
-Immediately before this summary request, the AI engineer was concluding the comprehensive Afrikaans translation of the application. The Enterprise Portal's mobile responsiveness for its navigation tabs was successfully implemented and verified on Heroku after extensive debugging of deployment caches. For the language feature, significant progress was made: the language dropdown was made fully functional and visually complete with 10 South African languages after resolving an obstructing Emergency Alert modal and a rendering issue within the  component. All login pages (, , ) were fully translated to Afrikaans, and a minor routing issue that misdirected login paths was corrected. Core components such as , , , , , , and  have been updated to use the translation system, with  confirmed 100% translated. The most recent critical discovery and fix was the  call in , which was causing authenticated pages to revert to English by clearing language preferences upon login. This problematic line was removed, and the engineer is now poised to re-test the system to confirm language persistence post-authentication.
+Immediately before this summary, the AI engineer successfully finalized a major enhancement to the WhatsApp integration. This involved shifting the core strategy from direct job creation via WhatsApp to a cost-effective redirect model. When customers message the WhatsApp number, they are now intelligently guided to the FixMate-SA web application for account creation, login, password reset, and job logging, rather than the system attempting to create jobs directly from the chat. This involved significant updates to  to modify , , and  functions, and to remove calls to the old  which was directly creating jobs. The system now provides flexible service detection for over 20 categories and comprehensive user journey guidance, ensuring any service type in any format is accepted. The integration achieves 100% success in redirecting users and provides clear sign-up, login, and password reset instructions.
+
+Concurrently, the AI engineer implemented a comprehensive real-time WhatsApp statistics tracking system. This involved creating a new  model in , setting up a migration script (), and enhancing  to log all message events (sent, received, service requests, conversions). A new API endpoint  was added to  to expose this data. On the frontend, a new  component was created and integrated into the Admin Dashboard (), alongside updates to  to fetch this data. A list index out of range error in the statistics tracking logic was identified and fixed, ensuring stable message processing.
+
+The very last explicit request from the user was to add the announcement section for clients, fixers and admin, whereby admin can choose to update client or fixers separately or both at the same time. it must also have a chat section for all the users to respond if the admin allows them, meaning the admin must have a setting to close the chat for control. The AI engineer has just acknowledged this request and stated the next step is to create the database models for announcements and chat.
 </current_work>
 
 <optional_next_step>
-Rebuild the frontend and test the Heroku deployment to confirm that the language persistence issue is fully resolved.
+Create database models for the new announcement and chat sections.
 </optional_next_step>
