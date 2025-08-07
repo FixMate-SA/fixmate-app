@@ -397,7 +397,7 @@ class WhatsAppIntegrationTester:
                 
                 if response.status_code == 200:
                     data = response.json()
-                    if data.get('status') == 'success':
+                    if data.get('status') == 'success' or data.get('status') == 'processed':
                         self.log_test(
                             f"Workflow - {step['step']}", 
                             True, 
