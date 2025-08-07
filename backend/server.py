@@ -5014,26 +5014,40 @@ For truly urgent emergencies, call emergency services first, then use our app fo
     whatsapp_service.send_whatsapp_message(phone, help_msg)
 
 async def send_general_response(phone: str, message: str):
-    """Send general response for unrecognized messages."""
+    """Send enhanced general response with comprehensive guidance."""
     response_msg = f"""Thanks for your message! 😊
 
-I understand you said: "{message[:50]}{'...' if len(message) > 50 else ''}"
+📝 **I received:** "{message[:100]}{'...' if len(message) > 100 else ''}"
 
-To request a service, please tell me what you need and I'll guide you to our web app:
+🔧 **To request a service, simply describe what you need:**
 
-🔧 **Examples:**
-• "I need a plumber"
-• "Electrical work needed"
-• "Looking for house cleaner"
-• "Garden maintenance needed"
+**Easy Examples:**
+• "I need house cleaning"
+• "My toilet is blocked"  
+• "Looking for a good painter"
+• "Car won't start, need mechanic"
+• "Need someone to fix my laptop"
+• "Want catering for my birthday"
+• "Garden needs trimming"
+• "Require math tutor for Grade 10"
 
-📱 **Quick Access:**
-👉 Create Account: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login
-👉 Learn More: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/website
+✨ **No specific format needed - just tell me in your own words!**
 
-Or type "help" for more information.
+🚀 **Next Steps:**
 
-FixMate-SA - Your Service Solution 🛠️"""
+🆕 **New user?** Sign up: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-signup
+
+🔐 **Have account?** Login: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login
+
+🔄 **Forgot password?** Reset: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login (Click "Forgot Password")
+
+🌐 **Learn more:** https://fixmate-sa-app-a448c751e1d2.herokuapp.com/website
+
+💬 **Need help?** Type "help" for detailed guidance.
+
+**What service do you need today?** Just describe it in your own words!
+
+FixMate-SA - Your Complete Service Solution 🛠️"""
 
     whatsapp_service.send_whatsapp_message(phone, response_msg)
 
