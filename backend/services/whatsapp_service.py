@@ -467,38 +467,75 @@ class WhatsAppService:
             return {"status": "error", "error": str(e), "type": "contact_update"}
     
     def _process_text_content(self, text: str) -> Dict[str, Any]:
-        """Enhanced text content processing for better service detection."""
+        """Enhanced text content processing for flexible service detection."""
         text_lower = text.lower()
         
-        # Enhanced service detection
+        # Universal service indicators - more flexible approach
+        service_indicators = [
+            # Service request patterns
+            'need', 'looking for', 'require', 'want', 'hire', 'find', 'get',
+            'help with', 'assistance', 'service', 'professional', 'someone to',
+            'repair', 'fix', 'install', 'maintain', 'clean', 'paint', 'build',
+            'work on', 'sort out', 'deal with', 'handle', 'do'
+        ]
+        
+        # Check if message contains any service request indicators
+        has_service_indicator = any(indicator in text_lower for indicator in service_indicators)
+        
+        # Enhanced service keywords (keeping existing ones but making detection more flexible)
         service_keywords = {
-            'plumber': ['plumber', 'plumbing', 'pipe', 'leak', 'toilet', 'tap', 'drain', 'water'],
-            'electrician': ['electrician', 'electrical', 'power', 'light', 'switch', 'outlet', 'wire', 'electricity'],
-            'cleaner': ['cleaner', 'cleaning', 'clean', 'tidy', 'housekeeping', 'domestic'],
-            'gardener': ['gardener', 'gardening', 'garden', 'lawn', 'plants', 'landscaping'],
-            'carpenter': ['carpenter', 'wood', 'furniture', 'cabinet', 'door', 'window', 'repair'],
-            'painter': ['painter', 'painting', 'paint', 'wall', 'ceiling', 'interior', 'exterior'],
-            'handyman': ['handyman', 'maintenance', 'repair', 'fix', 'broken', 'install'],
-            'mechanic': ['mechanic', 'car', 'vehicle', 'engine', 'brake', 'tire', 'automotive']
+            'plumber': ['plumber', 'plumbing', 'pipe', 'leak', 'toilet', 'tap', 'drain', 'water', 'geyser', 'basin', 'shower'],
+            'electrician': ['electrician', 'electrical', 'power', 'light', 'switch', 'outlet', 'wire', 'electricity', 'socket', 'fuse'],
+            'cleaner': ['cleaner', 'cleaning', 'clean', 'tidy', 'housekeeping', 'domestic', 'maid', 'sanitize'],
+            'gardener': ['gardener', 'gardening', 'garden', 'lawn', 'plants', 'landscaping', 'trimming', 'hedge'],
+            'carpenter': ['carpenter', 'wood', 'furniture', 'cabinet', 'door', 'window', 'repair', 'cupboard'],
+            'painter': ['painter', 'painting', 'paint', 'wall', 'ceiling', 'interior', 'exterior', 'decorating'],
+            'handyman': ['handyman', 'maintenance', 'repair', 'fix', 'broken', 'install', 'mount', 'hang'],
+            'mechanic': ['mechanic', 'car', 'vehicle', 'engine', 'brake', 'tire', 'automotive', 'service'],
+            'builder': ['builder', 'building', 'construction', 'brick', 'cement', 'foundation', 'wall'],
+            'roofer': ['roofer', 'roofing', 'roof', 'tile', 'leak', 'gutter', 'thatch'],
+            'tiler': ['tiler', 'tiling', 'tile', 'tiles', 'bathroom', 'kitchen', 'floor'],
+            'pest_control': ['pest', 'insects', 'rats', 'mice', 'cockroach', 'termite', 'fumigation'],
+            'security': ['security', 'alarm', 'camera', 'gate', 'fence', 'guard', 'monitoring'],
+            'aircon': ['aircon', 'air conditioning', 'hvac', 'cooling', 'heating', 'ventilation'],
+            'pool': ['pool', 'swimming', 'spa', 'jacuzzi', 'pump', 'filter'],
+            'locksmith': ['locksmith', 'lock', 'key', 'safe', 'unlock', 'rekey'],
+            'appliance': ['appliance', 'fridge', 'washing machine', 'dryer', 'oven', 'dishwasher'],
+            'moving': ['moving', 'relocation', 'transport', 'delivery', 'hauling'],
+            'it_tech': ['computer', 'laptop', 'internet', 'wifi', 'network', 'software', 'tech support'],
+            'tutor': ['tutor', 'tutoring', 'teaching', 'lessons', 'homework', 'education'],
+            'beauty': ['hairdresser', 'nails', 'makeup', 'beauty', 'massage', 'spa'],
+            'catering': ['catering', 'chef', 'cooking', 'food', 'party', 'event']
         }
         
+        # Detect specific services
         detected_services = []
         for service, keywords in service_keywords.items():
             if any(keyword in text_lower for keyword in keywords):
                 detected_services.append(service)
         
+        # If no specific service detected but has service indicators, mark as "general_service"
+        if not detected_services and has_service_indicator:
+            detected_services.append('general_service')
+        
         # Detect urgency
-        urgency_keywords = ['urgent', 'emergency', 'asap', 'immediately', 'now', 'quick', 'fast']
+        urgency_keywords = ['urgent', 'emergency', 'asap', 'immediately', 'now', 'quick', 'fast', 'rush']
         is_urgent = any(keyword in text_lower for keyword in urgency_keywords)
         
         # Detect greeting
-        greeting_keywords = ['hi', 'hello', 'hallo', 'good morning', 'good afternoon', 'help']
+        greeting_keywords = ['hi', 'hello', 'hallo', 'good morning', 'good afternoon', 'hey', 'greetings']
         is_greeting = any(text_lower.startswith(keyword) for keyword in greeting_keywords)
+        
+        # Detect help request
+        help_keywords = ['help', 'assist', 'info', 'information', 'how', 'what']
+        is_help_request = any(keyword in text_lower for keyword in help_keywords)
         
         return {
             "detected_services": detected_services,
             "is_urgent": is_urgent,
             "is_greeting": is_greeting,
+            "is_help_request": is_help_request,
+            "has_service_indicator": has_service_indicator,
             "word_count": len(text.split()),
             "contains_question": '?' in text
         }
