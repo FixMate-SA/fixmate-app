@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Implement enhanced 360Dialog WhatsApp integration for FixMate-SA platform. Integration details: WhatsApp Business Number: 27754466571, Channel ID: KYS4TkCH, API Key: fAZcu5FIR9j4xexivP2sry3gAK, Callback URL: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/whatsapp. The WhatsApp feature must be aligned with current flow to avoid errors and provide seamless customer service interaction through WhatsApp messaging."
+user_problem_statement: "Add the announcement section for clients, fixers and admin, whereby admin can choose to update client or fixers separately or both at the same time. It must also have a chat section for all the users to respond if the admin allows them, meaning the admin must have a setting to close the chat for control."
 
 backend:
   - task: "Enhanced 360Dialog WhatsApp Integration - Core Setup"
