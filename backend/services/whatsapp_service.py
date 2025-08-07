@@ -16,10 +16,11 @@ load_dotenv()
 # WhatsApp API Configuration - Enhanced for 360Dialog
 DIALOG_360_API_KEY = os.getenv("DIALOG_360_API_KEY")
 DIALOG_360_URL = os.getenv("DIALOG_360_URL", "https://waba-v2.360dialog.io")
-DIALOG_360_MESSAGES_URL = f"{DIALOG_360_URL}/messages"
-PHONE_NUMBER_ID = "27754466571"  # Your actual WhatsApp Business phone number
+# 360Dialog uses the URL from environment variable directly
+DIALOG_360_MESSAGES_URL = DIALOG_360_URL if DIALOG_360_URL.endswith('/messages') else f"{DIALOG_360_URL}/messages"
+PHONE_NUMBER_ID = "702642972933051"  # Your WhatsApp Business phone number ID from webhook
 
-# Official FixMate-SA WhatsApp Business Configuration
+# Official FixMate-SA WhatsApp Business Configuration  
 FIXMATE_WHATSAPP_BUSINESS_NUMBER = "27754466571"  # Official business number without +
 WHATSAPP_CHANNEL_ID = "KYS4TkCH"
 WABA_ID = "1437544007427224"
