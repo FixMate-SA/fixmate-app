@@ -4760,7 +4760,8 @@ And many more services!
 
 Simply tell me what you need (e.g., "I need a plumber" or "Electrical repair needed").
 
-💬 You can also visit our app: https://fixmate-sa-app-a448c751e1d2.herokuapp.com
+💬 You can also visit our app: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/client-login
+Website: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/website
 
 How can I help you today? 😊"""
 
