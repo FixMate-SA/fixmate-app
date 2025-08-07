@@ -4604,8 +4604,8 @@ async def whatsapp_business_webhook_verify(hub_challenge: str = None):
 @app.get("/whatsapp")
 async def whatsapp_webhook_verify(request: Request):
     """
-    Verify WhatsApp webhook subscription from Facebook.
-    Facebook sends GET request with verification parameters.
+    Enhanced WhatsApp webhook verification for 360Dialog integration.
+    360Dialog/Facebook sends GET request with verification parameters.
     """
     try:
         # Get query parameters from request
@@ -4613,39 +4613,208 @@ async def whatsapp_webhook_verify(request: Request):
         hub_challenge = request.query_params.get('hub.challenge')
         hub_verify_token = request.query_params.get('hub.verify_token')
         
-        print(f"🔐 WhatsApp webhook verification request: mode={hub_mode}, challenge={hub_challenge}")
+        print(f"🔐 WhatsApp webhook verification: mode={hub_mode}, token={'***' if hub_verify_token else 'None'}")
+        print(f"📱 FixMate-SA WhatsApp Business: 27754466571 | Channel: KYS4TkCH")
         
         # For webhook verification, return the challenge
         if hub_mode == "subscribe" and hub_challenge:
-            print("✅ WhatsApp webhook verification successful")
+            print(f"✅ Webhook verification successful - Challenge: {hub_challenge}")
             return Response(content=hub_challenge, media_type="text/plain")
             
-        return {"success": True, "message": "FixMate-SA WhatsApp webhook endpoint"}
+        # Health check response when no verification params
+        return {
+            "success": True, 
+            "message": "FixMate-SA WhatsApp API Ready",
+            "business_number": "27754466571",
+            "channel_id": "KYS4TkCH",
+            "status": "active"
+        }
         
     except Exception as e:
-        print(f"❌ Error in WhatsApp webhook verification: {str(e)}")
+        print(f"❌ Webhook verification error: {str(e)}")
         return {"success": False, "error": str(e)}
 
 @app.post("/whatsapp")
-async def whatsapp_webhook(request: dict, db: Session = Depends(get_db)):
+async def whatsapp_webhook_handler(request: dict, db: Session = Depends(get_db)):
     """
-    Handle incoming WhatsApp messages from Facebook Business API.
-    This endpoint is hit directly by Facebook at /whatsapp (no /api prefix).
+    Enhanced WhatsApp webhook handler for 360Dialog messages.
+    Processes incoming messages, status updates, and other webhook events.
     """
+    webhook_start_time = datetime.now()
+    
     try:
-        print(f"🔄 Processing WhatsApp webhook from Facebook at /whatsapp")
+        print(f"📨 WhatsApp webhook received at {webhook_start_time.isoformat()}")
+        print(f"🔍 Payload preview: {str(request)[:200]}...")
         
-        # Import the unified WhatsApp service
-        from services.unified_whatsapp_service import unified_whatsapp_service
+        # Process with enhanced WhatsApp service
+        result = whatsapp_service.process_webhook_message(request)
         
-        # Process webhook using the unified service
-        result = unified_whatsapp_service.process_webhook(request, db)
+        # Handle the result and trigger appropriate actions
+        if result.get('status') == 'processed':
+            await process_whatsapp_conversation(result, db)
+            
+        processing_time = (datetime.now() - webhook_start_time).total_seconds()
+        print(f"⚡ Webhook processed in {processing_time:.3f}s")
         
-        return result
+        # Always return success to 360Dialog to avoid retries
+        return {"status": "success", "processed": True, "timestamp": webhook_start_time.isoformat()}
         
     except Exception as e:
-        print(f"❌ Error processing WhatsApp webhook: {str(e)}")
-        return {"success": False, "error": str(e)}
+        processing_time = (datetime.now() - webhook_start_time).total_seconds()
+        print(f"❌ Webhook processing failed after {processing_time:.3f}s: {str(e)}")
+        
+        # Still return success to avoid infinite retries
+        return {"status": "error_handled", "error": str(e), "timestamp": webhook_start_time.isoformat()}
+
+async def process_whatsapp_conversation(message_data: dict, db: Session):
+    """
+    Process WhatsApp conversation and trigger appropriate FixMate-SA workflows.
+    """
+    try:
+        from_number = message_data.get('from_number')
+        content = message_data.get('content', '')
+        message_type = message_data.get('message_type')
+        processed_content = message_data.get('processed_content', {})
+        
+        print(f"👤 Processing conversation for {from_number}")
+        
+        # Check if this is a service request
+        detected_services = processed_content.get('detected_services', [])
+        is_urgent = processed_content.get('is_urgent', False)
+        is_greeting = processed_content.get('is_greeting', False)
+        
+        if detected_services:
+            await handle_service_request(from_number, content, detected_services, is_urgent, db)
+        elif is_greeting:
+            await send_welcome_message(from_number)
+        elif 'help' in content.lower() or 'info' in content.lower():
+            await send_help_message(from_number)
+        else:
+            await send_general_response(from_number, content)
+            
+    except Exception as e:
+        print(f"❌ Conversation processing error: {str(e)}")
+
+async def handle_service_request(phone: str, description: str, services: list, is_urgent: bool, db: Session):
+    """Handle incoming service requests via WhatsApp."""
+    try:
+        print(f"🔧 Service request: {services} from {phone} (urgent: {is_urgent})")
+        
+        # Create a service request in the database
+        from models import Job
+        
+        urgency = "urgent" if is_urgent else "normal"
+        service_type = services[0] if services else "general"
+        
+        # Create job entry
+        new_job = Job(
+            service=service_type,
+            description=description,
+            client_contact_number=phone,
+            status='pending',
+            urgency=urgency,
+            created_via='whatsapp'
+        )
+        
+        db.add(new_job)
+        db.commit()
+        
+        # Send confirmation to customer
+        confirmation_msg = f"""✅ Service request received!
+
+🔧 Service: {service_type.title()}
+📋 Description: {description[:100]}{'...' if len(description) > 100 else ''}
+🕒 Priority: {'🚨 Urgent' if is_urgent else '📅 Normal'}
+
+We're finding qualified professionals in your area. You'll receive contact details shortly.
+
+Job ID: #{new_job.id}
+Track: https://fixmate-sa-app-a448c751e1d2.herokuapp.com/jobs/{new_job.id}
+
+FixMate-SA Team 🛠️"""
+
+        whatsapp_service.send_whatsapp_message(phone, confirmation_msg)
+        
+        # TODO: Notify relevant fixers
+        print(f"✅ Service request #{new_job.id} created for {phone}")
+        
+    except Exception as e:
+        print(f"❌ Service request handling error: {str(e)}")
+        error_msg = "Sorry, there was an issue processing your request. Please try again or call us directly."
+        whatsapp_service.send_whatsapp_message(phone, error_msg)
+
+async def send_welcome_message(phone: str):
+    """Send welcome message to new customers."""
+    welcome_msg = f"""👋 Welcome to FixMate-SA!
+
+🛠️ Your trusted service platform in South Africa.
+
+I can help you find:
+🔧 Plumbers
+⚡ Electricians  
+🧹 Cleaners
+🌱 Gardeners
+🔨 Handymen
+🎨 Painters
+And many more services!
+
+Simply tell me what you need (e.g., "I need a plumber" or "Electrical repair needed").
+
+💬 You can also visit our app: https://fixmate-sa-app-a448c751e1d2.herokuapp.com
+
+How can I help you today? 😊"""
+
+    whatsapp_service.send_whatsapp_message(phone, welcome_msg)
+
+async def send_help_message(phone: str):
+    """Send help information."""
+    help_msg = f"""ℹ️ FixMate-SA Help
+
+Here's how to use our service:
+
+1️⃣ **Request a Service**
+   Just tell me what you need:
+   • "I need a plumber"
+   • "Electrical problem"  
+   • "House cleaning needed"
+
+2️⃣ **Emergency Service**
+   Add "urgent" or "emergency":
+   • "Urgent plumber needed"
+
+3️⃣ **Get Updates**
+   We'll send you:
+   • Professional contact details
+   • Job status updates
+   • Completion confirmations
+
+📱 **Need more help?**
+Visit: https://fixmate-sa-app-a448c751e1d2.herokuapp.com
+Call: Support available 24/7
+
+What service do you need? 🔧"""
+
+    whatsapp_service.send_whatsapp_message(phone, help_msg)
+
+async def send_general_response(phone: str, message: str):
+    """Send general response for unrecognized messages."""
+    response_msg = f"""Thanks for your message! 😊
+
+I understand you said: "{message[:50]}{'...' if len(message) > 50 else ''}"
+
+To help you better, please tell me what service you need:
+
+🔧 **Examples:**
+• "I need a plumber"
+• "Electrical work needed"
+• "Looking for house cleaner"
+• "Garden maintenance needed"
+
+Or type "help" for more information.
+
+FixMate-SA - Your Service Solution 🛠️"""
+
+    whatsapp_service.send_whatsapp_message(phone, response_msg)
 
 # Include the router in the main app
 app.include_router(api_router)
