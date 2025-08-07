@@ -17,6 +17,8 @@ export const languages = {
       payments: 'Payments',
       adminPanel: 'Admin Panel',
       profile: 'Profile',
+      whatsapp: 'WhatsApp',
+      whatsappIntegration: 'WhatsApp Business Integration',
       
       // Common
       welcome: 'Welcome',
