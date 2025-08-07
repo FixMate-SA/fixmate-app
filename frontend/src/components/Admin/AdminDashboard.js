@@ -412,32 +412,8 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              {/* WhatsApp Message Statistics */}
-              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                  <h4 className="font-medium text-gray-900">Message Statistics (24h)</h4>
-                </div>
-                <div className="p-6">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                    <div>
-                      <div className="text-2xl font-bold text-blue-600">--</div>
-                      <div className="text-sm text-gray-600">Messages Sent</div>
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold text-green-600">--</div>
-                      <div className="text-sm text-gray-600">Messages Received</div>
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold text-orange-600">--</div>
-                      <div className="text-sm text-gray-600">Service Requests</div>
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold text-purple-600">--</div>
-                      <div className="text-sm text-gray-600">Active Conversations</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/* Real-time WhatsApp Message Statistics */}
+              <WhatsAppStatistics />
 
               {/* Test WhatsApp Integration */}
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
