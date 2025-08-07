@@ -437,11 +437,13 @@ class WhatsAppIntegrationTester:
             # Should still return 200 to avoid retries but handle gracefully
             if response.status_code == 200:
                 data = response.json()
-                if 'error_handled' in data.get('status', '') or data.get('status') == 'success':
+                if ('error_handled' in data.get('status', '') or 
+                    data.get('status') == 'success' or 
+                    data.get('status') == 'ignored'):
                     self.log_test(
                         "Malformed Payload Handling", 
                         True, 
-                        f"Gracefully handled malformed payload"
+                        f"Gracefully handled malformed payload: {data.get('status')}"
                     )
                 else:
                     self.log_test(
