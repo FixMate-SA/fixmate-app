@@ -138,6 +138,18 @@ backend:
         agent: "testing"
         comment: "✅ WEBHOOK MESSAGE PROCESSING WORKING EXCELLENTLY! All message processing functions tested successfully: Text message processing with intelligent service detection (plumber, electrician, cleaner, gardener, carpenter, painter, handyman, mechanic), urgency detection working with keywords (urgent, emergency, asap), greeting message handling functional, help request processing active, general conversation handling working, webhook structure validation implemented, status update processing working, contact update handling functional. Service request workflow creates database jobs correctly and sends confirmation messages."
 
+  - task: "WhatsApp Integration - Updated Redirect Flow (Cost-Effective Approach)"
+    implemented: false
+    working: false
+    file: "backend/services/unified_whatsapp_service.py, backend/services/whatsapp_service.py"
+    stuck_count: 1
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL ISSUE DETECTED: WhatsApp integration is still creating jobs directly in database instead of redirecting users to web app as required by updated flow. Comprehensive testing revealed: ✅ WEBHOOK PROCESSING: All webhook endpoints working correctly (95.5% success rate, 21/22 tests passed) ✅ MESSAGE HANDLING: Service detection, urgency detection, welcome messages, help commands, and error handling all functional ✅ SYSTEM STABILITY: No crashes detected, handles edge cases gracefully ❌ CRITICAL FAILURE: Service request conversations still create jobs directly in database (job count increased from 14 to 15 during testing) instead of redirecting to web app. REQUIRED CHANGES: 1) Update WhatsApp service to redirect users to web app for service requests, 2) Remove direct job creation functionality from WhatsApp flow, 3) Include web app links (client-login and website) in all response messages, 4) Update welcome messages to guide users to create accounts via web app, 5) Ensure urgency detection still works but redirects to web app. The current implementation in unified_whatsapp_service.py still has create_job() and assign_fixer_to_job() functions that need to be replaced with redirect messaging."
+
   - task: "WhatsApp Conversation Flow & Service Request Handling"
     implemented: true
     working: true
