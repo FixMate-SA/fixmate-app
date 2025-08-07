@@ -13,14 +13,16 @@ from .sms_service import sms_service
 
 load_dotenv()
 
-# WhatsApp API Configuration
+# WhatsApp API Configuration - Enhanced for 360Dialog
 DIALOG_360_API_KEY = os.getenv("DIALOG_360_API_KEY")
-DIALOG_360_URL = "https://waba-v2.360dialog.io"
-DIALOG_360_MESSAGES_URL = f"{DIALOG_360_URL}/messages"  # Cloud API - no /v1
-PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
+DIALOG_360_URL = os.getenv("DIALOG_360_URL", "https://waba-v2.360dialog.io")
+DIALOG_360_MESSAGES_URL = f"{DIALOG_360_URL}/messages"
+PHONE_NUMBER_ID = "27754466571"  # Your actual WhatsApp Business phone number
 
-# Official FixMate-SA WhatsApp Business Number
+# Official FixMate-SA WhatsApp Business Configuration
 FIXMATE_WHATSAPP_BUSINESS_NUMBER = "27754466571"  # Official business number without +
+WHATSAPP_CHANNEL_ID = "KYS4TkCH"
+WABA_ID = "1437544007427224"
 
 class WhatsAppService:
     def __init__(self):
