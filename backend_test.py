@@ -18,8 +18,8 @@ from typing import Dict, Any, List
 
 class WhatsAppIntegrationTester:
     def __init__(self):
-        # Use the correct backend URL from frontend/.env
-        self.base_url = "https://b27afc40-047a-4e3f-9411-afbcad9dc310.preview.emergentagent.com"
+        # Use the correct Heroku backend URL
+        self.base_url = "https://fixmate-sa-app-a448c751e1d2.herokuapp.com"
         self.api_base = f"{self.base_url}/api"
         
         # WhatsApp Integration Details
