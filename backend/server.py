@@ -4732,6 +4732,10 @@ if static_path.exists():
         if full_path.startswith("whatsapp"):
             raise HTTPException(status_code=404, detail="WhatsApp endpoint not found")
         
+        # Don't serve React app for website routes (handled by dedicated website routes above)
+        if full_path.startswith("website"):
+            raise HTTPException(status_code=404, detail="Website file not found")
+        
         # Handle service worker endpoint - return 410 Gone directly
         if full_path == "sw.js":
             return Response(content="Gone", status_code=410, media_type="text/plain")
