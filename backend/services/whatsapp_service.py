@@ -239,59 +239,197 @@ class WhatsAppService:
     
     def process_webhook_message(self, webhook_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Process incoming WhatsApp webhook message.
+        Enhanced webhook message processing with better error handling.
         """
         try:
-            # Extract message data from webhook
+            print(f"📨 Processing webhook: {json.dumps(webhook_data, indent=2)}")
+            
+            # Validate webhook structure
+            if 'entry' not in webhook_data:
+                return {"status": "ignored", "reason": "invalid_structure", "type": "no_entry"}
+            
             entry = webhook_data.get('entry', [{}])[0]
             changes = entry.get('changes', [{}])[0]
             value = changes.get('value', {})
             
-            # Handle status updates (ignore them)
+            # Handle different webhook event types
             if 'statuses' in value:
-                return {"status": "ignored", "type": "status_update"}
+                # Message status updates (delivered, read, etc.)
+                return self._process_status_update(value['statuses'])
             
-            # Process messages
             if 'messages' in value:
-                message = value['messages'][0]
-                from_number = f"whatsapp:+{message['from']}"
-                msg_type = message.get('type')
-                
-                result = {
-                    "status": "processed",
-                    "from_number": from_number,
-                    "message_type": msg_type,
-                    "timestamp": datetime.now().isoformat()
-                }
-                
-                # Extract message content based on type
-                if msg_type == 'text':
-                    result["content"] = message['text']['body'].strip()
-                elif msg_type == 'audio':
-                    audio_id = message['audio']['id']
-                    result["content"] = self.transcribe_whatsapp_audio(audio_id)
-                    result["media_id"] = audio_id
-                elif msg_type == 'location':
-                    location = message['location']
-                    result["content"] = "Location shared"
-                    result["location"] = {
-                        "latitude": location.get('latitude'),
-                        "longitude": location.get('longitude'),
-                        "address": location.get('address', '')
-                    }
-                elif msg_type == 'image':
-                    result["content"] = message.get('image', {}).get('caption', 'Image received')
-                    result["media_id"] = message.get('image', {}).get('id')
-                else:
-                    result["content"] = f"Unsupported message type: {msg_type}"
-                
-                return result
+                # Incoming messages
+                return self._process_incoming_messages(value)
             
-            return {"status": "ignored", "type": "unknown"}
+            if 'contacts' in value:
+                # Contact information updates
+                return self._process_contact_update(value['contacts'])
+            
+            return {"status": "ignored", "reason": "unknown_event_type"}
             
         except Exception as e:
-            print(f"Error processing webhook message: {e}")
+            print(f"❌ Webhook processing error: {str(e)}")
+            return {"status": "error", "error": str(e), "timestamp": datetime.now().isoformat()}
+    
+    def _process_incoming_messages(self, value: Dict[str, Any]) -> Dict[str, Any]:
+        """Process incoming messages from webhook."""
+        try:
+            messages = value.get('messages', [])
+            contacts = value.get('contacts', [])
+            
+            if not messages:
+                return {"status": "ignored", "reason": "no_messages"}
+            
+            message = messages[0]  # Process first message
+            contact = contacts[0] if contacts else {}
+            
+            from_number = f"+{message['from']}"
+            msg_type = message.get('type', 'unknown')
+            
+            result = {
+                "status": "processed",
+                "from_number": from_number,
+                "message_type": msg_type,
+                "timestamp": datetime.now().isoformat(),
+                "message_id": message.get('id', ''),
+                "contact_name": contact.get('profile', {}).get('name', 'Unknown')
+            }
+            
+            # Extract content based on message type
+            if msg_type == 'text':
+                text_body = message.get('text', {}).get('body', '').strip()
+                result["content"] = text_body
+                result["processed_content"] = self._process_text_content(text_body)
+                
+            elif msg_type == 'audio':
+                audio_id = message.get('audio', {}).get('id')
+                result["media_id"] = audio_id
+                result["content"] = self.transcribe_whatsapp_audio(audio_id)
+                
+            elif msg_type == 'location':
+                location = message.get('location', {})
+                result["content"] = "Location shared"
+                result["location"] = {
+                    "latitude": location.get('latitude'),
+                    "longitude": location.get('longitude'),
+                    "address": location.get('address', ''),
+                    "area": self.get_location_from_coords(
+                        location.get('latitude', 0), 
+                        location.get('longitude', 0)
+                    ) if location.get('latitude') else "Unknown Area"
+                }
+                
+            elif msg_type == 'image':
+                image_id = message.get('image', {}).get('id')
+                caption = message.get('image', {}).get('caption', '')
+                result["media_id"] = image_id
+                result["content"] = caption or 'Image received'
+                
+            elif msg_type == 'button':
+                button_data = message.get('button', {})
+                result["content"] = button_data.get('text', '')
+                result["button_payload"] = button_data.get('payload', '')
+                
+            elif msg_type == 'interactive':
+                interactive = message.get('interactive', {})
+                if interactive.get('type') == 'button_reply':
+                    reply = interactive.get('button_reply', {})
+                    result["content"] = reply.get('title', '')
+                    result["button_id"] = reply.get('id', '')
+                elif interactive.get('type') == 'list_reply':
+                    reply = interactive.get('list_reply', {})
+                    result["content"] = reply.get('title', '')
+                    result["list_id"] = reply.get('id', '')
+                    
+            else:
+                result["content"] = f"Unsupported message type: {msg_type}"
+                result["raw_message"] = message
+            
+            print(f"✅ Processed message: {result['message_type']} from {result['from_number']}")
+            return result
+            
+        except Exception as e:
+            print(f"❌ Error processing incoming message: {str(e)}")
             return {"status": "error", "error": str(e)}
+    
+    def _process_status_update(self, statuses: List[Dict]) -> Dict[str, Any]:
+        """Process message status updates."""
+        try:
+            status_info = []
+            for status in statuses:
+                status_info.append({
+                    "id": status.get('id'),
+                    "status": status.get('status'),
+                    "timestamp": status.get('timestamp'),
+                    "recipient_id": status.get('recipient_id')
+                })
+            
+            print(f"📊 Status updates received: {len(status_info)} messages")
+            return {
+                "status": "processed", 
+                "type": "status_update",
+                "statuses": status_info,
+                "count": len(status_info)
+            }
+        except Exception as e:
+            return {"status": "error", "error": str(e), "type": "status_update"}
+    
+    def _process_contact_update(self, contacts: List[Dict]) -> Dict[str, Any]:
+        """Process contact information updates."""
+        try:
+            contact_info = []
+            for contact in contacts:
+                contact_info.append({
+                    "wa_id": contact.get('wa_id'),
+                    "profile_name": contact.get('profile', {}).get('name', ''),
+                })
+            
+            print(f"👥 Contact updates received: {len(contact_info)} contacts")
+            return {
+                "status": "processed",
+                "type": "contact_update", 
+                "contacts": contact_info,
+                "count": len(contact_info)
+            }
+        except Exception as e:
+            return {"status": "error", "error": str(e), "type": "contact_update"}
+    
+    def _process_text_content(self, text: str) -> Dict[str, Any]:
+        """Enhanced text content processing for better service detection."""
+        text_lower = text.lower()
+        
+        # Enhanced service detection
+        service_keywords = {
+            'plumber': ['plumber', 'plumbing', 'pipe', 'leak', 'toilet', 'tap', 'drain', 'water'],
+            'electrician': ['electrician', 'electrical', 'power', 'light', 'switch', 'outlet', 'wire', 'electricity'],
+            'cleaner': ['cleaner', 'cleaning', 'clean', 'tidy', 'housekeeping', 'domestic'],
+            'gardener': ['gardener', 'gardening', 'garden', 'lawn', 'plants', 'landscaping'],
+            'carpenter': ['carpenter', 'wood', 'furniture', 'cabinet', 'door', 'window', 'repair'],
+            'painter': ['painter', 'painting', 'paint', 'wall', 'ceiling', 'interior', 'exterior'],
+            'handyman': ['handyman', 'maintenance', 'repair', 'fix', 'broken', 'install'],
+            'mechanic': ['mechanic', 'car', 'vehicle', 'engine', 'brake', 'tire', 'automotive']
+        }
+        
+        detected_services = []
+        for service, keywords in service_keywords.items():
+            if any(keyword in text_lower for keyword in keywords):
+                detected_services.append(service)
+        
+        # Detect urgency
+        urgency_keywords = ['urgent', 'emergency', 'asap', 'immediately', 'now', 'quick', 'fast']
+        is_urgent = any(keyword in text_lower for keyword in urgency_keywords)
+        
+        # Detect greeting
+        greeting_keywords = ['hi', 'hello', 'hallo', 'good morning', 'good afternoon', 'help']
+        is_greeting = any(text_lower.startswith(keyword) for keyword in greeting_keywords)
+        
+        return {
+            "detected_services": detected_services,
+            "is_urgent": is_urgent,
+            "is_greeting": is_greeting,
+            "word_count": len(text.split()),
+            "contains_question": '?' in text
+        }
     
     def send_job_notification(self, phone_number: str, job_data: Dict[str, Any]) -> bool:
         """
