@@ -28,12 +28,12 @@ const translations = {
         
         // Features
         'features-title': 'Why Choose FixMate-SA?',
-        'features-subtitle': 'Advanced technology meets reliable service for the perfect home repair experience',
+        'features-subtitle': 'Advanced technology meets reliable service for the perfect professional service experience',
         'smart-matching': 'Smart Matching',
-        'smart-matching-desc': 'AI-powered system matches you with the most suitable fixers based on location, skills, ratings, and availability. No more endless searching.',
-        'real-time-tracking-desc': 'Track your fixer\'s location and job progress in real-time. Know exactly when they\'ll arrive and stay updated throughout the service.',
+        'smart-matching-desc': 'AI-powered system matches you with the perfect service professionals based on location, skills, ratings, and availability. Whether you need a plumber, hairdresser, tutor, or IT expert - no more endless searching.',
+        'real-time-tracking-desc': 'Track your service professional\'s location and progress in real-time. Know exactly when they\'ll arrive and stay updated throughout your appointment - from home repairs to beauty treatments.',
         'verification-safety': 'Verification & Safety',
-        'verification-safety-desc': 'All fixers are verified with background checks, ID verification, and skill assessments. Your safety is our priority.',
+        'verification-safety-desc': 'All service professionals are verified with background checks, ID verification, and skill assessments. Whether it\'s a beautician, mechanic, or tutor - your safety is our priority.',
         'whatsapp-integration': 'WhatsApp Integration',
         'whatsapp-integration-desc': 'No smartphone? No problem! Request services via WhatsApp or SMS. Full conversation flow for all users.',
         'multi-language-support': 'Multi-Language Support',
