@@ -4946,6 +4946,13 @@ if static_path.exists():
             with open(index_path, 'r', encoding='utf-8') as f:
                 html_content = f.read()
             
+            # Debug: Log what we're reading
+            js_file_match = re.search(r'main\.[a-f0-9]+\.js', html_content)
+            if js_file_match:
+                print(f"🔍 Index.html references: {js_file_match.group()}")
+            else:
+                print("🔍 No main.js file reference found in index.html")
+            
             # Add base href for proper routing on Heroku
             if '<base href="/">' not in html_content and '<base href=' not in html_content:
                 html_content = html_content.replace('<head>', '<head>\n    <base href="/">')
