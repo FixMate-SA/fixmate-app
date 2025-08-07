@@ -755,6 +755,15 @@ export const languages = {
       estimatedPrice: 'Geskatte Prys',
       serviceName: 'Diensnaam',
       
+      // Communication Preferences
+      communicationPreferences: 'Kommunikasie Voorkeure',
+      preferredContactMethod: 'Voorkeur Kontak Metode',
+      phone: 'Telefoon Oproep',
+      sms: 'SMS',
+      email: 'E-pos',
+      enableWhatsAppNotifications: 'Aktiveer WhatsApp kennisgewings vir werk opdaterings',
+      communicationNote: 'Herstellers sal ingelig word van jou voorkeure. WhatsApp kennisgewings word aanbeveel vir vinniger reaksies.',
+      
       // Services
       plumbing: 'Loodgieterwerk',
       electrical: 'Elektries',
