@@ -21,9 +21,9 @@ def create_whatsapp_statistics_table():
     """Create the WhatsApp statistics table"""
     try:
         # Get database URL from environment
-        database_url = os.getenv('MONGO_URL')
+        database_url = os.getenv('DATABASE_URL')
         if not database_url:
-            logger.error("❌ MONGO_URL environment variable not set")
+            logger.error("❌ DATABASE_URL environment variable not set")
             return False
             
         logger.info("🚀 Creating WhatsApp statistics table...")
