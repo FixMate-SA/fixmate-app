@@ -14,7 +14,7 @@ from typing import Dict, List, Optional
 class AnnouncementSystemTester:
     def __init__(self):
         # Get backend URL from environment
-        self.base_url = os.getenv('REACT_APP_BACKEND_URL', 'https://1738075b-0b63-4b9f-b8d1-a67df8264588.preview.emergentagent.com')
+        self.base_url = os.getenv('REACT_APP_BACKEND_URL', 'https://4c7573ce-ce6e-4f60-9e3b-6d225e605103.preview.emergentagent.com')
         if not self.base_url.endswith('/api'):
             self.base_url = f"{self.base_url}/api"
         

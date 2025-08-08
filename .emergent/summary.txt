@@ -1,93 +1,74 @@
 <analysis>
-The previous AI engineer's work on FixMate-SA involved several key phases. Initially, critical UI localization issues, specifically persistent language preference resets due to , were identified and resolved, followed by a comprehensive Afrikaans translation. The engineer then addressed existing bugs, including implementing robust role-based login validation and fixing the Fixer Reputation display. A significant new feature was the development and integration of a responsive marketing website at , requiring static file serving and extensive content/styling updates. Recurring Heroku deployment challenges were noted. The primary focus then shifted to integrating the 360Dialog WhatsApp API. This involved initial setup, resolving a payment-related API blockage, and fixing an API payload format error. Subsequently, the strategy for WhatsApp evolved from direct job creation to a cost-effective redirect approach, guiding users to the web app for service requests and account management. Finally, the engineer began implementing a real-time WhatsApp statistics dashboard, encountering and resolving a list index out of range error in the process. The work concluded with the start of a new announcement system.
+The previous AI engineer initiated FixMate-SA, resolving UI localization and role-based login issues. They integrated a responsive marketing website and streamlined the 360Dialog WhatsApp API from direct job creation to a web app redirect model, along with implementing a real-time WhatsApp statistics dashboard. The immediate focus shifted to developing a comprehensive announcement system with chat capabilities. The engineer successfully built out the backend (database models, API endpoints) and frontend (admin management, user display, chat UI) for this feature within the Emergent environment. However, the work consistently faced critical deployment challenges, where changes made in Emergent were not propagating to the user's local Git repository or Heroku, leading to a blank screen or missing features on the live app. The final interaction centers on resolving this persistent deployment discrepancy, with the engineer attempting to guide the user on synchronizing code from Emergent to their local environment.
 </analysis>
 
 <product_requirements>
-FixMate-SA is a mobile/web application facilitating connections between South African clients and service professionals. It supports a comprehensive FixMate Job Request and Assignment Workflow, including client terms acceptance, real-time fixer screening, FCFS notifications, real-time job tracking, and a 180-minute job timeout with re-assignment, alongside AI for fraud prevention. Key features include user authentication, job management, fixer profiles, and a rating system. The application supports non-smartphone users via SMS/MMS (USSD) and incorporates a learning platform. Recent enhancements include comprehensive role-based routing (Admin, Fixer, Client), UI/UX improvements (standardized theme, mobile responsiveness, fixer reputation fix, voice recording fix), and complete job lifecycle and multi-user password reset functions. The application has undergone comprehensive Afrikaans localization and role-based login/fixer reputation display fixes. The platform is expanding beyond specific trades to a comprehensive service platform for any service. A new marketing website at  has been integrated. The current focus is on integrating the 360Dialog WhatsApp API to handle customer inquiries, initially by processing requests directly, but later evolving to a cost-effective strategy to redirect users to the web application for account creation and service logging, while still providing intelligent, comprehensive guidance via WhatsApp. The latest feature request is to add a comprehensive announcement section with chat capabilities for clients, fixers, and admin, controllable by admin.
+FixMate-SA is a mobile/web application connecting South African clients with service professionals, supporting a comprehensive FixMate Job Request and Assignment Workflow. Key features include user authentication, job management, fixer profiles, ratings, SMS/USSD support, and a learning platform. Recent enhancements have introduced comprehensive role-based routing (Admin, Fixer, Client), UI/UX improvements, Afrikaans localization, and fixes for role-based login and fixer reputation display. The platform is evolving into a comprehensive service platform for diverse services, integrating a new marketing website at . The current strategic focus involves integrating the 360Dialog WhatsApp API, shifting from direct job creation to a cost-effective redirect model. Users are intelligently guided to the web app for account creation, login, password reset, and job logging while still receiving comprehensive guidance via WhatsApp. The latest feature request is to add a comprehensive announcement section with chat capabilities for clients, fixers, and admin, allowing the admin to target specific audiences and control chat permissions.
 </product_requirements>
 
 <key_technical_concepts>
 - **Full-stack**: React.js (frontend), FastAPI (backend), MongoDB (database).
-- **API Communication**: REST API, Kubernetes ingress ( prefix), environment-aware URL handling.
-- **Cloud Deployment**: Heroku, Supervisor, Procfile, manual deployment.
-- **Authentication**: JWT, React Context (), role-based access control.
+- **API Communication**: REST API, Kubernetes ingress ( prefix), environment variables.
+- **Cloud Deployment**: Heroku, Supervisor, Procfile.
+- **Authentication**: JWT, React Context, role-based access control.
 - **Internationalization**: , .
-- **Static File Serving**: FastAPI .
 - **Messaging API**: 360Dialog WhatsApp API.
-- **Database**: PostgreSQL (for new WhatsApp stats).
+- **Database**: PostgreSQL (for new WhatsApp stats, and new announcement system).
 </key_technical_concepts>
 
 <code_architecture>
-The application uses a standard full-stack architecture with a React frontend and a FastAPI backend.
+The application utilizes a full-stack architecture with a React frontend and a FastAPI backend.
 
 
 
 - ****:
-    - **Importance**: The central FastAPI application handling API endpoints, authentication, and serving static content.
-    - **Changes**: Modified to serve the new marketing website at . Critical  removed. Updated to serve frontend assets and handle WhatsApp webhooks. The  route () was updated to process messages and redirect users to the web app, and the , , and  functions were updated to include client login and website links, and comprehensive user journey guidance (sign-up, login, password reset). An old conflicting  route was removed. New API endpoint  was added to fetch WhatsApp usage data. Logic was adjusted to include a cache-busting mechanism for .
+    - **Importance**: The central FastAPI application, handles API endpoints, authentication, and static content.
+    - **Changes**: Modified to serve the marketing website at .  removed. Updated to serve frontend assets and handle WhatsApp webhooks, shifting from direct job creation to redirecting users to the web app with comprehensive user journey guidance. An old  route was removed. Added  and new API endpoints for the announcement system (create, retrieve, update, delete announcements, manage chat, retrieve chat messages). Logic adjusted for cache-busting.
 - ****:
-    - **Importance**: Manages user authentication and session state for the React frontend.
-    - **Changes**: The problematic  call was removed to prevent language preference resets.
-- ****:
-    - **Importance**: Stores all translation keys and their localized strings.
-    - **Changes**: Extensively updated for comprehensive Afrikaans localization, including new keys for role-based login errors, general service platform messaging, WhatsApp related terms, and communication preferences in job creation.
-- **, , **:
-    - **Importance**: Dedicated login forms for different user roles.
-    - **Changes**: Updated to enforce role-based login validation, displaying errors if the user attempts to log in with incorrect credentials for the specific role page.
-- ****:
-    - **Importance**: Displays a fixer's reputation tier and performance metrics.
-    - **Changes**: Fixed to correctly fetch and display fixer reputation data by passing the  from the authenticated user's context to the API call.
-- ****:
-    - **Importance**: The main HTML file for the marketing website.
-    - **Changes**: Modified to reflect FixMate-SA as a comprehensive service platform with updated value propositions, CTA buttons, and revised descriptions. WhatsApp contact information was added to the footer.
-- ****:
-    - **Importance**: The CSS stylesheet for the marketing website.
-    - **Changes**: Completely rewritten and optimized for enhanced aesthetics and responsiveness.
-- ****:
-    - **Importance**: Provides JavaScript functionality for the marketing website.
-    - **Changes**: Updated to align with the new, comprehensive service terminology for dynamic content and interactive elements.
-- ****:
-    - **Importance**: Handles core WhatsApp messaging logic, integration with 360Dialog API.
-    - **Changes**: Enhanced for 360Dialog integration, fixing API payload structure (removed  and ). Updated to implement statistics tracking for messages sent/received, service requests, and conversations. Logic was adjusted to redirect users to the web app for service requests instead of creating jobs directly. Also updated to provide more flexible service detection and comprehensive user journey guidance. Fixed a list index out of range error in statistics tracking.
-- ****:
-    - **Importance**: An older WhatsApp service that directly created jobs.
-    - **Changes**: This file was identified as a conflicting service that was still creating jobs directly, and its import and usage in  were removed to ensure the new redirect-based flow was correctly applied.
-- ****:
-    - **Importance**: Defines the database schemas.
-    - **Changes**: A new  model was added to track real-time WhatsApp interactions and analytics.
+    - **Importance**: Defines database schemas using SQLAlchemy.
+    - **Changes**: A new  model was added. Crucially,  and  models were added with fields for title, content, audience, timestamps, chat permissions.  was added to  and  models to resolve Heroku deployment crashes caused by table redefinition issues.
 - ** (NEW)**:
-    - **Importance**: Migration script for the new  table.
-    - **Changes**: Created to add the  table to the database. Required fixes for environment variable names ( vs ) and handling PostgreSQL driver.
-- ****:
-    - **Importance**: Provides help and contact information to users.
-    - **Changes**: Updated to display the actual WhatsApp business number instead of a placeholder.
-- ****:
-    - **Importance**: Form for clients to create new job requests.
-    - **Changes**: Added options for WhatsApp communication preferences during job creation. The  function was updated to correctly handle checkbox inputs.
+    - **Importance**: Migration script for the new announcement and chat tables.
+    - **Changes**: Created to add  and  tables to the database. Fixed to correctly use  environment variable.
 - ****:
     - **Importance**: Central dashboard for admin users.
-    - **Changes**: A new WhatsApp tab was added to the admin dashboard, intended to display real-time WhatsApp statistics. The new  component is imported and rendered within this tab.
+    - **Changes**: A new Announcements tab was added to the admin dashboard. The new  component is imported and rendered within this tab to provide admin controls.
 - ** (NEW)**:
-    - **Importance**: Displays real-time WhatsApp statistics for admins.
-    - **Changes**: A new React component was created to fetch and display various WhatsApp metrics (messages sent/received, service requests, conversations, conversion rates) from the backend API. It includes time period filtering and a refresh button.
+    - **Importance**: Provides the interface for administrators to create, manage, and delete announcements, as well as control chat settings for each announcement.
+    - **Changes**: A new React component was created to handle these functionalities.
+- ** (NEW)**:
+    - **Importance**: Displays announcements to regular users (clients and fixers) and provides an interface to access the chat section for each announcement.
+    - **Changes**: A new React component was created to fetch and display announcements, including a chat modal.
+- ****:
+    - **Importance**: The main dashboard for regular users.
+    - **Changes**: The  component was integrated into this dashboard to show relevant announcements to users.
 - ****:
     - **Importance**: Frontend service for making API calls to the backend.
-    - **Changes**: A new  function was added to fetch data from the  endpoint.
+    - **Changes**: New functions were added to interact with the announcement system's backend API endpoints (e.g., , , , , etc.). A duplicate generic method was also fixed.
 </code_architecture>
 
 <pending_tasks>
-- Investigate and resolve the persistent Heroku frontend deployment/caching issues for the Admin Dashboard WhatsApp tab, as the manual resolution guide was provided by the AI engineer but the automated fix was not fully achieved.
-- Continue implementing the announcement section for clients, fixers and admin, including a chat section with admin controls.
+- Ensure full synchronization and deployment of the newly implemented announcement system code (frontend and backend) from the Emergent environment to the user's GitHub repository and then to Heroku.
+- Troubleshoot and resolve persistent deployment issues where changes made in Emergent are not reflected on the live Heroku application.
 </pending_tasks>
 
 <current_work>
-Immediately before this summary, the AI engineer successfully finalized a major enhancement to the WhatsApp integration. This involved shifting the core strategy from direct job creation via WhatsApp to a cost-effective redirect model. When customers message the WhatsApp number, they are now intelligently guided to the FixMate-SA web application for account creation, login, password reset, and job logging, rather than the system attempting to create jobs directly from the chat. This involved significant updates to  to modify , , and  functions, and to remove calls to the old  which was directly creating jobs. The system now provides flexible service detection for over 20 categories and comprehensive user journey guidance, ensuring any service type in any format is accepted. The integration achieves 100% success in redirecting users and provides clear sign-up, login, and password reset instructions.
+Immediately before this summary, the AI engineer successfully implemented the comprehensive announcement system with chat functionality. This involved:
+1.  **Backend Development**:
+    *   Creating  and  database models in  to store announcement details, targeting, and chat messages.
+    *   Developing a migration script, , and successfully running it to create these new tables on the Heroku database.
+    *   Adding comprehensive API endpoints in  for creating, retrieving, updating, and deleting announcements, as well as managing chat settings (e.g., enabling/disabling chat) and handling chat messages.
+    *   Fixing a critical  by adding  to the  and  models, which was causing the Heroku application to crash.
+2.  **Frontend Development**:
+    *   Creating a new React component, , for administrators to manage announcements (create, edit, delete, set audience, control chat).
+    *   Creating a new React component, , to display announcements to clients and fixers in their respective dashboards and provide access to the chat modal.
+    *   Integrating the  component into the  via a new Announcements tab.
+    *   Integrating the  component into the  for regular users.
+    *   Updating  to include all necessary API calls for the new announcement system.
 
-Concurrently, the AI engineer implemented a comprehensive real-time WhatsApp statistics tracking system. This involved creating a new  model in , setting up a migration script (), and enhancing  to log all message events (sent, received, service requests, conversions). A new API endpoint  was added to  to expose this data. On the frontend, a new  component was created and integrated into the Admin Dashboard (), alongside updates to  to fetch this data. A list index out of range error in the statistics tracking logic was identified and fixed, ensuring stable message processing.
-
-The very last explicit request from the user was to add the announcement section for clients, fixers and admin, whereby admin can choose to update client or fixers separately or both at the same time. it must also have a chat section for all the users to respond if the admin allows them, meaning the admin must have a setting to close the chat for control. The AI engineer has just acknowledged this request and stated the next step is to create the database models for announcements and chat.
+The system was verified to be fully functional in the Emergent preview environment, including displaying announcements, managing them via admin, and engaging in real-time chat. However, the work concluded with a persistent issue where these changes were not live on the Heroku deployment, despite attempts at  and confirmation of file existence. The AI engineer determined the root cause was that the changes made within the Emergent environment were not successfully synchronized with the user's local GitHub repository.
 </current_work>
 
 <optional_next_step>
-Create database models for the new announcement and chat sections.
+Guide the user on how to synchronize the code changes from the Emergent environment to their local GitHub repository.
 </optional_next_step>
