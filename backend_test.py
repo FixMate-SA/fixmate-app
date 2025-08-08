@@ -103,6 +103,12 @@ class AnnouncementSystemTester:
                 raise ValueError(f"Unsupported HTTP method: {method}")
             
             print(f"📊 Response: {response.status_code}")
+            if response.status_code >= 400:
+                try:
+                    error_content = response.json()
+                    print(f"❌ Error content: {error_content}")
+                except:
+                    print(f"❌ Error text: {response.text[:200]}")
             return response
         except requests.exceptions.RequestException as e:
             print(f"❌ Request failed: {e}")
