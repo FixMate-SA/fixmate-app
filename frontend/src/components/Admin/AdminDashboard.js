@@ -239,6 +239,7 @@ const AdminDashboard = () => {
           <nav className="-mb-px flex space-x-2 md:space-x-8 px-2 md:px-6 overflow-x-auto">
             {[
               { id: 'overview', label: t('overview'), icon: '📊' },
+              { id: 'announcements', label: t('announcements', 'Announcements'), icon: '📢' },
               { id: 'whatsapp', label: t('whatsapp', 'WhatsApp'), icon: '📱' },
               { id: 'client-request', label: t('clientRequest', 'Client Request'), icon: '📞' },
               { id: 'smart-matching', label: t('smartMatching'), icon: '🎯' },
