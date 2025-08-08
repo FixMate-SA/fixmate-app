@@ -281,13 +281,7 @@ export const apiService = {
   get: (endpoint, options = {}) => api.get(endpoint, options),
   post: (endpoint, data, options = {}) => api.post(endpoint, data, options),
   put: (endpoint, data, options = {}) => api.put(endpoint, data, options),
-  delete: (endpoint, options = {}) => api.delete(endpoint, options),
-  
-  // Generic methods for easier access
-  get: (url, config = {}) => api.get(url, config).then(response => response.data),
-  post: (url, data, config = {}) => api.post(url, data, config).then(response => response.data),
-  put: (url, data, config = {}) => api.put(url, data, config).then(response => response.data),
-  delete: (url, config = {}) => api.delete(url, config).then(response => response.data),
+  delete: (endpoint, options = {}) => api.delete(endpoint, options)
 
   // Offline Support
   syncOfflineData: (offlineData) => api.post('/offline/sync', offlineData),
