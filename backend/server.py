@@ -4892,14 +4892,14 @@ async def delete_announcement(
 
 @api_router.get("/announcements")
 async def get_announcements_for_user(
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     Get active announcements for the current user based on their role.
     """
     try:
-        user_role = current_user.get('role', 'client')
+        user_role = current_user.role or 'client'
         
         # Build query for announcements
         query = db.query(Announcement).filter(
