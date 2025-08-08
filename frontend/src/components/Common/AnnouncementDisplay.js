@@ -84,7 +84,6 @@ const AnnouncementDisplay = () => {
       if (response.ok) {
         setNewMessage('');
         await fetchChatMessages(selectedAnnouncement.id);
-        // Scroll to bottom of messages
         setTimeout(() => {
           const messagesContainer = document.getElementById('messages-container');
           if (messagesContainer) {
@@ -155,7 +154,6 @@ const AnnouncementDisplay = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium flex items-center gap-2">
           <span>📢</span>
@@ -166,7 +164,6 @@ const AnnouncementDisplay = () => {
         </div>
       </div>
 
-      {/* Announcements List */}
       {announcements.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm p-8 text-center text-gray-500">
           <span className="text-4xl mb-4 block">📢</span>
@@ -210,14 +207,6 @@ const AnnouncementDisplay = () => {
                         <span>
                           {new Date(announcement.created_at).toLocaleDateString()}
                         </span>
-                        {announcement.expires_at && (
-                          <>
-                            <span>•</span>
-                            <span className="text-orange-600">
-                              {t('expires', 'Expires')} {new Date(announcement.expires_at).toLocaleDateString()}
-                            </span>
-                          </>
-                        )}
                         {announcement.chat_message_count > 0 && (
                           <>
                             <span>•</span>
@@ -240,7 +229,6 @@ const AnnouncementDisplay = () => {
                   </div>
                 </div>
                 
-                {/* Recent Messages Preview */}
                 {announcement.recent_chats && announcement.recent_chats.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-100">
                     <div className="text-sm text-gray-600 mb-2">
@@ -266,11 +254,9 @@ const AnnouncementDisplay = () => {
         </div>
       )}
 
-      {/* Chat Modal */}
       {selectedAnnouncement && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg w-full max-w-2xl h-[600px] flex flex-col">
-            {/* Chat Header */}
             <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
               <div className="flex items-center gap-2">
                 <h3 className="font-medium text-gray-900">💬 {selectedAnnouncement.title}</h3>
@@ -288,7 +274,6 @@ const AnnouncementDisplay = () => {
               </button>
             </div>
 
-            {/* Chat Messages */}
             <div 
               id="messages-container"
               className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50"
@@ -335,7 +320,6 @@ const AnnouncementDisplay = () => {
               )}
             </div>
 
-            {/* Chat Input */}
             {selectedAnnouncement.chat_enabled && (
               <div className="p-4 border-t border-gray-200 bg-white">
                 {selectedAnnouncement.admin_only_chat && user?.role !== 'admin' ? (

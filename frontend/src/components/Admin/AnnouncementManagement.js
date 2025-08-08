@@ -10,8 +10,6 @@ const AnnouncementManagement = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [showEditForm, setShowEditForm] = useState(false);
-  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -84,42 +82,8 @@ const AnnouncementManagement = () => {
     }
   };
 
-  const handleUpdateAnnouncement = async (e) => {
-    e.preventDefault();
-    
-    try {
-      const payload = {
-        ...formData,
-        expires_at: formData.expires_at ? new Date(formData.expires_at).toISOString() : null
-      };
-
-      const response = await fetch(`${API_BASE_URL}/admin/announcements/${selectedAnnouncement.id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        await fetchAnnouncements();
-        setShowEditForm(false);
-        setSelectedAnnouncement(null);
-        resetForm();
-        alert('Announcement updated successfully!');
-      } else {
-        const errorData = await response.json();
-        alert(`Failed to update announcement: ${errorData.detail}`);
-      }
-    } catch (error) {
-      console.error('Error updating announcement:', error);
-      alert('Error updating announcement');
-    }
-  };
-
   const handleDeleteAnnouncement = async (announcementId, title) => {
-    if (!confirm(`Are you sure you want to delete "${title}"? This will also delete all chat messages associated with this announcement.`)) {
+    if (!confirm(`Are you sure you want to delete "${title}"?`)) {
       return;
     }
 
@@ -143,21 +107,6 @@ const AnnouncementManagement = () => {
       console.error('Error deleting announcement:', error);
       alert('Error deleting announcement');
     }
-  };
-
-  const openEditForm = (announcement) => {
-    setSelectedAnnouncement(announcement);
-    setFormData({
-      title: announcement.title,
-      content: announcement.content,
-      target_audience: announcement.target_audience,
-      priority: announcement.priority,
-      is_pinned: announcement.is_pinned,
-      chat_enabled: announcement.chat_enabled,
-      admin_only_chat: announcement.admin_only_chat,
-      expires_at: announcement.expires_at ? new Date(announcement.expires_at).toISOString().slice(0, 16) : ''
-    });
-    setShowEditForm(true);
   };
 
   const resetForm = () => {
@@ -210,7 +159,6 @@ const AnnouncementManagement = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium flex items-center gap-2">
           <span>📢</span>
@@ -228,7 +176,6 @@ const AnnouncementManagement = () => {
         </button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
           <div className="text-2xl font-bold text-blue-700">{announcements.length}</div>
@@ -248,13 +195,12 @@ const AnnouncementManagement = () => {
         </div>
         <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
           <div className="text-2xl font-bold text-purple-700">
-            {announcements.reduce((total, a) => total + a.chat_message_count, 0)}
+            {announcements.reduce((total, a) => total + (a.chat_message_count || 0), 0)}
           </div>
           <div className="text-purple-600 text-sm">Total Messages</div>
         </div>
       </div>
 
-      {/* Announcements List */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
           <h4 className="font-medium text-gray-900">All Announcements</h4>
@@ -286,26 +232,18 @@ const AnnouncementManagement = () => {
                       </span>
                     </div>
                     
-                    <p className="text-gray-700 mb-3 line-clamp-2">
+                    <p className="text-gray-700 mb-3">
                       {announcement.content}
                     </p>
                     
                     <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span>By {announcement.created_by_name}</span>
+                      <span>By {announcement.created_by_name || 'Admin'}</span>
                       <span>•</span>
                       <span>{new Date(announcement.created_at).toLocaleDateString()}</span>
                       <span>•</span>
                       <span className="flex items-center gap-1">
-                        💬 {announcement.chat_message_count} messages
+                        💬 {announcement.chat_message_count || 0} messages
                       </span>
-                      {announcement.expires_at && (
-                        <>
-                          <span>•</span>
-                          <span className="text-orange-600">
-                            Expires {new Date(announcement.expires_at).toLocaleDateString()}
-                          </span>
-                        </>
-                      )}
                     </div>
                     
                     <div className="flex items-center gap-3 mt-3">
@@ -317,23 +255,10 @@ const AnnouncementManagement = () => {
                         <span className={`h-2 w-2 rounded-full ${announcement.chat_enabled ? 'bg-green-500' : 'bg-gray-400'}`}></span>
                         Chat {announcement.chat_enabled ? 'Enabled' : 'Disabled'}
                       </div>
-                      {announcement.admin_only_chat && (
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="h-2 w-2 rounded-full bg-orange-500"></span>
-                          Admin Only Chat
-                        </div>
-                      )}
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-2 ml-4">
-                    <button
-                      onClick={() => openEditForm(announcement)}
-                      className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded"
-                      title="Edit announcement"
-                    >
-                      ✏️
-                    </button>
                     <button
                       onClick={() => handleDeleteAnnouncement(announcement.id, announcement.title)}
                       className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded"
@@ -349,20 +274,19 @@ const AnnouncementManagement = () => {
         )}
       </div>
 
-      {/* Create/Edit Modal */}
-      {(showCreateForm || showEditForm) && (
+      {showCreateForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-medium">
-                {showCreateForm ? t('createAnnouncement', 'Create Announcement') : t('editAnnouncement', 'Edit Announcement')}
+                {t('createAnnouncement', 'Create Announcement')}
               </h3>
             </div>
             
-            <form onSubmit={showCreateForm ? handleCreateAnnouncement : handleUpdateAnnouncement} className="p-6 space-y-4">
+            <form onSubmit={handleCreateAnnouncement} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('title', 'Title')} *
+                  Title *
                 </label>
                 <input
                   type="text"
@@ -377,7 +301,7 @@ const AnnouncementManagement = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('content', 'Content')} *
+                  Content *
                 </label>
                 <textarea
                   name="content"
@@ -393,7 +317,7 @@ const AnnouncementManagement = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('targetAudience', 'Target Audience')} *
+                    Target Audience *
                   </label>
                   <select
                     name="target_audience"
@@ -409,7 +333,7 @@ const AnnouncementManagement = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('priority', 'Priority')}
+                    Priority
                   </label>
                   <select
                     name="priority"
@@ -424,19 +348,6 @@ const AnnouncementManagement = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('expirationDate', 'Expiration Date')} (Optional)
-                </label>
-                <input
-                  type="datetime-local"
-                  name="expires_at"
-                  value={formData.expires_at}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500"
-                />
-              </div>
-
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <input
@@ -448,7 +359,7 @@ const AnnouncementManagement = () => {
                     className="rounded border-gray-300 text-red-600 focus:ring-red-500"
                   />
                   <label htmlFor="is_pinned" className="text-sm font-medium text-gray-700">
-                    📌 {t('pinAnnouncement', 'Pin this announcement at the top')}
+                    📌 Pin this announcement at the top
                   </label>
                 </div>
 
@@ -462,7 +373,7 @@ const AnnouncementManagement = () => {
                     className="rounded border-gray-300 text-red-600 focus:ring-red-500"
                   />
                   <label htmlFor="chat_enabled" className="text-sm font-medium text-gray-700">
-                    💬 {t('enableChat', 'Enable chat responses')}
+                    💬 Enable chat responses
                   </label>
                 </div>
 
@@ -477,7 +388,7 @@ const AnnouncementManagement = () => {
                       className="rounded border-gray-300 text-red-600 focus:ring-red-500"
                     />
                     <label htmlFor="admin_only_chat" className="text-sm font-medium text-gray-700">
-                      🔒 {t('adminOnlyChat', 'Only admin can respond in chat')}
+                      🔒 Only admin can respond in chat
                     </label>
                   </div>
                 )}
@@ -488,19 +399,17 @@ const AnnouncementManagement = () => {
                   type="button"
                   onClick={() => {
                     setShowCreateForm(false);
-                    setShowEditForm(false);
-                    setSelectedAnnouncement(null);
                     resetForm();
                   }}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
                 >
-                  {t('cancel', 'Cancel')}
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
                 >
-                  {showCreateForm ? t('createAnnouncement', 'Create Announcement') : t('updateAnnouncement', 'Update Announcement')}
+                  Create Announcement
                 </button>
               </div>
             </form>
