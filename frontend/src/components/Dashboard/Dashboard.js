@@ -219,6 +219,11 @@ const Dashboard = () => {
         </div>
       )}
 
+      {/* Announcements Section */}
+      <div className="dashboard-card">
+        <AnnouncementDisplay />
+      </div>
+
       {/* Quick Actions */}
       {content.quickActions.length > 0 && (
         <div className="dashboard-card">
