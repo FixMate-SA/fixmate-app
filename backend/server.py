@@ -4672,7 +4672,7 @@ async def get_whatsapp_statistics(
 @api_router.post("/admin/announcements")
 async def create_announcement(
     request: dict,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -4681,7 +4681,7 @@ async def create_announcement(
     """
     try:
         # Verify admin access
-        if current_user.get('role') not in ['admin', 'super_admin']:
+        if current_user.role not in ['admin', 'super_admin']:
             raise HTTPException(status_code=403, detail="Admin access required")
         
         # Validate required fields
@@ -4700,7 +4700,7 @@ async def create_announcement(
             title=request['title'],
             content=request['content'],
             target_audience=request['target_audience'],
-            created_by=current_user['user_id'],
+            created_by=current_user.id,
             is_pinned=request.get('is_pinned', False),
             priority=request.get('priority', 'normal'),
             chat_enabled=request.get('chat_enabled', True),
