@@ -1,607 +1,631 @@
 #!/usr/bin/env python3
 """
-WhatsApp Integration Redirect Flow Testing
-Testing the updated WhatsApp integration that redirects users to web app instead of creating jobs directly.
-
-CRITICAL TEST REQUIREMENTS:
-1. Verify No Job Creation - Count jobs before and after WhatsApp service request
-2. Test Redirect Messaging - Send "I need a plumber" and verify redirect message includes web app link
-3. Verify Web App Links - Confirm all responses include client-login link
-4. Test All Conversation Flows - Welcome, help, general responses, service request redirection
-5. Confirm System Stability - Test multiple service types and urgency levels
+Comprehensive Backend Testing for FixMate-SA Announcement System
+Testing all announcement system API endpoints with authentication and authorization
 """
 
 import requests
 import json
-import time
 import os
-from datetime import datetime
+import sys
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional
 
-# Configuration
-BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://fixmate-sa-app-a448c751e1d2.herokuapp.com')
-API_BASE = f"{BACKEND_URL}/api"
-
-# Test phone numbers
-TEST_PHONE_NUMBERS = [
-    "+27821234567",
-    "+27821234568", 
-    "+27821234569",
-    "+27821234570",
-    "+27821234571"
-]
-
-class WhatsAppRedirectTester:
+class AnnouncementSystemTester:
     def __init__(self):
-        self.results = []
-        self.job_count_before = 0
-        self.job_count_after = 0
+        # Get backend URL from environment
+        self.base_url = os.getenv('REACT_APP_BACKEND_URL', 'https://1738075b-0b63-4b9f-b8d1-a67df8264588.preview.emergentagent.com')
+        if not self.base_url.endswith('/api'):
+            self.base_url = f"{self.base_url}/api"
         
-    def log_result(self, test_name, success, message, details=None):
-        """Log test result"""
-        status = "✅ PASS" if success else "❌ FAIL"
-        result = {
-            "test": test_name,
-            "status": status,
-            "success": success,
-            "message": message,
-            "details": details or {},
-            "timestamp": datetime.now().isoformat()
+        print(f"🔗 Testing Backend URL: {self.base_url}")
+        
+        # Test accounts for different roles
+        self.test_accounts = {
+            'admin': {
+                'phone': '+27800000001',
+                'password': 'admin2024test',
+                'token': None,
+                'user_id': None
+            },
+            'client': {
+                'phone': '+27800000002', 
+                'password': 'client2024test',
+                'token': None,
+                'user_id': None
+            },
+            'fixer': {
+                'phone': '+27800000003',
+                'password': 'fixer2024test', 
+                'token': None,
+                'user_id': None
+            }
         }
-        self.results.append(result)
-        print(f"{status}: {test_name} - {message}")
+        
+        # Test data storage
+        self.test_announcements = []
+        self.test_chat_messages = []
+        
+        # Test results
+        self.results = {
+            'total_tests': 0,
+            'passed_tests': 0,
+            'failed_tests': 0,
+            'test_details': []
+        }
+
+    def log_test(self, test_name: str, success: bool, details: str = ""):
+        """Log test result"""
+        self.results['total_tests'] += 1
+        if success:
+            self.results['passed_tests'] += 1
+            status = "✅ PASS"
+        else:
+            self.results['failed_tests'] += 1
+            status = "❌ FAIL"
+        
+        print(f"{status}: {test_name}")
         if details:
             print(f"   Details: {details}")
-    
-    def get_job_count(self):
-        """Get current job count from database"""
-        try:
-            response = requests.get(f"{API_BASE}/jobs", timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                # Handle both paginated and direct array responses
-                if isinstance(data, dict) and 'data' in data:
-                    return len(data['data'])
-                elif isinstance(data, list):
-                    return len(data)
-                else:
-                    return 0
-            else:
-                print(f"⚠️ Could not get job count: HTTP {response.status_code}")
-                return 0
-        except Exception as e:
-            print(f"⚠️ Error getting job count: {e}")
-            return 0
-    
-    def simulate_whatsapp_webhook(self, phone_number, message_text, message_type="text"):
-        """Simulate WhatsApp webhook message"""
-        webhook_payload = {
-            "entry": [{
-                "changes": [{
-                    "value": {
-                        "messages": [{
-                            "from": phone_number.replace("+", ""),
-                            "id": f"msg_{int(time.time())}",
-                            "timestamp": str(int(time.time())),
-                            "type": message_type,
-                            "text": {"body": message_text} if message_type == "text" else {}
-                        }],
-                        "contacts": [{
-                            "profile": {"name": "Test User"},
-                            "wa_id": phone_number.replace("+", "")
-                        }]
-                    }
-                }]
-            }]
-        }
+        
+        self.results['test_details'].append({
+            'test': test_name,
+            'status': 'PASS' if success else 'FAIL',
+            'details': details
+        })
+
+    def make_request(self, method: str, endpoint: str, data: dict = None, headers: dict = None, role: str = None) -> requests.Response:
+        """Make HTTP request with optional authentication"""
+        url = f"{self.base_url}{endpoint}"
+        
+        # Add authentication header if role specified
+        if role and self.test_accounts[role]['token']:
+            if not headers:
+                headers = {}
+            headers['Authorization'] = f"Bearer {self.test_accounts[role]['token']}"
         
         try:
-            # Test both webhook endpoints
-            endpoints = ["/whatsapp", "/api/whatsapp/webhook"]
-            
-            for endpoint in endpoints:
-                url = f"{BACKEND_URL}{endpoint}"
-                response = requests.post(url, json=webhook_payload, timeout=15)
-                
-                if response.status_code == 200:
-                    return True, response.json(), endpoint
-                else:
-                    print(f"⚠️ Webhook {endpoint} returned {response.status_code}: {response.text}")
-            
-            return False, {}, "none"
-            
-        except Exception as e:
-            return False, {"error": str(e)}, "error"
-    
-    def test_1_initial_job_count(self):
-        """Test 1: Get initial job count before testing"""
-        print("\n" + "="*60)
-        print("TEST 1: INITIAL JOB COUNT")
-        print("="*60)
-        
-        self.job_count_before = self.get_job_count()
-        
-        self.log_result(
-            "Initial Job Count",
-            True,
-            f"Initial job count recorded: {self.job_count_before}",
-            {"job_count": self.job_count_before}
-        )
-    
-    def test_2_service_request_redirect(self):
-        """Test 2: Service request should redirect to web app, not create job"""
-        print("\n" + "="*60)
-        print("TEST 2: SERVICE REQUEST REDIRECT")
-        print("="*60)
-        
-        test_messages = [
-            ("I need a plumber", "plumber"),
-            ("Electrical problem", "electrician"),
-            ("House cleaning needed", "cleaner"),
-            ("Garden maintenance required", "gardener"),
-            ("Urgent plumbing repair", "plumber")
-        ]
-        
-        for i, (message, expected_service) in enumerate(test_messages):
-            phone = TEST_PHONE_NUMBERS[i % len(TEST_PHONE_NUMBERS)]
-            
-            print(f"\n📱 Testing: '{message}' from {phone}")
-            
-            success, response, endpoint = self.simulate_whatsapp_webhook(phone, message)
-            
-            if success:
-                self.log_result(
-                    f"Service Request Webhook ({expected_service})",
-                    True,
-                    f"Webhook processed successfully via {endpoint}",
-                    {"message": message, "phone": phone, "response": response}
-                )
+            if method.upper() == 'GET':
+                response = requests.get(url, headers=headers, timeout=30)
+            elif method.upper() == 'POST':
+                response = requests.post(url, json=data, headers=headers, timeout=30)
+            elif method.upper() == 'PUT':
+                response = requests.put(url, json=data, headers=headers, timeout=30)
+            elif method.upper() == 'DELETE':
+                response = requests.delete(url, headers=headers, timeout=30)
             else:
-                self.log_result(
-                    f"Service Request Webhook ({expected_service})",
-                    False,
-                    f"Webhook failed: {response}",
-                    {"message": message, "phone": phone}
-                )
+                raise ValueError(f"Unsupported HTTP method: {method}")
             
-            time.sleep(1)  # Rate limiting
-    
-    def test_3_greeting_messages(self):
-        """Test 3: Greeting messages should send welcome with web app links"""
-        print("\n" + "="*60)
-        print("TEST 3: GREETING MESSAGES")
-        print("="*60)
+            return response
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Request failed: {e}")
+            return None
+
+    def authenticate_users(self) -> bool:
+        """Authenticate all test users"""
+        print("\n🔐 AUTHENTICATING TEST USERS...")
         
-        greetings = ["hi", "hello", "hallo", "dumela", "sawubona"]
+        all_authenticated = True
         
-        for i, greeting in enumerate(greetings):
-            phone = TEST_PHONE_NUMBERS[i % len(TEST_PHONE_NUMBERS)]
-            
-            print(f"\n👋 Testing greeting: '{greeting}' from {phone}")
-            
-            success, response, endpoint = self.simulate_whatsapp_webhook(phone, greeting)
-            
-            if success:
-                self.log_result(
-                    f"Greeting Message ({greeting})",
-                    True,
-                    f"Greeting processed successfully via {endpoint}",
-                    {"greeting": greeting, "phone": phone, "response": response}
-                )
-            else:
-                self.log_result(
-                    f"Greeting Message ({greeting})",
-                    False,
-                    f"Greeting failed: {response}",
-                    {"greeting": greeting, "phone": phone}
-                )
-            
-            time.sleep(1)
-    
-    def test_4_help_messages(self):
-        """Test 4: Help messages should include web app links"""
-        print("\n" + "="*60)
-        print("TEST 4: HELP MESSAGES")
-        print("="*60)
-        
-        help_messages = ["help", "info", "help me", "need help"]
-        
-        for i, help_msg in enumerate(help_messages):
-            phone = TEST_PHONE_NUMBERS[i % len(TEST_PHONE_NUMBERS)]
-            
-            print(f"\n❓ Testing help: '{help_msg}' from {phone}")
-            
-            success, response, endpoint = self.simulate_whatsapp_webhook(phone, help_msg)
-            
-            if success:
-                self.log_result(
-                    f"Help Message ({help_msg})",
-                    True,
-                    f"Help message processed successfully via {endpoint}",
-                    {"help_message": help_msg, "phone": phone, "response": response}
-                )
-            else:
-                self.log_result(
-                    f"Help Message ({help_msg})",
-                    False,
-                    f"Help message failed: {response}",
-                    {"help_message": help_msg, "phone": phone}
-                )
-            
-            time.sleep(1)
-    
-    def test_5_general_responses(self):
-        """Test 5: General responses should include web app links"""
-        print("\n" + "="*60)
-        print("TEST 5: GENERAL RESPONSES")
-        print("="*60)
-        
-        general_messages = [
-            "What services do you offer?",
-            "How much does it cost?",
-            "Are you available?",
-            "Random message",
-            "Testing general response"
-        ]
-        
-        for i, message in enumerate(general_messages):
-            phone = TEST_PHONE_NUMBERS[i % len(TEST_PHONE_NUMBERS)]
-            
-            print(f"\n💬 Testing general: '{message}' from {phone}")
-            
-            success, response, endpoint = self.simulate_whatsapp_webhook(phone, message)
-            
-            if success:
-                self.log_result(
-                    f"General Response",
-                    True,
-                    f"General message processed successfully via {endpoint}",
-                    {"message": message, "phone": phone, "response": response}
-                )
-            else:
-                self.log_result(
-                    f"General Response",
-                    False,
-                    f"General message failed: {response}",
-                    {"message": message, "phone": phone}
-                )
-            
-            time.sleep(1)
-    
-    def test_6_urgency_detection(self):
-        """Test 6: Urgency detection should still work but redirect to web app"""
-        print("\n" + "="*60)
-        print("TEST 6: URGENCY DETECTION")
-        print("="*60)
-        
-        urgent_messages = [
-            "URGENT plumber needed",
-            "Emergency electrical repair",
-            "ASAP cleaning service",
-            "Immediate handyman required",
-            "Quick fix needed now"
-        ]
-        
-        for i, message in enumerate(urgent_messages):
-            phone = TEST_PHONE_NUMBERS[i % len(TEST_PHONE_NUMBERS)]
-            
-            print(f"\n🚨 Testing urgent: '{message}' from {phone}")
-            
-            success, response, endpoint = self.simulate_whatsapp_webhook(phone, message)
-            
-            if success:
-                self.log_result(
-                    f"Urgent Service Request",
-                    True,
-                    f"Urgent message processed successfully via {endpoint}",
-                    {"message": message, "phone": phone, "response": response}
-                )
-            else:
-                self.log_result(
-                    f"Urgent Service Request",
-                    False,
-                    f"Urgent message failed: {response}",
-                    {"message": message, "phone": phone}
-                )
-            
-            time.sleep(1)
-    
-    def test_7_multiple_service_types(self):
-        """Test 7: Test all major service types"""
-        print("\n" + "="*60)
-        print("TEST 7: MULTIPLE SERVICE TYPES")
-        print("="*60)
-        
-        service_messages = [
-            ("Need a plumber for leaking pipe", "plumber"),
-            ("Electrician for power outlet", "electrician"),
-            ("Cleaner for deep house cleaning", "cleaner"),
-            ("Gardener for lawn maintenance", "gardener"),
-            ("Carpenter for custom shelving", "carpenter"),
-            ("Painter for interior walls", "painter"),
-            ("Handyman for general repairs", "handyman"),
-            ("Mechanic for car repair", "mechanic")
-        ]
-        
-        for i, (message, service_type) in enumerate(service_messages):
-            phone = TEST_PHONE_NUMBERS[i % len(TEST_PHONE_NUMBERS)]
-            
-            print(f"\n🔧 Testing {service_type}: '{message}' from {phone}")
-            
-            success, response, endpoint = self.simulate_whatsapp_webhook(phone, message)
-            
-            if success:
-                self.log_result(
-                    f"Service Type ({service_type})",
-                    True,
-                    f"{service_type.title()} service processed successfully via {endpoint}",
-                    {"message": message, "service_type": service_type, "phone": phone, "response": response}
-                )
-            else:
-                self.log_result(
-                    f"Service Type ({service_type})",
-                    False,
-                    f"{service_type.title()} service failed: {response}",
-                    {"message": message, "service_type": service_type, "phone": phone}
-                )
-            
-            time.sleep(1)
-    
-    def test_8_final_job_count_verification(self):
-        """Test 8: Verify job count hasn't increased (critical test)"""
-        print("\n" + "="*60)
-        print("TEST 8: FINAL JOB COUNT VERIFICATION")
-        print("="*60)
-        
-        # Wait a moment for any potential async job creation
-        time.sleep(3)
-        
-        self.job_count_after = self.get_job_count()
-        
-        job_count_increased = self.job_count_after > self.job_count_before
-        jobs_created = self.job_count_after - self.job_count_before
-        
-        if job_count_increased:
-            self.log_result(
-                "No Job Creation Verification",
-                False,
-                f"❌ CRITICAL FAILURE: Jobs were created! Before: {self.job_count_before}, After: {self.job_count_after}, Created: {jobs_created}",
-                {
-                    "job_count_before": self.job_count_before,
-                    "job_count_after": self.job_count_after,
-                    "jobs_created": jobs_created
-                }
-            )
-        else:
-            self.log_result(
-                "No Job Creation Verification",
-                True,
-                f"✅ SUCCESS: No jobs created via WhatsApp! Before: {self.job_count_before}, After: {self.job_count_after}",
-                {
-                    "job_count_before": self.job_count_before,
-                    "job_count_after": self.job_count_after,
-                    "jobs_created": jobs_created
-                }
-            )
-    
-    def test_9_webhook_endpoints_accessibility(self):
-        """Test 9: Verify webhook endpoints are accessible"""
-        print("\n" + "="*60)
-        print("TEST 9: WEBHOOK ENDPOINTS ACCESSIBILITY")
-        print("="*60)
-        
-        endpoints = [
-            ("/whatsapp", "GET", "WhatsApp Webhook Verification"),
-            ("/whatsapp", "POST", "WhatsApp Webhook Handler"),
-            ("/api/whatsapp/webhook", "GET", "API WhatsApp Webhook Verification"),
-            ("/api/whatsapp/webhook", "POST", "API WhatsApp Webhook Handler")
-        ]
-        
-        for endpoint, method, description in endpoints:
-            url = f"{BACKEND_URL}{endpoint}"
-            
+        for role, account in self.test_accounts.items():
             try:
-                if method == "GET":
-                    response = requests.get(url, timeout=10)
-                else:
-                    # Send minimal valid webhook payload
-                    test_payload = {
-                        "entry": [{
-                            "changes": [{
-                                "value": {
-                                    "messages": [{
-                                        "from": "27821234567",
-                                        "id": "test_msg",
-                                        "timestamp": str(int(time.time())),
-                                        "type": "text",
-                                        "text": {"body": "test"}
-                                    }]
-                                }
-                            }]
-                        }]
-                    }
-                    response = requests.post(url, json=test_payload, timeout=10)
+                response = self.make_request('POST', '/auth/login', {
+                    'phone': account['phone'],
+                    'password': account['password']
+                })
                 
-                if response.status_code in [200, 201]:
-                    self.log_result(
-                        f"Endpoint Accessibility ({method} {endpoint})",
-                        True,
-                        f"{description} accessible (HTTP {response.status_code})",
-                        {"endpoint": endpoint, "method": method, "status_code": response.status_code}
-                    )
+                if response and response.status_code == 200:
+                    data = response.json()
+                    account['token'] = data.get('token')
+                    account['user_id'] = data.get('user', {}).get('id')
+                    self.log_test(f"Authenticate {role} user", True, f"Token: {account['token'][:20]}...")
                 else:
-                    self.log_result(
-                        f"Endpoint Accessibility ({method} {endpoint})",
-                        False,
-                        f"{description} returned HTTP {response.status_code}",
-                        {"endpoint": endpoint, "method": method, "status_code": response.status_code, "response": response.text[:200]}
-                    )
+                    self.log_test(f"Authenticate {role} user", False, f"Status: {response.status_code if response else 'No response'}")
+                    all_authenticated = False
                     
             except Exception as e:
-                self.log_result(
-                    f"Endpoint Accessibility ({method} {endpoint})",
-                    False,
-                    f"{description} failed: {str(e)}",
-                    {"endpoint": endpoint, "method": method, "error": str(e)}
-                )
-            
-            time.sleep(0.5)
-    
-    def test_10_system_stability(self):
-        """Test 10: System stability under multiple requests"""
-        print("\n" + "="*60)
-        print("TEST 10: SYSTEM STABILITY")
-        print("="*60)
+                self.log_test(f"Authenticate {role} user", False, str(e))
+                all_authenticated = False
         
-        # Send multiple requests rapidly
-        messages = [
-            "I need a plumber",
-            "hello",
-            "help",
-            "Electrical repair needed",
-            "What services do you offer?"
+        return all_authenticated
+
+    def test_admin_announcement_creation(self) -> bool:
+        """Test admin announcement creation with different target audiences"""
+        print("\n📢 TESTING ADMIN ANNOUNCEMENT CREATION...")
+        
+        test_announcements = [
+            {
+                'title': 'Important Update for Clients',
+                'content': 'We have updated our service pricing. Please check the new rates.',
+                'target_audience': 'clients',
+                'is_pinned': True,
+                'priority': 'high',
+                'chat_enabled': True,
+                'admin_only_chat': False
+            },
+            {
+                'title': 'New Fixer Guidelines',
+                'content': 'All fixers must now complete safety training before accepting jobs.',
+                'target_audience': 'fixers', 
+                'is_pinned': False,
+                'priority': 'normal',
+                'chat_enabled': True,
+                'admin_only_chat': True
+            },
+            {
+                'title': 'Platform Maintenance Notice',
+                'content': 'The platform will be under maintenance on Sunday from 2-4 AM.',
+                'target_audience': 'all',
+                'is_pinned': True,
+                'priority': 'high',
+                'chat_enabled': False,
+                'admin_only_chat': False,
+                'expires_at': (datetime.utcnow() + timedelta(days=7)).isoformat()
+            }
         ]
         
-        success_count = 0
-        total_requests = len(messages) * 2  # Send each message twice
+        all_passed = True
         
-        for round_num in range(2):
-            print(f"\n🔄 Round {round_num + 1}")
-            for i, message in enumerate(messages):
-                phone = TEST_PHONE_NUMBERS[i % len(TEST_PHONE_NUMBERS)]
-                
-                success, response, endpoint = self.simulate_whatsapp_webhook(phone, message)
-                
-                if success:
-                    success_count += 1
-                    print(f"   ✅ {message[:30]}... - Success")
+        for i, announcement_data in enumerate(test_announcements):
+            response = self.make_request('POST', '/admin/announcements', announcement_data, role='admin')
+            
+            if response and response.status_code == 200:
+                data = response.json()
+                if data.get('success') and data.get('announcement_id'):
+                    self.test_announcements.append({
+                        'id': data['announcement_id'],
+                        'data': announcement_data
+                    })
+                    self.log_test(f"Create announcement {i+1} ({announcement_data['target_audience']})", True, 
+                                f"ID: {data['announcement_id']}")
                 else:
-                    print(f"   ❌ {message[:30]}... - Failed")
-                
-                time.sleep(0.2)  # Small delay
+                    self.log_test(f"Create announcement {i+1}", False, "Invalid response structure")
+                    all_passed = False
+            else:
+                self.log_test(f"Create announcement {i+1}", False, 
+                            f"Status: {response.status_code if response else 'No response'}")
+                all_passed = False
         
-        stability_percentage = (success_count / total_requests) * 100
+        return all_passed
+
+    def test_admin_announcement_management(self) -> bool:
+        """Test admin announcement retrieval, update, and deletion"""
+        print("\n🔧 TESTING ADMIN ANNOUNCEMENT MANAGEMENT...")
         
-        if stability_percentage >= 90:
-            self.log_result(
-                "System Stability",
-                True,
-                f"System stable: {success_count}/{total_requests} requests successful ({stability_percentage:.1f}%)",
-                {"success_count": success_count, "total_requests": total_requests, "stability_percentage": stability_percentage}
-            )
+        all_passed = True
+        
+        # Test GET all announcements
+        response = self.make_request('GET', '/admin/announcements', role='admin')
+        if response and response.status_code == 200:
+            data = response.json()
+            if data.get('success') and 'announcements' in data:
+                announcement_count = len(data['announcements'])
+                self.log_test("Get all announcements (admin)", True, f"Found {announcement_count} announcements")
+            else:
+                self.log_test("Get all announcements (admin)", False, "Invalid response structure")
+                all_passed = False
         else:
-            self.log_result(
-                "System Stability",
-                False,
-                f"System unstable: {success_count}/{total_requests} requests successful ({stability_percentage:.1f}%)",
-                {"success_count": success_count, "total_requests": total_requests, "stability_percentage": stability_percentage}
-            )
-    
-    def generate_summary(self):
-        """Generate test summary"""
-        print("\n" + "="*80)
-        print("WHATSAPP REDIRECT FLOW TEST SUMMARY")
-        print("="*80)
+            self.log_test("Get all announcements (admin)", False, 
+                        f"Status: {response.status_code if response else 'No response'}")
+            all_passed = False
         
-        total_tests = len(self.results)
-        passed_tests = sum(1 for r in self.results if r['success'])
-        failed_tests = total_tests - passed_tests
-        success_rate = (passed_tests / total_tests * 100) if total_tests > 0 else 0
+        # Test UPDATE announcement (if we have test announcements)
+        if self.test_announcements:
+            announcement_id = self.test_announcements[0]['id']
+            update_data = {
+                'title': 'UPDATED: Important Update for Clients',
+                'is_pinned': False,
+                'priority': 'normal'
+            }
+            
+            response = self.make_request('PUT', f'/admin/announcements/{announcement_id}', update_data, role='admin')
+            if response and response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    self.log_test("Update announcement", True, f"Updated announcement {announcement_id}")
+                else:
+                    self.log_test("Update announcement", False, "Update failed")
+                    all_passed = False
+            else:
+                self.log_test("Update announcement", False, 
+                            f"Status: {response.status_code if response else 'No response'}")
+                all_passed = False
         
-        print(f"\n📊 OVERALL RESULTS:")
-        print(f"   Total Tests: {total_tests}")
-        print(f"   Passed: {passed_tests}")
-        print(f"   Failed: {failed_tests}")
+        return all_passed
+
+    def test_user_role_based_access(self) -> bool:
+        """Test user role-based announcement access"""
+        print("\n👥 TESTING USER ROLE-BASED ANNOUNCEMENT ACCESS...")
+        
+        all_passed = True
+        
+        # Test each role's access to announcements
+        for role in ['admin', 'client', 'fixer']:
+            response = self.make_request('GET', '/announcements', role=role)
+            
+            if response and response.status_code == 200:
+                data = response.json()
+                if data.get('success') and 'announcements' in data:
+                    announcements = data['announcements']
+                    user_role = data.get('user_role', role)
+                    
+                    # Verify role-based filtering
+                    valid_access = True
+                    for ann in announcements:
+                        target = ann.get('target_audience')
+                        if role == 'admin':
+                            # Admin should see all
+                            pass
+                        elif role == 'client':
+                            if target not in ['clients', 'all']:
+                                valid_access = False
+                                break
+                        elif role == 'fixer':
+                            if target not in ['fixers', 'all']:
+                                valid_access = False
+                                break
+                    
+                    if valid_access:
+                        self.log_test(f"Get announcements as {role}", True, 
+                                    f"Found {len(announcements)} announcements, role filtering correct")
+                    else:
+                        self.log_test(f"Get announcements as {role}", False, "Role filtering incorrect")
+                        all_passed = False
+                else:
+                    self.log_test(f"Get announcements as {role}", False, "Invalid response structure")
+                    all_passed = False
+            else:
+                self.log_test(f"Get announcements as {role}", False, 
+                            f"Status: {response.status_code if response else 'No response'}")
+                all_passed = False
+        
+        return all_passed
+
+    def test_chat_system_functionality(self) -> bool:
+        """Test announcement chat system"""
+        print("\n💬 TESTING ANNOUNCEMENT CHAT SYSTEM...")
+        
+        all_passed = True
+        
+        if not self.test_announcements:
+            self.log_test("Chat system test", False, "No test announcements available")
+            return False
+        
+        # Use first announcement for chat testing
+        announcement_id = self.test_announcements[0]['id']
+        
+        # Test GET chat messages (initially empty)
+        response = self.make_request('GET', f'/announcements/{announcement_id}/chat', role='client')
+        if response and response.status_code == 200:
+            data = response.json()
+            if data.get('success') and 'messages' in data:
+                self.log_test("Get chat messages", True, f"Found {len(data['messages'])} messages")
+            else:
+                self.log_test("Get chat messages", False, "Invalid response structure")
+                all_passed = False
+        else:
+            self.log_test("Get chat messages", False, 
+                        f"Status: {response.status_code if response else 'No response'}")
+            all_passed = False
+        
+        # Test POST chat message as client
+        chat_message_data = {
+            'message': 'This is a test message from a client user.'
+        }
+        
+        response = self.make_request('POST', f'/announcements/{announcement_id}/chat', chat_message_data, role='client')
+        if response and response.status_code == 200:
+            data = response.json()
+            if data.get('success') and data.get('chat_message'):
+                message_id = data['chat_message']['id']
+                self.test_chat_messages.append({
+                    'id': message_id,
+                    'announcement_id': announcement_id
+                })
+                self.log_test("Post chat message (client)", True, f"Message ID: {message_id}")
+            else:
+                self.log_test("Post chat message (client)", False, "Invalid response structure")
+                all_passed = False
+        else:
+            self.log_test("Post chat message (client)", False, 
+                        f"Status: {response.status_code if response else 'No response'}")
+            all_passed = False
+        
+        # Test POST chat message as admin
+        admin_message_data = {
+            'message': 'This is an admin response to the client message.'
+        }
+        
+        response = self.make_request('POST', f'/announcements/{announcement_id}/chat', admin_message_data, role='admin')
+        if response and response.status_code == 200:
+            data = response.json()
+            if data.get('success') and data.get('chat_message'):
+                admin_message_id = data['chat_message']['id']
+                self.test_chat_messages.append({
+                    'id': admin_message_id,
+                    'announcement_id': announcement_id
+                })
+                self.log_test("Post chat message (admin)", True, f"Message ID: {admin_message_id}")
+            else:
+                self.log_test("Post chat message (admin)", False, "Invalid response structure")
+                all_passed = False
+        else:
+            self.log_test("Post chat message (admin)", False, 
+                        f"Status: {response.status_code if response else 'No response'}")
+            all_passed = False
+        
+        return all_passed
+
+    def test_chat_permissions_and_settings(self) -> bool:
+        """Test chat permission enforcement and settings"""
+        print("\n🔒 TESTING CHAT PERMISSIONS AND SETTINGS...")
+        
+        all_passed = True
+        
+        # Find announcement with admin_only_chat enabled (should be the fixer announcement)
+        admin_only_announcement = None
+        for ann in self.test_announcements:
+            if ann['data'].get('admin_only_chat'):
+                admin_only_announcement = ann
+                break
+        
+        if admin_only_announcement:
+            announcement_id = admin_only_announcement['id']
+            
+            # Test that non-admin cannot post to admin-only chat
+            client_message = {
+                'message': 'Client trying to post to admin-only chat'
+            }
+            
+            response = self.make_request('POST', f'/announcements/{announcement_id}/chat', client_message, role='client')
+            if response and response.status_code == 403:
+                self.log_test("Admin-only chat restriction (client blocked)", True, "Client correctly blocked from admin-only chat")
+            else:
+                self.log_test("Admin-only chat restriction (client blocked)", False, 
+                            f"Expected 403, got {response.status_code if response else 'No response'}")
+                all_passed = False
+            
+            # Test that admin can post to admin-only chat
+            admin_message = {
+                'message': 'Admin posting to admin-only chat'
+            }
+            
+            response = self.make_request('POST', f'/announcements/{announcement_id}/chat', admin_message, role='admin')
+            if response and response.status_code == 200:
+                self.log_test("Admin-only chat access (admin allowed)", True, "Admin successfully posted to admin-only chat")
+            else:
+                self.log_test("Admin-only chat access (admin allowed)", False, 
+                            f"Status: {response.status_code if response else 'No response'}")
+                all_passed = False
+        
+        # Find announcement with chat disabled
+        chat_disabled_announcement = None
+        for ann in self.test_announcements:
+            if not ann['data'].get('chat_enabled', True):
+                chat_disabled_announcement = ann
+                break
+        
+        if chat_disabled_announcement:
+            announcement_id = chat_disabled_announcement['id']
+            
+            # Test that no one can post to disabled chat
+            test_message = {
+                'message': 'Trying to post to disabled chat'
+            }
+            
+            response = self.make_request('POST', f'/announcements/{announcement_id}/chat', test_message, role='admin')
+            if response and response.status_code == 403:
+                self.log_test("Chat disabled restriction", True, "Chat correctly disabled for announcement")
+            else:
+                self.log_test("Chat disabled restriction", False, 
+                            f"Expected 403, got {response.status_code if response else 'No response'}")
+                all_passed = False
+        
+        return all_passed
+
+    def test_authentication_and_authorization(self) -> bool:
+        """Test authentication and authorization for all endpoints"""
+        print("\n🛡️ TESTING AUTHENTICATION AND AUTHORIZATION...")
+        
+        all_passed = True
+        
+        # Test admin endpoints without authentication
+        response = self.make_request('GET', '/admin/announcements')
+        if response and response.status_code == 401:
+            self.log_test("Admin endpoint without auth", True, "Correctly rejected unauthenticated request")
+        else:
+            self.log_test("Admin endpoint without auth", False, 
+                        f"Expected 401, got {response.status_code if response else 'No response'}")
+            all_passed = False
+        
+        # Test admin endpoints with non-admin user
+        response = self.make_request('GET', '/admin/announcements', role='client')
+        if response and response.status_code == 403:
+            self.log_test("Admin endpoint with client auth", True, "Correctly rejected non-admin user")
+        else:
+            self.log_test("Admin endpoint with client auth", False, 
+                        f"Expected 403, got {response.status_code if response else 'No response'}")
+            all_passed = False
+        
+        # Test user endpoints without authentication
+        response = self.make_request('GET', '/announcements')
+        if response and response.status_code == 401:
+            self.log_test("User endpoint without auth", True, "Correctly rejected unauthenticated request")
+        else:
+            self.log_test("User endpoint without auth", False, 
+                        f"Expected 401, got {response.status_code if response else 'No response'}")
+            all_passed = False
+        
+        return all_passed
+
+    def test_data_integrity_and_cascade_deletion(self) -> bool:
+        """Test data integrity and cascade deletion"""
+        print("\n🗑️ TESTING DATA INTEGRITY AND CASCADE DELETION...")
+        
+        all_passed = True
+        
+        if not self.test_announcements or not self.test_chat_messages:
+            self.log_test("Data integrity test", False, "No test data available")
+            return False
+        
+        # Get announcement with chat messages
+        announcement_with_chat = None
+        for ann in self.test_announcements:
+            for msg in self.test_chat_messages:
+                if msg['announcement_id'] == ann['id']:
+                    announcement_with_chat = ann
+                    break
+            if announcement_with_chat:
+                break
+        
+        if announcement_with_chat:
+            announcement_id = announcement_with_chat['id']
+            
+            # Count chat messages before deletion
+            response = self.make_request('GET', f'/announcements/{announcement_id}/chat', role='admin')
+            messages_before = 0
+            if response and response.status_code == 200:
+                data = response.json()
+                messages_before = len(data.get('messages', []))
+            
+            # Delete the announcement
+            response = self.make_request('DELETE', f'/admin/announcements/{announcement_id}', role='admin')
+            if response and response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    self.log_test("Delete announcement with cascade", True, 
+                                f"Deleted announcement and {messages_before} chat messages")
+                    
+                    # Remove from our test data
+                    self.test_announcements = [ann for ann in self.test_announcements if ann['id'] != announcement_id]
+                    self.test_chat_messages = [msg for msg in self.test_chat_messages if msg['announcement_id'] != announcement_id]
+                else:
+                    self.log_test("Delete announcement with cascade", False, "Deletion failed")
+                    all_passed = False
+            else:
+                self.log_test("Delete announcement with cascade", False, 
+                            f"Status: {response.status_code if response else 'No response'}")
+                all_passed = False
+        
+        return all_passed
+
+    def test_chat_message_deletion(self) -> bool:
+        """Test individual chat message deletion"""
+        print("\n🗑️ TESTING CHAT MESSAGE DELETION...")
+        
+        all_passed = True
+        
+        if not self.test_chat_messages:
+            self.log_test("Chat message deletion test", False, "No test chat messages available")
+            return False
+        
+        # Test deleting a chat message
+        message_to_delete = self.test_chat_messages[0]
+        message_id = message_to_delete['id']
+        announcement_id = message_to_delete['announcement_id']
+        
+        response = self.make_request('DELETE', f'/announcements/{announcement_id}/chat/{message_id}', role='admin')
+        if response and response.status_code == 200:
+            data = response.json()
+            if data.get('success'):
+                self.log_test("Delete chat message", True, f"Deleted message {message_id}")
+                # Remove from our test data
+                self.test_chat_messages = [msg for msg in self.test_chat_messages if msg['id'] != message_id]
+            else:
+                self.log_test("Delete chat message", False, "Deletion failed")
+                all_passed = False
+        else:
+            self.log_test("Delete chat message", False, 
+                        f"Status: {response.status_code if response else 'No response'}")
+            all_passed = False
+        
+        return all_passed
+
+    def cleanup_test_data(self):
+        """Clean up any remaining test data"""
+        print("\n🧹 CLEANING UP TEST DATA...")
+        
+        # Delete remaining announcements
+        for announcement in self.test_announcements[:]:
+            response = self.make_request('DELETE', f'/admin/announcements/{announcement["id"]}', role='admin')
+            if response and response.status_code == 200:
+                self.log_test(f"Cleanup announcement {announcement['id']}", True, "Deleted")
+                self.test_announcements.remove(announcement)
+            else:
+                self.log_test(f"Cleanup announcement {announcement['id']}", False, "Failed to delete")
+
+    def run_all_tests(self):
+        """Run all announcement system tests"""
+        print("🚀 STARTING COMPREHENSIVE ANNOUNCEMENT SYSTEM BACKEND TESTING")
+        print("=" * 80)
+        
+        # Step 1: Authentication
+        if not self.authenticate_users():
+            print("❌ Authentication failed. Cannot proceed with tests.")
+            return False
+        
+        # Step 2: Admin Announcement Management
+        self.test_admin_announcement_creation()
+        self.test_admin_announcement_management()
+        
+        # Step 3: User Role-Based Access
+        self.test_user_role_based_access()
+        
+        # Step 4: Chat System
+        self.test_chat_system_functionality()
+        self.test_chat_permissions_and_settings()
+        
+        # Step 5: Authentication & Authorization
+        self.test_authentication_and_authorization()
+        
+        # Step 6: Data Integrity
+        self.test_chat_message_deletion()
+        self.test_data_integrity_and_cascade_deletion()
+        
+        # Step 7: Cleanup
+        self.cleanup_test_data()
+        
+        # Print final results
+        self.print_final_results()
+        
+        return self.results['failed_tests'] == 0
+
+    def print_final_results(self):
+        """Print comprehensive test results"""
+        print("\n" + "=" * 80)
+        print("🎯 ANNOUNCEMENT SYSTEM BACKEND TESTING RESULTS")
+        print("=" * 80)
+        
+        total = self.results['total_tests']
+        passed = self.results['passed_tests']
+        failed = self.results['failed_tests']
+        success_rate = (passed / total * 100) if total > 0 else 0
+        
+        print(f"📊 SUMMARY:")
+        print(f"   Total Tests: {total}")
+        print(f"   Passed: {passed}")
+        print(f"   Failed: {failed}")
         print(f"   Success Rate: {success_rate:.1f}%")
         
-        print(f"\n🔍 CRITICAL FINDINGS:")
-        
-        # Check for critical job creation test
-        job_creation_test = next((r for r in self.results if "No Job Creation" in r['test']), None)
-        if job_creation_test:
-            if job_creation_test['success']:
-                print(f"   ✅ CRITICAL SUCCESS: No jobs created via WhatsApp (redirect working)")
-            else:
-                print(f"   ❌ CRITICAL FAILURE: Jobs were created via WhatsApp (redirect not working)")
-        
-        # Check webhook accessibility
-        webhook_tests = [r for r in self.results if "Endpoint Accessibility" in r['test']]
-        webhook_success = sum(1 for r in webhook_tests if r['success'])
-        if webhook_tests:
-            print(f"   📡 Webhook Endpoints: {webhook_success}/{len(webhook_tests)} accessible")
-        
-        # Check system stability
-        stability_test = next((r for r in self.results if "System Stability" in r['test']), None)
-        if stability_test:
-            if stability_test['success']:
-                print(f"   🔧 System Stability: STABLE")
-            else:
-                print(f"   ⚠️ System Stability: UNSTABLE")
-        
-        print(f"\n📋 DETAILED RESULTS:")
-        for result in self.results:
-            print(f"   {result['status']}: {result['test']}")
-            if not result['success'] and result.get('details'):
-                print(f"      └─ {result['message']}")
-        
-        print(f"\n🎯 CONCLUSION:")
-        if success_rate >= 90:
-            print(f"   ✅ WhatsApp redirect flow is working correctly!")
-            print(f"   ✅ Users are being redirected to web app instead of creating jobs directly")
-            print(f"   ✅ All conversation flows include appropriate web app links")
-        elif success_rate >= 70:
-            print(f"   ⚠️ WhatsApp redirect flow is mostly working but has some issues")
-            print(f"   ⚠️ Review failed tests for specific problems")
+        if failed == 0:
+            print("\n🎉 ALL TESTS PASSED! Announcement system is working correctly.")
         else:
-            print(f"   ❌ WhatsApp redirect flow has significant issues")
-            print(f"   ❌ Major problems detected that need immediate attention")
+            print(f"\n⚠️ {failed} TESTS FAILED. Review the details above.")
         
-        return {
-            "total_tests": total_tests,
-            "passed_tests": passed_tests,
-            "failed_tests": failed_tests,
-            "success_rate": success_rate,
-            "critical_job_creation_working": job_creation_test['success'] if job_creation_test else False,
-            "results": self.results
-        }
+        print("\n📋 DETAILED RESULTS:")
+        for detail in self.results['test_details']:
+            status_icon = "✅" if detail['status'] == 'PASS' else "❌"
+            print(f"   {status_icon} {detail['test']}")
+            if detail['details']:
+                print(f"      {detail['details']}")
 
 def main():
-    """Main test execution"""
-    print("🚀 Starting WhatsApp Integration Redirect Flow Testing")
-    print(f"🔗 Backend URL: {BACKEND_URL}")
-    print(f"📅 Test Time: {datetime.now().isoformat()}")
-    
-    tester = WhatsAppRedirectTester()
-    
-    try:
-        # Execute all tests
-        tester.test_1_initial_job_count()
-        tester.test_2_service_request_redirect()
-        tester.test_3_greeting_messages()
-        tester.test_4_help_messages()
-        tester.test_5_general_responses()
-        tester.test_6_urgency_detection()
-        tester.test_7_multiple_service_types()
-        tester.test_8_final_job_count_verification()
-        tester.test_9_webhook_endpoints_accessibility()
-        tester.test_10_system_stability()
-        
-        # Generate summary
-        summary = tester.generate_summary()
-        
-        return summary
-        
-    except KeyboardInterrupt:
-        print("\n⚠️ Testing interrupted by user")
-        return tester.generate_summary()
-    except Exception as e:
-        print(f"\n❌ Testing failed with error: {e}")
-        return {"error": str(e), "results": tester.results}
-
-if __name__ == "__main__":
-    result = main()
+    """Main function to run announcement system tests"""
+    tester = AnnouncementSystemTester()
+    success = tester.run_all_tests()
     
     # Exit with appropriate code
-    if result.get('success_rate', 0) >= 90:
-        exit(0)  # Success
-    else:
-        exit(1)  # Failure
+    sys.exit(0 if success else 1)
+
+if __name__ == "__main__":
+    main()
