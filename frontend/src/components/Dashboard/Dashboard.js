@@ -4,6 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { apiService } from '../../services/api';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '../Common/Logo';
+import AnnouncementDisplay from '../Common/AnnouncementDisplay';
 
 const Dashboard = () => {
   const { user, getUserRole } = useAuth();
