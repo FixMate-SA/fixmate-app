@@ -281,7 +281,7 @@ export const apiService = {
   get: (endpoint, options = {}) => api.get(endpoint, options),
   post: (endpoint, data, options = {}) => api.post(endpoint, data, options),
   put: (endpoint, data, options = {}) => api.put(endpoint, data, options),
-  delete: (endpoint, options = {}) => api.delete(endpoint, options)
+  delete: (endpoint, options = {}) => api.delete(endpoint, options),
 
   // Offline Support
   syncOfflineData: (offlineData) => api.post('/offline/sync', offlineData),
