@@ -263,9 +263,25 @@ export const apiService = {
   },
   
   // WhatsApp Statistics
-  getWhatsAppStatistics: (hours = 24) => {
-    return api.get(`/whatsapp/statistics?hours=${hours}`).then(response => response.data);
-  },
+  getWhatsAppStats: (hours = 24) => api.get('/whatsapp/statistics', { params: { hours } }),
+
+  // Announcements
+  getAnnouncements: () => api.get('/announcements'),
+  createAnnouncement: (announcementData) => api.post('/admin/announcements', announcementData),
+  updateAnnouncement: (id, announcementData) => api.put(`/admin/announcements/${id}`, announcementData),
+  deleteAnnouncement: (id) => api.delete(`/admin/announcements/${id}`),
+  getAdminAnnouncements: () => api.get('/admin/announcements'),
+  
+  // Announcement Chat
+  getAnnouncementChat: (announcementId, params = {}) => api.get(`/announcements/${announcementId}/chat`, { params }),
+  postChatMessage: (announcementId, message) => api.post(`/announcements/${announcementId}/chat`, { message }),
+  deleteChatMessage: (announcementId, messageId) => api.delete(`/announcements/${announcementId}/chat/${messageId}`),
+
+  // Generic API methods
+  get: (endpoint, options = {}) => api.get(endpoint, options),
+  post: (endpoint, data, options = {}) => api.post(endpoint, data, options),
+  put: (endpoint, data, options = {}) => api.put(endpoint, data, options),
+  delete: (endpoint, options = {}) => api.delete(endpoint, options),
   
   // Generic methods for easier access
   get: (url, config = {}) => api.get(url, config).then(response => response.data),
