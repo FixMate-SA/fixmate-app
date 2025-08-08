@@ -976,6 +976,7 @@ class AnnouncementChat(Base):
     Model for chat messages related to announcements
     """
     __tablename__ = "announcement_chats"
+    __table_args__ = {'extend_existing': True}
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     announcement_id = Column(String, ForeignKey("announcements.id"), nullable=False)
