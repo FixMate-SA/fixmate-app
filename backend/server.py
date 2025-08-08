@@ -4985,7 +4985,7 @@ async def get_announcements_for_user(
 @api_router.get("/announcements/{announcement_id}/chat")
 async def get_announcement_chat(
     announcement_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     skip: int = Query(default=0, description="Number of messages to skip"),
     limit: int = Query(default=50, description="Number of messages to retrieve")
@@ -5000,7 +5000,7 @@ async def get_announcement_chat(
             raise HTTPException(status_code=404, detail="Announcement not found")
         
         # Check if user can access this announcement
-        user_role = current_user.get('role', 'client')
+        user_role = current_user.role or 'client'
         if user_role not in ['admin', 'super_admin']:
             if announcement.target_audience not in ['all']:
                 if (user_role == 'client' and announcement.target_audience != 'clients') or \
