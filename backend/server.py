@@ -5129,7 +5129,7 @@ async def post_chat_message(
 async def delete_chat_message(
     announcement_id: str,
     message_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -5146,8 +5146,8 @@ async def delete_chat_message(
             raise HTTPException(status_code=404, detail="Chat message not found")
         
         # Check permissions - admin or message owner
-        user_role = current_user.get('role', 'client')
-        if user_role not in ['admin', 'super_admin'] and chat_message.user_id != current_user['user_id']:
+        user_role = current_user.role or 'client'
+        if user_role not in ['admin', 'super_admin'] and chat_message.user_id != current_user.id:
             raise HTTPException(status_code=403, detail="You can only delete your own messages or admin can delete any")
         
         # Soft delete
