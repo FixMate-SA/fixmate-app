@@ -4739,7 +4739,7 @@ async def create_announcement(
 
 @api_router.get("/admin/announcements")
 async def get_all_announcements(
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -4748,7 +4748,7 @@ async def get_all_announcements(
     """
     try:
         # Verify admin access
-        if current_user.get('role') not in ['admin', 'super_admin']:
+        if current_user.role not in ['admin', 'super_admin']:
             raise HTTPException(status_code=403, detail="Admin access required")
         
         # Get all announcements with creator info
