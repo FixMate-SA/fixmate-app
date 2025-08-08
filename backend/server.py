@@ -5056,7 +5056,7 @@ async def get_announcement_chat(
 async def post_chat_message(
     announcement_id: str,
     request: dict,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -5077,7 +5077,7 @@ async def post_chat_message(
             raise HTTPException(status_code=403, detail="Chat is disabled for this announcement")
         
         # Check permissions
-        user_role = current_user.get('role', 'client')
+        user_role = current_user.role or 'client'
         
         # Check if user can access this announcement
         if user_role not in ['admin', 'super_admin']:
@@ -5093,7 +5093,7 @@ async def post_chat_message(
         # Create chat message
         chat_message = AnnouncementChat(
             announcement_id=announcement_id,
-            user_id=current_user['user_id'],
+            user_id=current_user.id,
             message=request['message'].strip(),
             message_type='admin_response' if user_role in ['admin', 'super_admin'] else 'user',
             is_admin_message=user_role in ['admin', 'super_admin']
@@ -5104,7 +5104,7 @@ async def post_chat_message(
         db.refresh(chat_message)
         
         # Get user info for response
-        user = db.query(User).filter(User.id == current_user['user_id']).first()
+        user = db.query(User).filter(User.id == current_user.id).first()
         
         return {
             "success": True,
