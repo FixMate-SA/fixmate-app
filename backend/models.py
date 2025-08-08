@@ -936,6 +936,7 @@ class Announcement(Base):
     Model for platform announcements that can be targeted to specific user groups
     """
     __tablename__ = "announcements"
+    __table_args__ = {'extend_existing': True}
     
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     
