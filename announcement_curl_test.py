@@ -51,13 +51,20 @@ class AnnouncementTesterCurl:
         
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            
+            if result.returncode != 0:
+                return 0, {'error': f'curl failed with code {result.returncode}', 'stderr': result.stderr}
+            
             output = result.stdout.strip()
             
             # Split by newline to separate response body and status code
             lines = output.split('\n')
             if len(lines) >= 2:
                 response_body = '\n'.join(lines[:-1])
-                status_code = int(lines[-1])
+                try:
+                    status_code = int(lines[-1])
+                except ValueError:
+                    status_code = 0
             else:
                 response_body = output
                 status_code = 0
