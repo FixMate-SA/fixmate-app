@@ -38,7 +38,7 @@ class AnnouncementTesterCurl:
     def curl_request(self, method: str, endpoint: str, data: Dict = None, token: str = None) -> Tuple[int, Dict]:
         """Make HTTP request using curl"""
         url = f"{self.base_url}{endpoint}"
-        cmd = ['curl', '-s', '-w', '%{http_code}', '-X', method, url]
+        cmd = ['curl', '-s', '-w', '\\n%{http_code}', '-X', method, url]
         
         # Add headers
         cmd.extend(['-H', 'Content-Type: application/json'])
@@ -51,15 +51,16 @@ class AnnouncementTesterCurl:
         
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-            output = result.stdout
+            output = result.stdout.strip()
             
-            # Extract status code (last 3 characters)
-            if len(output) >= 3:
-                status_code = int(output[-3:])
-                response_body = output[:-3]
+            # Split by newline to separate response body and status code
+            lines = output.split('\n')
+            if len(lines) >= 2:
+                response_body = '\n'.join(lines[:-1])
+                status_code = int(lines[-1])
             else:
-                status_code = 0
                 response_body = output
+                status_code = 0
             
             # Try to parse JSON response
             try:
