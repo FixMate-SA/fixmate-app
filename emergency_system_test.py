@@ -124,18 +124,19 @@ class EmergencySystemFinalTest:
     def test_emergency_alert_creation_multipart(self):
         """Test POST /api/emergency/alert with proper multipart form data"""
         try:
-            # Prepare form data as required by the API
+            # Prepare form data as required by the API (based on OpenAPI spec)
+            alert_data = {
+                "job_id": None,
+                "alert_type": "emergency",
+                "latitude": -26.2041,
+                "longitude": 28.0473,
+                "address": "Johannesburg, South Africa",
+                "description": "Emergency alert creation test - multipart form data"
+            }
+            
             form_data = {
                 "user_id": self.test_user_id,
-                "user_name": self.test_user_name,
-                "user_phone": self.test_user_phone,
-                "alert_type": "emergency",
-                "priority": "high",
-                "latitude": "-26.2041",
-                "longitude": "28.0473",
-                "address": "Johannesburg, South Africa",
-                "description": "Emergency alert creation test - multipart form data",
-                "recording_duration": "0"
+                "alert": alert_data
             }
             
             response = requests.post(
