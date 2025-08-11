@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
-from models import User, Fixer
+from models import User
 
 class RoleService:
     def __init__(self):
