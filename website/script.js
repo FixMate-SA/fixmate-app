@@ -482,8 +482,17 @@ const translations = {
     }
 };
 
-// Current language
+// Current language - now supports 5 languages
 let currentLang = 'en';
+
+// Language options mapping
+const languageOptions = {
+    'en': 'English',
+    'af': 'Afrikaans', 
+    'nso': 'Sepedi',
+    'zu': 'isiZulu',
+    'ts': 'Xitsonga'
+};
 
 // DOM elements
 const langToggle = document.getElementById('lang-toggle');
