@@ -1111,7 +1111,8 @@ export const languages = {
       lastUpdated: 'Ya mafelelo ya mpshafatšwa',
       never: 'Ga se gona',
       updateProfile: 'Mpshafatša Profaele',
-      user: 'Modiriši'
+      user: 'Modiriši',
+      startUsingFixMate: 'Thoma go šomiša FixMate-SA go bona tiro ya gago mo'
     }
   },
   
