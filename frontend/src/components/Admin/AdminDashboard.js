@@ -398,7 +398,7 @@ const AdminDashboard = () => {
                     <div>
                       <div className="font-medium text-gray-700 mb-1">Webhook URL</div>
                       <div className="text-gray-600 font-mono text-xs bg-gray-100 p-2 rounded">
-                        https://fixmate-sa-app-a448c751e1d2.herokuapp.com/whatsapp
+                        {process.env.REACT_APP_BACKEND_URL || 'https://fixmate-sa-app-a448c751e1d2.herokuapp.com'}/whatsapp
                       </div>
                     </div>
                     <div>
