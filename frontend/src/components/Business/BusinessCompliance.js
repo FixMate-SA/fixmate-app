@@ -493,10 +493,12 @@ const BusinessCompliance = () => {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8 px-6">
             {[
-              { id: 'categories', label: 'Services', icon: '📋' },
+              { id: 'services', label: 'Services', icon: '📋' },
               { id: 'request', label: 'New Request', icon: '➕' },
               { id: 'requests', label: 'My Requests', icon: '📄' },
-              { id: 'checklist', label: 'Checklists', icon: '✅' }
+              { id: 'documents', label: 'Documents', icon: '📎' },
+              { id: 'payments', label: 'Payments', icon: '💳' },
+              { id: 'status', label: 'Status Tracking', icon: '📊' }
             ].map((tab) => (
               <button
                 key={tab.id}
