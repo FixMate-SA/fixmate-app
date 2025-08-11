@@ -518,7 +518,7 @@ const BusinessCompliance = () => {
 
         <div className="p-6">
           {/* Services Overview Tab */}
-          {activeTab === 'categories' && (
+          {activeTab === 'services' && (
             <div className="space-y-6">
               <div className="text-center mb-8">
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">
