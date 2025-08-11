@@ -368,7 +368,30 @@ export const languages = {
       never: 'Never',
       updateProfile: 'Update Profile',
       user: 'User',
-      startUsingFixMate: 'Start using FixMate-SA to see your activity here'
+      startUsingFixMate: 'Start using FixMate-SA to see your activity here',
+      
+      // Emergency System - Complete Translation Coverage
+      emergencyButtonTitle: 'Emergency - Get immediate help with voice recording',
+      emergencyAlertSent: 'Emergency Alert Sent!',
+      emergencyProcessing: 'Your emergency alert with voice recording is being processed by FixMate emergency services. We are contacting 10111 emergency services on your behalf.',
+      emergencyActive: 'Emergency response is ACTIVE',
+      stayOnLine: 'Please stay on the line and keep your phone accessible. Emergency services may contact you directly.',
+      call10111: 'Call 10111 Direct',
+      processingEmergency: 'Processing your emergency alert and contacting 10111...',
+      voiceRecording: 'Voice Recording',
+      recommended: 'Recommended',
+      startRecording: 'Start Recording',
+      stopRecording: 'Stop Recording',
+      maxRecordingTime: 'Maximum recording time: 2 minutes',
+      recordingComplete: 'Recording Complete',
+      play: 'Play',
+      pause: 'Pause',
+      sendEmergencyAlert: 'Send Emergency Alert',
+      emergencyAlertFailed: 'Failed to send emergency alert. Please call 10111 directly for immediate assistance.',
+      callPoliceDirectly: 'Would you like to call 10111 directly now?',
+      callNow: 'Call 10111 Now',
+      microphoneAccessError: 'Unable to access microphone. Please check permissions and try again.',
+      alerting: 'Sending Alert...'
     }
   },
   
