@@ -90,38 +90,44 @@ const ProtectedRoute = ({ children }) => {
 
 // Role-based default route component
 const DefaultRoute = () => {
-  const { isAuthenticated, getUserRole, loading } = useAuth();
-  
-  console.log('DefaultRoute: isAuthenticated =', isAuthenticated, 'loading =', loading);
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-gray-600 font-medium">Loading...</div>
+  try {
+    const { isAuthenticated, getUserRole, loading } = useAuth();
+    
+    console.log('DefaultRoute: isAuthenticated =', isAuthenticated, 'loading =', loading);
+    
+    if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="text-gray-600 font-medium">Loading...</div>
+          </div>
         </div>
-      </div>
-    );
-  }
-  
-  if (!isAuthenticated) {
-    console.log('DefaultRoute: Not authenticated, redirecting to /client-login');
+      );
+    }
+    
+    if (!isAuthenticated) {
+      console.log('DefaultRoute: Not authenticated, redirecting to /client-login');
+      return <Navigate to="/client-login" replace />;
+    }
+    
+    // Role-based routing for authenticated users
+    const userRole = getUserRole();
+    console.log('DefaultRoute: User role =', userRole);
+    
+    switch (userRole) {
+      case 'admin':
+        return <Navigate to="/admin/dashboard" replace />;
+      case 'fixer':
+        return <Navigate to="/fixer/dashboard" replace />;
+      case 'client':
+      default:
+        return <Navigate to="/client/dashboard" replace />;
+    }
+  } catch (error) {
+    console.error('DefaultRoute error:', error);
+    // Fallback if AuthContext fails
     return <Navigate to="/client-login" replace />;
-  }
-  
-  // Role-based routing for authenticated users
-  const userRole = getUserRole();
-  console.log('DefaultRoute: User role =', userRole);
-  
-  switch (userRole) {
-    case 'admin':
-      return <Navigate to="/admin/dashboard" replace />;
-    case 'fixer':
-      return <Navigate to="/fixer/dashboard" replace />;
-    case 'client':
-    default:
-      return <Navigate to="/client/dashboard" replace />;
   }
 };
 
