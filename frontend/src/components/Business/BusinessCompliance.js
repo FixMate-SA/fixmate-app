@@ -121,7 +121,7 @@ const BusinessCompliance = () => {
       };
       
       setCategories(getRoleBasedCategories());
-      console.log('✅ Role-based business compliance categories loaded for:', user?.role_info?.role || 'client');
+      console.log('✅ Role-based business compliance categories loaded for:', roleInfo?.role || 'client');
       
     } catch (error) {
       console.error('❌ Error fetching business compliance categories:', error);
