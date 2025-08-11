@@ -18,6 +18,15 @@ const BusinessCompliance = () => {
   const [checklist, setChecklist] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  
+  // Enhanced features state
+  const [showNewRequestModal, setShowNewRequestModal] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
+  const [uploadedDocuments, setUploadedDocuments] = useState([]);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [activeTab, setActiveTab] = useState('services');
 
   useEffect(() => {
     fetchCategories();
