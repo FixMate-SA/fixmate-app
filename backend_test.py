@@ -654,9 +654,9 @@ class EmergencySystemTester:
         
         # Categorize results
         critical_tests = [
-            "Emergency System Health Check",
             "Emergency Alert Creation (Basic)",
-            "Emergency Protocol Validation"
+            "Emergency Protocol Validation",
+            "Location Services (Reverse Geocoding)"
         ]
         
         important_tests = [
