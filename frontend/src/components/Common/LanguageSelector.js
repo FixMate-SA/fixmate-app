@@ -94,12 +94,13 @@ function getLanguageDescription(code) {
   const descriptions = {
     en: 'English - Official',
     af: 'Afrikaans - Official',
+    nso: 'Sepedi - Limpopo & Gauteng',
     zu: 'isiZulu - Most spoken',
+    ts: 'Xitsonga - Limpopo',
     xh: 'isiXhosa - Eastern Cape',
     st: 'Sesotho - Free State',
     tn: 'Setswana - North West',
     ve: 'Tshivenda - Limpopo',
-    ts: 'Xitsonga - Limpopo',
     nr: 'isiNdebele - Mpumalanga',
     ss: 'siSwati - Mpumalanga'
   };
