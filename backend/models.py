@@ -34,6 +34,7 @@ class EmergencyStatus(enum.Enum):
 class User(Base):
     __tablename__ = "users"
     
+    # Only include columns that actually exist in the database
     id = Column(String, primary_key=True)
     phone = Column(String, unique=True, index=True)
     first_name = Column(String)
@@ -57,29 +58,12 @@ class User(Base):
     password_reset_code = Column(Text)
     password_reset_expires = Column(DateTime)
     
-    # Profile information (keeping for backward compatibility but not in DB)
-    profile_picture = Column(String)  # URL to profile picture
-    bio = Column(Text)
-    location = Column(String)
-    is_verified = Column(Boolean, default=False)
-    
-    # Fixer-specific fields (keeping for backward compatibility but not in DB)
-    skills = Column(JSON)  # List of skills for fixers
-    experience_years = Column(Integer)
-    hourly_rate = Column(Float)
-    availability_status = Column(String, default="available")  # available, busy, offline
-    
-    # Rating system (keeping for backward compatibility but not in DB)
-    average_rating = Column(Float, default=0.0)
-    total_ratings = Column(Integer, default=0)
-    total_jobs_completed = Column(Integer, default=0)
-    
     # Relationships
     jobs_created = relationship("Job", foreign_keys="Job.client_id", back_populates="client")
     jobs_assigned = relationship("Job", foreign_keys="Job.fixer_id", back_populates="fixer")
     emergency_alerts = relationship("EmergencyAlert", back_populates="user")
     
-    # Properties
+    # Properties for backward compatibility
     @property
     def name(self):
         """Computed name property for backward compatibility"""
@@ -99,6 +83,51 @@ class User(Base):
     def display_name(self):
         """Display name property"""
         return self.first_name or "User"
+        
+    # Default properties for fields that don't exist in DB but are expected by services
+    @property
+    def profile_picture(self):
+        return None
+        
+    @property
+    def bio(self):
+        return None
+        
+    @property
+    def location(self):
+        return None
+        
+    @property
+    def is_verified(self):
+        return False
+        
+    @property
+    def skills(self):
+        return []
+        
+    @property
+    def experience_years(self):
+        return 0
+        
+    @property
+    def hourly_rate(self):
+        return 0.0
+        
+    @property
+    def availability_status(self):
+        return "available"
+        
+    @property
+    def average_rating(self):
+        return 0.0
+        
+    @property
+    def total_ratings(self):
+        return 0
+        
+    @property
+    def total_jobs_completed(self):
+        return 0
 
 class Job(Base):
     __tablename__ = "jobs"
