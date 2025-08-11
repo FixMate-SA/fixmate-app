@@ -1553,7 +1553,30 @@ export const languages = {
       never: 'Akuzange',
       updateProfile: 'Buyekeza Iphrofayili',
       user: 'Umsebenzisi',
-      startUsingFixMate: 'Qala ukusebenzisa i-FixMate-SA ukubona umsebenzi wakho lapha'
+      startUsingFixMate: 'Qala ukusebenzisa i-FixMate-SA ukubona umsebenzi wakho lapha',
+      
+      // Emergency System - isiZulu
+      emergencyButtonTitle: 'Isimo Esiphuthumayo - Thola usizo ngokushesha ngokurekhoda izwi',
+      emergencyAlertSent: 'Isexwayiso Sesimo Esiphuthumayo Sithunyelwe!',
+      emergencyProcessing: 'Isexwayiso sakho sesimo esiphuthumayo nokurekhodwa kwezwi kucutshungulwa yizinsizakalo zesimo esiphuthumayo ze-FixMate. Sixhumana nezinsizakalo ze-10111 egameni lakho.',
+      emergencyActive: 'Impendulo yesimo esiphuthumayo iyaSEBENZA',
+      stayOnLine: 'Sicela uhlale emgqeni futhi ugcine ucingo lwakho lufinyeleleka. Izinsizakalo zesimo esiphuthumayo zingakuthinta ngqo.',
+      call10111: 'Shayela u-10111 Ngqo',
+      processingEmergency: 'Kucutshungulwa isexwayiso sakho sesimo esiphuthumayo nokuthintana no-10111...',
+      voiceRecording: 'Ukurekhoda Izwi',
+      recommended: 'Kuyanconywa',
+      startRecording: 'Qala Ukurekhoda',
+      stopRecording: 'Misa Ukurekhoda',
+      maxRecordingTime: 'Isikhathi esiphezulu sokurekhoda: amaminithi angu-2',
+      recordingComplete: 'Ukurekhoda Kuqediwe',
+      play: 'Dlala',
+      pause: 'Misa',
+      sendEmergencyAlert: 'Thumela Isexwayiso Sesimo Esiphuthumayo',
+      emergencyAlertFailed: 'Kwehlulekile ukuthumela isexwayiso sesimo esiphuthumayo. Sicela ushayele u-10111 ngqo ukuze uthole usizo ngokushesha.',
+      callPoliceDirectly: 'Ingabe ufuna ukushayela u-10111 ngqo manje?',
+      callNow: 'Shayela u-10111 Manje',
+      microphoneAccessError: 'Ayikwazi ukufinyelela i-microphone. Sicela ubuke izimvume futhi uzame futhi.',
+      alerting: 'Kuthumela Isexwayiso...'
     }
   },
   
