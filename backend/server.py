@@ -46,6 +46,16 @@ app.add_middleware(
 )
 
 # Pydantic Models
+class UserLogin(BaseModel):
+    phone: str
+    password: str
+
+class UserResponse(BaseModel):
+    success: bool
+    message: str
+    token: Optional[str] = None
+    user: Optional[Dict[str, Any]] = None
+
 class EmergencyAlertCreate(BaseModel):
     user_id: str
     user_name: Optional[str] = None
