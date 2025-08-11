@@ -45,7 +45,7 @@ class User(Base):
     address = Column(Text)
     password_hash = Column(String)
     is_password_set = Column(Boolean, default=False)
-    role = Column(Enum(UserRole), default=UserRole.CLIENT)
+    role = Column(Enum(UserRole), default=UserRole.client)
     is_active = Column(Boolean, default=True)
     last_login = Column(DateTime)
     money_spent = Column(Float, default=0.0)
