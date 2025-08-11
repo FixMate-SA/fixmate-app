@@ -82,7 +82,7 @@ const NavigationFixed = () => {
       path: getRoleBasedPath('/enterprise'), 
       label: t('enterprise', 'Enterprise'), 
       icon: '🏢',
-      roles: ['admin'],
+      roles: ['client', 'admin'], // Clients and admins can access enterprise portal
       permission: null
     },
     { 
