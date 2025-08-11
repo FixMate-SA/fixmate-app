@@ -52,7 +52,6 @@ const translations = {
         'how-it-works-title': 'How FixMate-SA Works',
         'how-it-works-subtitle': 'Simple, fast, and reliable - get any service done in 3 easy steps',
         'for-clients': 'For Clients',
-        'for-professionals': 'For Professionals',
         'step1-client': 'Describe Your Service Need',
         'step1-client-desc': 'Tell us what service you need using voice recording, photos, or text in any of our 5 supported languages. Whether it\'s plumbing, hair styling, tutoring, IT support, business consulting, or any other service - our AI helps create detailed descriptions.',
         'step2-client': 'Get AI-Matched with Professionals',
@@ -179,10 +178,13 @@ const translations = {
         'average-rating': 'Gemiddelde Gradering',
         'cities-covered': 'Stede Gedek',
         
-        // Continue with all other translations...
         'features-title': 'Hoekom FixMate-SA Kies?',
-        'features-subtitle': 'Gevorderde tegnologie ontmoet betroubare diens vir die perfekte professionele diens ervaring regoor ALLE diens kategorieë'
-        // ... [Continue with all other Afrikaans translations]
+        'features-subtitle': 'Gevorderde tegnologie ontmoet betroubare diens vir die perfekte professionele diens ervaring regoor ALLE diens kategorieë',
+        'grow-business': 'Groei Jou Diensbusiness',
+        'pricing-title': 'Deursigtige Pryse',
+        'safety-title': 'Veiligheid & Vertroue Eerste',
+        'download-title': 'Begin Vandag',
+        'footer-description': 'Suid-Afrika se premier diens platform wat kliënte verbind met geverifieerde, bekwame professionele regoor ALLE diens kategorieë.'
     },
     nso: {
         // Navigation
@@ -198,7 +200,20 @@ const translations = {
         // Hero Section  
         'hero-title': 'Sethala sa Pele sa<br><span class="highlight">Ditšhomišo Afrika Borwa</span>',
         'hero-subtitle': 'Kgokagane le bakgoni ba ba netefaditšwego, ba ba nago le bokgoni go ralala Afrika Borwa bakeng sa ENGE tšhomišo yeo o e nyakago. Go tloga go tokofatšo ya ka gae le ditšhomišo tša bohlokwa go ya go thekgo ya IT, thuto, le ditšhomišo tša kgwebo - hwetša mokgoni yo o nepagetšego ka go latela ka nako ya nnete, go swanišanya ga AI, le ditheko tše di pepeneneng tša R20.',
-        // Continue with other Sepedi translations...
+        'verified-professionals': '5,000+ Bakgoni ba ba Netefaditšwego',
+        'real-time-tracking': 'Go Latela ka Nako ya Nnete',
+        'multi-language': 'Thekgo ya Maleme a 4 a SA',
+        'ai-powered': 'Go Swanišanya ga AI',
+        'find-services': 'Hwetša Ditšhomišo Bjale',
+        'join-professionals': 'Kena Bjalo ka Mokgoni',
+        
+        'features-title': 'Lebaka la go Kgetha FixMate-SA?',
+        'features-subtitle': 'Theknolotši ye e tšwetšego pele e kopana le tšhomišo ye e ka tšeponego bakeng sa maitemogelo a makgonthe a ditšhomišo go ralala dikgoro ka moka tša ditšhomišo',
+        'grow-business': 'Godiša Kgwebo ya gago ya Ditšhomišo',
+        'pricing-title': 'Ditheko tše di Pepeneneng',
+        'safety-title': 'Polokego & Go Tšepa Pele',
+        'download-title': 'Thoma Lehono',
+        'footer-description': 'Sethala sa pele sa ditšhomišo sa Afrika Borwa seo se kgokaganyago bareki le bakgoni ba ba netefaditšwego, ba ba nago le bokgoni go ralala dikgoro ka moka tša ditšhomišo.'
     },
     zu: {
         // Navigation
@@ -214,7 +229,20 @@ const translations = {
         // Hero Section
         'hero-title': 'Inkundla Yesevisi<br><span class="highlight">Ehamba Phambili eNingizimu Afrika</span>',
         'hero-subtitle': 'Xhumana nochwepheshe abaqinisekisiwe, abanamakhono kulo lonke iNingizimu Afrika kunoma yisiphi isevisi oyidingayo. Kusuka ekulungiseni amakhaya nezinsizakalo zobuhle kuya ekusekeni kwe-IT, ukufundisa, nezinsizakalo zebhizinisi - thola uchwepheshe olungile ngokulandelwa kwesikhathi sangempela, ukufanisa kwe-AI, nentengo ecacile ye-R20.',
-        // Continue with other isiZulu translations...
+        'verified-professionals': '5,000+ Ochwepheshe Abaqinisekisiwe',
+        'real-time-tracking': 'Ukulandelela Kwesikhathi Sangempela',
+        'multi-language': 'Ukusekela Izilimi ze-SA ezi-4',
+        'ai-powered': 'Ukufanisa Okunamandla kwe-AI',
+        'find-services': 'Thola Izinsizakalo Manje',
+        'join-professionals': 'Joyina njengoChwepheshe',
+        
+        'features-title': 'Kungani Ukhethe i-FixMate-SA?',
+        'features-subtitle': 'Ubuchwepheshe obuphakeme buhlangana nesevisi ethembekile ukuze kutholakale okuhle kakhulu kwezinsizakalo zobuchwepheshe kuzo zonke izingxenye zezinsizakalo',
+        'grow-business': 'Khulisa Ibhizinisi Lakho Lezinsizakalo',
+        'pricing-title': 'Amanani Acacile',
+        'safety-title': 'Ukuphepha Nokuthembeka Kuqala',
+        'download-title': 'Qala Namuhla',
+        'footer-description': 'Inkundla yezinsizakalo ehamba phambili yaseNingizimu Afrika exhuma amakhasimende nochwepheshe abaqinisekisiwe, abanamakhono kuzo zonke izingxenye zezinsizakalo.'
     },
     ts: {
         // Navigation
@@ -230,255 +258,20 @@ const translations = {
         // Hero Section
         'hero-title': 'Xifunengeto xa Vukorhokeri<br><span class="highlight">xo Sungula xa Afrika Dzonga</span>',
         'hero-subtitle': 'Hlanganisa na vativi lava tiyisisiweke, lava nga na vuswikoti eka Afrika Dzonga hinkwayo eka vukorhokeri BIHI lebyi u nga byi lavaka. Ku suka eka ku lulamisa ka le kaya na vukorhokeri bya rihlampfu ku ya eka nseketelo wa IT, dyondzo, na vukorhokeri bya bindzu - kuma mutivi loyi a faneleke hi ku landzelerisa hi nkarhi wa xiviri, ku ringanisa ka AI, na mitsengo ya R20 leyi nga erivaleni.',
-        // Continue with other Xitsonga translations...
-    }
-};
+        'verified-professionals': '5,000+ Vativi lava Tiyisisiweke',
+        'real-time-tracking': 'Ku Landzelerisa hi Nkarhi wa Xiviri',
+        'multi-language': 'Nseketelo wa Tindzimi ta SA ta 4',
+        'ai-powered': 'Ku Ringanisa loku Namaka ka AI',
+        'find-services': 'Kuma Vukorhokeri Sweswi',
+        'join-professionals': 'Nghena tanihi Mutivi',
         
-        // How It Works
-        'how-it-works-title': 'How FixMate-SA Works',
-        'how-it-works-subtitle': 'Simple, fast, and reliable - get any service done in 3 easy steps',
-        'for-clients': 'For Clients',
-        'for-professionals': 'For Professionals',
-        'step1-client': 'Describe Your Service Need',
-        'step1-client-desc': 'Tell us what service you need using voice recording, photos, or text. Whether it\'s plumbing, hair styling, tutoring, IT support, or any other service - our AI helps create detailed descriptions.',
-        'step2-client': 'Get Matched',
-        'step2-client-desc': 'Our AI instantly finds nearby verified professionals. First-come-first-serve notifications ensure quick responses from qualified service providers.',
-        'step3-client': 'Track & Pay',
-        'step3-client-desc': 'Track your professional\'s arrival in real-time. Pay securely after service completion with our transparent R20 platform fee - whether it\'s a haircut, computer repair, or home maintenance.',
-        'step1-professional': 'Complete Verification',
-        'step1-professional-desc': 'Upload ID, proof of skills, and complete background checks. Join our verified network of trusted professionals across all service categories.',
-        'step2-professional': 'Receive Service Requests',
-        'step2-professional-desc': 'Get notified of nearby service requests matching your skills. First-come-first-serve system ensures fair opportunities across all professions.',
-        'step3-professional': 'Build Your Reputation',
-        'step3-professional-desc': 'Complete services, earn ratings, and climb our gamification tiers. Higher tiers = more opportunities and better earnings, regardless of your profession.',
-        
-        // For Professionals
-        'grow-business': 'Grow Your Service Business',
-        'grow-business-desc': 'Join thousands of successful service professionals earning more with FixMate-SA\'s advanced platform - from hairdressers and tutors to mechanics and cleaners',
-        'gamification-system': 'Gamification System',
-        'gamification-desc': 'Earn Bronze, Silver, Gold, and Platinum tiers. Higher tiers get priority job notifications and better rates.',
-        'instant-notifications': 'Instant Job Notifications',
-        'notifications-desc': 'Real-time notifications for nearby jobs. First-come-first-serve system ensures fair opportunities.',
-        'secure-payments': 'Secure Payments',
-        'payments-desc': 'Get paid quickly and securely. Transparent payment system with dispute protection.',
-        'performance-analytics': 'Performance Analytics',
-        'analytics-desc': 'Track your earnings, ratings, completion rates, and optimize your business performance.',
-        'support-training': 'Support & Training',
-        'support-desc': 'Access learning resources, business compliance tools, and dedicated fixer support team.',
-        'verified-network': 'Verified Professional Network',
-        'network-desc': 'Join a trusted community of verified professionals with reputation management tools.',
-        'join-now': 'Join as Professional Now',
-        'avg-weekly-earnings': 'Avg. Weekly Earnings',
-        'professional-satisfaction': 'Professional Satisfaction',
-        
-        // Safety
-        'safety-title': 'Safety & Trust First',
-        'safety-subtitle': 'Your security and satisfaction are our top priorities',
-        'id-verification': 'ID Verification',
-        'id-verification-desc': 'All fixers must provide valid South African ID documents and undergo thorough background checks.',
-        'skill-assessment': 'Skill Assessment',
-        'skill-assessment-desc': 'Comprehensive skill verification ensures fixers are qualified for the services they offer.',
-        'rating-system': 'Rating System',
-        'rating-system-desc': 'Transparent rating and review system helps you choose the best fixers based on real customer feedback.',
-        'fraud-protection': 'AI Fraud Protection',
-        'fraud-protection-desc': 'Advanced AI monitors all transactions and interactions to prevent fraud and ensure platform integrity.',
-        'support-24-7': '24/7 Support',
-        'support-24-7-desc': 'Round-the-clock customer support and emergency assistance whenever you need help.',
-        
-        // Pricing
-        'pricing-title': 'Transparent Pricing',
-        'pricing-subtitle': 'Simple, fair, and transparent - no hidden fees',
-        'platform-fee': 'Platform Fee',
-        'per-job': 'per job',
-        'pricing-feature-1': 'AI-powered fixer matching',
-        'pricing-feature-2': 'Real-time job tracking',
-        'pricing-feature-3': 'Secure payment processing',
-        'pricing-feature-4': '24/7 customer support',
-        'pricing-feature-5': 'Dispute resolution service',
-        'pricing-feature-6': 'Multi-language support',
-        'pricing-note': 'You pay the fixer directly for their work. The R20 platform fee covers our technology, safety, and support services.',
-        
-        // Download
-        'download-title': 'Get Started Today',
-        'download-subtitle': 'Download the app or access via web browser. Available in English and Afrikaans.',
-        'web-app': 'Open Web App',
-        'fixer-portal': 'Fixer Portal',
-        'multiple-ways': 'Multiple Ways to Access:',
-        'web-browser': 'Web Browser',
-        'whatsapp': 'WhatsApp',
-        'sms': 'SMS/USSD',
-        'voice-support': 'Voice Support',
-        
-        // Footer
-        'footer-description': 'South Africa\'s premier service platform connecting clients with verified, skilled professionals across ALL service categories - from home repair and beauty services to tutoring and tech support.',
-        'quick-links': 'Quick Links',
-        'services': 'Services',
-        'home-repair': 'Home Repair',
-        'beauty-wellness': 'Beauty & Wellness',  
-        'education-tutoring': 'Education & Tutoring',
-        'it-tech-support': 'IT & Tech Support',
-        'cleaning-services': 'Cleaning Services',
-        'automotive-services': 'Automotive Services',
-        'health-fitness': 'Health & Fitness',
-        'business-services': 'Business Services',
-        'creative-services': 'Creative Services',
-        'emergency-services': 'Emergency Services',
-        'and-much-more': '...and much more!',
-        'support': 'Support',
-        'contact-support': 'Contact Support',
-        'help-center': 'Help Center',
-        'terms-service': 'Terms of Service',
-        'privacy-policy': 'Privacy Policy',
-        'business-compliance': 'Business Compliance',
-        'all-rights-reserved': 'All rights reserved.',
-        'certified-secure': '🔒 Certified Secure',
-        'sa-compliant': '🇿🇦 SA Compliant',
-        'verified-platform': '✓ Verified Platform'
-    },
-    af: {
-        // Navigation
-        'home': 'Tuis',
-        'features': 'Kenmerke',
-        'how-it-works': 'Hoe Dit Werk',
-        'for-fixers': 'Vir Herstellers',
-        'safety': 'Veiligheid',
-        'pricing': 'Pryse',
-        'contact': 'Kontak',
-        'get-started': 'Begin Nou',
-        
-        // Hero Section
-        'hero-title': 'Suid-Afrika se Premier<br><span class="highlight">Diens Platform</span>',
-        'hero-subtitle': 'Verbind met geverifieerde, bekwame professionele persone regoor Suid-Afrika vir ENIGE diens wat jy nodig het. Van huis herstelwerk en skoonheids dienste tot IT ondersteuning en onderrig - vind die regte kundige met intydse opsporing, KI-aangedrewe passing, en deursigtige R20 pryse.',
-        'verified-professionals': 'Geverifieerde Professionele',
-        'real-time-tracking': 'Intydse Opsporing',
-        'multi-language': 'Multi-taal Ondersteuning',
-        'ai-powered': 'KI-aangedrewe Passing',
-        'find-services': 'Vind Dienste Nou',
-        'join-professionals': 'Sluit Aan as Professionele',
-        'verified-professionals': 'Geverifieerde Professionele',
-        'jobs-completed': 'Dienste Voltooi',
-        'average-rating': 'Gemiddelde Gradering',
-        
-        // Features
-        'features-title': 'Hoekom FixMate-SA Kies?',
-        'features-subtitle': 'Gevorderde tegnologie ontmoet betroubare diens vir die perfekte professionele diens ervaring',
-        'smart-matching': 'Slim Passing',
-        'smart-matching-desc': 'KI-aangedrewe stelsel pas jou by die perfekte diens professionele gebaseer op ligging, vaardighede, graderings, en beskikbaarheid. Of jy \'n loodgieter, haarkapster, onderwyser, of IT kundige nodig het - geen eindelose soektog meer nie.',
-        'real-time-tracking-desc': 'Spoor jou diens professionele se ligging en vordering in intyd. Weet presies wanneer hulle sal aankom en bly opgedateer gedurende jou afspraak - van huis herstelwerk tot skoonheids behandelings.',
-        'verification-safety': 'Verifikasie & Veiligheid',
-        'verification-safety-desc': 'Alle diens professionele word geverifieer met agtergrond kontroles, ID verifikasie, en vaardigheids assesserings. Of dit \'n skoonheids terapeut, meganikus, of onderwyser is - jou veiligheid is ons prioriteit.',
-        'whatsapp-integration': 'WhatsApp Integrasie',
-        'whatsapp-integration-desc': 'Geen slimfoon nie? Geen probleem! Versoek dienste via WhatsApp of SMS. Volledige gespreksvloei vir alle gebruikers.',
-        'multi-language-support': 'Multi-taal Ondersteuning',
-        'multi-language-support-desc': 'Beskikbaar in Engels en Afrikaans met meer Suid-Afrikaanse tale wat binnekort kom. Gebruik in jou voorkeur taal.',
-        'transparent-pricing': 'Deursigtige Pryse',
-        'transparent-pricing-desc': 'Eenvoudige R20 platform fooi per werk. Geen versteekte kostes, geen verrassings. Billike pryse vir kwaliteit diens.',
-        'ai-assistant': 'KI Assistent',
-        'ai-assistant-desc': '24/7 meertalige KI assistent help met werk beskrywings, prys beramings, en tegniese leiding.',
-        'dispute-resolution': 'Geskil Oplossing',
-        'dispute-resolution-desc': 'Billike en vinnige geskil oplossing stelsel verseker tevredenheid vir beide kliënte en herstellers.',
-        'enterprise-solution': 'Onderneming Oplossings',
-        'enterprise-solution-desc': 'B2B portaal vir besighede wat veelvuldige dienste benodig. Bulk besprekings, nakoming bestuur, en toegewyde ondersteuning.',
-        
-        // How It Works
-        'how-it-works-title': 'Hoe FixMate-SA Werk',
-        'how-it-works-subtitle': 'Eenvoudig, vinnig, en betroubaar - kry jou herstelwerk gedoen in 3 maklike stappe',
-        'for-clients': 'Vir Kliënte',
-        'step1-client': 'Beskryf Jou Werk',
-        'step1-client-desc': 'Vertel ons wat herstel moet word deur stem opname, fotos, of teks te gebruik. Ons KI help om gedetailleerde werk beskrywings te skep.',
-        'step2-client': 'Kry Gepas',
-        'step2-client-desc': 'Ons KI vind onmiddellik nabygeleë geverifieerde herstellers. Eerste-kom-eerste-bedien kennisgewings verseker vinnige response.',
-        'step3-client': 'Spoor & Betaal',
-        'step3-client-desc': 'Spoor jou hersteller se aankoms in intyd. Betaal veilig na werk voltooiing met ons deursigtige R20 platform fooi.',
-        'step1-fixer': 'Voltooi Verifikasie',
-        'step1-fixer-desc': 'Laai ID op, bewys van vaardighede, en voltooi agtergrond kontroles. Sluit aan by ons geverifieerde netwerk van vertroude professionele.',
-        'step2-fixer': 'Ontvang Werk Kennisgewings',
-        'step2-fixer-desc': 'Kry kennis van nabygeleë werk wat jou vaardighede pas. Eerste-kom-eerste-bedien stelsel verseker billike geleenthede.',
-        'step3-fixer': 'Bou Jou Reputasie',
-        'step3-fixer-desc': 'Voltooi werk, verdien graderings, en klim ons gamifikasie vlakke. Hoër vlakke = meer werk geleenthede en beter verdienste.',
-        
-        // For Fixers
-        'grow-business': 'Groei Jou Besigheid',
-        'grow-business-desc': 'Sluit aan by duisende suksesvolle herstellers wat meer verdien met FixMate-SA se gevorderde platform',
-        'gamification-system': 'Gamifikasie Stelsel',
-        'gamification-desc': 'Verdien Brons, Silwer, Goud, en Platina vlakke. Hoër vlakke kry voorrang werk kennisgewings en beter tariewe.',
-        'instant-notifications': 'Onmiddellike Werk Kennisgewings',
-        'notifications-desc': 'Intydse kennisgewings vir nabygeleë werk. Eerste-kom-eerste-bedien stelsel verseker billike geleenthede.',
-        'secure-payments': 'Veilige Betalings',
-        'payments-desc': 'Kry betaal vinnig en veilig. Deursigtige betaling stelsel met geskil beskerming.',
-        'performance-analytics': 'Prestasie Analise',
-        'analytics-desc': 'Spoor jou verdienste, graderings, voltooiing tariewe, en optimaliseer jou besigheid prestasie.',
-        'support-training': 'Ondersteuning & Opleiding',
-        'support-desc': 'Toegang tot leer hulpbronne, besigheid nakoming tools, en toegewyde hersteller ondersteuning span.',
-        'verified-network': 'Geverifieerde Professionele Netwerk',
-        'network-desc': 'Sluit aan by \'n vertroude gemeenskap van geverifieerde professionele met reputasie bestuur tools.',
-        'join-now': 'Sluit Nou Aan as Hersteller',
-        'avg-weekly-earnings': 'Gem. Weeklikse Verdienste',
-        'fixer-satisfaction': 'Hersteller Tevredenheid',
-        
-        // Safety
-        'safety-title': 'Veiligheid & Vertroue Eerste',
-        'safety-subtitle': 'Jou sekuriteit en tevredenheid is ons top prioriteite',
-        'id-verification': 'ID Verifikasie',
-        'id-verification-desc': 'Alle herstellers moet geldige Suid-Afrikaanse ID dokumente verskaf en deeglike agtergrond kontroles ondergaan.',
-        'skill-assessment': 'Vaardigheid Assessering',
-        'skill-assessment-desc': 'Omvattende vaardigheid verifikasie verseker herstellers is gekwalifiseer vir die dienste wat hulle bied.',
-        'rating-system': 'Gradering Stelsel',
-        'rating-system-desc': 'Deursigtige gradering en resensie stelsel help jou om die beste herstellers te kies gebaseer op werklike kliënt terugvoer.',
-        'fraud-protection': 'KI Bedrog Beskerming',
-        'fraud-protection-desc': 'Gevorderde KI monitor alle transaksies en interaksies om bedrog te voorkom en platform integriteit te verseker.',
-        'support-24-7': '24/7 Ondersteuning',
-        'support-24-7-desc': 'Rondom-die-klok kliënt ondersteuning en noodgeval bystand wanneer jy hulp nodig het.',
-        
-        // Pricing
-        'pricing-title': 'Deursigtige Pryse',
-        'pricing-subtitle': 'Eenvoudig, billik, en deursigtig - geen versteekte fooie',
-        'platform-fee': 'Platform Fooi',
-        'per-job': 'per werk',
-        'pricing-feature-1': 'KI-aangedrewe hersteller passing',
-        'pricing-feature-2': 'Intydse werk opsporing',
-        'pricing-feature-3': 'Veilige betaling verwerking',
-        'pricing-feature-4': '24/7 kliënt ondersteuning',
-        'pricing-feature-5': 'Geskil oplossing diens',
-        'pricing-feature-6': 'Multi-taal ondersteuning',
-        'pricing-note': 'Jy betaal die hersteller direk vir hulle werk. Die R20 platform fooi dek ons tegnologie, veiligheid, en ondersteuning dienste.',
-        
-        // Download
-        'download-title': 'Begin Vandag',
-        'download-subtitle': 'Laai die app af of toegang via web blaaier. Beskikbaar in Engels en Afrikaans.',
-        'web-app': 'Open Web App',
-        'fixer-portal': 'Hersteller Portaal',
-        'multiple-ways': 'Veelvuldige Maniere om Toegang te kry:',
-        'web-browser': 'Web Blaaier',
-        'whatsapp': 'WhatsApp',
-        'sms': 'SMS/USSD',
-        'voice-support': 'Stem Ondersteuning',
-        
-        // Footer
-        'footer-description': 'Suid-Afrika se premier diens platform wat kliënte verbind met geverifieerde, bekwame professionele regoor ALLE diens kategorieë - van huis herstelwerk en skoonheids dienste tot onderrig en tegnologie ondersteuning.',
-        'quick-links': 'Vinnige Skakels',
-        'services': 'Dienste',
-        'home-repair': 'Huis Herstelwerk',
-        'beauty-wellness': 'Skoonheid & Welstand',
-        'education-tutoring': 'Onderwys & Onderrig',
-        'it-tech-support': 'IT & Tegnologie Ondersteuning',
-        'cleaning-services': 'Skoonmaak Dienste',
-        'automotive-services': 'Motor Dienste',
-        'health-fitness': 'Gesondheid & Fiksheid',
-        'business-services': 'Besigheid Dienste',
-        'creative-services': 'Kreatiewe Dienste',
-        'emergency-services': 'Noodgeval Dienste',
-        'and-much-more': '...en baie meer!',
-        'support': 'Ondersteuning',
-        'contact-support': 'Kontak Ondersteuning',
-        'help-center': 'Help Sentrum',
-        'terms-service': 'Diensvoorwaardes',
-        'privacy-policy': 'Privaatheid Beleid',
-        'business-compliance': 'Besigheid Nakoming',
-        'all-rights-reserved': 'Alle regte voorbehou.',
-        'certified-secure': '🔒 Gesertifiseerd Veilig',
-        'sa-compliant': '🇿🇦 SA Voldoende',
-        'verified-platform': '✓ Geverifieerde Platform'
+        'features-title': 'Hikwalaho ka yini u Hlawula FixMate-SA?',
+        'features-subtitle': 'Theknoloji yo andziša yi hlangana ni vukorhokeri lebyi tshembekaka ku endla leswaku ku va ni ntokoto wo saseka wa vukorhokeri bya vativi eka swiyenge hinkwaswo swa vukorhokeri',
+        'grow-business': 'Andza Bindzu ra Wena ra Vukorhokeri',
+        'pricing-title': 'Mitsengo leyi nga Erivaleni',
+        'safety-title': 'Vuhlayiseki na Ku tshemba Ku Sungula',
+        'download-title': 'Sungula Namuntlha',
+        'footer-description': 'Xifunengeto xa vukorhokeri xo sungula xa Afrika Dzonga lexi hlanganisaka vaaki na vativi lava tiyisisiweke, lava nga na vuswikoti eka swiyenge hinkwaswo swa vukorhokeri.'
     }
 };
 
@@ -509,9 +302,10 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeTabSwitching();
     initializeAnimations();
     initializeScrollProgress();
+    initializeEnhancedFeatures();
 });
 
-// Language functionality
+// Enhanced language functionality
 function initializeLanguage() {
     // Language toggle
     langToggle.addEventListener('click', function() {
@@ -533,11 +327,19 @@ function initializeLanguage() {
             langDropdown.classList.remove('show');
         }
     });
+    
+    // Load saved language preference
+    const savedLang = localStorage.getItem('fixmate-lang');
+    if (savedLang && languageOptions[savedLang]) {
+        switchLanguage(savedLang);
+    }
 }
 
 function switchLanguage(lang) {
+    if (!languageOptions[lang]) return;
+    
     currentLang = lang;
-    currentLangSpan.textContent = lang === 'en' ? 'English' : 'Afrikaans';
+    currentLangSpan.textContent = languageOptions[lang];
     
     // Update all translatable elements
     document.querySelectorAll('[data-translate]').forEach(element => {
@@ -553,9 +355,12 @@ function switchLanguage(lang) {
     
     // Store language preference
     localStorage.setItem('fixmate-lang', lang);
+    
+    // Track language switch event
+    trackEvent('language_switch', 'user_interaction', lang);
 }
 
-// Navigation functionality
+// Enhanced Navigation functionality
 function initializeNavigation() {
     // Mobile menu toggle
     navToggle.addEventListener('click', function() {
@@ -574,7 +379,7 @@ function initializeNavigation() {
         });
     });
     
-    // Smooth scrolling for navigation links
+    // Enhanced smooth scrolling for navigation links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             e.preventDefault();
@@ -585,25 +390,37 @@ function initializeNavigation() {
                     top: offsetTop,
                     behavior: 'smooth'
                 });
+                
+                // Track navigation click
+                trackEvent('navigation_click', 'user_interaction', this.getAttribute('href'));
             }
         });
     });
 }
 
-// Scroll effects
+// Enhanced scroll effects
 function initializeScrollEffects() {
     const navbar = document.getElementById('navbar');
+    let ticking = false;
     
-    window.addEventListener('scroll', function() {
+    function updateNavbar() {
         if (window.scrollY > 100) {
             navbar.classList.add('scrolled');
         } else {
             navbar.classList.remove('scrolled');
         }
+        ticking = false;
+    }
+    
+    window.addEventListener('scroll', function() {
+        if (!ticking) {
+            requestAnimationFrame(updateNavbar);
+            ticking = true;
+        }
     });
 }
 
-// Tab switching functionality
+// Enhanced tab switching functionality
 function initializeTabSwitching() {
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.process-tab');
@@ -619,16 +436,22 @@ function initializeTabSwitching() {
             // Add active class to clicked button and corresponding tab
             this.classList.add('active');
             const targetTabId = targetTab + '-process';
-            document.getElementById(targetTabId).classList.add('active');
+            const targetElement = document.getElementById(targetTabId);
+            if (targetElement) {
+                targetElement.classList.add('active');
+            }
+            
+            // Track tab switch
+            trackEvent('tab_switch', 'user_interaction', targetTab);
         });
     });
 }
 
-// Scroll animations
+// Enhanced scroll animations
 function initializeAnimations() {
     const observerOptions = {
         root: null,
-        rootMargin: '0px',
+        rootMargin: '-10% 0px -10% 0px',
         threshold: 0.1
     };
     
@@ -658,18 +481,114 @@ function initializeAnimations() {
     });
 }
 
-// Scroll progress indicator
+// Enhanced scroll progress indicator
 function initializeScrollProgress() {
     const progressBar = document.createElement('div');
     progressBar.className = 'scroll-progress';
     document.body.appendChild(progressBar);
     
-    window.addEventListener('scroll', function() {
+    let ticking = false;
+    
+    function updateProgress() {
         const scrollTop = window.pageYOffset;
         const docHeight = document.documentElement.scrollHeight - window.innerHeight;
         const scrollPercent = (scrollTop / docHeight) * 100;
         progressBar.style.width = scrollPercent + '%';
+        ticking = false;
+    }
+    
+    window.addEventListener('scroll', function() {
+        if (!ticking) {
+            requestAnimationFrame(updateProgress);
+            ticking = true;
+        }
     });
+}
+
+// New enhanced features
+function initializeEnhancedFeatures() {
+    // Initialize lazy loading for images
+    initializeLazyLoading();
+    
+    // Initialize form interactions
+    initializeFormInteractions();
+    
+    // Initialize CTA button tracking
+    initializeCTATracking();
+    
+    // Initialize performance monitoring
+    initializePerformanceMonitoring();
+}
+
+// Performance optimization: Enhanced lazy loading
+function initializeLazyLoading() {
+    const images = document.querySelectorAll('img[data-src]');
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.dataset.src;
+                img.removeAttribute('data-src');
+                img.classList.add('loaded');
+                imageObserver.unobserve(img);
+            }
+        });
+    }, {
+        rootMargin: '50px 0px',
+        threshold: 0.01
+    });
+    
+    images.forEach(img => imageObserver.observe(img));
+}
+
+// Enhanced form interactions
+function initializeFormInteractions() {
+    // Handle newsletter signup (if added)
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            // Handle form submission logic here
+            console.log('Form submitted:', new FormData(form));
+            trackEvent('form_submit', 'user_interaction', form.id || 'unknown_form');
+        });
+    });
+}
+
+// CTA button tracking
+function initializeCTATracking() {
+    const ctaButtons = document.querySelectorAll('.btn-primary, .btn-secondary');
+    ctaButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const action = this.textContent.trim();
+            const href = this.href || 'no_href';
+            trackEvent('cta_click', 'user_interaction', action + '|' + href);
+        });
+    });
+}
+
+// Performance monitoring
+function initializePerformanceMonitoring() {
+    // Monitor page load performance
+    window.addEventListener('load', function() {
+        if ('performance' in window) {
+            const navigation = performance.getEntriesByType('navigation')[0];
+            const loadTime = navigation.loadEventEnd - navigation.loadEventStart;
+            console.log('Page load time:', loadTime + 'ms');
+            
+            // Track performance metrics
+            trackEvent('performance', 'page_load_time', Math.round(loadTime));
+        }
+    });
+    
+    // Monitor scroll performance
+    let scrollCount = 0;
+    window.addEventListener('scroll', debounce(function() {
+        scrollCount++;
+        if (scrollCount % 10 === 0) {
+            trackEvent('engagement', 'scroll_depth', scrollCount * 10);
+        }
+    }, 100));
 }
 
 // Utility functions
@@ -685,55 +604,76 @@ function debounce(func, wait) {
     };
 }
 
-// Handle form submissions (if needed)
-function handleFormSubmit(form) {
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        // Handle form submission logic here
-        console.log('Form submitted:', new FormData(form));
-    });
-}
-
-// Load saved language preference
-window.addEventListener('load', function() {
-    const savedLang = localStorage.getItem('fixmate-lang');
-    if (savedLang && savedLang !== currentLang) {
-        switchLanguage(savedLang);
-    }
-});
-
-// Performance optimization: Lazy load images
-function initializeLazyLoading() {
-    const images = document.querySelectorAll('img[data-src]');
-    const imageObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                img.src = img.dataset.src;
-                img.removeAttribute('data-src');
-                imageObserver.unobserve(img);
-            }
-        });
-    });
-    
-    images.forEach(img => imageObserver.observe(img));
-}
-
-// Error handling
+// Enhanced error handling
 window.addEventListener('error', function(e) {
     console.error('Website error:', e.error);
-    // Could send error reports to analytics service
+    trackEvent('error', 'javascript_error', e.message || 'unknown_error');
 });
 
-// Analytics tracking (placeholder)
+// Enhanced analytics tracking
 function trackEvent(action, category, label) {
-    // Implement analytics tracking
-    console.log('Track event:', { action, category, label });
+    // Enhanced analytics tracking with more context
+    const eventData = {
+        action: action,
+        category: category,
+        label: label,
+        language: currentLang,
+        timestamp: new Date().toISOString(),
+        url: window.location.href,
+        userAgent: navigator.userAgent
+    };
+    
+    console.log('Track event:', eventData);
+    
+    // Here you would send to your analytics service
+    // Example: gtag('event', action, { event_category: category, event_label: label });
+}
+
+// Enhanced accessibility features
+function initializeAccessibility() {
+    // Keyboard navigation support
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab') {
+            document.body.classList.add('keyboard-navigation');
+        }
+    });
+    
+    document.addEventListener('mousedown', function() {
+        document.body.classList.remove('keyboard-navigation');
+    });
+    
+    // High contrast mode detection
+    if (window.matchMedia('(prefers-contrast: high)').matches) {
+        document.body.classList.add('high-contrast');
+    }
+    
+    // Reduced motion detection
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.body.classList.add('reduced-motion');
+    }
 }
 
 // Export functions for external use
 window.FixMateSA = {
     switchLanguage,
     trackEvent,
-    currentLang: () => currentLang
+    currentLang: () => currentLang,
+    translations: translations,
+    languageOptions: languageOptions
 };
+
+// Initialize accessibility features
+document.addEventListener('DOMContentLoaded', initializeAccessibility);
+
+// Service worker registration for PWA capabilities
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+                console.log('ServiceWorker registered: ', registration);
+            })
+            .catch(function(registrationError) {
+                console.log('ServiceWorker registration failed: ', registrationError);
+            });
+    });
+}
