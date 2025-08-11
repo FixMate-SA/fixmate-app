@@ -36,20 +36,20 @@ class RoleService:
                     "permissions": self.get_permissions("admin")
                 }
             
-            # Check if user exists as a fixer
-            fixer = db.query(Fixer).filter(Fixer.phone == phone).first()
-            if fixer:
+            # Check if user exists as a fixer (using User model with role='fixer')
+            fixer_user = db.query(User).filter(User.phone == phone, User.role == "fixer").first()
+            if fixer_user:
                 return {
                     "role": "fixer", 
                     "is_fixer": True,
                     "fixer_data": {
-                        "id": fixer.id,
-                        "services": fixer.services,
-                        "location": fixer.location,
-                        "rating": fixer.rating,
-                        "total_jobs": fixer.total_jobs,
-                        "is_active": fixer.is_active,
-                        "payment_status": fixer.payment_status
+                        "id": fixer_user.id,
+                        "services": getattr(fixer_user, 'skills', []),
+                        "location": getattr(fixer_user, 'location', ''),
+                        "rating": getattr(fixer_user, 'average_rating', 0.0),
+                        "total_jobs": getattr(fixer_user, 'total_jobs_completed', 0),
+                        "is_active": fixer_user.is_active,
+                        "payment_status": "active"  # Default status
                     },
                     "permissions": self.get_permissions("fixer")
                 }
