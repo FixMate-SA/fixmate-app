@@ -77,6 +77,7 @@ const BusinessCompliance = () => {
           };
         } else {
           // Default client categories
+          console.log('✅ DEBUG: Loading CLIENT-specific categories');
           return {
             company_registration: {
               name: 'Company Registration',
