@@ -197,18 +197,19 @@ class EmergencySystemFinalTest:
                 )
                 return None
             
-            # Prepare form data
+            # Prepare alert data as required by API spec
+            alert_data = {
+                "job_id": None,
+                "alert_type": "emergency",
+                "latitude": -33.9249,
+                "longitude": 18.4241,
+                "address": "Cape Town, South Africa",
+                "description": "Emergency with voice recording - final verification test"
+            }
+            
             form_data = {
                 "user_id": f"{self.test_user_id}_voice",
-                "user_name": f"{self.test_user_name} Voice Test",
-                "user_phone": self.test_user_phone,
-                "alert_type": "emergency",
-                "priority": "critical",
-                "latitude": "-33.9249",
-                "longitude": "18.4241",
-                "address": "Cape Town, South Africa",
-                "description": "Emergency with voice recording - final verification test",
-                "recording_duration": "5"
+                "alert": alert_data
             }
             
             # Prepare multipart form data with voice file
