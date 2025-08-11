@@ -67,7 +67,7 @@ const NavigationFixed = () => {
       label: t('businessCompliance', 'Business Compliance'), 
       icon: '🏢',
       permission: null,
-      roles: ['client', 'admin'] // Clients and admins can access business compliance
+      roles: ['client', 'fixer', 'admin'] // Clients, fixers, and admins can access business compliance
     },
     { 
       path: getRoleBasedPath('/sms'), 
