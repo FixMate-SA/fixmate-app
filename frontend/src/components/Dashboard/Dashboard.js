@@ -75,6 +75,13 @@ const Dashboard = () => {
               color: 'bg-green-600 hover:bg-green-700'
             },
             { 
+              title: t('enterprisePortal', 'Enterprise Portal'), 
+              desc: t('enterprisePortalDesc', 'Bulk bookings, contracts, analytics, team management'), 
+              path: '/client/enterprise', 
+              icon: '🏢',
+              color: 'bg-gray-800 hover:bg-gray-900'
+            },
+            { 
               title: t('myJobs', 'My Jobs'), 
               desc: t('viewJobRequests', 'View your job requests'), 
               path: '/jobs/list', 
