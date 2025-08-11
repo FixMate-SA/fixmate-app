@@ -367,7 +367,8 @@ export const languages = {
       lastUpdated: 'Last updated',
       never: 'Never',
       updateProfile: 'Update Profile',
-      user: 'User'
+      user: 'User',
+      startUsingFixMate: 'Start using FixMate-SA to see your activity here'
     }
   },
   
