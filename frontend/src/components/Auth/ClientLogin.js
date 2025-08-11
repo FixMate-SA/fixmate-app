@@ -40,7 +40,8 @@ const ClientLogin = () => {
           setLoading(false);
           return;
         }
-        navigate('/client/dashboard');
+        // Force a page reload to ensure auth context is fully updated
+        window.location.href = '/client/dashboard';
       } else {
         setError(t('invalidCredentials', 'Invalid phone number or password'));
       }
