@@ -1483,7 +1483,8 @@ export const languages = {
       lastUpdated: 'Kubuyekezwe kamuva',
       never: 'Akuzange',
       updateProfile: 'Buyekeza Iphrofayili',
-      user: 'Umsebenzisi'
+      user: 'Umsebenzisi',
+      startUsingFixMate: 'Qala ukusebenzisa i-FixMate-SA ukubona umsebenzi wakho lapha'
     }
   },
   
