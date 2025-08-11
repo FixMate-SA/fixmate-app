@@ -249,6 +249,16 @@ function App() {
                 }
               />
               <Route
+                path="/client/enterprise"
+                element={
+                  <ProtectedRoute>
+                    <ProfessionalLayout>
+                      <B2BPortal />
+                    </ProfessionalLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/business/compliance"
                 element={
                   <ProtectedRoute>
