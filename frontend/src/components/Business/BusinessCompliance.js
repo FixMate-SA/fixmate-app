@@ -27,10 +27,6 @@ const BusinessCompliance = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [requestDetails, setRequestDetails] = useState('');
-  const [uploadedDocuments, setUploadedDocuments] = useState([]);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState(0);
-  const [activeTab, setActiveTab] = useState('services');
 
   useEffect(() => {
     fetchCategories();
