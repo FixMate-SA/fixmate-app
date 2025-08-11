@@ -104,7 +104,7 @@ const DefaultRoute = () => {
   }
   
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/client-login" replace />;
   }
   
   // Role-based routing for authenticated users
