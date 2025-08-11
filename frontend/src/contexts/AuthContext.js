@@ -96,12 +96,17 @@ export const AuthProvider = ({ children }) => {
       
       const { 
         user: userData, 
-        role_info: roleData,
-        display_name: displayNameData,
-        welcome_message: welcomeData,
         token: userToken,
         requires_password: requiresPassword = false
       } = response.data;
+      
+      // Extract role information from user data
+      const roleData = {
+        role: userData?.role,
+        permissions: userData?.permissions
+      };
+      const displayNameData = userData?.display_name;
+      const welcomeData = userData?.welcome_message;
       
       if (requiresPassword) {
         return { 
