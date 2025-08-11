@@ -1,2 +1,2 @@
-release: cd frontend && npm install && npm run build
+release: cd frontend && yarn install && yarn build
 web: cd backend && python -m uvicorn server:app --host 0.0.0.0 --port $PORT --timeout-keep-alive 30 --workers 1
