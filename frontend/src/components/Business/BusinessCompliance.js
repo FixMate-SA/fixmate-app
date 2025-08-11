@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 const BusinessCompliance = () => {
-  const { user } = useAuth();
+  const { user, roleInfo } = useAuth(); // Get roleInfo separately
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('categories');
   const [categories, setCategories] = useState({});
