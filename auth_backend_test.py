@@ -12,8 +12,8 @@ from typing import Dict, Any, Optional
 
 class AuthenticationTester:
     def __init__(self):
-        # Get backend URL from environment
-        self.backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://fixmate-sa-app-a448c751e1d2.herokuapp.com')
+        # Get backend URL from environment - use local backend for testing
+        self.backend_url = "http://localhost:8001"
         self.api_base = f"{self.backend_url}/api"
         
         # Test credentials as specified in review request
