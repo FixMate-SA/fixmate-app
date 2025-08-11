@@ -1,23 +1,29 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { apiService } from '../../services/api';
 
 const B2BPortal = () => {
+  const { user, roleInfo } = useAuth();
   const { t, formatCurrency } = useLanguage();
   const [activeTab, setActiveTab] = useState('overview');
   const [enterpriseData, setEnterpriseData] = useState({
     bookings: [],
     contracts: [],
     analytics: {},
-    invoices: []
+    invoices: [],
+    team: [],
+    locations: []
   });
   const [loading, setLoading] = useState(true);
 
   const tabs = [
     { id: 'overview', name: t('overview'), shortName: t('overview'), icon: '📊' },
-    { id: 'bookings', name: t('bulkBookings'), shortName: t('bookings', 'Bookings'), icon: '📋' },
+    { id: 'bulk-bookings', name: t('bulkBookings', 'Bulk Bookings'), shortName: t('bookings', 'Bookings'), icon: '📋' },
     { id: 'contracts', name: t('contracts'), shortName: t('contracts'), icon: '📄' },
     { id: 'analytics', name: t('analytics'), shortName: t('analytics'), icon: '📈' },
+    { id: 'team', name: t('teamManagement', 'Team Management'), shortName: t('team', 'Team'), icon: '👥' },
+    { id: 'locations', name: t('locationManagement', 'Locations'), shortName: t('locations', 'Locations'), icon: '📍' },
     { id: 'invoicing', name: t('invoicing'), shortName: t('invoicing'), icon: '💰' },
     { id: 'settings', name: t('settings'), shortName: t('settings'), icon: '⚙️' }
   ];
