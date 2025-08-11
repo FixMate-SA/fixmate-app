@@ -336,6 +336,16 @@ function App() {
                 }
               />
               <Route
+                path="/fixer/business-compliance"
+                element={
+                  <ProtectedRoute>
+                    <ProfessionalLayout>
+                      <BusinessCompliance />
+                    </ProfessionalLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/admin/payment"
                 element={
                   <ProtectedRoute>
