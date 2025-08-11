@@ -350,12 +350,12 @@ const BusinessCompliance = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold">
-                {user?.role_info?.role === 'fixer' 
+                {roleInfo?.role === 'fixer' 
                   ? 'Professional Fixer Services' 
                   : 'Business Compliance Assistant'}
               </h1>
               <p className="opacity-90">
-                {user?.role_info?.role === 'fixer' 
+                {roleInfo?.role === 'fixer' 
                   ? 'Professional licensing, business setup, and compliance for fixers'
                   : 'Company registrations, SARS, and business compliance support'}
               </p>
