@@ -426,10 +426,14 @@ class EmergencySystemFinalTest:
         """Test API response validation and format"""
         try:
             # Test with minimal valid data
-            form_data = {
-                "user_id": f"{self.test_user_id}_validation",
+            alert_data = {
                 "alert_type": "emergency",
                 "description": "API response validation test"
+            }
+            
+            form_data = {
+                "user_id": f"{self.test_user_id}_validation",
+                "alert": alert_data
             }
             
             response = requests.post(
