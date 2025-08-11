@@ -38,6 +38,9 @@ app = FastAPI(
 # Security
 security = HTTPBearer()
 
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
