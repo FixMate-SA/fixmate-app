@@ -104,6 +104,107 @@ def get_user_from_token(credentials: HTTPAuthorizationCredentials = Depends(secu
     except Exception as e:
         raise HTTPException(status_code=401, detail="Authentication failed")
 
+# Authentication Endpoints
+
+@app.post("/api/auth/client/login", response_model=UserResponse)
+async def client_login(login_data: UserLogin, db: Session = Depends(get_db)):
+    """Client login endpoint"""
+    try:
+        user = db.query(User).filter(
+            User.phone == login_data.phone,
+            User.role == "client"
+        ).first()
+        
+        if not user:
+            return UserResponse(success=False, message="Invalid phone number or password")
+        
+        # Simple password check (in production, use proper password hashing)
+        if login_data.password != "client123":
+            return UserResponse(success=False, message="Invalid phone number or password")
+        
+        # Generate simple token (in production, use JWT)
+        token = f"client_token_{user.id}"
+        
+        return UserResponse(
+            success=True,
+            message="Login successful",
+            token=token,
+            user={
+                "id": user.id,
+                "name": user.name or f"{user.first_name} {user.last_name}",
+                "phone": user.phone,
+                "role": user.role.value
+            }
+        )
+    except Exception as e:
+        return UserResponse(success=False, message=str(e))
+
+@app.post("/api/auth/fixer/login", response_model=UserResponse)
+async def fixer_login(login_data: UserLogin, db: Session = Depends(get_db)):
+    """Fixer login endpoint"""
+    try:
+        user = db.query(User).filter(
+            User.phone == login_data.phone,
+            User.role == "fixer"
+        ).first()
+        
+        if not user:
+            return UserResponse(success=False, message="Invalid phone number or password")
+        
+        # Simple password check (in production, use proper password hashing)
+        if login_data.password != "fixer123":
+            return UserResponse(success=False, message="Invalid phone number or password")
+        
+        # Generate simple token (in production, use JWT)
+        token = f"fixer_token_{user.id}"
+        
+        return UserResponse(
+            success=True,
+            message="Login successful",
+            token=token,
+            user={
+                "id": user.id,
+                "name": user.name or f"{user.first_name} {user.last_name}",
+                "phone": user.phone,
+                "role": user.role.value
+            }
+        )
+    except Exception as e:
+        return UserResponse(success=False, message=str(e))
+
+@app.post("/api/auth/admin/login", response_model=UserResponse)
+async def admin_login(login_data: UserLogin, db: Session = Depends(get_db)):
+    """Admin login endpoint"""
+    try:
+        user = db.query(User).filter(
+            User.phone == login_data.phone,
+            User.role == "admin"
+        ).first()
+        
+        if not user:
+            return UserResponse(success=False, message="Invalid phone number or password")
+        
+        # Simple password check (in production, use proper password hashing)
+        if login_data.password != "admin123":
+            return UserResponse(success=False, message="Invalid phone number or password")
+        
+        # Generate simple token (in production, use JWT)
+        token = f"admin_token_{user.id}"
+        
+        return UserResponse(
+            success=True,
+            message="Login successful",
+            token=token,
+            user={
+                "id": user.id,
+                "name": user.name or f"{user.first_name} {user.last_name}",
+                "phone": user.phone,
+                "role": user.role.value
+            }
+        )
+    except Exception as e:
+        return UserResponse(success=False, message=str(e))
+
 # Emergency Services API Endpoints
 
 @app.post("/api/emergency/alert", response_model=EmergencyResponse)
