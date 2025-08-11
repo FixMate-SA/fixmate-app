@@ -553,7 +553,7 @@ class FixMateBackendAuditor:
             'description': 'Test airtime payment'
         }
         
-        response = self.make_request('POST', '/payment/airtime', airtime_data, role='client')
+        response = self.make_request('POST', '/payment/airtime', airtime_data, role='client', use_form=True)
         if response and response.status_code == 200:
             airtime_result = response.json()
             
