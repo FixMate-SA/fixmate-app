@@ -525,7 +525,7 @@ class FixMateBackendAuditor:
             'user_name': 'Test User'
         }
         
-        response = self.make_request('POST', '/payment/eft', payment_data, role='client')
+        response = self.make_request('POST', '/payment/eft', payment_data, role='client', use_form=True)
         if response and response.status_code == 200:
             payment_result = response.json()
             
