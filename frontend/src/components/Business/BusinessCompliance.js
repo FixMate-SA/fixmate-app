@@ -346,6 +346,117 @@ const BusinessCompliance = () => {
     return colors[urgency] || 'bg-gray-50 border-gray-200 text-gray-800';
   };
 
+  // Enhanced Business Compliance Functions
+
+  const handleDocumentUpload = async (file, requestId) => {
+    try {
+      const formData = new FormData();
+      formData.append('document', file);
+      formData.append('request_id', requestId);
+      
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/upload-document`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUploadedDocuments(prev => [...prev, data.document]);
+        alert('✅ Document uploaded successfully!');
+      } else {
+        alert('❌ Failed to upload document. Please try again.');
+      }
+    } catch (error) {
+      console.error('Document upload error:', error);
+      alert('❌ Error uploading document. Please try again.');
+    }
+  };
+
+  const updateRequestStatus = async (requestId, status) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/requests/${requestId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`
+        },
+        body: JSON.stringify({ status })
+      });
+
+      if (response.ok) {
+        fetchUserRequests(); // Refresh the requests list
+        alert(`✅ Status updated to: ${status}`);
+      }
+    } catch (error) {
+      console.error('Status update error:', error);
+    }
+  };
+
+  const processPayment = async (amount, requestId) => {
+    try {
+      setSubmitting(true);
+      
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/process-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`
+        },
+        body: JSON.stringify({
+          amount: amount,
+          request_id: requestId,
+          payment_method: 'eft'
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert('✅ Payment processed successfully!');
+        setShowPaymentModal(false);
+        fetchUserRequests(); // Refresh requests
+      } else {
+        alert('❌ Payment failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      alert('❌ Payment processing error. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const sendAutomatedReminder = async (requestId) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/send-reminder`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`
+        },
+        body: JSON.stringify({ request_id: requestId })
+      });
+
+      if (response.ok) {
+        alert('✅ Reminder sent successfully!');
+      }
+    } catch (error) {
+      console.error('Reminder error:', error);
+    }
+  };
+
+  const calculateDaysRemaining = (createdDate, processingTime) => {
+    const created = new Date(createdDate);
+    const processingDays = parseInt(processingTime.split('-')[0]) || 10;
+    const expectedCompletion = new Date(created.getTime() + (processingDays * 24 * 60 * 60 * 1000));
+    const now = new Date();
+    const diffTime = expectedCompletion - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Header */}
