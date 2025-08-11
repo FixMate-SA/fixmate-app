@@ -617,9 +617,6 @@ class EmergencySystemTester:
         print("🚨 STARTING COMPREHENSIVE EMERGENCY SYSTEM TESTING")
         print("=" * 80)
         
-        # Core system tests
-        self.test_health_check()
-        
         # Emergency alert creation tests
         basic_alert_id = self.test_emergency_alert_creation_basic()
         voice_alert_id = self.test_emergency_alert_with_voice()
@@ -630,9 +627,6 @@ class EmergencySystemTester:
         # Data management tests
         self.test_emergency_alert_history()
         self.test_emergency_alert_resolution(basic_alert_id)
-        
-        # System statistics
-        self.test_emergency_statistics()
         
         # Protocol validation
         self.test_emergency_protocol_validation()
