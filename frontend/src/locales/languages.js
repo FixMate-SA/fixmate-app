@@ -1158,7 +1158,30 @@ export const languages = {
       never: 'Ga se gona',
       updateProfile: 'Mpshafatša Profaele',
       user: 'Modiriši',
-      startUsingFixMate: 'Thoma go šomiša FixMate-SA go bona tiro ya gago mo'
+      startUsingFixMate: 'Thoma go šomiša FixMate-SA go bona tiro ya gago mo',
+      
+      // Emergency System - Sepedi
+      emergencyButtonTitle: 'Kgogolego - Hwetša thušo ka pela ka go gatiša lentšu',
+      emergencyAlertSent: 'Temošo ya Kgogolego e Romeletšwe!',
+      emergencyProcessing: 'Temošo ya gago ya kgogolego le gatiša ya lentšu e šomwa ke ditšhomišo tša kgogolego tša FixMate. Re ikgokaganye le ditšhomišo tša 10111 ka leina la gago.',
+      emergencyActive: 'Karabo ya kgogolego e ŠOMA',
+      stayOnLine: 'Ka kgopelo dula o le mogaleng gomme o boloke mogala wa gago o kgona go fihlelelwa. Ditšhomišo tša kgogolego di ka go ikgokaganye ka thwii.',
+      call10111: 'Letša 10111 ka Thwii',
+      processingEmergency: 'Go šoma temošo ya gago ya kgogolego le go ikgokaganye le 10111...',
+      voiceRecording: 'Go Gatiša Lentšu',
+      recommended: 'Go Eletšwa',
+      startRecording: 'Thoma go Gatiša',
+      stopRecording: 'Emiša go Gatiša',
+      maxRecordingTime: 'Nako ye kgolo ya go gatiša: metsotso 2',
+      recordingComplete: 'Go Gatiša go Phethilwe',
+      play: 'Bapala',
+      pause: 'Emiša',
+      sendEmergencyAlert: 'Romela Temošo ya Kgogolego',
+      emergencyAlertFailed: 'Go hlolehile go romela temošo ya kgogolego. Ka kgopelo letša 10111 ka thwii bakeng sa thušo ya pela.',
+      callPoliceDirectly: 'Na o nyaka go letša 10111 ka thwii bjale?',
+      callNow: 'Letša 10111 Bjale',
+      microphoneAccessError: 'Ga e kgone go fihlelela mokrophone. Ka kgopelo lekola ditumelelo gomme o leke gape.',
+      alerting: 'E romela Temošo...'
     }
   },
   
