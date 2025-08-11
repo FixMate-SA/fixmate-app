@@ -359,7 +359,7 @@ class FixMateSABackendTester:
         ]
         
         for i, description in enumerate(test_descriptions):
-            response = self.make_request('POST', '/classify-service', {'description': description})
+            response = self.make_request('POST', '/classify-service', {'description': description}, use_form_data=True)
             if response and response.status_code == 200:
                 try:
                     data = response.json()
@@ -376,7 +376,8 @@ class FixMateSABackendTester:
         
         # Test sentiment analysis with multi-language input
         response = self.make_request('POST', '/analyze-sentiment', 
-                                   {'text': 'Baie dankie vir die goeie diens! (Thank you very much for the good service!)'})
+                                   {'text': 'Baie dankie vir die goeie diens! (Thank you very much for the good service!)'}, 
+                                   use_form_data=True)
         if response and response.status_code == 200:
             try:
                 data = response.json()
