@@ -2,7 +2,6 @@ import os
 import requests
 import json
 import tempfile
-import whisper
 from typing import Dict, Any, Optional, BinaryIO
 from datetime import datetime
 from dotenv import load_dotenv
@@ -10,6 +9,16 @@ from sqlalchemy.orm import Session
 from twilio.rest import Client
 from fastapi import UploadFile
 import uuid
+
+# Optional Whisper import for voice transcription
+try:
+    import whisper
+    WHISPER_AVAILABLE = True
+    print("✅ Whisper model available for voice transcription")
+except ImportError:
+    whisper = None
+    WHISPER_AVAILABLE = False
+    print("⚠️ Whisper not available - voice transcription disabled")
 
 load_dotenv()
 
