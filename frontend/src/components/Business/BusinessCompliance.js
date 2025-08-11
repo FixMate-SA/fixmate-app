@@ -26,11 +26,17 @@ const BusinessCompliance = () => {
 
   const fetchCategories = async () => {
     try {
+      // Debug role detection
+      console.log('🔍 DEBUG: User object:', user);
+      console.log('🔍 DEBUG: User role:', user?.role_info?.role);
+      
       // Always use role-based categories for now (until backend API supports role-based categories)
       const getRoleBasedCategories = () => {
         const userRole = user?.role_info?.role || 'client';
+        console.log('🔍 DEBUG: Using role for categories:', userRole);
         
         if (userRole === 'fixer') {
+          console.log('✅ DEBUG: Loading FIXER-specific categories');
           return {
             professional_licensing: {
               name: 'Professional Licensing',
