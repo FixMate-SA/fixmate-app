@@ -476,11 +476,12 @@ REQUIRED: Monitor emergency response and update system."""
     
     def _transcribe_audio(self, audio_file_path: str) -> Optional[str]:
         """
-        Transcribe audio file to text using Whisper
+        Transcribe audio file to text using Whisper (if available)
         """
         try:
-            if not self.whisper_model:
-                return None
+            if not WHISPER_AVAILABLE or not self.whisper_model:
+                print("⚠️ Whisper not available - returning fallback transcription")
+                return "[Voice transcription unavailable - Whisper not installed. Voice file saved for manual review.]"
             
             # Transcribe audio
             result = self.whisper_model.transcribe(audio_file_path)
@@ -495,7 +496,7 @@ REQUIRED: Monitor emergency response and update system."""
             
         except Exception as e:
             print(f"⚠️ Audio transcription failed: {e}")
-            return None
+            return "[Voice transcription failed - audio file saved for manual review]"
     
     def get_location_from_coordinates(self, latitude: float, longitude: float) -> str:
         """
