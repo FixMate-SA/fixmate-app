@@ -650,7 +650,10 @@ function App() {
                 }
               />
 
-              {/* Default Route */}
+              {/* Explicit Root Route */}
+              <Route path="/" element={<DefaultRoute />} />
+              
+              {/* Default Route - catch all other paths */}
               <Route path="*" element={<DefaultRoute />} />
             </Routes>
           </div>
