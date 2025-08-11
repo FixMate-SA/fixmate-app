@@ -239,6 +239,26 @@ function App() {
                 }
               />
               <Route
+                path="/business/compliance"
+                element={
+                  <ProtectedRoute>
+                    <ProfessionalLayout>
+                      <BusinessCompliance />
+                    </ProfessionalLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/client/business/compliance"
+                element={
+                  <ProtectedRoute>
+                    <ProfessionalLayout>
+                      <BusinessCompliance />
+                    </ProfessionalLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/fixer/profile"
                 element={
                   <ProtectedRoute>
