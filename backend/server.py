@@ -123,25 +123,53 @@ async def create_emergency_alert(
     Processes voice to text and initiates emergency protocol
     """
     try:
+        print(f"🚨 Emergency alert received for user: {user_id}")
+        print(f"📍 Location: {latitude}, {longitude} - {address}")
+        print(f"🎤 Voice recording: {'Yes' if voice_recording else 'No'}")
+        
+        # Validate required fields
+        if not user_id:
+            raise HTTPException(status_code=400, detail="User ID is required")
+        
         # Convert string coordinates to float if provided
-        lat_float = float(latitude) if latitude else None
-        lng_float = float(longitude) if longitude else None
-        duration_int = int(recording_duration) if recording_duration else 0
+        lat_float = None
+        lng_float = None
+        
+        if latitude and latitude != "null":
+            try:
+                lat_float = float(latitude)
+            except ValueError:
+                print(f"⚠️ Invalid latitude: {latitude}")
+        
+        if longitude and longitude != "null":
+            try:
+                lng_float = float(longitude)
+            except ValueError:
+                print(f"⚠️ Invalid longitude: {longitude}")
+        
+        duration_int = 0
+        if recording_duration and recording_duration != "0":
+            try:
+                duration_int = int(recording_duration)
+            except ValueError:
+                print(f"⚠️ Invalid recording duration: {recording_duration}")
         
         # Prepare alert data
         alert_data = {
             "user_id": user_id,
-            "user_name": user_name,
-            "user_phone": user_phone,
+            "user_name": user_name or "Unknown User",
+            "user_phone": user_phone or "Unknown Phone",
             "job_id": job_id,
             "alert_type": alert_type,
             "priority": priority,
             "latitude": lat_float,
             "longitude": lng_float,
-            "address": address,
-            "description": description,
+            "address": address or "Location not provided",
+            "description": description or "Emergency assistance requested",
             "recording_duration": duration_int
         }
+        
+        print(f"📋 Alert data: {alert_data}")
         
         # Process emergency alert with voice recording
         result = await emergency_service.trigger_emergency_alert(
@@ -150,6 +178,8 @@ async def create_emergency_alert(
             voice_file=voice_recording,
             db=db
         )
+        
+        print(f"🔄 Emergency service result: {result}")
         
         if result["success"]:
             return EmergencyResponse(
@@ -162,13 +192,17 @@ async def create_emergency_alert(
                 transcription_preview=result.get("transcription_preview")
             )
         else:
-            raise HTTPException(status_code=400, detail=result["error"])
+            raise HTTPException(status_code=400, detail=result.get("error", "Emergency alert failed"))
             
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"❌ Emergency alert API error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=500, 
-            detail=f"Failed to process emergency alert: {str(e)}"
+            detail=f"Emergency alert processing failed: {str(e)}"
         )
 
 @app.get("/api/emergency/location")
