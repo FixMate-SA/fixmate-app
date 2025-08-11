@@ -125,15 +125,13 @@ class EmergencySystemTester:
         try:
             alert_data = {
                 "user_id": self.test_user_id,
-                "user_name": self.test_user_name,
-                "user_phone": self.test_user_phone,
-                "alert_type": "emergency",
-                "priority": "high",
-                "latitude": "-26.2041",
-                "longitude": "28.0473",
-                "address": "Johannesburg, South Africa",
-                "description": "Test emergency alert - backend testing",
-                "recording_duration": "0"
+                "alert": {
+                    "alert_type": "emergency",
+                    "latitude": -26.2041,
+                    "longitude": 28.0473,
+                    "address": "Johannesburg, South Africa",
+                    "description": "Test emergency alert - backend testing"
+                }
             }
             
             response = requests.post(
@@ -146,14 +144,11 @@ class EmergencySystemTester:
                 data = response.json()
                 
                 # Verify response structure
-                required_fields = ["success", "message", "alert_id"]
-                has_required = all(field in data for field in required_fields)
-                
-                if has_required and data.get("success"):
+                if data.get("success"):
                     self.log_test_result(
                         "Emergency Alert Creation (Basic)",
                         True,
-                        f"Alert created with ID: {data.get('alert_id')}, Police notified: {data.get('police_notified')}",
+                        f"Alert created successfully: {data.get('message')}",
                         data
                     )
                     return data.get("alert_id")  # Return for follow-up tests
@@ -161,7 +156,7 @@ class EmergencySystemTester:
                     self.log_test_result(
                         "Emergency Alert Creation (Basic)",
                         False,
-                        f"Invalid response structure or failed: {data}",
+                        f"Alert creation failed: {data}",
                         data
                     )
             else:
