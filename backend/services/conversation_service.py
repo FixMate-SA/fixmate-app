@@ -2,7 +2,7 @@ import json
 from typing import Dict, Any, Optional, Tuple
 from datetime import datetime
 from sqlalchemy.orm import Session
-from models import User, Fixer, Job, DataInsight
+from models import User, Fixer, Job
 from .whatsapp_service import whatsapp_service
 from .ai_service import ai_service
 from .sms_service import sms_service
