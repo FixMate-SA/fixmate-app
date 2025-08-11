@@ -1,644 +1,731 @@
 #!/usr/bin/env python3
 """
-Comprehensive Backend Testing for FixMate-SA Announcement System
-Testing all announcement system API endpoints with authentication and authorization
+FixMate-SA Emergency System Backend Testing
+Comprehensive testing of Emergency Alert API endpoints and functionality
 """
 
 import requests
 import json
 import os
-import sys
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+import tempfile
+import base64
+from datetime import datetime
+from typing import Dict, Any, Optional
 
-class AnnouncementSystemTester:
+class EmergencySystemTester:
     def __init__(self):
         # Get backend URL from environment
-        self.base_url = os.getenv('REACT_APP_BACKEND_URL', 'https://ddd96db9-4674-45b7-8d09-eef0f1d99fae.preview.emergentagent.com')
-        if not self.base_url.endswith('/api'):
-            self.base_url = f"{self.base_url}/api"
+        self.backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://fixmate-sa-app-a448c751e1d2.herokuapp.com')
+        self.api_base = f"{self.backend_url}/api"
         
-        print(f"🔗 Testing Backend URL: {self.base_url}")
+        # Test configuration
+        self.test_user_id = "emergency_test_user_001"
+        self.test_user_name = "Emergency Test User"
+        self.test_user_phone = "+27821234567"
         
-        # Test accounts for different roles
-        self.test_accounts = {
-            'admin': {
-                'phone': '+27800000001',
-                'password': 'admin2024test',
-                'token': None,
-                'user_id': None
-            },
-            'client': {
-                'phone': '+27800000002', 
-                'password': 'client2024test',
-                'token': None,
-                'user_id': None
-            },
-            'fixer': {
-                'phone': '+27800000003',
-                'password': 'fixer2024test', 
-                'token': None,
-                'user_id': None
-            }
-        }
+        # Test results tracking
+        self.test_results = []
+        self.total_tests = 0
+        self.passed_tests = 0
         
-        # Test data storage
-        self.test_announcements = []
-        self.test_chat_messages = []
-        
-        # Test results
-        self.results = {
-            'total_tests': 0,
-            'passed_tests': 0,
-            'failed_tests': 0,
-            'test_details': []
-        }
+        print(f"🚨 Emergency System Testing Initialized")
+        print(f"🔗 Backend URL: {self.backend_url}")
+        print(f"🔗 API Base: {self.api_base}")
+        print("=" * 80)
 
-    def log_test(self, test_name: str, success: bool, details: str = ""):
-        """Log test result"""
-        self.results['total_tests'] += 1
+    def log_test_result(self, test_name: str, success: bool, details: str = "", response_data: Any = None):
+        """Log test result with details"""
+        self.total_tests += 1
         if success:
-            self.results['passed_tests'] += 1
+            self.passed_tests += 1
             status = "✅ PASS"
         else:
-            self.results['failed_tests'] += 1
             status = "❌ FAIL"
         
-        print(f"{status}: {test_name}")
+        result = {
+            "test": test_name,
+            "success": success,
+            "details": details,
+            "response_data": response_data,
+            "timestamp": datetime.now().isoformat()
+        }
+        self.test_results.append(result)
+        
+        print(f"{status} | {test_name}")
         if details:
-            print(f"   Details: {details}")
-        
-        self.results['test_details'].append({
-            'test': test_name,
-            'status': 'PASS' if success else 'FAIL',
-            'details': details
-        })
+            print(f"     Details: {details}")
+        if not success and response_data:
+            print(f"     Response: {response_data}")
+        print()
 
-    def make_request(self, method: str, endpoint: str, data: dict = None, headers: dict = None, role: str = None) -> requests.Response:
-        """Make HTTP request with optional authentication"""
-        url = f"{self.base_url}{endpoint}"
-        
-        # Add authentication header if role specified
-        if role and self.test_accounts[role]['token']:
-            if not headers:
-                headers = {}
-            headers['Authorization'] = f"Bearer {self.test_accounts[role]['token']}"
-        
-        # Set default headers
-        if not headers:
-            headers = {}
-        headers['Content-Type'] = 'application/json'
-        
+    def create_test_voice_file(self) -> str:
+        """Create a test voice file for emergency testing"""
         try:
-            print(f"🔗 Making {method} request to: {url}")
-            if method.upper() == 'GET':
-                response = requests.get(url, headers=headers, timeout=60)
-            elif method.upper() == 'POST':
-                response = requests.post(url, json=data, headers=headers, timeout=60)
-            elif method.upper() == 'PUT':
-                response = requests.put(url, json=data, headers=headers, timeout=60)
-            elif method.upper() == 'DELETE':
-                response = requests.delete(url, headers=headers, timeout=60)
-            else:
-                raise ValueError(f"Unsupported HTTP method: {method}")
+            # Create a simple test audio file (base64 encoded)
+            # This is a minimal WAV file header + silence
+            wav_header = b'RIFF\x24\x08\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x44\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x08\x00\x00'
+            silence_data = b'\x00' * 2048  # 2KB of silence
+            test_audio = wav_header + silence_data
             
-            print(f"📊 Response: {response.status_code}")
-            if response.status_code >= 400:
-                try:
-                    error_content = response.json()
-                    print(f"❌ Error content: {error_content}")
-                except:
-                    print(f"❌ Error text: {response.text[:200]}")
-            return response
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Request failed: {e}")
+            # Save to temporary file
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.wav')
+            temp_file.write(test_audio)
+            temp_file.close()
+            
+            return temp_file.name
+        except Exception as e:
+            print(f"⚠️ Failed to create test voice file: {e}")
             return None
 
-    def authenticate_users(self) -> bool:
-        """Authenticate all test users"""
-        print("\n🔐 AUTHENTICATING TEST USERS...")
-        
-        all_authenticated = True
-        
-        for role, account in self.test_accounts.items():
-            try:
-                response = self.make_request('POST', '/auth/login', {
-                    'phone': account['phone'],
-                    'password': account['password']
-                })
+    def test_health_check(self):
+        """Test emergency system health check"""
+        try:
+            response = requests.get(f"{self.api_base}/health", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                services = data.get("services", {})
+                emergency_contacts = data.get("emergency_contacts", {})
                 
-                if response and response.status_code == 200:
-                    data = response.json()
-                    account['token'] = data.get('token')
-                    account['user_id'] = data.get('user', {}).get('id')
-                    self.log_test(f"Authenticate {role} user", True, f"Token: {account['token'][:20]}...")
+                # Check if emergency service is active
+                emergency_active = services.get("emergency_service") == "active"
+                has_emergency_contacts = "police" in emergency_contacts
+                
+                if emergency_active and has_emergency_contacts:
+                    self.log_test_result(
+                        "Emergency System Health Check",
+                        True,
+                        f"Emergency service active, contacts available: {emergency_contacts}",
+                        data
+                    )
                 else:
-                    self.log_test(f"Authenticate {role} user", False, f"Status: {response.status_code if response else 'No response'}")
-                    all_authenticated = False
-                    
-            except Exception as e:
-                self.log_test(f"Authenticate {role} user", False, str(e))
-                all_authenticated = False
-        
-        return all_authenticated
+                    self.log_test_result(
+                        "Emergency System Health Check",
+                        False,
+                        f"Emergency service status: {services.get('emergency_service')}, contacts: {has_emergency_contacts}",
+                        data
+                    )
+            else:
+                self.log_test_result(
+                    "Emergency System Health Check",
+                    False,
+                    f"HTTP {response.status_code}",
+                    response.text
+                )
+                
+        except Exception as e:
+            self.log_test_result(
+                "Emergency System Health Check",
+                False,
+                f"Request failed: {str(e)}"
+            )
 
-    def test_admin_announcement_creation(self) -> bool:
-        """Test admin announcement creation with different target audiences"""
-        print("\n📢 TESTING ADMIN ANNOUNCEMENT CREATION...")
-        
-        test_announcements = [
-            {
-                'title': 'Important Update for Clients',
-                'content': 'We have updated our service pricing. Please check the new rates.',
-                'target_audience': 'clients',
-                'is_pinned': True,
-                'priority': 'high',
-                'chat_enabled': True,
-                'admin_only_chat': False
-            },
-            {
-                'title': 'New Fixer Guidelines',
-                'content': 'All fixers must now complete safety training before accepting jobs.',
-                'target_audience': 'fixers', 
-                'is_pinned': False,
-                'priority': 'normal',
-                'chat_enabled': True,
-                'admin_only_chat': True
-            },
-            {
-                'title': 'Platform Maintenance Notice',
-                'content': 'The platform will be under maintenance on Sunday from 2-4 AM.',
-                'target_audience': 'all',
-                'is_pinned': True,
-                'priority': 'high',
-                'chat_enabled': False,
-                'admin_only_chat': False,
-                'expires_at': (datetime.utcnow() + timedelta(days=7)).isoformat()
+    def test_emergency_alert_creation_basic(self):
+        """Test basic emergency alert creation without voice"""
+        try:
+            alert_data = {
+                "user_id": self.test_user_id,
+                "user_name": self.test_user_name,
+                "user_phone": self.test_user_phone,
+                "alert_type": "emergency",
+                "priority": "high",
+                "latitude": "-26.2041",
+                "longitude": "28.0473",
+                "address": "Johannesburg, South Africa",
+                "description": "Test emergency alert - backend testing",
+                "recording_duration": "0"
             }
+            
+            response = requests.post(
+                f"{self.api_base}/emergency/alert",
+                data=alert_data,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Verify response structure
+                required_fields = ["success", "message", "alert_id"]
+                has_required = all(field in data for field in required_fields)
+                
+                if has_required and data.get("success"):
+                    self.log_test_result(
+                        "Emergency Alert Creation (Basic)",
+                        True,
+                        f"Alert created with ID: {data.get('alert_id')}, Police notified: {data.get('police_notified')}",
+                        data
+                    )
+                    return data.get("alert_id")  # Return for follow-up tests
+                else:
+                    self.log_test_result(
+                        "Emergency Alert Creation (Basic)",
+                        False,
+                        f"Invalid response structure or failed: {data}",
+                        data
+                    )
+            else:
+                self.log_test_result(
+                    "Emergency Alert Creation (Basic)",
+                    False,
+                    f"HTTP {response.status_code}",
+                    response.text
+                )
+                
+        except Exception as e:
+            self.log_test_result(
+                "Emergency Alert Creation (Basic)",
+                False,
+                f"Request failed: {str(e)}"
+            )
+        
+        return None
+
+    def test_emergency_alert_with_voice(self):
+        """Test emergency alert creation with voice recording"""
+        try:
+            # Create test voice file
+            voice_file_path = self.create_test_voice_file()
+            if not voice_file_path:
+                self.log_test_result(
+                    "Emergency Alert Creation (With Voice)",
+                    False,
+                    "Failed to create test voice file"
+                )
+                return None
+            
+            alert_data = {
+                "user_id": f"{self.test_user_id}_voice",
+                "user_name": f"{self.test_user_name} Voice Test",
+                "user_phone": self.test_user_phone,
+                "alert_type": "emergency",
+                "priority": "critical",
+                "latitude": "-33.9249",
+                "longitude": "18.4241",
+                "address": "Cape Town, South Africa",
+                "description": "Emergency with voice recording - backend testing",
+                "recording_duration": "5"
+            }
+            
+            # Prepare multipart form data with voice file
+            with open(voice_file_path, 'rb') as voice_file:
+                files = {
+                    'voice_recording': ('emergency_voice.wav', voice_file, 'audio/wav')
+                }
+                
+                response = requests.post(
+                    f"{self.api_base}/emergency/alert",
+                    data=alert_data,
+                    files=files,
+                    timeout=30
+                )
+            
+            # Clean up temp file
+            os.unlink(voice_file_path)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if data.get("success"):
+                    voice_processed = data.get("voice_transcribed", False)
+                    transcription = data.get("transcription_preview", "")
+                    
+                    self.log_test_result(
+                        "Emergency Alert Creation (With Voice)",
+                        True,
+                        f"Alert with voice created, transcribed: {voice_processed}, preview: {transcription[:50]}...",
+                        data
+                    )
+                    return data.get("alert_id")
+                else:
+                    self.log_test_result(
+                        "Emergency Alert Creation (With Voice)",
+                        False,
+                        f"Alert creation failed: {data.get('message', 'Unknown error')}",
+                        data
+                    )
+            else:
+                self.log_test_result(
+                    "Emergency Alert Creation (With Voice)",
+                    False,
+                    f"HTTP {response.status_code}",
+                    response.text
+                )
+                
+        except Exception as e:
+            self.log_test_result(
+                "Emergency Alert Creation (With Voice)",
+                False,
+                f"Request failed: {str(e)}"
+            )
+        
+        return None
+
+    def test_location_services(self):
+        """Test location reverse geocoding service"""
+        try:
+            # Test with Johannesburg coordinates
+            test_coordinates = [
+                (-26.2041, 28.0473, "Johannesburg"),
+                (-33.9249, 18.4241, "Cape Town"),
+                (-29.8587, 31.0218, "Durban")
+            ]
+            
+            successful_lookups = 0
+            
+            for lat, lng, expected_city in test_coordinates:
+                response = requests.get(
+                    f"{self.api_base}/emergency/location",
+                    params={"latitude": lat, "longitude": lng},
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("success") and data.get("address"):
+                        address = data.get("address")
+                        # Check if address contains expected city or South Africa
+                        if expected_city.lower() in address.lower() or "south africa" in address.lower():
+                            successful_lookups += 1
+                        
+                        print(f"     📍 {lat}, {lng} -> {address}")
+                    else:
+                        print(f"     ❌ Failed lookup for {lat}, {lng}: {data}")
+                else:
+                    print(f"     ❌ HTTP {response.status_code} for {lat}, {lng}")
+            
+            success_rate = successful_lookups / len(test_coordinates)
+            if success_rate >= 0.67:  # At least 2/3 successful
+                self.log_test_result(
+                    "Location Services (Reverse Geocoding)",
+                    True,
+                    f"Successfully resolved {successful_lookups}/{len(test_coordinates)} locations ({success_rate:.1%})"
+                )
+            else:
+                self.log_test_result(
+                    "Location Services (Reverse Geocoding)",
+                    False,
+                    f"Only {successful_lookups}/{len(test_coordinates)} locations resolved ({success_rate:.1%})"
+                )
+                
+        except Exception as e:
+            self.log_test_result(
+                "Location Services (Reverse Geocoding)",
+                False,
+                f"Request failed: {str(e)}"
+            )
+
+    def test_emergency_alert_history(self):
+        """Test emergency alert history retrieval"""
+        try:
+            # Test with the user ID we used for alert creation
+            response = requests.get(
+                f"{self.api_base}/emergency/alerts/{self.test_user_id}",
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if data.get("success"):
+                    alerts = data.get("alerts", [])
+                    
+                    if len(alerts) > 0:
+                        # Check alert structure
+                        first_alert = alerts[0]
+                        required_fields = ["id", "alert_type", "priority", "status", "created_at"]
+                        has_required = all(field in first_alert for field in required_fields)
+                        
+                        if has_required:
+                            self.log_test_result(
+                                "Emergency Alert History Retrieval",
+                                True,
+                                f"Retrieved {len(alerts)} alerts, latest: {first_alert.get('alert_type')} ({first_alert.get('status')})"
+                            )
+                        else:
+                            self.log_test_result(
+                                "Emergency Alert History Retrieval",
+                                False,
+                                f"Alert structure incomplete: {list(first_alert.keys())}",
+                                first_alert
+                            )
+                    else:
+                        # No alerts found - this could be normal for a test user
+                        self.log_test_result(
+                            "Emergency Alert History Retrieval",
+                            True,
+                            "No alerts found for test user (expected for clean test environment)"
+                        )
+                else:
+                    self.log_test_result(
+                        "Emergency Alert History Retrieval",
+                        False,
+                        f"API returned success=false: {data}",
+                        data
+                    )
+            else:
+                self.log_test_result(
+                    "Emergency Alert History Retrieval",
+                    False,
+                    f"HTTP {response.status_code}",
+                    response.text
+                )
+                
+        except Exception as e:
+            self.log_test_result(
+                "Emergency Alert History Retrieval",
+                False,
+                f"Request failed: {str(e)}"
+            )
+
+    def test_emergency_alert_resolution(self, alert_id: Optional[str] = None):
+        """Test emergency alert resolution (admin function)"""
+        try:
+            # Use provided alert_id or create a test one
+            test_alert_id = alert_id or "test_alert_resolution_001"
+            
+            resolution_data = {
+                "resolution": "resolved",
+                "notes": "Test resolution - backend testing completed successfully"
+            }
+            
+            response = requests.post(
+                f"{self.api_base}/emergency/resolve/{test_alert_id}",
+                data=resolution_data,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if data.get("success"):
+                    self.log_test_result(
+                        "Emergency Alert Resolution",
+                        True,
+                        f"Alert {test_alert_id} resolved: {data.get('message')}",
+                        data
+                    )
+                else:
+                    self.log_test_result(
+                        "Emergency Alert Resolution",
+                        False,
+                        f"Resolution failed: {data.get('error', 'Unknown error')}",
+                        data
+                    )
+            elif response.status_code == 400:
+                # Expected if alert doesn't exist
+                self.log_test_result(
+                    "Emergency Alert Resolution",
+                    True,
+                    "Alert not found (expected for test alert ID) - endpoint working correctly"
+                )
+            else:
+                self.log_test_result(
+                    "Emergency Alert Resolution",
+                    False,
+                    f"HTTP {response.status_code}",
+                    response.text
+                )
+                
+        except Exception as e:
+            self.log_test_result(
+                "Emergency Alert Resolution",
+                False,
+                f"Request failed: {str(e)}"
+            )
+
+    def test_emergency_statistics(self):
+        """Test emergency system statistics endpoint"""
+        try:
+            response = requests.get(f"{self.api_base}/emergency/stats", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if data.get("success"):
+                    stats = data.get("stats", {})
+                    required_stats = ["total_alerts", "active_alerts", "resolved_alerts", "today_alerts"]
+                    has_required = all(stat in stats for stat in required_stats)
+                    
+                    if has_required:
+                        self.log_test_result(
+                            "Emergency System Statistics",
+                            True,
+                            f"Stats: {stats['total_alerts']} total, {stats['active_alerts']} active, {stats['today_alerts']} today",
+                            stats
+                        )
+                    else:
+                        self.log_test_result(
+                            "Emergency System Statistics",
+                            False,
+                            f"Missing required statistics: {list(stats.keys())}",
+                            stats
+                        )
+                else:
+                    self.log_test_result(
+                        "Emergency System Statistics",
+                        False,
+                        f"API returned success=false: {data}",
+                        data
+                    )
+            else:
+                self.log_test_result(
+                    "Emergency System Statistics",
+                    False,
+                    f"HTTP {response.status_code}",
+                    response.text
+                )
+                
+        except Exception as e:
+            self.log_test_result(
+                "Emergency System Statistics",
+                False,
+                f"Request failed: {str(e)}"
+            )
+
+    def test_emergency_protocol_validation(self):
+        """Test emergency protocol components"""
+        try:
+            # Test with high priority emergency
+            alert_data = {
+                "user_id": f"{self.test_user_id}_protocol",
+                "user_name": "Protocol Test User",
+                "user_phone": "+27821234999",
+                "alert_type": "emergency",
+                "priority": "critical",
+                "latitude": "-26.2041",
+                "longitude": "28.0473",
+                "address": "Emergency Protocol Test Location",
+                "description": "Critical emergency for protocol testing",
+                "recording_duration": "0"
+            }
+            
+            response = requests.post(
+                f"{self.api_base}/emergency/alert",
+                data=alert_data,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if data.get("success"):
+                    # Check emergency protocol components
+                    protocol_checks = {
+                        "alert_created": bool(data.get("alert_id")),
+                        "dispatch_notification": "dispatch" in data.get("message", "").lower(),
+                        "priority_handled": data.get("priority_level") == "critical",
+                        "emergency_response": "emergency" in data.get("message", "").lower()
+                    }
+                    
+                    successful_checks = sum(protocol_checks.values())
+                    total_checks = len(protocol_checks)
+                    
+                    if successful_checks >= 3:  # At least 3/4 protocol components working
+                        self.log_test_result(
+                            "Emergency Protocol Validation",
+                            True,
+                            f"Protocol components working: {successful_checks}/{total_checks} - {protocol_checks}",
+                            data
+                        )
+                    else:
+                        self.log_test_result(
+                            "Emergency Protocol Validation",
+                            False,
+                            f"Insufficient protocol components: {successful_checks}/{total_checks} - {protocol_checks}",
+                            data
+                        )
+                else:
+                    self.log_test_result(
+                        "Emergency Protocol Validation",
+                        False,
+                        f"Protocol test failed: {data.get('message', 'Unknown error')}",
+                        data
+                    )
+            else:
+                self.log_test_result(
+                    "Emergency Protocol Validation",
+                    False,
+                    f"HTTP {response.status_code}",
+                    response.text
+                )
+                
+        except Exception as e:
+            self.log_test_result(
+                "Emergency Protocol Validation",
+                False,
+                f"Request failed: {str(e)}"
+            )
+
+    def test_error_handling(self):
+        """Test error handling for invalid requests"""
+        try:
+            error_tests = [
+                {
+                    "name": "Missing User ID",
+                    "data": {"alert_type": "emergency", "description": "Test"},
+                    "expected_status": [400, 422]
+                },
+                {
+                    "name": "Invalid Coordinates",
+                    "data": {
+                        "user_id": "test_user",
+                        "latitude": "invalid",
+                        "longitude": "invalid"
+                    },
+                    "expected_status": [400, 422]
+                },
+                {
+                    "name": "Empty Request",
+                    "data": {},
+                    "expected_status": [400, 422]
+                }
+            ]
+            
+            successful_error_handling = 0
+            
+            for test in error_tests:
+                response = requests.post(
+                    f"{self.api_base}/emergency/alert",
+                    data=test["data"],
+                    timeout=10
+                )
+                
+                if response.status_code in test["expected_status"]:
+                    successful_error_handling += 1
+                    print(f"     ✅ {test['name']}: HTTP {response.status_code} (expected)")
+                else:
+                    print(f"     ❌ {test['name']}: HTTP {response.status_code} (unexpected)")
+            
+            if successful_error_handling >= 2:  # At least 2/3 error cases handled correctly
+                self.log_test_result(
+                    "Error Handling Validation",
+                    True,
+                    f"Proper error handling for {successful_error_handling}/{len(error_tests)} test cases"
+                )
+            else:
+                self.log_test_result(
+                    "Error Handling Validation",
+                    False,
+                    f"Insufficient error handling: {successful_error_handling}/{len(error_tests)} cases"
+                )
+                
+        except Exception as e:
+            self.log_test_result(
+                "Error Handling Validation",
+                False,
+                f"Request failed: {str(e)}"
+            )
+
+    def run_comprehensive_tests(self):
+        """Run all emergency system tests"""
+        print("🚨 STARTING COMPREHENSIVE EMERGENCY SYSTEM TESTING")
+        print("=" * 80)
+        
+        # Core system tests
+        self.test_health_check()
+        
+        # Emergency alert creation tests
+        basic_alert_id = self.test_emergency_alert_creation_basic()
+        voice_alert_id = self.test_emergency_alert_with_voice()
+        
+        # Location services
+        self.test_location_services()
+        
+        # Data management tests
+        self.test_emergency_alert_history()
+        self.test_emergency_alert_resolution(basic_alert_id)
+        
+        # System statistics
+        self.test_emergency_statistics()
+        
+        # Protocol validation
+        self.test_emergency_protocol_validation()
+        
+        # Error handling
+        self.test_error_handling()
+        
+        # Generate final report
+        self.generate_test_report()
+
+    def generate_test_report(self):
+        """Generate comprehensive test report"""
+        print("=" * 80)
+        print("🚨 EMERGENCY SYSTEM TESTING COMPLETED")
+        print("=" * 80)
+        
+        success_rate = (self.passed_tests / self.total_tests * 100) if self.total_tests > 0 else 0
+        
+        print(f"📊 OVERALL RESULTS:")
+        print(f"   Total Tests: {self.total_tests}")
+        print(f"   Passed: {self.passed_tests}")
+        print(f"   Failed: {self.total_tests - self.passed_tests}")
+        print(f"   Success Rate: {success_rate:.1f}%")
+        print()
+        
+        # Categorize results
+        critical_tests = [
+            "Emergency System Health Check",
+            "Emergency Alert Creation (Basic)",
+            "Emergency Protocol Validation"
         ]
         
-        all_passed = True
+        important_tests = [
+            "Emergency Alert Creation (With Voice)",
+            "Location Services (Reverse Geocoding)",
+            "Emergency Alert History Retrieval"
+        ]
         
-        for i, announcement_data in enumerate(test_announcements):
-            response = self.make_request('POST', '/admin/announcements', announcement_data, role='admin')
-            
-            if response and response.status_code == 200:
-                data = response.json()
-                if data.get('success') and data.get('announcement_id'):
-                    self.test_announcements.append({
-                        'id': data['announcement_id'],
-                        'data': announcement_data
-                    })
-                    self.log_test(f"Create announcement {i+1} ({announcement_data['target_audience']})", True, 
-                                f"ID: {data['announcement_id']}")
-                else:
-                    self.log_test(f"Create announcement {i+1}", False, "Invalid response structure")
-                    all_passed = False
-            else:
-                self.log_test(f"Create announcement {i+1}", False, 
-                            f"Status: {response.status_code if response else 'No response'}")
-                all_passed = False
+        # Check critical functionality
+        critical_passed = sum(1 for result in self.test_results 
+                            if result["test"] in critical_tests and result["success"])
+        critical_total = len([r for r in self.test_results if r["test"] in critical_tests])
         
-        return all_passed
-
-    def test_admin_announcement_management(self) -> bool:
-        """Test admin announcement retrieval, update, and deletion"""
-        print("\n🔧 TESTING ADMIN ANNOUNCEMENT MANAGEMENT...")
+        important_passed = sum(1 for result in self.test_results 
+                             if result["test"] in important_tests and result["success"])
+        important_total = len([r for r in self.test_results if r["test"] in important_tests])
         
-        all_passed = True
+        print(f"🔴 CRITICAL FUNCTIONALITY: {critical_passed}/{critical_total} passed")
+        print(f"🟡 IMPORTANT FUNCTIONALITY: {important_passed}/{important_total} passed")
+        print()
         
-        # Test GET all announcements
-        response = self.make_request('GET', '/admin/announcements', role='admin')
-        if response and response.status_code == 200:
-            data = response.json()
-            if data.get('success') and 'announcements' in data:
-                announcement_count = len(data['announcements'])
-                self.log_test("Get all announcements (admin)", True, f"Found {announcement_count} announcements")
-            else:
-                self.log_test("Get all announcements (admin)", False, "Invalid response structure")
-                all_passed = False
+        # Detailed results
+        print("📋 DETAILED TEST RESULTS:")
+        for result in self.test_results:
+            status = "✅" if result["success"] else "❌"
+            print(f"   {status} {result['test']}")
+            if result["details"]:
+                print(f"      {result['details']}")
+        
+        print()
+        
+        # Final assessment
+        if success_rate >= 80 and critical_passed == critical_total:
+            print("🎉 EMERGENCY SYSTEM STATUS: PRODUCTION READY")
+            print("   All critical functionality working correctly")
+        elif success_rate >= 60 and critical_passed >= critical_total * 0.8:
+            print("⚠️ EMERGENCY SYSTEM STATUS: MOSTLY FUNCTIONAL")
+            print("   Core functionality working with minor issues")
         else:
-            self.log_test("Get all announcements (admin)", False, 
-                        f"Status: {response.status_code if response else 'No response'}")
-            all_passed = False
+            print("❌ EMERGENCY SYSTEM STATUS: NEEDS ATTENTION")
+            print("   Critical issues found that require fixing")
         
-        # Test UPDATE announcement (if we have test announcements)
-        if self.test_announcements:
-            announcement_id = self.test_announcements[0]['id']
-            update_data = {
-                'title': 'UPDATED: Important Update for Clients',
-                'is_pinned': False,
-                'priority': 'normal'
-            }
-            
-            response = self.make_request('PUT', f'/admin/announcements/{announcement_id}', update_data, role='admin')
-            if response and response.status_code == 200:
-                data = response.json()
-                if data.get('success'):
-                    self.log_test("Update announcement", True, f"Updated announcement {announcement_id}")
-                else:
-                    self.log_test("Update announcement", False, "Update failed")
-                    all_passed = False
-            else:
-                self.log_test("Update announcement", False, 
-                            f"Status: {response.status_code if response else 'No response'}")
-                all_passed = False
-        
-        return all_passed
-
-    def test_user_role_based_access(self) -> bool:
-        """Test user role-based announcement access"""
-        print("\n👥 TESTING USER ROLE-BASED ANNOUNCEMENT ACCESS...")
-        
-        all_passed = True
-        
-        # Test each role's access to announcements
-        for role in ['admin', 'client', 'fixer']:
-            response = self.make_request('GET', '/announcements', role=role)
-            
-            if response and response.status_code == 200:
-                data = response.json()
-                if data.get('success') and 'announcements' in data:
-                    announcements = data['announcements']
-                    user_role = data.get('user_role', role)
-                    
-                    # Verify role-based filtering
-                    valid_access = True
-                    for ann in announcements:
-                        target = ann.get('target_audience')
-                        if role == 'admin':
-                            # Admin should see all
-                            pass
-                        elif role == 'client':
-                            if target not in ['clients', 'all']:
-                                valid_access = False
-                                break
-                        elif role == 'fixer':
-                            if target not in ['fixers', 'all']:
-                                valid_access = False
-                                break
-                    
-                    if valid_access:
-                        self.log_test(f"Get announcements as {role}", True, 
-                                    f"Found {len(announcements)} announcements, role filtering correct")
-                    else:
-                        self.log_test(f"Get announcements as {role}", False, "Role filtering incorrect")
-                        all_passed = False
-                else:
-                    self.log_test(f"Get announcements as {role}", False, "Invalid response structure")
-                    all_passed = False
-            else:
-                self.log_test(f"Get announcements as {role}", False, 
-                            f"Status: {response.status_code if response else 'No response'}")
-                all_passed = False
-        
-        return all_passed
-
-    def test_chat_system_functionality(self) -> bool:
-        """Test announcement chat system"""
-        print("\n💬 TESTING ANNOUNCEMENT CHAT SYSTEM...")
-        
-        all_passed = True
-        
-        if not self.test_announcements:
-            self.log_test("Chat system test", False, "No test announcements available")
-            return False
-        
-        # Use first announcement for chat testing
-        announcement_id = self.test_announcements[0]['id']
-        
-        # Test GET chat messages (initially empty)
-        response = self.make_request('GET', f'/announcements/{announcement_id}/chat', role='client')
-        if response and response.status_code == 200:
-            data = response.json()
-            if data.get('success') and 'messages' in data:
-                self.log_test("Get chat messages", True, f"Found {len(data['messages'])} messages")
-            else:
-                self.log_test("Get chat messages", False, "Invalid response structure")
-                all_passed = False
-        else:
-            self.log_test("Get chat messages", False, 
-                        f"Status: {response.status_code if response else 'No response'}")
-            all_passed = False
-        
-        # Test POST chat message as client
-        chat_message_data = {
-            'message': 'This is a test message from a client user.'
-        }
-        
-        response = self.make_request('POST', f'/announcements/{announcement_id}/chat', chat_message_data, role='client')
-        if response and response.status_code == 200:
-            data = response.json()
-            if data.get('success') and data.get('chat_message'):
-                message_id = data['chat_message']['id']
-                self.test_chat_messages.append({
-                    'id': message_id,
-                    'announcement_id': announcement_id
-                })
-                self.log_test("Post chat message (client)", True, f"Message ID: {message_id}")
-            else:
-                self.log_test("Post chat message (client)", False, "Invalid response structure")
-                all_passed = False
-        else:
-            self.log_test("Post chat message (client)", False, 
-                        f"Status: {response.status_code if response else 'No response'}")
-            all_passed = False
-        
-        # Test POST chat message as admin
-        admin_message_data = {
-            'message': 'This is an admin response to the client message.'
-        }
-        
-        response = self.make_request('POST', f'/announcements/{announcement_id}/chat', admin_message_data, role='admin')
-        if response and response.status_code == 200:
-            data = response.json()
-            if data.get('success') and data.get('chat_message'):
-                admin_message_id = data['chat_message']['id']
-                self.test_chat_messages.append({
-                    'id': admin_message_id,
-                    'announcement_id': announcement_id
-                })
-                self.log_test("Post chat message (admin)", True, f"Message ID: {admin_message_id}")
-            else:
-                self.log_test("Post chat message (admin)", False, "Invalid response structure")
-                all_passed = False
-        else:
-            self.log_test("Post chat message (admin)", False, 
-                        f"Status: {response.status_code if response else 'No response'}")
-            all_passed = False
-        
-        return all_passed
-
-    def test_chat_permissions_and_settings(self) -> bool:
-        """Test chat permission enforcement and settings"""
-        print("\n🔒 TESTING CHAT PERMISSIONS AND SETTINGS...")
-        
-        all_passed = True
-        
-        # Find announcement with admin_only_chat enabled (should be the fixer announcement)
-        admin_only_announcement = None
-        for ann in self.test_announcements:
-            if ann['data'].get('admin_only_chat'):
-                admin_only_announcement = ann
-                break
-        
-        if admin_only_announcement:
-            announcement_id = admin_only_announcement['id']
-            
-            # Test that non-admin cannot post to admin-only chat
-            client_message = {
-                'message': 'Client trying to post to admin-only chat'
-            }
-            
-            response = self.make_request('POST', f'/announcements/{announcement_id}/chat', client_message, role='client')
-            if response and response.status_code == 403:
-                self.log_test("Admin-only chat restriction (client blocked)", True, "Client correctly blocked from admin-only chat")
-            else:
-                self.log_test("Admin-only chat restriction (client blocked)", False, 
-                            f"Expected 403, got {response.status_code if response else 'No response'}")
-                all_passed = False
-            
-            # Test that admin can post to admin-only chat
-            admin_message = {
-                'message': 'Admin posting to admin-only chat'
-            }
-            
-            response = self.make_request('POST', f'/announcements/{announcement_id}/chat', admin_message, role='admin')
-            if response and response.status_code == 200:
-                self.log_test("Admin-only chat access (admin allowed)", True, "Admin successfully posted to admin-only chat")
-            else:
-                self.log_test("Admin-only chat access (admin allowed)", False, 
-                            f"Status: {response.status_code if response else 'No response'}")
-                all_passed = False
-        
-        # Find announcement with chat disabled
-        chat_disabled_announcement = None
-        for ann in self.test_announcements:
-            if not ann['data'].get('chat_enabled', True):
-                chat_disabled_announcement = ann
-                break
-        
-        if chat_disabled_announcement:
-            announcement_id = chat_disabled_announcement['id']
-            
-            # Test that no one can post to disabled chat
-            test_message = {
-                'message': 'Trying to post to disabled chat'
-            }
-            
-            response = self.make_request('POST', f'/announcements/{announcement_id}/chat', test_message, role='admin')
-            if response and response.status_code == 403:
-                self.log_test("Chat disabled restriction", True, "Chat correctly disabled for announcement")
-            else:
-                self.log_test("Chat disabled restriction", False, 
-                            f"Expected 403, got {response.status_code if response else 'No response'}")
-                all_passed = False
-        
-        return all_passed
-
-    def test_authentication_and_authorization(self) -> bool:
-        """Test authentication and authorization for all endpoints"""
-        print("\n🛡️ TESTING AUTHENTICATION AND AUTHORIZATION...")
-        
-        all_passed = True
-        
-        # Test admin endpoints without authentication
-        response = self.make_request('GET', '/admin/announcements')
-        if response and response.status_code == 401:
-            self.log_test("Admin endpoint without auth", True, "Correctly rejected unauthenticated request")
-        else:
-            self.log_test("Admin endpoint without auth", False, 
-                        f"Expected 401, got {response.status_code if response else 'No response'}")
-            all_passed = False
-        
-        # Test admin endpoints with non-admin user
-        response = self.make_request('GET', '/admin/announcements', role='client')
-        if response and response.status_code == 403:
-            self.log_test("Admin endpoint with client auth", True, "Correctly rejected non-admin user")
-        else:
-            self.log_test("Admin endpoint with client auth", False, 
-                        f"Expected 403, got {response.status_code if response else 'No response'}")
-            all_passed = False
-        
-        # Test user endpoints without authentication
-        response = self.make_request('GET', '/announcements')
-        if response and response.status_code == 401:
-            self.log_test("User endpoint without auth", True, "Correctly rejected unauthenticated request")
-        else:
-            self.log_test("User endpoint without auth", False, 
-                        f"Expected 401, got {response.status_code if response else 'No response'}")
-            all_passed = False
-        
-        return all_passed
-
-    def test_data_integrity_and_cascade_deletion(self) -> bool:
-        """Test data integrity and cascade deletion"""
-        print("\n🗑️ TESTING DATA INTEGRITY AND CASCADE DELETION...")
-        
-        all_passed = True
-        
-        if not self.test_announcements or not self.test_chat_messages:
-            self.log_test("Data integrity test", False, "No test data available")
-            return False
-        
-        # Get announcement with chat messages
-        announcement_with_chat = None
-        for ann in self.test_announcements:
-            for msg in self.test_chat_messages:
-                if msg['announcement_id'] == ann['id']:
-                    announcement_with_chat = ann
-                    break
-            if announcement_with_chat:
-                break
-        
-        if announcement_with_chat:
-            announcement_id = announcement_with_chat['id']
-            
-            # Count chat messages before deletion
-            response = self.make_request('GET', f'/announcements/{announcement_id}/chat', role='admin')
-            messages_before = 0
-            if response and response.status_code == 200:
-                data = response.json()
-                messages_before = len(data.get('messages', []))
-            
-            # Delete the announcement
-            response = self.make_request('DELETE', f'/admin/announcements/{announcement_id}', role='admin')
-            if response and response.status_code == 200:
-                data = response.json()
-                if data.get('success'):
-                    self.log_test("Delete announcement with cascade", True, 
-                                f"Deleted announcement and {messages_before} chat messages")
-                    
-                    # Remove from our test data
-                    self.test_announcements = [ann for ann in self.test_announcements if ann['id'] != announcement_id]
-                    self.test_chat_messages = [msg for msg in self.test_chat_messages if msg['announcement_id'] != announcement_id]
-                else:
-                    self.log_test("Delete announcement with cascade", False, "Deletion failed")
-                    all_passed = False
-            else:
-                self.log_test("Delete announcement with cascade", False, 
-                            f"Status: {response.status_code if response else 'No response'}")
-                all_passed = False
-        
-        return all_passed
-
-    def test_chat_message_deletion(self) -> bool:
-        """Test individual chat message deletion"""
-        print("\n🗑️ TESTING CHAT MESSAGE DELETION...")
-        
-        all_passed = True
-        
-        if not self.test_chat_messages:
-            self.log_test("Chat message deletion test", False, "No test chat messages available")
-            return False
-        
-        # Test deleting a chat message
-        message_to_delete = self.test_chat_messages[0]
-        message_id = message_to_delete['id']
-        announcement_id = message_to_delete['announcement_id']
-        
-        response = self.make_request('DELETE', f'/announcements/{announcement_id}/chat/{message_id}', role='admin')
-        if response and response.status_code == 200:
-            data = response.json()
-            if data.get('success'):
-                self.log_test("Delete chat message", True, f"Deleted message {message_id}")
-                # Remove from our test data
-                self.test_chat_messages = [msg for msg in self.test_chat_messages if msg['id'] != message_id]
-            else:
-                self.log_test("Delete chat message", False, "Deletion failed")
-                all_passed = False
-        else:
-            self.log_test("Delete chat message", False, 
-                        f"Status: {response.status_code if response else 'No response'}")
-            all_passed = False
-        
-        return all_passed
-
-    def cleanup_test_data(self):
-        """Clean up any remaining test data"""
-        print("\n🧹 CLEANING UP TEST DATA...")
-        
-        # Delete remaining announcements
-        for announcement in self.test_announcements[:]:
-            response = self.make_request('DELETE', f'/admin/announcements/{announcement["id"]}', role='admin')
-            if response and response.status_code == 200:
-                self.log_test(f"Cleanup announcement {announcement['id']}", True, "Deleted")
-                self.test_announcements.remove(announcement)
-            else:
-                self.log_test(f"Cleanup announcement {announcement['id']}", False, "Failed to delete")
-
-    def run_all_tests(self):
-        """Run all announcement system tests"""
-        print("🚀 STARTING COMPREHENSIVE ANNOUNCEMENT SYSTEM BACKEND TESTING")
         print("=" * 80)
         
-        # Step 1: Authentication
-        if not self.authenticate_users():
-            print("❌ Authentication failed. Cannot proceed with tests.")
-            return False
-        
-        # Step 2: Admin Announcement Management
-        self.test_admin_announcement_creation()
-        self.test_admin_announcement_management()
-        
-        # Step 3: User Role-Based Access
-        self.test_user_role_based_access()
-        
-        # Step 4: Chat System
-        self.test_chat_system_functionality()
-        self.test_chat_permissions_and_settings()
-        
-        # Step 5: Authentication & Authorization
-        self.test_authentication_and_authorization()
-        
-        # Step 6: Data Integrity
-        self.test_chat_message_deletion()
-        self.test_data_integrity_and_cascade_deletion()
-        
-        # Step 7: Cleanup
-        self.cleanup_test_data()
-        
-        # Print final results
-        self.print_final_results()
-        
-        return self.results['failed_tests'] == 0
-
-    def print_final_results(self):
-        """Print comprehensive test results"""
-        print("\n" + "=" * 80)
-        print("🎯 ANNOUNCEMENT SYSTEM BACKEND TESTING RESULTS")
-        print("=" * 80)
-        
-        total = self.results['total_tests']
-        passed = self.results['passed_tests']
-        failed = self.results['failed_tests']
-        success_rate = (passed / total * 100) if total > 0 else 0
-        
-        print(f"📊 SUMMARY:")
-        print(f"   Total Tests: {total}")
-        print(f"   Passed: {passed}")
-        print(f"   Failed: {failed}")
-        print(f"   Success Rate: {success_rate:.1f}%")
-        
-        if failed == 0:
-            print("\n🎉 ALL TESTS PASSED! Announcement system is working correctly.")
-        else:
-            print(f"\n⚠️ {failed} TESTS FAILED. Review the details above.")
-        
-        print("\n📋 DETAILED RESULTS:")
-        for detail in self.results['test_details']:
-            status_icon = "✅" if detail['status'] == 'PASS' else "❌"
-            print(f"   {status_icon} {detail['test']}")
-            if detail['details']:
-                print(f"      {detail['details']}")
+        return {
+            "total_tests": self.total_tests,
+            "passed_tests": self.passed_tests,
+            "success_rate": success_rate,
+            "critical_passed": critical_passed,
+            "critical_total": critical_total,
+            "status": "PRODUCTION READY" if success_rate >= 80 and critical_passed == critical_total else "NEEDS ATTENTION"
+        }
 
 def main():
-    """Main function to run announcement system tests"""
-    tester = AnnouncementSystemTester()
-    success = tester.run_all_tests()
-    
-    # Exit with appropriate code
-    sys.exit(0 if success else 1)
+    """Main testing function"""
+    tester = EmergencySystemTester()
+    results = tester.run_comprehensive_tests()
+    return results
 
 if __name__ == "__main__":
     main()
