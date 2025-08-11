@@ -41,6 +41,8 @@ const FixerLogin = () => {
           return;
         }
         navigate('/fixer/dashboard');
+        // Force a page reload to ensure auth context is fully updated
+        setTimeout(() => window.location.href = '/fixer/dashboard', 100);
       } else {
         setError(t('invalidCredentials', 'Invalid phone number or password'));
       }
