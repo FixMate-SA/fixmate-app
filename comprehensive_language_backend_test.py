@@ -513,7 +513,7 @@ class FixMateSABackendTester:
             'user_name': 'Test User'
         }
         
-        response = self.make_request('POST', '/payment/eft', payment_data)
+        response = self.make_request('POST', '/payment/eft', payment_data, use_form_data=True)
         if response and response.status_code == 200:
             try:
                 data = response.json()
@@ -529,7 +529,7 @@ class FixMateSABackendTester:
         response = self.make_request('POST', '/payment/verify', {
             'payment_id': 'test_payment_123',
             'payment_type': 'eft'
-        })
+        }, use_form_data=True)
         if response and response.status_code == 200:
             self.log_test("Payment verification endpoint", True, "Payment verification endpoint accessible")
         else:
