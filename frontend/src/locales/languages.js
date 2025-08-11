@@ -739,7 +739,8 @@ export const languages = {
       lastUpdated: 'Laas opgedateer',
       never: 'Nooit',
       updateProfile: 'Dateer Profiel Op',
-      user: 'Gebruiker'
+      user: 'Gebruiker',
+      startUsingFixMate: 'Begin FixMate-SA gebruik om jou aktiwiteit hier te sien'
     }
   },
   
