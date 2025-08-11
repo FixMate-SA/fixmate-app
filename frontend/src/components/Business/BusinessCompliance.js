@@ -5,7 +5,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 const BusinessCompliance = () => {
   const { user, roleInfo } = useAuth(); // Get roleInfo separately
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState('categories');
+  const [activeTab, setActiveTab] = useState('services'); // Start with services tab
   const [categories, setCategories] = useState({});
   const [userRequests, setUserRequests] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
