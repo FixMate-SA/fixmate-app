@@ -22,7 +22,7 @@ const BusinessCompliance = () => {
   useEffect(() => {
     fetchCategories();
     fetchUserRequests();
-  }, []);
+  }, [user]); // Add user dependency to re-fetch when user changes
 
   const fetchCategories = async () => {
     try {
