@@ -891,6 +891,267 @@ const BusinessCompliance = () => {
               )}
             </div>
           )}
+
+          {/* Enhanced Features - Documents Tab */}
+          {activeTab === 'documents' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold">Document Management</h2>
+                <button
+                  onClick={() => setShowDocumentUpload(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                >
+                  Upload Document
+                </button>
+              </div>
+
+              {/* Document Upload Modal */}
+              {showDocumentUpload && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+                    <h3 className="text-lg font-semibold mb-4">Upload Document</h3>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.jpg,.png"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          handleDocumentUpload(file, selectedRequest?.id || 'new');
+                        }
+                      }}
+                      className="w-full p-2 border rounded-md mb-4"
+                    />
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setShowDocumentUpload(false)}
+                        className="flex-1 bg-gray-500 text-white py-2 rounded-md hover:bg-gray-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Uploaded Documents List */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {uploadedDocuments.map((doc, index) => (
+                  <div key={index} className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium">{doc.name}</h3>
+                        <p className="text-sm text-gray-600">{doc.type}</p>
+                      </div>
+                      <span className="text-2xl">📎</span>
+                    </div>
+                    <div className="mt-2 text-sm text-gray-500">
+                      Uploaded: {new Date(doc.uploaded_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))}
+                
+                {uploadedDocuments.length === 0 && (
+                  <div className="col-span-2 text-center py-8 text-gray-500">
+                    <span className="text-4xl mb-2 block">📎</span>
+                    No documents uploaded yet. Click "Upload Document" to get started.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Enhanced Features - Payment Tab */}
+          {activeTab === 'payments' && (
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold mb-6">Payment Management</h2>
+              
+              {/* Payment Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <h3 className="text-sm font-medium text-blue-600">Outstanding</h3>
+                  <p className="text-2xl font-bold text-blue-700">R2,450</p>
+                  <p className="text-sm text-blue-500">2 pending payments</p>
+                </div>
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <h3 className="text-sm font-medium text-green-600">Paid This Month</h3>
+                  <p className="text-2xl font-bold text-green-700">R4,200</p>
+                  <p className="text-sm text-green-500">3 payments completed</p>
+                </div>
+                <div className="p-4 bg-purple-50 rounded-lg">
+                  <h3 className="text-sm font-medium text-purple-600">Total Saved</h3>
+                  <p className="text-2xl font-bold text-purple-700">R890</p>
+                  <p className="text-sm text-purple-500">vs individual services</p>
+                </div>
+              </div>
+
+              {/* Payment History */}
+              <div>
+                <h3 className="font-medium mb-3">Recent Payments</h3>
+                <div className="space-y-3">
+                  {[
+                    { service: 'Company Registration', amount: 'R2,500', status: 'Paid', date: '2024-01-15' },
+                    { service: 'SARS Registration', amount: 'R1,200', status: 'Pending', date: '2024-01-10' },
+                    { service: 'Professional License', amount: 'R1,800', status: 'Due', date: '2024-01-08' }
+                  ].map((payment, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <h4 className="font-medium">{payment.service}</h4>
+                        <p className="text-sm text-gray-600">{payment.date}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">{payment.amount}</p>
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          payment.status === 'Paid' ? 'bg-green-100 text-green-800' :
+                          payment.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {payment.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payment Modal */}
+              {showPaymentModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+                    <h3 className="text-lg font-semibold mb-4">Process Payment</h3>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-2">Amount</label>
+                      <input
+                        type="number"
+                        value={paymentAmount}
+                        onChange={(e) => setPaymentAmount(e.target.value)}
+                        className="w-full p-2 border rounded-md"
+                        placeholder="Enter amount"
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setShowPaymentModal(false)}
+                        className="flex-1 bg-gray-500 text-white py-2 rounded-md hover:bg-gray-600"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => processPayment(paymentAmount, selectedRequest?.id)}
+                        disabled={submitting}
+                        className="flex-1 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        {submitting ? 'Processing...' : 'Pay Now'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Enhanced Features - Status Tracking Tab */}
+          {activeTab === 'status' && (
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold mb-6">Status Tracking & Automation</h2>
+              
+              {/* Active Requests with Progress Tracking */}
+              <div className="space-y-4">
+                {userRequests.filter(req => req.status !== 'completed').map((request, index) => (
+                  <div key={index} className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="font-medium">{request.category}</h3>
+                        <p className="text-sm text-gray-600">{request.description}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(request.status)}`}>
+                          {request.status?.replace('_', ' ').toUpperCase()}
+                        </span>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {calculateDaysRemaining(request.created_at, '10-15 business days')} days remaining
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Progress Bar */}
+                    <div className="mb-3">
+                      <div className="flex justify-between text-xs text-gray-600 mb-1">
+                        <span>Progress</span>
+                        <span>{request.status === 'completed' ? '100%' : 
+                               request.status === 'in_progress' ? '60%' : 
+                               request.status === 'in_review' ? '30%' : '10%'}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{
+                            width: request.status === 'completed' ? '100%' : 
+                                   request.status === 'in_progress' ? '60%' : 
+                                   request.status === 'in_review' ? '30%' : '10%'
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => sendAutomatedReminder(request.id)}
+                        className="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200"
+                      >
+                        Send Reminder
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setShowDocumentUpload(true);
+                        }}
+                        className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200"
+                      >
+                        Upload Document
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setPaymentAmount(2500);
+                          setShowPaymentModal(true);
+                        }}
+                        className="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-md hover:bg-green-200"
+                      >
+                        Make Payment
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                
+                {userRequests.filter(req => req.status !== 'completed').length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <span className="text-4xl mb-2 block">📊</span>
+                    No active requests to track. Submit a new compliance request to get started.
+                  </div>
+                )}
+              </div>
+
+              {/* Automated Reminders Settings */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-medium mb-3">Automated Reminder Settings</h3>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input type="checkbox" defaultChecked className="mr-2" />
+                    <span className="text-sm">Send reminder 3 days before deadline</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input type="checkbox" defaultChecked className="mr-2" />
+                    <span className="text-sm">Send reminder when documents are required</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input type="checkbox" className="mr-2" />
+                    <span className="text-sm">Send weekly progress updates</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
