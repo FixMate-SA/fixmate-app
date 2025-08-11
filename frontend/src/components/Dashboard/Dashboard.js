@@ -68,6 +68,13 @@ const Dashboard = () => {
               color: 'bg-orange-600 hover:bg-orange-700'
             },
             { 
+              title: t('businessCompliance', 'Business Compliance'), 
+              desc: t('businessComplianceDesc', 'Company registration, tax compliance, legal documentation'), 
+              path: '/business/compliance', 
+              icon: '🏢',
+              color: 'bg-green-600 hover:bg-green-700'
+            },
+            { 
               title: t('myJobs', 'My Jobs'), 
               desc: t('viewJobRequests', 'View your job requests'), 
               path: '/jobs/list', 
