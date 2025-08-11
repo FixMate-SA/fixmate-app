@@ -301,7 +301,7 @@ const Dashboard = () => {
         <div className="dashboard-card bg-gradient-to-r from-blue-50 to-green-50 border-blue-200">
           <div className="text-center py-6">
             <span className="text-5xl mb-4 block">🎉</span>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Welcome to FixMate-SA!</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">{t('welcomeMessage', 'Welcome to FixMate-SA!')}</h2>
             <p className="text-gray-600 mb-4">
               {userRole === 'client' && "Start creating jobs and connecting with trusted fixers."}
               {userRole === 'fixer' && "Begin accepting jobs and growing your service business."}
