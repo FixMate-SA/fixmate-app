@@ -45,13 +45,17 @@ class EmergencyService:
             self.twilio_client = None
             print("⚠️ Twilio credentials not configured - using mock emergency alerts")
         
-        # Initialize Whisper for voice transcription
-        try:
-            self.whisper_model = whisper.load_model("base")
-            print("✅ Whisper model loaded for voice transcription")
-        except Exception as e:
-            print(f"⚠️ Whisper model failed to load: {e}")
-            self.whisper_model = None
+        # Initialize Whisper for voice transcription (optional)
+        self.whisper_model = None
+        if WHISPER_AVAILABLE:
+            try:
+                self.whisper_model = whisper.load_model("base")
+                print("✅ Whisper model loaded for voice transcription")
+            except Exception as e:
+                print(f"⚠️ Whisper model failed to load: {e}")
+                self.whisper_model = None
+        else:
+            print("⚠️ Whisper not available - voice transcription will be handled as text fallback")
     
     async def trigger_emergency_alert(
         self, 
