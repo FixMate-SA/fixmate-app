@@ -70,7 +70,7 @@ const Dashboard = () => {
             { 
               title: t('businessCompliance', 'Business Compliance'), 
               desc: t('businessComplianceDesc', 'Company registration, tax compliance, legal documentation'), 
-              path: '/business/compliance', 
+              path: '/client/business-compliance', 
               icon: '🏢',
               color: 'bg-green-600 hover:bg-green-700'
             },
