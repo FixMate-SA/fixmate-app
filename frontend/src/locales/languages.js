@@ -1855,7 +1855,8 @@ export const languages = {
       lastUpdated: 'Ya makumu yi antswisiwe',
       never: 'Ku nga ri na nkarhi',
       updateProfile: 'Antswa Profayili',
-      user: 'Mutirhisi'
+      user: 'Mutirhisi',
+      startUsingFixMate: 'Sungula ku tirhisa FixMate-SA ku vona nghingiriko wa wena laha'
     }
   }
 };
