@@ -285,12 +285,13 @@ async def get_emergency_stats(db: Session = Depends(get_db)):
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint"""
+    from services.emergency_service import WHISPER_AVAILABLE
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
         "services": {
             "emergency_service": "active",
-            "voice_transcription": "active" if emergency_service.whisper_model else "unavailable",
+            "voice_transcription": "active" if WHISPER_AVAILABLE and emergency_service.whisper_model else "fallback_mode",
             "sms_service": "active" if emergency_service.twilio_client else "mock",
             "database": "connected"
         },
@@ -298,6 +299,10 @@ async def health_check():
             "police": "10111",
             "medical": "10177",
             "fire": "10177"
+        },
+        "voice_features": {
+            "whisper_available": WHISPER_AVAILABLE,
+            "transcription_mode": "ai_powered" if WHISPER_AVAILABLE else "manual_review"
         }
     }
 
