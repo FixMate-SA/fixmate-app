@@ -35,30 +35,41 @@ class User(Base):
     __tablename__ = "users"
     
     id = Column(String, primary_key=True)
-    name = Column(String)
+    phone = Column(String, unique=True, index=True)
     first_name = Column(String)
     last_name = Column(String)
-    phone = Column(String, unique=True, index=True)
+    id_number = Column(String)
+    town = Column(String)
     email = Column(String, unique=True, index=True)
+    address = Column(Text)
     password_hash = Column(String)
+    is_password_set = Column(Boolean, default=False)
     role = Column(Enum(UserRole), default=UserRole.CLIENT)
+    is_active = Column(Boolean, default=True)
+    last_login = Column(DateTime)
+    money_spent = Column(Float, default=0.0)
+    conversation_state = Column(String)
+    service_request_cache = Column(Text)
+    whatsapp_active = Column(Boolean, default=False)
+    last_whatsapp_message = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    password_reset_code = Column(Text)
+    password_reset_expires = Column(DateTime)
     
-    # Profile information
+    # Profile information (keeping for backward compatibility but not in DB)
     profile_picture = Column(String)  # URL to profile picture
     bio = Column(Text)
     location = Column(String)
     is_verified = Column(Boolean, default=False)
-    is_active = Column(Boolean, default=True)
     
-    # Fixer-specific fields
+    # Fixer-specific fields (keeping for backward compatibility but not in DB)
     skills = Column(JSON)  # List of skills for fixers
     experience_years = Column(Integer)
     hourly_rate = Column(Float)
     availability_status = Column(String, default="available")  # available, busy, offline
     
-    # Rating system
+    # Rating system (keeping for backward compatibility but not in DB)
     average_rating = Column(Float, default=0.0)
     total_ratings = Column(Integer, default=0)
     total_jobs_completed = Column(Integer, default=0)
@@ -67,6 +78,27 @@ class User(Base):
     jobs_created = relationship("Job", foreign_keys="Job.client_id", back_populates="client")
     jobs_assigned = relationship("Job", foreign_keys="Job.fixer_id", back_populates="fixer")
     emergency_alerts = relationship("EmergencyAlert", back_populates="user")
+    
+    # Properties
+    @property
+    def name(self):
+        """Computed name property for backward compatibility"""
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        elif self.first_name:
+            return self.first_name
+        else:
+            return "Unknown User"
+    
+    @property
+    def full_name(self):
+        """Full name property"""
+        return self.name
+    
+    @property 
+    def display_name(self):
+        """Display name property"""
+        return self.first_name or "User"
 
 class Job(Base):
     __tablename__ = "jobs"
