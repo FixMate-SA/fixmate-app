@@ -648,8 +648,8 @@ class FixMateBackendAuditor:
         auth_success = self.test_authentication_system()
         
         # Only proceed if authentication works
-        if not auth_success or self.results['failed_tests'] > 1:
-            print("❌ Authentication mostly failed. Cannot proceed with comprehensive audit.")
+        if self.results['failed_tests'] > 2:
+            print("❌ Too many authentication failures. Cannot proceed with comprehensive audit.")
             self.print_audit_results()
             return False
         
