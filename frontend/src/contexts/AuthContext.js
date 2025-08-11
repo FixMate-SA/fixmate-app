@@ -176,11 +176,23 @@ export const AuthProvider = ({ children }) => {
     setDisplayName('');
     setWelcomeMessage('');
     setToken(null);
+    
+    // Clear all possible auth keys (both legacy and role-specific)
     localStorage.removeItem('fixmate_user');
     localStorage.removeItem('fixmate_role_info');
     localStorage.removeItem('fixmate_display_name');
     localStorage.removeItem('fixmate_welcome_message');
     localStorage.removeItem('fixmate_token');
+    
+    // Clear role-specific keys
+    const roles = ['client', 'fixer', 'admin'];
+    roles.forEach(role => {
+      localStorage.removeItem(`fixmate_${role}_user`);
+      localStorage.removeItem(`fixmate_${role}_role_info`);
+      localStorage.removeItem(`fixmate_${role}_display_name`);
+      localStorage.removeItem(`fixmate_${role}_welcome_message`);
+      localStorage.removeItem(`fixmate_${role}_token`);
+    });
     
     // Clear any cached data to prevent role conflicts
     console.log('AuthContext: User logged out, session cleared');
