@@ -7,9 +7,9 @@ import enum
 Base = declarative_base()
 
 class UserRole(enum.Enum):
-    CLIENT = "client"
-    FIXER = "fixer"  
-    ADMIN = "admin"
+    client = "client"
+    fixer = "fixer"  
+    admin = "admin"
 
 class JobStatus(enum.Enum):
     PENDING = "pending"
