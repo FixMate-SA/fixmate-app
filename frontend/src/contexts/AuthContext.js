@@ -25,11 +25,32 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check for stored auth data on app load
     console.log('AuthContext: Checking stored auth data...');
-    const storedUser = localStorage.getItem('fixmate_user');
-    const storedRoleInfo = localStorage.getItem('fixmate_role_info');
-    const storedDisplayName = localStorage.getItem('fixmate_display_name');
-    const storedWelcomeMessage = localStorage.getItem('fixmate_welcome_message');
-    const storedToken = localStorage.getItem('fixmate_token');
+    
+    // First try legacy keys for backward compatibility
+    let storedUser = localStorage.getItem('fixmate_user');
+    let storedRoleInfo = localStorage.getItem('fixmate_role_info');
+    let storedDisplayName = localStorage.getItem('fixmate_display_name');
+    let storedWelcomeMessage = localStorage.getItem('fixmate_welcome_message');
+    let storedToken = localStorage.getItem('fixmate_token');
+    
+    // If legacy keys don't exist, try role-specific keys
+    if (!storedUser || !storedToken) {
+      // Try all possible role-specific keys
+      const roles = ['client', 'fixer', 'admin'];
+      for (const role of roles) {
+        const roleUser = localStorage.getItem(`fixmate_${role}_user`);
+        const roleToken = localStorage.getItem(`fixmate_${role}_token`);
+        if (roleUser && roleToken) {
+          storedUser = roleUser;
+          storedToken = roleToken;
+          storedRoleInfo = localStorage.getItem(`fixmate_${role}_role_info`);
+          storedDisplayName = localStorage.getItem(`fixmate_${role}_display_name`);
+          storedWelcomeMessage = localStorage.getItem(`fixmate_${role}_welcome_message`);
+          console.log(`AuthContext: Found ${role} session data`);
+          break;
+        }
+      }
+    }
     
     console.log('AuthContext: Stored data found:', {
       hasUser: !!storedUser,
