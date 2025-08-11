@@ -763,7 +763,30 @@ export const languages = {
       never: 'Nooit',
       updateProfile: 'Dateer Profiel Op',
       user: 'Gebruiker',
-      startUsingFixMate: 'Begin FixMate-SA gebruik om jou aktiwiteit hier te sien'
+      startUsingFixMate: 'Begin FixMate-SA gebruik om jou aktiwiteit hier te sien',
+      
+      // Emergency System - Afrikaans
+      emergencyButtonTitle: 'Noodgeval - Kry onmiddellik hulp met stemopname',
+      emergencyAlertSent: 'Noodgeval Waarskuwing Gestuur!',
+      emergencyProcessing: 'Jou noodgeval waarskuwing met stemopname word verwerk deur FixMate nooddienste. Ons kontak 10111 nooddienste namens jou.',
+      emergencyActive: 'Noodgeval reaksie is AKTIEF',
+      stayOnLine: 'Bly asseblief op die lyn en hou jou foon toeganklik. Nooddienste mag jou direk kontak.',
+      call10111: 'Bel 10111 Direk',
+      processingEmergency: 'Verwerk jou noodgeval waarskuwing en kontak 10111...',
+      voiceRecording: 'Stemopname',
+      recommended: 'Aanbeveel',
+      startRecording: 'Begin Opname',
+      stopRecording: 'Stop Opname',
+      maxRecordingTime: 'Maksimum opname tyd: 2 minute',
+      recordingComplete: 'Opname Voltooi',
+      play: 'Speel',
+      pause: 'Pouse',
+      sendEmergencyAlert: 'Stuur Noodgeval Waarskuwing',
+      emergencyAlertFailed: 'Kon nie noodgeval waarskuwing stuur nie. Bel asseblief 10111 direk vir onmiddellike hulp.',
+      callPoliceDirectly: 'Wil jy nou 10111 direk bel?',
+      callNow: 'Bel 10111 Nou',
+      microphoneAccessError: 'Kan nie mikrofoon toegang kry nie. Gaan asseblief toestemmings na en probeer weer.',
+      alerting: 'Stuur Waarskuwing...'
     }
   },
   
