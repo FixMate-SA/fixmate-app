@@ -111,24 +111,62 @@ def get_user_from_token(credentials: HTTPAuthorizationCredentials = Depends(secu
 
 # Authentication Endpoints
 
-@app.post("/api/auth/client/login", response_model=UserResponse)
-async def client_login(login_data: UserLogin, db: Session = Depends(get_db)):
-    """Client login endpoint"""
+def format_phone_number(phone: str) -> str:
+    """Format phone number to standard format"""
+    # Remove any whitespace and special characters except +
+    phone = phone.strip().replace(" ", "").replace("-", "")
+    
+    # Remove whatsapp: prefix if present
+    if phone.startswith("whatsapp:"):
+        phone = phone.replace("whatsapp:", "")
+    
+    # If it starts with 0, replace with +27
+    if phone.startswith("0"):
+        phone = "+27" + phone[1:]
+    
+    # If it starts with 27 but not +27, add +
+    elif phone.startswith("27") and not phone.startswith("+27"):
+        phone = "+" + phone
+    
+    return phone
+
+@app.post("/api/auth/login", response_model=UserResponse)
+async def unified_login(login_data: UserLogin, db: Session = Depends(get_db)):
+    """Unified login endpoint for all user types"""
     try:
-        user = db.query(User).filter(
-            User.phone == login_data.phone,
-            User.role == "client"
-        ).first()
+        # Format phone number
+        formatted_phone = format_phone_number(login_data.phone)
+        
+        # Try different phone number variations
+        phone_variations = [
+            formatted_phone,
+            login_data.phone,
+            f"whatsapp:{formatted_phone}",
+            f"whatsapp:{login_data.phone}"
+        ]
+        
+        user = None
+        for phone_var in phone_variations:
+            user = db.query(User).filter(User.phone == phone_var).first()
+            if user:
+                break
         
         if not user:
             return UserResponse(success=False, message="Invalid phone number or password")
         
-        # Simple password check (in production, use proper password hashing)
-        if login_data.password != "client123":
+        # Verify password against hash
+        if not user.password_hash or not pwd_context.verify(login_data.password, user.password_hash):
             return UserResponse(success=False, message="Invalid phone number or password")
         
-        # Generate simple token (in production, use JWT)
-        token = f"client_token_{user.id}"
+        # Get role information
+        role_info = role_service.determine_user_role(user.phone, db)
+        
+        # Generate token (simplified for demo - use proper JWT in production)
+        token = f"token_{user.id}"
+        
+        # Get display name and welcome message
+        display_name = role_service.get_display_name_with_role(user, role_info["role"])
+        welcome_message = role_service.get_welcome_message_with_role(user, role_info["role"])
         
         return UserResponse(
             success=True,
@@ -136,79 +174,78 @@ async def client_login(login_data: UserLogin, db: Session = Depends(get_db)):
             token=token,
             user={
                 "id": user.id,
-                "name": user.name or f"{user.first_name} {user.last_name}",
                 "phone": user.phone,
-                "role": user.role.value
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "role": role_info["role"],
+                "display_name": display_name,
+                "welcome_message": welcome_message,
+                "permissions": role_info["permissions"],
+                "is_fixer": role_info["is_fixer"],
+                "fixer_data": role_info.get("fixer_data")
             }
         )
     except Exception as e:
-        return UserResponse(success=False, message=str(e))
+        print(f"Login error: {str(e)}")
+        return UserResponse(success=False, message="Login failed")
+
+@app.get("/api/auth/role-check/{phone}")
+async def check_user_role(phone: str, db: Session = Depends(get_db)):
+    """Check user role by phone number (for debugging)"""
+    try:
+        formatted_phone = format_phone_number(phone)
+        
+        # Try different phone number variations
+        phone_variations = [
+            formatted_phone,
+            phone,
+            f"whatsapp:{formatted_phone}",
+            f"whatsapp:{phone}"
+        ]
+        
+        user = None
+        for phone_var in phone_variations:
+            user = db.query(User).filter(User.phone == phone_var).first()
+            if user:
+                break
+        
+        if user:
+            role_info = role_service.determine_user_role(user.phone, db)
+            return {
+                "success": True,
+                "phone": user.phone,
+                "role": role_info["role"],
+                "database_role": user.role.value if hasattr(user.role, 'value') else str(user.role),
+                "display_name": role_service.get_display_name_with_role(user, role_info["role"]),
+                "user_exists": True
+            }
+        else:
+            return {
+                "success": True,
+                "phone": phone,
+                "role": "client",  # Default role for new users
+                "database_role": None,
+                "display_name": "New User",
+                "user_exists": False
+            }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+# Legacy endpoints for backward compatibility
+@app.post("/api/auth/client/login", response_model=UserResponse)
+async def client_login(login_data: UserLogin, db: Session = Depends(get_db)):
+    """Client login endpoint (legacy - redirects to unified login)"""
+    return await unified_login(login_data, db)
 
 @app.post("/api/auth/fixer/login", response_model=UserResponse)
 async def fixer_login(login_data: UserLogin, db: Session = Depends(get_db)):
-    """Fixer login endpoint"""
-    try:
-        user = db.query(User).filter(
-            User.phone == login_data.phone,
-            User.role == "fixer"
-        ).first()
-        
-        if not user:
-            return UserResponse(success=False, message="Invalid phone number or password")
-        
-        # Simple password check (in production, use proper password hashing)
-        if login_data.password != "fixer123":
-            return UserResponse(success=False, message="Invalid phone number or password")
-        
-        # Generate simple token (in production, use JWT)
-        token = f"fixer_token_{user.id}"
-        
-        return UserResponse(
-            success=True,
-            message="Login successful",
-            token=token,
-            user={
-                "id": user.id,
-                "name": user.name or f"{user.first_name} {user.last_name}",
-                "phone": user.phone,
-                "role": user.role.value
-            }
-        )
-    except Exception as e:
-        return UserResponse(success=False, message=str(e))
+    """Fixer login endpoint (legacy - redirects to unified login)"""
+    return await unified_login(login_data, db)
 
 @app.post("/api/auth/admin/login", response_model=UserResponse)
 async def admin_login(login_data: UserLogin, db: Session = Depends(get_db)):
-    """Admin login endpoint"""
-    try:
-        user = db.query(User).filter(
-            User.phone == login_data.phone,
-            User.role == "admin"
-        ).first()
-        
-        if not user:
-            return UserResponse(success=False, message="Invalid phone number or password")
-        
-        # Simple password check (in production, use proper password hashing)
-        if login_data.password != "admin123":
-            return UserResponse(success=False, message="Invalid phone number or password")
-        
-        # Generate simple token (in production, use JWT)
-        token = f"admin_token_{user.id}"
-        
-        return UserResponse(
-            success=True,
-            message="Login successful",
-            token=token,
-            user={
-                "id": user.id,
-                "name": user.name or f"{user.first_name} {user.last_name}",
-                "phone": user.phone,
-                "role": user.role.value
-            }
-        )
-    except Exception as e:
-        return UserResponse(success=False, message=str(e))
+    """Admin login endpoint (legacy - redirects to unified login)"""
+    return await unified_login(login_data, db)
 
 # Emergency Services API Endpoints
 
