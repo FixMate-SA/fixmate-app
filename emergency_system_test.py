@@ -340,17 +340,18 @@ class EmergencySystemFinalTest:
         """Test database emergency alert creation and storage"""
         try:
             # Create an alert and verify it's stored
+            alert_data = {
+                "job_id": None,
+                "alert_type": "emergency",
+                "latitude": -25.7479,
+                "longitude": 28.2293,
+                "address": "Pretoria, South Africa",
+                "description": "Database storage verification test"
+            }
+            
             form_data = {
                 "user_id": f"{self.test_user_id}_db_test",
-                "user_name": "Database Test User",
-                "user_phone": "+27821234999",
-                "alert_type": "emergency",
-                "priority": "high",
-                "latitude": "-25.7479",
-                "longitude": "28.2293",
-                "address": "Pretoria, South Africa",
-                "description": "Database storage verification test",
-                "recording_duration": "0"
+                "alert": alert_data
             }
             
             response = requests.post(
