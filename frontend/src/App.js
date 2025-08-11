@@ -92,6 +92,8 @@ const ProtectedRoute = ({ children }) => {
 const DefaultRoute = () => {
   const { isAuthenticated, getUserRole, loading } = useAuth();
   
+  console.log('DefaultRoute: isAuthenticated =', isAuthenticated, 'loading =', loading);
+  
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -104,11 +106,13 @@ const DefaultRoute = () => {
   }
   
   if (!isAuthenticated) {
+    console.log('DefaultRoute: Not authenticated, redirecting to /client-login');
     return <Navigate to="/client-login" replace />;
   }
   
   // Role-based routing for authenticated users
   const userRole = getUserRole();
+  console.log('DefaultRoute: User role =', userRole);
   
   switch (userRole) {
     case 'admin':
