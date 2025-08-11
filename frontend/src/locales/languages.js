@@ -1948,7 +1948,30 @@ export const languages = {
       never: 'Ku nga ri na nkarhi',
       updateProfile: 'Antswa Profayili',
       user: 'Mutirhisi',
-      startUsingFixMate: 'Sungula ku tirhisa FixMate-SA ku vona nghingiriko wa wena laha'
+      startUsingFixMate: 'Sungula ku tirhisa FixMate-SA ku vona nghingiriko wa wena laha',
+      
+      // Emergency System - Xitsonga
+      emergencyButtonTitle: 'Swiphiqo - Kuma nphimbo hi ku hatlisa hi ku rekoda rito',
+      emergencyAlertSent: 'Xiyimeri xa Swiphiqo xi Rhumiwe!',
+      emergencyProcessing: 'Xiyimeri xa wena xa swiphiqo na ku rekoda rito swi tirha hi vukorhokeri bya swiphiqo bya FixMate. Hi vulavula na vukorhokeri bya 10111 hi vito ra wena.',
+      emergencyActive: 'Nhlamulo ya swiphiqo yi TIRHA',
+      stayOnLine: 'Hi kombela u tshama hi layinini naswona u hlayisa riqingho ra wena ri nga fikeleleki. Vukorhokeri bya swiphiqo byi nga ku vulavula hi ku kongoma.',
+      call10111: 'Fona 10111 hi Ku kongoma',
+      processingEmergency: 'Swi tirha xiyimeri xa wena xa swiphiqo na ku vulavula na 10111...',
+      voiceRecording: 'Ku Rekoda Rito',
+      recommended: 'Swi eleteriwile',
+      startRecording: 'Sungula ku Rekoda',
+      stopRecording: 'Yimisa ku Rekoda',
+      maxRecordingTime: 'Nkarhi wo tala wa ku rekoda: timinete ta 2',
+      recordingComplete: 'Ku Rekoda ku Hetile',
+      play: 'Cinca',
+      pause: 'Yimisa',
+      sendEmergencyAlert: 'Rhumela Xiyimeri xa Swiphiqo',
+      emergencyAlertFailed: 'Swi herile ku rhumela xiyimeri xa swiphiqo. Hi kombela u fona 10111 hi ku kongoma ku kuma nphimbo hi ku hatlisa.',
+      callPoliceDirectly: 'Xana u lava ku fona 10111 hi ku kongoma sweswi?',
+      callNow: 'Fona 10111 Sweswi',
+      microphoneAccessError: 'A swi koti ku fikelela maekrofoni. Hi kombela u kambela mpfumelelo naswona u ringeta nakambe.',
+      alerting: 'Swi rhumela Xiyimeri...'
     }
   }
 };
