@@ -239,7 +239,7 @@ function App() {
                 }
               />
               <Route
-                path="/business/compliance"
+                path="/client/business-compliance"
                 element={
                   <ProtectedRoute>
                     <ProfessionalLayout>
@@ -249,7 +249,7 @@ function App() {
                 }
               />
               <Route
-                path="/client/business/compliance"
+                path="/business/compliance"
                 element={
                   <ProtectedRoute>
                     <ProfessionalLayout>
