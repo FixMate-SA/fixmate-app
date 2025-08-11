@@ -28,11 +28,12 @@ const BusinessCompliance = () => {
     try {
       // Debug role detection
       console.log('🔍 DEBUG: User object:', user);
-      console.log('🔍 DEBUG: User role:', user?.role_info?.role);
+      console.log('🔍 DEBUG: RoleInfo object:', roleInfo);
+      console.log('🔍 DEBUG: User role from roleInfo:', roleInfo?.role);
       
       // Always use role-based categories for now (until backend API supports role-based categories)
       const getRoleBasedCategories = () => {
-        const userRole = user?.role_info?.role || 'client';
+        const userRole = roleInfo?.role || 'client'; // Use roleInfo instead of user.role_info
         console.log('🔍 DEBUG: Using role for categories:', userRole);
         
         if (userRole === 'fixer') {
