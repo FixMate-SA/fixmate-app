@@ -411,6 +411,74 @@ async def health_check():
         }
     }
 
+# Create test users endpoint (for development)
+@app.post("/api/setup/create-test-users")
+async def create_test_users(db: Session = Depends(get_db)):
+    """Create test users for development"""
+    try:
+        # Check if users already exist
+        existing_users = db.query(User).filter(User.phone.in_([
+            "0821234565", "0821234566", "0821234567"
+        ])).all()
+        
+        if len(existing_users) >= 3:
+            return {"success": True, "message": "Test users already exist"}
+        
+        # Create test users
+        test_users = [
+            {
+                "id": "client_test_001",
+                "phone": "0821234565", 
+                "name": "Test Client",
+                "first_name": "Test",
+                "last_name": "Client",
+                "role": "client",
+                "is_active": True
+            },
+            {
+                "id": "fixer_test_001",
+                "phone": "0821234566",
+                "name": "Test Fixer", 
+                "first_name": "Test",
+                "last_name": "Fixer",
+                "role": "fixer",
+                "is_active": True
+            },
+            {
+                "id": "admin_test_001",
+                "phone": "0821234567",
+                "name": "Test Admin",
+                "first_name": "Test", 
+                "last_name": "Admin",
+                "role": "admin",
+                "is_active": True
+            }
+        ]
+        
+        created_users = []
+        for user_data in test_users:
+            # Check if user exists
+            existing = db.query(User).filter(User.phone == user_data["phone"]).first()
+            if not existing:
+                user = User(**user_data)
+                db.add(user)
+                created_users.append(user_data["phone"])
+        
+        db.commit()
+        
+        return {
+            "success": True, 
+            "message": f"Created {len(created_users)} test users",
+            "users": [
+                {"phone": "0821234565", "password": "client123", "role": "client"},
+                {"phone": "0821234566", "password": "fixer123", "role": "fixer"},
+                {"phone": "0821234567", "password": "admin123", "role": "admin"}
+            ]
+        }
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "error": str(e)}
+
 # Existing endpoints (keeping for compatibility)
 @app.get("/api/test")
 async def test_endpoint():
