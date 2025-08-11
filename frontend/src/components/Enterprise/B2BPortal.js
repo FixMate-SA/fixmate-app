@@ -375,26 +375,13 @@ const B2BPortal = () => {
       {/* Tab Content */}
       <div>
         {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'bookings' && renderBulkBookings()}
+        {activeTab === 'bulk-bookings' && renderBulkBookings()}
         {activeTab === 'contracts' && renderContracts()}
-        {activeTab === 'analytics' && (
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h2 className="text-xl font-semibold mb-4">Analytics Dashboard</h2>
-            <p className="text-gray-600">Advanced analytics and reporting coming soon...</p>
-          </div>
-        )}
-        {activeTab === 'invoicing' && (
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h2 className="text-xl font-semibold mb-4">Invoicing & Billing</h2>
-            <p className="text-gray-600">Automated invoicing and billing management coming soon...</p>
-          </div>
-        )}
-        {activeTab === 'settings' && (
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h2 className="text-xl font-semibold mb-4">Enterprise Settings</h2>
-            <p className="text-gray-600">Account settings and configuration coming soon...</p>
-          </div>
-        )}
+        {activeTab === 'analytics' && renderAnalytics()}
+        {activeTab === 'team' && renderTeamManagement()}
+        {activeTab === 'locations' && renderLocationManagement()}
+        {activeTab === 'invoicing' && renderInvoicing()}
+        {activeTab === 'settings' && renderSettings()}
       </div>
     </div>
   );
