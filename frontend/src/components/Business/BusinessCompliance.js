@@ -127,7 +127,7 @@ const BusinessCompliance = () => {
       console.error('❌ Error fetching business compliance categories:', error);
       // Set fallback categories if API fails - role-based services
       const getRoleBasedCategories = () => {
-        const userRole = user?.role_info?.role || 'client';
+        const userRole = roleInfo?.role || 'client';
         
         if (userRole === 'fixer') {
           return {
