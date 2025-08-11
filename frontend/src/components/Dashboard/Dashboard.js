@@ -109,6 +109,13 @@ const Dashboard = () => {
               color: 'bg-orange-600 hover:bg-orange-700'
             },
             { 
+              title: t('businessSetup', 'Business Setup'), 
+              desc: t('businessSetupDesc', 'Professional licensing, business registration, compliance'), 
+              path: '/fixer/business-compliance', 
+              icon: '📋',
+              color: 'bg-green-600 hover:bg-green-700'
+            },
+            { 
               title: t('myPayments', 'My Payments'), 
               desc: t('trackEarningsPayments', 'Track earnings and payments'), 
               path: '/fixer/payment', 
