@@ -21,13 +21,7 @@ import shutil
 from database import get_db, engine
 from models import Base, User, Job, EmergencyAlert, WhatsAppStatistics, Announcement, AnnouncementChat
 from services.emergency_service import emergency_service
-from services.ai_service import ai_service
-from services.sms_service import sms_service
-from services.payment_service import payment_service
 from services.whatsapp_service import whatsapp_service
-from services.role_service import role_service
-from services.conversation_service import conversation_service
-from services.payfast_service import payfast_service
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
