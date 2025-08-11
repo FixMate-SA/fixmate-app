@@ -57,8 +57,22 @@
 ##   test_priority: "high_first"  # or "sequential" or "stuck_first"
 ##
 ## agent_communication:
-##     -agent: "main"  # or "testing" or "user"
-##     -message: "Communication message between agents"
+##     -agent: "main"
+##     -message: "Starting comprehensive functionality audit based on user request. User reports many features are placeholders and needs all features to work in real-time. Will systematically test authentication, dashboards, and all features to identify working vs placeholder functionality."
+##
+## test_plan:
+##   current_focus:
+##     - "Complete Authentication Flow Testing (Login/Signup/Password Reset)"
+##     - "Client Dashboard Real Functionality Audit"
+##     - "Fixer Dashboard Real Functionality Audit" 
+##     - "Admin Dashboard Real Functionality Audit"
+##     - "Job Workflow End-to-End Testing"
+##     - "Payment System Integration Testing"
+##     - "Mobile Responsiveness Enhancement"
+##   stuck_tasks:
+##     - "Any features identified as non-functional placeholders"
+##   test_all: true
+##   test_priority: "high_first"
 
 # Protocol Guidelines for Main agent
 #
