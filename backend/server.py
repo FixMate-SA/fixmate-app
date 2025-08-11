@@ -22,6 +22,8 @@ from database import get_db, engine
 from models import Base, User, Job, EmergencyAlert, WhatsAppStatistics, Announcement, AnnouncementChat
 from services.emergency_service import emergency_service
 from services.whatsapp_service import whatsapp_service
+from services.role_service import role_service
+from passlib.context import CryptContext
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
