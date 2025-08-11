@@ -99,7 +99,7 @@ class FixMateBackendAuditor:
             'is_placeholder': is_placeholder
         })
 
-    def make_request(self, method: str, endpoint: str, data: dict = None, headers: dict = None, role: str = None) -> requests.Response:
+    def make_request(self, method: str, endpoint: str, data: dict = None, headers: dict = None, role: str = None, use_form: bool = False) -> requests.Response:
         """Make HTTP request with optional authentication"""
         url = f"{self.base_url}{endpoint}"
         
@@ -112,14 +112,19 @@ class FixMateBackendAuditor:
         # Set default headers
         if not headers:
             headers = {}
-        headers['Content-Type'] = 'application/json'
+        
+        if not use_form:
+            headers['Content-Type'] = 'application/json'
         
         try:
             print(f"🔗 Making {method} request to: {url}")
             if method.upper() == 'GET':
                 response = requests.get(url, headers=headers, timeout=30)
             elif method.upper() == 'POST':
-                response = requests.post(url, json=data, headers=headers, timeout=30)
+                if use_form:
+                    response = requests.post(url, data=data, headers=headers, timeout=30)
+                else:
+                    response = requests.post(url, json=data, headers=headers, timeout=30)
             elif method.upper() == 'PUT':
                 response = requests.put(url, json=data, headers=headers, timeout=30)
             elif method.upper() == 'DELETE':
