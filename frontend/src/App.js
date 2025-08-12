@@ -660,8 +660,8 @@ function App() {
                 }
               />
 
-              {/* Explicit Root Route */}
-              <Route path="/" element={<DefaultRoute />} />
+              {/* Direct Root Route - Force redirect to client-login */}
+              <Route path="/" element={<Navigate to="/client-login" replace />} />
               
               {/* Default Route - catch all other paths */}
               <Route path="*" element={<DefaultRoute />} />
