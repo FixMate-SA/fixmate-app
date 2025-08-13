@@ -12,30 +12,34 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [lastUpdated, setLastUpdated] = useState(null);
   const navigate = useNavigate();
 
   const userRole = getUserRole();
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        console.log('Dashboard: Fetching data for user:', user);
-        const response = await apiService.getDashboard(user.id);
-        console.log('Dashboard: API response:', response);
-        setDashboardData(response.data);
-      } catch (err) {
-        console.error('Dashboard: Error fetching dashboard:', err);
-        console.error('Dashboard: Error details:', {
-          message: err.message,
-          response: err.response?.data,
-          status: err.response?.status
-        });
-        setError(`Failed to load dashboard data: ${err.response?.data?.detail || err.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchDashboardData = async (showLoading = true) => {
+    try {
+      if (showLoading) setLoading(true);
+      console.log('Dashboard: Fetching data for user:', user);
+      const response = await apiService.getDashboard(user.id);
+      console.log('Dashboard: API response:', response);
+      setDashboardData(response.data);
+      setLastUpdated(new Date());
+      setError(''); // Clear any previous errors
+    } catch (err) {
+      console.error('Dashboard: Error fetching dashboard:', err);
+      console.error('Dashboard: Error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
+      setError(`Failed to load dashboard data: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (user?.id) {
       console.log('Dashboard: User found, fetching data...');
       fetchDashboardData();
@@ -45,6 +49,37 @@ const Dashboard = () => {
       setError('User not found');
     }
   }, [user]);
+
+  // Auto-refresh dashboard data every 30 seconds
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const refreshInterval = setInterval(() => {
+      console.log('Dashboard: Auto-refreshing data...');
+      fetchDashboardData(false); // Don't show loading spinner for auto-refresh
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, [user?.id]);
+
+  // Refresh when user comes back to the tab (visibility change)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user?.id) {
+        console.log('Dashboard: Tab became visible, refreshing data...');
+        fetchDashboardData(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user?.id]);
+
+  // Manual refresh function
+  const handleRefresh = () => {
+    console.log('Dashboard: Manual refresh triggered');
+    fetchDashboardData(true);
+  };
 
   const getRoleBasedContent = () => {
     switch (userRole) {
