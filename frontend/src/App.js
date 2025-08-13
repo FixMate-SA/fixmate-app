@@ -440,11 +440,9 @@ function App() {
               <Route
                 path="/fixers"
                 element={
-                  <ProtectedRoute>
                     <ProfessionalLayout>
                       <FixerList />
                     </ProfessionalLayout>
-                  </ProtectedRoute>
                 }
               />
 
