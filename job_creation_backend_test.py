@@ -13,8 +13,8 @@ from typing import Dict, Any, Optional
 
 class JobCreationTester:
     def __init__(self):
-        # Get backend URL from frontend environment
-        self.backend_url = "https://ed9fdc4d-3fdd-4652-8a08-d8b82bafcbda.preview.emergentagent.com"
+        # Use local backend URL for testing
+        self.backend_url = "http://localhost:8001"
         self.api_base = f"{self.backend_url}/api"
         
         # Test configuration
