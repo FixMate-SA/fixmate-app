@@ -1101,6 +1101,130 @@ async def get_dashboard(user_id: str, db: Session = Depends(get_db)):
         print(f"Dashboard error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Business Compliance API Endpoints
+class ComplianceRequest(BaseModel):
+    category: str
+    description: str
+    urgency_level: str = "normal"
+    contact_preference: str = "whatsapp"
+
+class ComplianceResponse(BaseModel):
+    success: bool
+    message: str
+    request_id: Optional[str] = None
+    data: Optional[List[Dict[str, Any]]] = None
+
+@app.post("/api/compliance/request", response_model=ComplianceResponse)
+async def submit_compliance_request(request_data: ComplianceRequest, request: Request, db: Session = Depends(get_db)):
+    """Submit a new business compliance request"""
+    try:
+        # Extract user_id from Authorization header (simple token format)
+        # This assumes token format is "token_{user_id}" 
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Generate unique request ID
+        request_id = f"comp_{uuid.uuid4()}"
+        
+        # Insert compliance request using raw SQL
+        insert_query = text("""
+            INSERT INTO business_compliance_requests (
+                id, user_id, category, description, urgency_level, 
+                contact_preference, status, created_at, updated_at
+            ) VALUES (
+                :id, :user_id, :category, :description, :urgency_level,
+                :contact_preference, :status, :created_at, :updated_at
+            )
+        """)
+        
+        db.execute(insert_query, {
+            'id': request_id,
+            'user_id': user_id,
+            'category': request_data.category,
+            'description': request_data.description,
+            'urgency_level': request_data.urgency_level,
+            'contact_preference': request_data.contact_preference,
+            'status': 'pending',
+            'created_at': datetime.utcnow(),
+            'updated_at': datetime.utcnow()
+        })
+        
+        db.commit()
+        
+        return ComplianceResponse(
+            success=True,
+            message="Compliance request submitted successfully",
+            request_id=request_id
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Compliance request submission error: {str(e)}")
+        return ComplianceResponse(
+            success=False,
+            message="Failed to submit compliance request"
+        )
+
+@app.get("/api/compliance/requests", response_model=ComplianceResponse)
+async def get_user_compliance_requests(request: Request, db: Session = Depends(get_db)):
+    """Get all compliance requests for the authenticated user"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Fetch user's compliance requests
+        query = text("""
+            SELECT id, category, description, urgency_level, contact_preference,
+                   status, admin_notes, estimated_cost, estimated_completion,
+                   created_at, updated_at
+            FROM business_compliance_requests 
+            WHERE user_id = :user_id 
+            ORDER BY created_at DESC
+        """)
+        
+        result = db.execute(query, {'user_id': user_id}).fetchall()
+        
+        requests_data = []
+        for row in result:
+            requests_data.append({
+                "id": row[0],
+                "category": row[1],
+                "description": row[2],
+                "urgency_level": row[3],
+                "contact_preference": row[4],
+                "status": row[5],
+                "admin_notes": row[6],
+                "estimated_cost": float(row[7]) if row[7] else None,
+                "estimated_completion": row[8].isoformat() if row[8] else None,
+                "created_at": row[9].isoformat() if row[9] else None,
+                "updated_at": row[10].isoformat() if row[10] else None
+            })
+        
+        return ComplianceResponse(
+            success=True,
+            message=f"Found {len(requests_data)} compliance requests",
+            data=requests_data
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Get compliance requests error: {str(e)}")
+        return ComplianceResponse(
+            success=False,
+            message="Failed to fetch compliance requests",
+            data=[]
+        )
+
 # Existing endpoints (keeping for compatibility)
 @app.get("/api/test")
 async def test_endpoint():
