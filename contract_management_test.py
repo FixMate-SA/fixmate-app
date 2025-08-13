@@ -48,7 +48,7 @@ class ContractManagementTester:
             response = requests.post(f"{BACKEND_URL}/auth/login", json={
                 "phone": TEST_CLIENT_PHONE,
                 "password": TEST_CLIENT_PASSWORD
-            }, timeout=30)
+            }, timeout=30, headers={"Content-Type": "application/json"})
             
             if response.status_code == 200:
                 data = response.json()
