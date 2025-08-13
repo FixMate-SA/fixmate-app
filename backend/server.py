@@ -663,6 +663,82 @@ class JobResponse(BaseModel):
     job_id: Optional[str] = None
     job: Optional[Dict[str, Any]] = None
 
+# Notification Functions
+async def create_fixer_notification(fixer_id: str, job_id: str, job_data: JobCreate, db: Session):
+    """Create notification for assigned fixer"""
+    try:
+        # Create notifications table if it doesn't exist
+        create_table_query = text("""
+            CREATE TABLE IF NOT EXISTS fixer_notifications (
+                id VARCHAR PRIMARY KEY,
+                fixer_id VARCHAR NOT NULL,
+                job_id VARCHAR NOT NULL,
+                notification_type VARCHAR DEFAULT 'job_assigned',
+                title VARCHAR NOT NULL,
+                message TEXT NOT NULL,
+                is_read BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        db.execute(create_table_query)
+        
+        # Insert notification
+        notification_id = f"notif_{uuid.uuid4()}"
+        insert_query = text("""
+            INSERT INTO fixer_notifications (
+                id, fixer_id, job_id, notification_type, title, message, created_at
+            ) VALUES (
+                :id, :fixer_id, :job_id, :notification_type, :title, :message, :created_at
+            )
+        """)
+        
+        db.execute(insert_query, {
+            'id': notification_id,
+            'fixer_id': fixer_id,
+            'job_id': job_id,
+            'notification_type': 'job_assigned',
+            'title': f'New Job Assigned: {job_data.category}',
+            'message': f'You have been assigned a new {job_data.category} job in {job_data.location}. Description: {job_data.description[:100]}...',
+            'created_at': datetime.utcnow()
+        })
+        
+        print(f"📧 Created assignment notification for fixer {fixer_id}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Failed to create fixer notification: {str(e)}")
+        return False
+
+async def create_available_job_notification(fixer_id: str, job_id: str, job_data: JobCreate, db: Session):
+    """Create notification for available job to qualified fixers"""
+    try:
+        # Insert notification
+        notification_id = f"notif_{uuid.uuid4()}"
+        insert_query = text("""
+            INSERT INTO fixer_notifications (
+                id, fixer_id, job_id, notification_type, title, message, created_at
+            ) VALUES (
+                :id, :fixer_id, :job_id, :notification_type, :title, :message, :created_at
+            )
+        """)
+        
+        db.execute(insert_query, {
+            'id': notification_id,
+            'fixer_id': fixer_id,
+            'job_id': job_id,
+            'notification_type': 'job_available',
+            'title': f'New Job Available: {job_data.category}',
+            'message': f'A new {job_data.category} job is available in {job_data.location}. You can apply if interested. Description: {job_data.description[:100]}...',
+            'created_at': datetime.utcnow()
+        })
+        
+        print(f"📧 Created availability notification for fixer {fixer_id}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Failed to create availability notification: {str(e)}")
+        return False
+
 # Automatic Job Allocation System
 async def allocate_job_to_fixers(job_id: str, job_data: JobCreate, db: Session):
     """
