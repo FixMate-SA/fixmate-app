@@ -3468,7 +3468,7 @@ async def get_fixer_available_jobs(request: Request, db: Session = Depends(get_d
         jobs_query = text("""
             SELECT DISTINCT j.id, j.service, j.description, j.location, j.estimated_price, 
                    j.priority_level, j.status, j.created_at, j.user_id as client_id,
-                   u.name as client_name
+                   CONCAT(u.first_name, ' ', u.last_name) as client_name
             FROM jobs j
             LEFT JOIN users u ON j.user_id = u.id
             LEFT JOIN fixer_notifications fn ON j.id = fn.job_id AND fn.fixer_id = :fixer_id
