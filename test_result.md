@@ -4442,19 +4442,20 @@ agent_communication:
 
 test_plan:
   current_focus:
+    - "User Data Isolation - Critical Security Testing"
+    - "Authentication System - Token Validation"
+    - "Job Management API - Data Isolation"
+    - "Dashboard API - Data Isolation"
     - "Enterprise Contract Management API Testing (COMPLETED)"
     - "Enterprise Portal Backend API Testing (COMPLETED)"
     - "Enterprise Portal Frontend Integration Testing (COMPLETED)"
-    - "Complete Authentication Flow Testing (Login/Signup/Password Reset)"
-    - "Client Dashboard Real Functionality Audit"
-    - "Fixer Dashboard Real Functionality Audit" 
-    - "Admin Dashboard Real Functionality Audit"
-    - "Job Workflow End-to-End Testing"
-    - "Payment System Integration Testing"
-    - "Mobile Responsiveness Enhancement"
   stuck_tasks:
+    - "User Data Isolation - Critical Security Testing"
+    - "Authentication System - Token Validation"
+    - "Job Management API - Data Isolation"
+    - "Dashboard API - Data Isolation"
     - "Missing Enterprise Invoice Detail Endpoint - GET /api/enterprise/invoice/{invoice_id}"
     - "Missing Enterprise Location Delete Endpoint - DELETE /api/enterprise/locations/{location_id}"
   test_all: true
-  test_priority: "high_first"
+  test_priority: "critical_first"
 
