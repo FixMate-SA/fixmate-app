@@ -30,6 +30,7 @@ import Profile from "./components/Profile/Profile";
 
 // Admin Components  
 import AdminDashboard from "./components/Admin/AdminDashboard";
+import AdminLearningAnalytics from "./components/Admin/AdminLearningAnalytics";
 import SmartMatchingDashboard from "./components/Admin/SmartMatchingDashboard";
 import AdminPhotoVerificationDashboard from "./components/Admin/AdminPhotoVerificationDashboard";
 
