@@ -244,11 +244,11 @@ const JobList = () => {
                     </div>
                   )}
 
-                  {(job.budget_min || job.budget_max) && (
+                  {job.estimated_price && (
                     <div>
                       <span className="font-medium">{t('budget')}:</span>
                       <span className="ml-1">
-                        R{job.budget_min || 0} - R{job.budget_max || 0}
+                        R{job.estimated_price}
                       </span>
                     </div>
                   )}
