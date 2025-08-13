@@ -362,7 +362,167 @@ const LearningPlatform = () => {
       setCourses(realFreeCourses);
       setLoading(false);
     }, 1000);
-  }, []);
+    
+    // Fetch user progress if logged in
+    if (user?.id) {
+      fetchUserProgress();
+    }
+  }, [user?.id]);
+
+  // Fetch user's learning progress
+  const fetchUserProgress = async () => {
+    try {
+      setProgressLoading(true);
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/learning/progress`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setUserProgress(data.progress || []);
+          setUserCertificates(data.certificates || []);
+          setUserAnalytics(data.analytics || {});
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user progress:', error);
+    } finally {
+      setProgressLoading(false);
+    }
+  };
+
+  // Start tracking a course
+  const startCourse = async (course) => {
+    if (!user?.id) {
+      alert('Please log in to track your learning progress');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/learning/progress`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          course_id: course.id,
+          course_title: course.title,
+          course_platform: course.platform,
+          progress_percentage: 0,
+          time_spent_minutes: 0,
+          status: 'started'
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          alert('🎉 Course started! Your progress is now being tracked.');
+          fetchUserProgress(); // Refresh progress
+          // Open the course in new tab
+          window.open(course.course_url, '_blank');
+        }
+      }
+    } catch (error) {
+      console.error('Error starting course:', error);
+      alert('Failed to start course tracking. Please try again.');
+    }
+  };
+
+  // Update course progress
+  const updateProgress = async () => {
+    if (!selectedCourse) return;
+
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/learning/progress`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          course_id: selectedCourse.id,
+          course_title: selectedCourse.title,
+          course_platform: selectedCourse.platform,
+          progress_percentage: progressForm.progress_percentage,
+          time_spent_minutes: progressForm.time_spent_minutes,
+          status: progressForm.status,
+          notes: progressForm.notes
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          alert('✅ Progress updated successfully!');
+          setShowProgressModal(false);
+          fetchUserProgress(); // Refresh progress
+          
+          // Reset form
+          setProgressForm({
+            progress_percentage: 0,
+            time_spent_minutes: 0,
+            status: 'started',
+            notes: ''
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error updating progress:', error);
+      alert('Failed to update progress. Please try again.');
+    }
+  };
+
+  // Add certificate
+  const addCertificate = async (course, certificateUrl = '') => {
+    if (!user?.id) {
+      alert('Please log in to add certificates');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/learning/certificate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          course_id: course.id,
+          course_title: course.title,
+          course_platform: course.platform,
+          certificate_type: course.certificate_type,
+          certificate_url: certificateUrl,
+          completion_date: new Date().toISOString()
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          alert('🎓 Congratulations! Certificate added successfully!');
+          fetchUserProgress(); // Refresh progress
+        }
+      }
+    } catch (error) {
+      console.error('Error adding certificate:', error);
+      alert('Failed to add certificate. Please try again.');
+    }
+  };
+
+  // Get user's progress for a specific course
+  const getCourseProgress = (courseId) => {
+    return userProgress.find(p => p.course_id === courseId);
+  };
+
+  // Check if user has certificate for course
+  const hasCertificate = (courseId) => {
+    return userCertificates.some(c => c.course_id === courseId);
+  };
 
   const filteredCourses = courses.filter(course => {
     const categoryMatch = selectedCategory === 'all' || course.category === selectedCategory;
