@@ -850,6 +850,9 @@ async def create_job(job_data: JobCreate, db: Session = Depends(get_db)):
         # Automatic Job Allocation System
         await allocate_job_to_fixers(job_id, job_data, db)
         
+        # Commit the allocation changes
+        db.commit()
+        
         return JobResponse(
             success=True,
             message="Job created successfully and assigned to available fixers",
