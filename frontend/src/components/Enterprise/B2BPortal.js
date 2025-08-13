@@ -799,33 +799,193 @@ const B2BPortal = () => {
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Service Contracts</h2>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+          <button 
+            onClick={() => setShowContractModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          >
             New Contract
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {enterpriseData.contracts.map((contract) => (
-            <div key={contract.id} className="border rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold">{contract.name}</h3>
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  contract.status === 'active' ? 'bg-green-100 text-green-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {contract.status}
-                </span>
+        {enterpriseData.contracts.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {enterpriseData.contracts.map((contract) => (
+              <div key={contract.id} className="border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold">{contract.name}</h3>
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    contract.status === 'active' ? 'bg-green-100 text-green-800' :
+                    contract.status === 'expired' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {contract.status}
+                  </span>
+                </div>
+                <p className="text-gray-600 mb-2">{contract.description}</p>
+                <p className="text-gray-600 mb-2">Value: {formatCurrency(contract.value)}</p>
+                <p className="text-sm text-gray-500">Service: {contract.service_type}</p>
+                <p className="text-sm text-gray-500">
+                  Duration: {contract.duration_months} months
+                </p>
+                <p className="text-sm text-gray-500">
+                  Period: {new Date(contract.start_date).toLocaleDateString()} - {new Date(contract.end_date).toLocaleDateString()}
+                </p>
+                {contract.auto_renewal && (
+                  <p className="text-sm text-green-600">Auto-renewal enabled</p>
+                )}
+                <div className="mt-4 flex space-x-2">
+                  <button className="text-blue-600 hover:text-blue-800 text-sm">View Details</button>
+                  <button 
+                    onClick={() => handleRenewContract(contract.id)}
+                    className="text-green-600 hover:text-green-800 text-sm"
+                  >
+                    Renew
+                  </button>
+                  <button
+                    onClick={() => handleRemoveContract(contract.id)}
+                    className="text-red-600 hover:text-red-800 text-sm"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
-              <p className="text-gray-600 mb-2">Value: {formatCurrency(contract.value)}</p>
-              <p className="text-sm text-gray-500">Renewal: {contract.renewal}</p>
-              <div className="mt-4 flex space-x-2">
-                <button className="text-blue-600 hover:text-blue-800 text-sm">View Details</button>
-                <button className="text-green-600 hover:text-green-800 text-sm">Renew</button>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p>No contracts created yet. Add your first contract to manage enterprise services!</p>
+            <button 
+              onClick={() => setShowContractModal(true)}
+              className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            >
+              Create First Contract
+            </button>
+          </div>
+        )}
+      </div>
+      
+      {/* Contract Modal */}
+      {showContractModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-semibold mb-4">New Contract</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Contract Name</label>
+                <input
+                  type="text"
+                  value={newContract.name}
+                  onChange={(e) => setNewContract({...newContract, name: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="Annual Maintenance Contract"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Description</label>
+                <textarea
+                  value={newContract.description}
+                  onChange={(e) => setNewContract({...newContract, description: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                  rows="3"
+                  placeholder="Comprehensive facility management services..."
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Service Type</label>
+                <select
+                  value={newContract.service_type}
+                  onChange={(e) => setNewContract({...newContract, service_type: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="">Select Service Type</option>
+                  <option value="Property Management">Property Management</option>
+                  <option value="Office Maintenance">Office Maintenance</option>
+                  <option value="Retail Support">Retail Support</option>
+                  <option value="Hospitality Services">Hospitality Services</option>
+                  <option value="IT Support">IT Support</option>
+                  <option value="Security Services">Security Services</option>
+                  <option value="Cleaning Services">Cleaning Services</option>
+                </select>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Contract Value (R)</label>
+                  <input
+                    type="number"
+                    value={newContract.contract_value}
+                    onChange={(e) => setNewContract({...newContract, contract_value: e.target.value})}
+                    className="w-full p-2 border rounded-md"
+                    placeholder="50000"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Duration (Months)</label>
+                  <input
+                    type="number"
+                    value={newContract.duration_months}
+                    onChange={(e) => setNewContract({...newContract, duration_months: parseInt(e.target.value)})}
+                    className="w-full p-2 border rounded-md"
+                    placeholder="12"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Start Date</label>
+                <input
+                  type="date"
+                  value={newContract.start_date}
+                  onChange={(e) => setNewContract({...newContract, start_date: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                />
+              </div>
+              
+              <div>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={newContract.auto_renewal}
+                    onChange={(e) => setNewContract({...newContract, auto_renewal: e.target.checked})}
+                    className="mr-2"
+                  />
+                  <span className="text-sm">Enable automatic renewal</span>
+                </label>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Terms & Conditions (Optional)</label>
+                <textarea
+                  value={newContract.terms}
+                  onChange={(e) => setNewContract({...newContract, terms: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                  rows="3"
+                  placeholder="Additional terms and conditions..."
+                />
               </div>
             </div>
-          ))}
+            
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={handleAddContract}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+              >
+                Create Contract
+              </button>
+              <button
+                onClick={() => setShowContractModal(false)}
+                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 
