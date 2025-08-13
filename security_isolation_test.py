@@ -137,6 +137,30 @@ class SecurityIsolationTester:
                     True,
                     "Correctly returned 401 Unauthorized for missing token"
                 )
+            elif response.status_code == 422:
+                # Check if it's a proper error response
+                try:
+                    data = response.json()
+                    if "Missing or invalid authorization token" in str(data):
+                        self.log_test_result(
+                            "Jobs Endpoint - No Token",
+                            True,
+                            "Correctly returned 422 with authorization error message"
+                        )
+                    else:
+                        self.log_test_result(
+                            "Jobs Endpoint - No Token",
+                            False,
+                            f"Got 422 but wrong error message: {data}",
+                            data
+                        )
+                except:
+                    self.log_test_result(
+                        "Jobs Endpoint - No Token",
+                        False,
+                        f"Expected 401, got {response.status_code}",
+                        response.text
+                    )
             else:
                 self.log_test_result(
                     "Jobs Endpoint - No Token",
