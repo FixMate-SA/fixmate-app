@@ -4610,13 +4610,13 @@ agent_communication:
 
 test_plan:
   current_focus:
-    - "Learning Platform - User Progress Tracking"
-    - "Admin Learning Analytics Dashboard"
-    - "Learning System User Data Isolation"
-    - "Learning System Mobile Responsiveness"
+    - "Automatic Job Allocation System - Backend Testing"
+    - "Fixer Available Jobs API Endpoint - GET /api/fixer/available-jobs"
+    - "Fixer Notifications API Endpoint - GET /api/fixer/notifications"
+    - "Job Assignment Workflow End-to-End Testing"
   stuck_tasks:
     - "Missing Enterprise Invoice Detail Endpoint - GET /api/enterprise/invoice/{invoice_id}"
     - "Missing Enterprise Location Delete Endpoint - DELETE /api/enterprise/locations/{location_id}"
-  test_all: true
-  test_priority: "critical_first"
+  test_all: false
+  test_priority: "backend_job_allocation_critical"
 
