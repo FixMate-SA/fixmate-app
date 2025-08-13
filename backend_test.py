@@ -400,6 +400,9 @@ def main():
     print("📋 STEP 3: USER 1 (CLIENT) LEARNING PROGRESS TESTING")
     print("-" * 40)
     
+    # First, get learning progress to trigger table creation
+    client_learning_data_initial = test_get_learning_progress(client_token, client_id, "client")
+    
     # Create learning progress for google-digital-marketing course
     client_course_data = {
         "course_id": "google-digital-marketing",
@@ -436,7 +439,7 @@ def main():
     
     test_add_certificate(client_token, client_id, "client", client_cert_data)
     
-    # Get client's learning progress
+    # Get client's learning progress again
     client_learning_data = test_get_learning_progress(client_token, client_id, "client")
     
     print()
