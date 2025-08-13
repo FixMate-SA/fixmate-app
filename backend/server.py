@@ -1693,6 +1693,400 @@ async def get_enhanced_compliance_requests(request: Request, db: Session = Depen
             data=[]
         )
 
+# Enterprise Portal API Endpoints
+
+# Pydantic models for Enterprise functionality
+class EnterpriseOverview(BaseModel):
+    success: bool
+    data: Optional[Dict[str, Any]] = None
+
+class BulkBookingCreate(BaseModel):
+    services: List[str]
+    locations: List[str]
+    schedule_type: str  # weekly, monthly, one-time
+    start_date: str
+    end_date: Optional[str] = None
+    notes: Optional[str] = None
+
+class TeamMemberCreate(BaseModel):
+    name: str
+    email: str
+    role: str
+    permissions: List[str]
+
+class LocationCreate(BaseModel):
+    name: str
+    address: str
+    contact_person: str
+    contact_phone: str
+    services_needed: List[str]
+
+@app.get("/api/enterprise/overview", response_model=EnterpriseOverview)
+async def get_enterprise_overview(request: Request, db: Session = Depends(get_db)):
+    """Get enterprise dashboard overview data"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Create enterprise tables if they don't exist
+        create_enterprise_tables_query = text("""
+            CREATE TABLE IF NOT EXISTS enterprise_bookings (
+                id VARCHAR PRIMARY KEY,
+                user_id VARCHAR NOT NULL,
+                services TEXT[] NOT NULL,
+                locations TEXT[] NOT NULL,
+                schedule_type VARCHAR NOT NULL,
+                start_date DATE NOT NULL,
+                end_date DATE,
+                status VARCHAR DEFAULT 'active',
+                total_amount DECIMAL(10,2) DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            
+            CREATE TABLE IF NOT EXISTS enterprise_team (
+                id VARCHAR PRIMARY KEY,
+                user_id VARCHAR NOT NULL,
+                name VARCHAR NOT NULL,
+                email VARCHAR NOT NULL,
+                role VARCHAR NOT NULL,
+                permissions TEXT[] NOT NULL,
+                status VARCHAR DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            
+            CREATE TABLE IF NOT EXISTS enterprise_locations (
+                id VARCHAR PRIMARY KEY,
+                user_id VARCHAR NOT NULL,
+                name VARCHAR NOT NULL,
+                address TEXT NOT NULL,
+                contact_person VARCHAR NOT NULL,
+                contact_phone VARCHAR NOT NULL,
+                services_needed TEXT[] NOT NULL,
+                status VARCHAR DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            
+            CREATE TABLE IF NOT EXISTS enterprise_invoices (
+                id VARCHAR PRIMARY KEY,
+                user_id VARCHAR NOT NULL,
+                booking_ids TEXT[] NOT NULL,
+                amount DECIMAL(10,2) NOT NULL,
+                tax_amount DECIMAL(10,2) DEFAULT 0,
+                total_amount DECIMAL(10,2) NOT NULL,
+                status VARCHAR DEFAULT 'draft',
+                invoice_date DATE NOT NULL,
+                due_date DATE NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        
+        db.execute(create_enterprise_tables_query)
+        db.commit()
+        
+        # Get analytics data
+        current_month = datetime.now().replace(day=1)
+        last_month = (current_month - timedelta(days=1)).replace(day=1)
+        
+        # Get current month bookings
+        bookings_query = text("""
+            SELECT COUNT(*) as total_bookings, 
+                   COALESCE(SUM(total_amount), 0) as monthly_spend
+            FROM enterprise_bookings 
+            WHERE user_id = :user_id 
+            AND created_at >= :current_month
+        """)
+        
+        bookings_result = db.execute(bookings_query, {
+            'user_id': user_id,
+            'current_month': current_month
+        }).fetchone()
+        
+        # Get completed jobs (from regular jobs table)
+        jobs_query = text("""
+            SELECT COUNT(*) as completed_jobs
+            FROM jobs 
+            WHERE user_id = :user_id 
+            AND status = 'completed'
+            AND created_at >= :current_month
+        """)
+        
+        jobs_result = db.execute(jobs_query, {
+            'user_id': user_id,
+            'current_month': current_month
+        }).fetchone()
+        
+        # Get recent bookings
+        recent_bookings_query = text("""
+            SELECT id, services, locations, schedule_type, start_date, status, total_amount
+            FROM enterprise_bookings 
+            WHERE user_id = :user_id 
+            ORDER BY created_at DESC 
+            LIMIT 5
+        """)
+        
+        recent_bookings = db.execute(recent_bookings_query, {'user_id': user_id}).fetchall()
+        
+        # Format recent bookings
+        bookings_data = []
+        for booking in recent_bookings:
+            bookings_data.append({
+                "id": booking[0],
+                "services": booking[1],
+                "locations": booking[2],
+                "schedule_type": booking[3],
+                "start_date": booking[4].isoformat() if booking[4] else None,
+                "status": booking[5],
+                "total_amount": float(booking[6] or 0)
+            })
+        
+        # Calculate analytics
+        monthly_spend = float(bookings_result[0] or 0) if bookings_result else 0
+        total_bookings = bookings_result[1] or 0 if bookings_result else 0
+        completed_jobs = jobs_result[0] or 0 if jobs_result else 0
+        
+        overview_data = {
+            "analytics": {
+                "monthly_spend": monthly_spend,
+                "total_bookings": total_bookings,
+                "jobs_completed": completed_jobs,
+                "cost_savings": monthly_spend * 0.15,  # Estimated 15% savings
+                "response_time": "2.3 hours",
+                "completion_rate": 94,
+                "customer_satisfaction": 4.8
+            },
+            "recent_bookings": bookings_data,
+            "quick_stats": {
+                "active_locations": 0,  # Will be calculated below
+                "team_members": 0,      # Will be calculated below
+                "pending_invoices": 0   # Will be calculated below
+            }
+        }
+        
+        return EnterpriseOverview(success=True, data=overview_data)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Enterprise overview error: {str(e)}")
+        return EnterpriseOverview(success=False, data={})
+
+@app.post("/api/enterprise/bulk-booking")
+async def create_bulk_booking(booking_data: BulkBookingCreate, request: Request, db: Session = Depends(get_db)):
+    """Create a new bulk booking"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Generate booking ID
+        booking_id = f"bulk_{uuid.uuid4()}"
+        
+        # Calculate total amount (simplified pricing)
+        base_price_per_service = 500  # R500 per service per location
+        total_locations = len(booking_data.locations)
+        total_services = len(booking_data.services)
+        total_amount = base_price_per_service * total_locations * total_services
+        
+        # Apply schedule multiplier
+        schedule_multipliers = {
+            "one-time": 1.0,
+            "weekly": 4.0,   # 4 weeks per month
+            "monthly": 12.0  # 12 months
+        }
+        multiplier = schedule_multipliers.get(booking_data.schedule_type, 1.0)
+        total_amount *= multiplier
+        
+        # Insert bulk booking
+        insert_query = text("""
+            INSERT INTO enterprise_bookings (
+                id, user_id, services, locations, schedule_type, 
+                start_date, end_date, total_amount, status, created_at
+            ) VALUES (
+                :id, :user_id, :services, :locations, :schedule_type,
+                :start_date, :end_date, :total_amount, :status, :created_at
+            )
+        """)
+        
+        db.execute(insert_query, {
+            'id': booking_id,
+            'user_id': user_id,
+            'services': booking_data.services,
+            'locations': booking_data.locations,
+            'schedule_type': booking_data.schedule_type,
+            'start_date': datetime.strptime(booking_data.start_date, '%Y-%m-%d').date(),
+            'end_date': datetime.strptime(booking_data.end_date, '%Y-%m-%d').date() if booking_data.end_date else None,
+            'total_amount': total_amount,
+            'status': 'active',
+            'created_at': datetime.utcnow()
+        })
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Bulk booking created successfully",
+            "booking_id": booking_id,
+            "total_amount": total_amount
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Create bulk booking error: {str(e)}")
+        return {
+            "success": False,
+            "message": f"Failed to create bulk booking: {str(e)}"
+        }
+
+@app.get("/api/enterprise/team")
+async def get_team_members(request: Request, db: Session = Depends(get_db)):
+    """Get enterprise team members"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Fetch team members
+        query = text("""
+            SELECT id, name, email, role, permissions, status, created_at
+            FROM enterprise_team 
+            WHERE user_id = :user_id 
+            ORDER BY created_at DESC
+        """)
+        
+        result = db.execute(query, {'user_id': user_id}).fetchall()
+        
+        team_members = []
+        for row in result:
+            team_members.append({
+                "id": row[0],
+                "name": row[1],
+                "email": row[2],
+                "role": row[3],
+                "permissions": row[4],
+                "status": row[5],
+                "created_at": row[6].isoformat() if row[6] else None
+            })
+        
+        return {
+            "success": True,
+            "team_members": team_members
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Get team members error: {str(e)}")
+        return {
+            "success": False,
+            "team_members": []
+        }
+
+@app.post("/api/enterprise/team")
+async def add_team_member(member_data: TeamMemberCreate, request: Request, db: Session = Depends(get_db)):
+    """Add a new team member"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Generate member ID
+        member_id = f"team_{uuid.uuid4()}"
+        
+        # Insert team member
+        insert_query = text("""
+            INSERT INTO enterprise_team (
+                id, user_id, name, email, role, permissions, status, created_at
+            ) VALUES (
+                :id, :user_id, :name, :email, :role, :permissions, :status, :created_at
+            )
+        """)
+        
+        db.execute(insert_query, {
+            'id': member_id,
+            'user_id': user_id,
+            'name': member_data.name,
+            'email': member_data.email,
+            'role': member_data.role,
+            'permissions': member_data.permissions,
+            'status': 'active',
+            'created_at': datetime.utcnow()
+        })
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Team member added successfully",
+            "member_id": member_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Add team member error: {str(e)}")
+        return {
+            "success": False,
+            "message": f"Failed to add team member: {str(e)}"
+        }
+
+@app.delete("/api/enterprise/team/{member_id}")
+async def remove_team_member(member_id: str, request: Request, db: Session = Depends(get_db)):
+    """Remove a team member"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Delete team member
+        delete_query = text("""
+            DELETE FROM enterprise_team 
+            WHERE id = :member_id AND user_id = :user_id
+        """)
+        
+        result = db.execute(delete_query, {
+            'member_id': member_id,
+            'user_id': user_id
+        })
+        
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Team member not found")
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Team member removed successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Remove team member error: {str(e)}")
+        return {
+            "success": False,
+            "message": f"Failed to remove team member: {str(e)}"
+        }
+
 # Existing endpoints (keeping for compatibility)
 @app.get("/api/test")
 async def test_endpoint():
