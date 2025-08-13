@@ -17,6 +17,8 @@ from dateutil.relativedelta import relativedelta
 from pathlib import Path
 import tempfile
 import shutil
+import openai
+import requests
 
 # Import services and models
 from database import get_db, engine
