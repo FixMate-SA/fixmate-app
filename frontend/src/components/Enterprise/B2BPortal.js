@@ -1000,7 +1000,10 @@ const B2BPortal = () => {
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Enterprise Invoicing & Billing</h2>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+          <button 
+            onClick={handleGenerateInvoice}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          >
             Generate Invoice
           </button>
         </div>
@@ -1009,48 +1012,86 @@ const B2BPortal = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="p-4 bg-blue-50 rounded-lg">
             <h3 className="text-sm font-medium text-blue-600">Outstanding</h3>
-            <p className="text-2xl font-bold text-blue-700">R18,450</p>
-            <p className="text-sm text-blue-500">3 invoices pending</p>
+            <p className="text-2xl font-bold text-blue-700">
+              R{formatCurrency(
+                enterpriseData.invoices
+                  .filter(inv => inv.status === 'pending' || inv.status === 'overdue')
+                  .reduce((sum, inv) => sum + inv.amount, 0)
+              )}
+            </p>
+            <p className="text-sm text-blue-500">
+              {enterpriseData.invoices.filter(inv => inv.status === 'pending' || inv.status === 'overdue').length} invoices pending
+            </p>
           </div>
           <div className="p-4 bg-green-50 rounded-lg">
             <h3 className="text-sm font-medium text-green-600">Paid This Month</h3>
-            <p className="text-2xl font-bold text-green-700">R67,890</p>
-            <p className="text-sm text-green-500">12 invoices paid</p>
+            <p className="text-2xl font-bold text-green-700">
+              R{formatCurrency(
+                enterpriseData.invoices
+                  .filter(inv => inv.status === 'paid')
+                  .reduce((sum, inv) => sum + inv.amount, 0)
+              )}
+            </p>
+            <p className="text-sm text-green-500">
+              {enterpriseData.invoices.filter(inv => inv.status === 'paid').length} invoices paid
+            </p>
           </div>
           <div className="p-4 bg-purple-50 rounded-lg">
-            <h3 className="text-sm font-medium text-purple-600">Next Billing</h3>
-            <p className="text-2xl font-bold text-purple-700">R23,200</p>
-            <p className="text-sm text-purple-500">Due in 5 days</p>
+            <h3 className="text-sm font-medium text-purple-600">Total Invoices</h3>
+            <p className="text-2xl font-bold text-purple-700">{enterpriseData.invoices.length}</p>
+            <p className="text-sm text-purple-500">
+              R{formatCurrency(
+                enterpriseData.invoices.reduce((sum, inv) => sum + inv.amount, 0)
+              )} total value
+            </p>
           </div>
         </div>
 
         {/* Recent invoices */}
         <div>
           <h3 className="font-medium mb-3">Recent Invoices</h3>
-          <div className="space-y-3">
-            {[
-              { id: 'INV-2024-001', date: '2024-01-15', amount: 'R12,450', status: 'Paid', location: 'Head Office' },
-              { id: 'INV-2024-002', date: '2024-01-10', amount: 'R8,200', status: 'Pending', location: 'Warehouse North' },
-              { id: 'INV-2024-003', date: '2024-01-08', amount: 'R15,600', status: 'Overdue', location: 'Factory East' }
-            ].map((invoice, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <h4 className="font-medium">{invoice.id}</h4>
-                  <p className="text-sm text-gray-600">{invoice.location} • {invoice.date}</p>
+          {enterpriseData.invoices.length > 0 ? (
+            <div className="space-y-3">
+              {enterpriseData.invoices.slice(0, 5).map((invoice) => (
+                <div key={invoice.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <h4 className="font-medium">{invoice.invoice_number}</h4>
+                    <p className="text-sm text-gray-600">
+                      {invoice.description || 'Enterprise Services'} • {new Date(invoice.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium">R{formatCurrency(invoice.amount)}</p>
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
+                      invoice.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      invoice.status === 'overdue' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {invoice.status}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-medium">{invoice.amount}</p>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    invoice.status === 'Paid' ? 'bg-green-100 text-green-800' :
-                    invoice.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {invoice.status}
-                  </span>
+              ))}
+              {enterpriseData.invoices.length > 5 && (
+                <div className="text-center py-2">
+                  <button className="text-blue-600 hover:text-blue-800 text-sm">
+                    View All Invoices ({enterpriseData.invoices.length})
+                  </button>
                 </div>
-              </div>
-            ))}
-          </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p>No invoices generated yet. Generate your first invoice to get started!</p>
+              <button 
+                onClick={handleGenerateInvoice}
+                className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              >
+                Generate First Invoice
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
