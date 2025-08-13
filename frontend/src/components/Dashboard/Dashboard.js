@@ -75,6 +75,32 @@ const Dashboard = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [user?.id]);
 
+  // Refresh when navigating back to dashboard (e.g., from job creation)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user?.id) {
+        console.log('Dashboard: Window gained focus, refreshing data...');
+        fetchDashboardData(false);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user?.id]);
+
+  // Storage event listener for cross-tab updates
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'fixmate_dashboard_refresh' && user?.id) {
+        console.log('Dashboard: Storage event detected, refreshing data...');
+        fetchDashboardData(false);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [user?.id]);
+
   // Manual refresh function
   const handleRefresh = () => {
     console.log('Dashboard: Manual refresh triggered');
