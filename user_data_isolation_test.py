@@ -89,6 +89,7 @@ class UserDataIsolationTester:
             response = requests.post(
                 f"{self.api_base}/auth/login",
                 json=login_data,
+                headers={"Content-Type": "application/json"},
                 timeout=10
             )
             
