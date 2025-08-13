@@ -4361,7 +4361,7 @@ agent_communication:
 
 test_plan:
   current_focus:
-    - "Enterprise Portal Backend API Testing (All Endpoints)"
+    - "Enterprise Portal Backend API Testing (COMPLETED)"
     - "Enterprise Portal Frontend Integration Testing"
     - "Complete Authentication Flow Testing (Login/Signup/Password Reset)"
     - "Client Dashboard Real Functionality Audit"
@@ -4371,7 +4371,8 @@ test_plan:
     - "Payment System Integration Testing"
     - "Mobile Responsiveness Enhancement"
   stuck_tasks:
-    - "Any features identified as non-functional placeholders"
+    - "Missing Enterprise Invoice Detail Endpoint - GET /api/enterprise/invoice/{invoice_id}"
+    - "Missing Enterprise Location Delete Endpoint - DELETE /api/enterprise/locations/{location_id}"
   test_all: true
   test_priority: "high_first"
 
