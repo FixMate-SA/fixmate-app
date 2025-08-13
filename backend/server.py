@@ -257,6 +257,102 @@ async def admin_login(login_data: UserLogin, db: Session = Depends(get_db)):
     """Admin login endpoint (legacy - redirects to unified login)"""
     return await unified_login(login_data, db)
 
+@app.post("/api/auth/signup", response_model=UserResponse)
+async def signup(signup_data: UserSignup, db: Session = Depends(get_db)):
+    """User signup endpoint for client registration"""
+    try:
+        # Validate password confirmation
+        if signup_data.password != signup_data.confirm_password:
+            return UserResponse(success=False, message="Passwords do not match")
+        
+        # Validate password strength
+        if len(signup_data.password) < 6:
+            return UserResponse(success=False, message="Password must be at least 6 characters long")
+        
+        # Format phone number
+        formatted_phone = format_phone_number(signup_data.phone)
+        
+        # Check if user already exists
+        existing_user = db.query(User).filter(
+            or_(
+                User.phone == formatted_phone,
+                User.phone == signup_data.phone,
+                User.email == signup_data.email.lower() if signup_data.email else ""
+            )
+        ).first()
+        
+        if existing_user:
+            if existing_user.phone in [formatted_phone, signup_data.phone]:
+                return UserResponse(success=False, message="Phone number already registered")
+            else:
+                return UserResponse(success=False, message="Email address already registered")
+        
+        # Hash password
+        password_hash = pwd_context.hash(signup_data.password)
+        
+        # Generate unique user ID
+        user_id = str(uuid.uuid4())
+        
+        # Create new user
+        new_user = User(
+            id=user_id,
+            phone=formatted_phone,
+            first_name=signup_data.first_name.strip(),
+            last_name=signup_data.last_name.strip(),
+            id_number=signup_data.id_number.strip(),
+            town=signup_data.town.strip(),
+            email=signup_data.email.lower().strip() if signup_data.email else None,
+            password_hash=password_hash,
+            role=UserRole.client,  # Default role for signup
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        # Generate token
+        token = f"token_{user_id}"
+        
+        # Get role information
+        role_info = {
+            "role": "client",
+            "is_client": True,
+            "is_fixer": False,
+            "is_admin": False
+        }
+        
+        # Get display name and welcome message
+        display_name = f"{new_user.first_name} {new_user.last_name}"
+        welcome_message = f"Welcome to FixMate-SA, {new_user.first_name}!"
+        
+        return UserResponse(
+            success=True,
+            message="Account created successfully",
+            token=token,
+            user={
+                "id": new_user.id,
+                "phone": new_user.phone,
+                "first_name": new_user.first_name,
+                "last_name": new_user.last_name,
+                "email": new_user.email,
+                "role": "client",
+                "role_info": role_info,
+                "display_name": display_name,
+                "welcome_message": welcome_message,
+                "is_client": True,
+                "is_fixer": False,
+                "is_admin": False,
+                "fixer_data": None
+            }
+        )
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Signup error: {str(e)}")
+        return UserResponse(success=False, message="Failed to create account. Please try again.")
+
 # Emergency Services API Endpoints
 
 @app.post("/api/emergency/alert", response_model=EmergencyResponse)
