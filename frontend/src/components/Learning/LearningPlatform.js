@@ -585,7 +585,68 @@ const LearningPlatform = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* User Learning Dashboard */}
+      {user && (
+        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">🎓 Your Learning Progress</h2>
+          
+          {progressLoading ? (
+            <div className="text-center py-4">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="mt-2 text-gray-600">Loading your progress...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg text-center">
+                <div className="text-2xl font-bold text-blue-600">{userAnalytics.total_courses_started || 0}</div>
+                <div className="text-sm text-blue-700">Courses Started</div>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg text-center">
+                <div className="text-2xl font-bold text-green-600">{userAnalytics.total_courses_completed || 0}</div>
+                <div className="text-sm text-green-700">Completed</div>
+              </div>
+              <div className="bg-purple-50 p-4 rounded-lg text-center">
+                <div className="text-2xl font-bold text-purple-600">{Math.round((userAnalytics.total_time_spent_minutes || 0) / 60)}</div>
+                <div className="text-sm text-purple-700">Hours Learned</div>
+              </div>
+              <div className="bg-yellow-50 p-4 rounded-lg text-center">
+                <div className="text-2xl font-bold text-yellow-600">{userAnalytics.total_certificates_earned || 0}</div>
+                <div className="text-sm text-yellow-700">Certificates</div>
+              </div>
+            </div>
+          )}
+          
+          {/* Quick access to in-progress courses */}
+          {userProgress.length > 0 && (
+            <div className="mt-4">
+              <h3 className="font-medium mb-2">📚 Continue Learning</h3>
+              <div className="flex flex-wrap gap-2">
+                {userProgress.filter(p => p.status !== 'completed').slice(0, 3).map(progress => (
+                  <div key={progress.course_id} className="bg-gray-100 px-3 py-2 rounded-lg text-sm">
+                    <div className="font-medium">{progress.course_title}</div>
+                    <div className="text-gray-600">{progress.progress_percentage}% complete</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Recent certificates */}
+          {userCertificates.length > 0 && (
+            <div className="mt-4">
+              <h3 className="font-medium mb-2">🏆 Recent Certificates</h3>
+              <div className="flex flex-wrap gap-2">
+                {userCertificates.slice(0, 3).map(cert => (
+                  <div key={cert.id} className="bg-yellow-100 px-3 py-2 rounded-lg text-sm">
+                    <div className="font-medium text-yellow-800">{cert.certificate_type}</div>
+                    <div className="text-yellow-600">{cert.course_title}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-lg shadow-sm border">
           <div className="flex items-center">
