@@ -194,7 +194,29 @@ backend:
         agent: "testing"
         comment: "✅ AUTHENTICATION WORKING CORRECTLY! All Enterprise Portal endpoints properly require Bearer token authentication. Client user (+27800000002/client2024test) successfully authenticated with token token_a89e82ac-dbf3-403e-ab47-4bb340445576. GET endpoints return 401 when unauthenticated. POST endpoints return 422 (validation error) when unauthenticated, which is acceptable as they require both authentication and valid request body. Core security implemented correctly."
 
-  - task: "Job Creation API Endpoints - POST/GET /api/jobs"
+  - task: "Missing Enterprise Invoice Detail Endpoint - GET /api/enterprise/invoice/{invoice_id}"
+    implemented: false
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "⚠️ ENDPOINT NOT IMPLEMENTED: GET /api/enterprise/invoice/{invoice_id} endpoint is not implemented in the backend. The review request mentioned this endpoint but it doesn't exist in server.py. When accessed, it returns frontend HTML due to catch-all routing instead of 404. This endpoint would be needed to retrieve specific invoice details by ID. Current workaround: use GET /api/enterprise/invoices to get all invoices and filter client-side."
+
+  - task: "Missing Enterprise Location Delete Endpoint - DELETE /api/enterprise/locations/{location_id}"
+    implemented: false
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "⚠️ ENDPOINT NOT IMPLEMENTED: DELETE /api/enterprise/locations/{location_id} endpoint is not implemented in the backend. The review request mentioned this endpoint but it doesn't exist in server.py. This endpoint would be needed to remove enterprise locations. Current workaround: locations can be created and retrieved but not deleted via API."
     implemented: true
     working: false
     file: "backend/server.py"
