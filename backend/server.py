@@ -2675,6 +2675,63 @@ async def renew_enterprise_contract(contract_id: str, request: Request, db: Sess
             "message": "Failed to renew contract"
         }
 
+# Existing endpoints (keeping for compatibility)
+@app.get("/api/test")
+async def test_endpoint():
+    return {"message": "FixMate-SA API is running with emergency services!", "timestamp": datetime.now().isoformat()}
+
+@app.post("/api/whatsapp/webhook")
+async def whatsapp_webhook(request: Request):
+    """WhatsApp webhook endpoint"""
+    try:
+        body = await request.json()
+        result = await whatsapp_service.handle_webhook(body)
+        return result
+    except Exception as e:
+        print(f"WhatsApp webhook error: {e}")
+        return {"error": str(e)}
+
+@app.get("/api/whatsapp/stats")  
+async def get_whatsapp_stats(db: Session = Depends(get_db)):
+    """Get WhatsApp statistics"""
+    try:
+        stats = db.query(WhatsAppStatistics).order_by(WhatsAppStatistics.date.desc()).limit(30).all()
+        return {
+            "success": True,
+            "statistics": [{
+                "date": stat.date,
+                "total_messages": stat.total_messages,
+                "unique_users": stat.unique_users,
+                "successful_jobs": stat.successful_jobs
+            } for stat in stats]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Serve React static files
+frontend_build_path = Path(__file__).parent.parent / "frontend" / "build"
+static_path = Path(__file__).parent.parent / "frontend" / "build" / "static"
+
+print(f"🔍 Looking for React build at: {frontend_build_path}")
+print(f"🔍 Static path exists: {static_path.exists()}")
+print(f"🔍 Frontend build exists: {frontend_build_path.exists()}")
+
+if frontend_build_path.exists():
+    # Mount static files with cache control
+    app.mount("/static", StaticFiles(directory=static_path), name="static")
+    
+    # Serve React app for all other routes
+    @app.get("/{full_path:path}")
+    async def serve_react_app(full_path: str):
+        # For API routes, return 404
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API endpoint not found")
+        
+        # For all other routes, serve React app
+        return FileResponse(frontend_build_path / "index.html")
+else:
+    print("⚠️ Frontend build not found. React routes will not be served.")
+
 # Include other routes and main execution
 if __name__ == "__main__":
     import uvicorn
