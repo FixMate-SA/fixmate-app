@@ -17,8 +17,19 @@ from dateutil.relativedelta import relativedelta
 from pathlib import Path
 import tempfile
 import shutil
-import openai
-import requests
+
+# Optional imports for AI features - don't break if not available
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+
+try:
+    import requests
+    REQUESTS_AVAILABLE = True
+except ImportError:
+    REQUESTS_AVAILABLE = False
 
 # Import services and models
 from database import get_db, engine
