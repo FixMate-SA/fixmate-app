@@ -1,594 +1,580 @@
 #!/usr/bin/env python3
 """
-Learning Progress Tracking System Backend Testing
-=================================================
-
-This script tests the new Learning Progress Tracking system for user isolation and functionality.
-Tests all learning endpoints with proper authentication and user data isolation verification.
-
-Test Coverage:
-- Learning Progress Tracking (POST/GET /api/learning/progress)
-- Certificate Management (POST /api/learning/certificate)
-- Admin Learning Analytics (GET /api/admin/learning/analytics)
-- User Data Isolation Verification
-- Authentication and Authorization Testing
+Comprehensive Backend Testing for FixMate-SA Automatic Job Allocation System
+Testing the new job allocation system with notifications and fixer management
 """
 
 import requests
 import json
-import sys
+import time
+from datetime import datetime
 import os
-from datetime import datetime, timedelta
 
 # Configuration
 BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://7309dccc-5109-4150-b632-8181bb5fde8e.preview.emergentagent.com')
 API_BASE = f"{BACKEND_URL}/api"
 
-# Test Users (as specified in review request)
-TEST_USERS = {
-    "client": {
-        "phone": "+27800000002",
-        "password": "client2024test",
-        "role": "client",
-        "name": "Client User"
-    },
-    "fixer": {
-        "phone": "+27800000003", 
-        "password": "fixer2024test",
-        "role": "fixer",
-        "name": "Fixer User"
-    },
-    "admin": {
-        "phone": "+27800000001",
-        "password": "admin2024test", 
-        "role": "admin",
-        "name": "Admin User"
-    }
+# Test credentials from the review request
+CLIENT_CREDENTIALS = {
+    "phone": "+27800000002",
+    "password": "client2024test"
 }
 
-# Test Results Storage
-test_results = {
-    "total_tests": 0,
-    "passed_tests": 0,
-    "failed_tests": 0,
-    "test_details": []
+FIXER_CREDENTIALS = {
+    "phone": "+27800000003", 
+    "password": "fixer2024test"
 }
 
-def log_test(test_name, status, details="", expected="", actual=""):
+# Test counters
+total_tests = 0
+passed_tests = 0
+failed_tests = 0
+
+def log_test(test_name, success, message=""):
     """Log test results"""
-    test_results["total_tests"] += 1
-    if status == "PASS":
-        test_results["passed_tests"] += 1
-        print(f"✅ {test_name}")
-    else:
-        test_results["failed_tests"] += 1
-        print(f"❌ {test_name}")
-        if details:
-            print(f"   Details: {details}")
-        if expected:
-            print(f"   Expected: {expected}")
-        if actual:
-            print(f"   Actual: {actual}")
+    global total_tests, passed_tests, failed_tests
+    total_tests += 1
     
-    test_results["test_details"].append({
-        "test": test_name,
-        "status": status,
-        "details": details,
-        "expected": expected,
-        "actual": actual,
-        "timestamp": datetime.now().isoformat()
-    })
+    if success:
+        passed_tests += 1
+        status = "✅ PASS"
+    else:
+        failed_tests += 1
+        status = "❌ FAIL"
+    
+    print(f"{status}: {test_name}")
+    if message:
+        print(f"    {message}")
+    print()
 
-def authenticate_user(user_type):
+def make_request(method, endpoint, headers=None, data=None, json_data=None):
+    """Make HTTP request with error handling"""
+    try:
+        url = f"{API_BASE}{endpoint}"
+        
+        if method.upper() == 'GET':
+            response = requests.get(url, headers=headers, timeout=30)
+        elif method.upper() == 'POST':
+            if json_data:
+                response = requests.post(url, headers=headers, json=json_data, timeout=30)
+            else:
+                response = requests.post(url, headers=headers, data=data, timeout=30)
+        elif method.upper() == 'PUT':
+            response = requests.put(url, headers=headers, json=json_data, timeout=30)
+        elif method.upper() == 'DELETE':
+            response = requests.delete(url, headers=headers, timeout=30)
+        else:
+            raise ValueError(f"Unsupported method: {method}")
+            
+        return response
+    except requests.exceptions.RequestException as e:
+        print(f"Request error: {e}")
+        return None
+
+def authenticate_user(credentials, user_type="client"):
     """Authenticate user and return token"""
     try:
-        user_data = TEST_USERS[user_type]
-        login_data = {
-            "phone": user_data["phone"],
-            "password": user_data["password"]
-        }
+        response = make_request('POST', '/auth/login', json_data=credentials)
         
-        print(f"🔍 Attempting authentication for {user_type}: {user_data['phone']}")
-        
-        response = requests.post(f"{API_BASE}/auth/login", json=login_data, timeout=30)
-        
-        print(f"🔍 Response status: {response.status_code}")
-        print(f"🔍 Response headers: {dict(response.headers)}")
-        
-        if response.status_code == 200:
+        if response and response.status_code == 200:
             data = response.json()
-            if data.get("success") and data.get("token"):
-                log_test(f"Authentication - {user_type.title()}", "PASS", 
-                        f"Successfully authenticated {user_data['name']}")
-                return data["token"], data.get("user", {}).get("id")
+            if data.get('success') and data.get('token'):
+                print(f"✅ {user_type.title()} authentication successful")
+                return data['token'], data.get('user', {})
             else:
-                log_test(f"Authentication - {user_type.title()}", "FAIL", 
-                        f"Login failed: {data.get('message', 'Unknown error')}")
+                print(f"❌ {user_type.title()} authentication failed: {data.get('message', 'Unknown error')}")
                 return None, None
         else:
-            log_test(f"Authentication - {user_type.title()}", "FAIL", 
-                    f"HTTP {response.status_code}: {response.text[:200]}")
+            print(f"❌ {user_type.title()} authentication failed: HTTP {response.status_code if response else 'No response'}")
             return None, None
             
     except Exception as e:
-        log_test(f"Authentication - {user_type.title()}", "FAIL", f"Exception: {str(e)}")
+        print(f"❌ {user_type.title()} authentication error: {str(e)}")
         return None, None
 
-def test_learning_progress_creation(token, user_id, user_type, course_data):
-    """Test creating learning progress"""
-    try:
-        headers = {"Authorization": f"Bearer {token}"}
-        
-        response = requests.post(f"{API_BASE}/learning/progress", 
-                               json=course_data, headers=headers, timeout=30)
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success"):
-                log_test(f"Learning Progress Creation - {user_type.title()}", "PASS",
-                        f"Successfully created progress for {course_data['course_title']}")
-                return True
-            else:
-                log_test(f"Learning Progress Creation - {user_type.title()}", "FAIL",
-                        f"API returned success=false: {data.get('message')}")
-                return False
-        else:
-            log_test(f"Learning Progress Creation - {user_type.title()}", "FAIL",
-                    f"HTTP {response.status_code}: {response.text}")
-            return False
-            
-    except Exception as e:
-        log_test(f"Learning Progress Creation - {user_type.title()}", "FAIL", f"Exception: {str(e)}")
-        return False
-
-def test_learning_progress_update(token, user_id, user_type, course_id, update_data):
-    """Test updating learning progress"""
-    try:
-        headers = {"Authorization": f"Bearer {token}"}
-        
-        # Update the existing course progress
-        update_payload = {
-            "course_id": course_id,
-            "course_title": update_data["course_title"],
-            "course_platform": update_data["course_platform"],
-            "progress_percentage": update_data["progress_percentage"],
-            "time_spent_minutes": update_data["time_spent_minutes"],
-            "status": update_data["status"]
-        }
-        
-        response = requests.post(f"{API_BASE}/learning/progress", 
-                               json=update_payload, headers=headers, timeout=30)
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success"):
-                log_test(f"Learning Progress Update - {user_type.title()}", "PASS",
-                        f"Successfully updated progress to {update_data['progress_percentage']}% with {update_data['time_spent_minutes']} minutes")
-                return True
-            else:
-                log_test(f"Learning Progress Update - {user_type.title()}", "FAIL",
-                        f"API returned success=false: {data.get('message')}")
-                return False
-        else:
-            log_test(f"Learning Progress Update - {user_type.title()}", "FAIL",
-                    f"HTTP {response.status_code}: {response.text}")
-            return False
-            
-    except Exception as e:
-        log_test(f"Learning Progress Update - {user_type.title()}", "FAIL", f"Exception: {str(e)}")
-        return False
-
-def test_get_learning_progress(token, user_id, user_type):
-    """Test getting user's learning progress"""
-    try:
-        headers = {"Authorization": f"Bearer {token}"}
-        
-        response = requests.get(f"{API_BASE}/learning/progress", headers=headers, timeout=30)
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success"):
-                progress_count = len(data.get("progress", []))
-                cert_count = len(data.get("certificates", []))
-                analytics = data.get("analytics", {})
-                
-                log_test(f"Get Learning Progress - {user_type.title()}", "PASS",
-                        f"Retrieved {progress_count} progress entries, {cert_count} certificates, analytics: {analytics}")
-                return data
-            else:
-                log_test(f"Get Learning Progress - {user_type.title()}", "FAIL",
-                        f"API returned success=false")
-                return None
-        else:
-            log_test(f"Get Learning Progress - {user_type.title()}", "FAIL",
-                    f"HTTP {response.status_code}: {response.text}")
-            return None
-            
-    except Exception as e:
-        log_test(f"Get Learning Progress - {user_type.title()}", "FAIL", f"Exception: {str(e)}")
+def test_job_creation_and_allocation():
+    """Test 1: Create job and verify automatic allocation"""
+    print("🔄 Testing Job Creation and Automatic Allocation...")
+    
+    # Authenticate client
+    client_token, client_user = authenticate_user(CLIENT_CREDENTIALS, "client")
+    if not client_token:
+        log_test("Job Creation - Client Authentication", False, "Failed to authenticate client")
         return None
-
-def test_add_certificate(token, user_id, user_type, cert_data):
-    """Test adding a certificate"""
-    try:
-        headers = {"Authorization": f"Bearer {token}"}
-        
-        response = requests.post(f"{API_BASE}/learning/certificate", 
-                               json=cert_data, headers=headers, timeout=30)
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success"):
-                cert_id = data.get("certificate_id")
-                log_test(f"Add Certificate - {user_type.title()}", "PASS",
-                        f"Successfully added certificate for {cert_data['course_title']} (ID: {cert_id})")
-                return cert_id
-            else:
-                log_test(f"Add Certificate - {user_type.title()}", "FAIL",
-                        f"API returned success=false: {data.get('message')}")
-                return None
-        else:
-            log_test(f"Add Certificate - {user_type.title()}", "FAIL",
-                    f"HTTP {response.status_code}: {response.text}")
-            return None
-            
-    except Exception as e:
-        log_test(f"Add Certificate - {user_type.title()}", "FAIL", f"Exception: {str(e)}")
+    
+    log_test("Job Creation - Client Authentication", True, f"Client authenticated: {client_user.get('display_name', 'Unknown')}")
+    
+    # Get initial job count for verification
+    headers = {'Authorization': f'Bearer {client_token}'}
+    initial_jobs_response = make_request('GET', '/jobs', headers=headers)
+    initial_job_count = 0
+    
+    if initial_jobs_response and initial_jobs_response.status_code == 200:
+        initial_data = initial_jobs_response.json()
+        initial_job_count = len(initial_data.get('jobs', []))
+        print(f"📊 Initial job count: {initial_job_count}")
+    
+    # Create test job data as specified in review request
+    job_data = {
+        "title": "Electrical Repair Needed",
+        "description": "Need urgent electrical repair for flickering lights in office building",
+        "location": "Cape Town, South Africa",
+        "urgency": "high",
+        "budget_min": 500,
+        "budget_max": 1500,
+        "category": "Electrical",
+        "client_id": client_user.get('id', 'a89e82ac-dbf3-403e-ab47-4bb340445576')
+    }
+    
+    # Create the job
+    create_response = make_request('POST', '/jobs', headers=headers, json_data=job_data)
+    
+    if not create_response:
+        log_test("Job Creation - API Call", False, "No response from job creation endpoint")
         return None
-
-def test_admin_learning_analytics(admin_token):
-    """Test admin learning analytics endpoint"""
-    try:
-        headers = {"Authorization": f"Bearer {admin_token}"}
-        
-        response = requests.get(f"{API_BASE}/admin/learning/analytics", headers=headers, timeout=30)
-        
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success"):
-                analytics = data.get("analytics", {})
-                ai_insights = data.get("ai_insights", {})
-                
-                overall_stats = analytics.get("overall_stats", {})
-                total_learners = overall_stats.get("total_learners", 0)
-                
-                log_test("Admin Learning Analytics", "PASS",
-                        f"Retrieved analytics for {total_learners} learners with AI insights")
-                return data
-            else:
-                log_test("Admin Learning Analytics", "FAIL",
-                        f"API returned success=false: {data.get('message')}")
-                return None
-        else:
-            log_test("Admin Learning Analytics", "FAIL",
-                    f"HTTP {response.status_code}: {response.text}")
-            return None
-            
-    except Exception as e:
-        log_test("Admin Learning Analytics", "FAIL", f"Exception: {str(e)}")
+    
+    if create_response.status_code != 200:
+        log_test("Job Creation - API Call", False, f"HTTP {create_response.status_code}: {create_response.text}")
         return None
-
-def test_non_admin_analytics_access(client_token, fixer_token):
-    """Test that non-admin users cannot access admin analytics"""
+    
     try:
-        # Test client access
-        headers = {"Authorization": f"Bearer {client_token}"}
-        response = requests.get(f"{API_BASE}/admin/learning/analytics", headers=headers, timeout=30)
+        create_data = create_response.json()
+    except:
+        log_test("Job Creation - API Call", False, "Invalid JSON response")
+        return None
+    
+    if not create_data.get('success'):
+        log_test("Job Creation - API Call", False, f"Job creation failed: {create_data.get('message', 'Unknown error')}")
+        return None
+    
+    job_id = create_data.get('job_id')
+    if not job_id:
+        log_test("Job Creation - API Call", False, "No job_id returned")
+        return None
+    
+    log_test("Job Creation - API Call", True, f"Job created successfully: {job_id}")
+    
+    # Wait a moment for allocation to process
+    time.sleep(2)
+    
+    # Verify job was created by checking updated job count
+    updated_jobs_response = make_request('GET', '/jobs', headers=headers)
+    if updated_jobs_response and updated_jobs_response.status_code == 200:
+        updated_data = updated_jobs_response.json()
+        updated_job_count = len(updated_data.get('jobs', []))
         
-        if response.status_code == 403:
-            log_test("Non-Admin Access Block - Client", "PASS",
-                    "Client correctly denied access to admin analytics (HTTP 403)")
+        if updated_job_count > initial_job_count:
+            log_test("Job Creation - Database Persistence", True, f"Job count increased from {initial_job_count} to {updated_job_count}")
         else:
-            log_test("Non-Admin Access Block - Client", "FAIL",
-                    f"Expected HTTP 403, got {response.status_code}")
+            log_test("Job Creation - Database Persistence", False, f"Job count did not increase: {initial_job_count} -> {updated_job_count}")
+    
+    # Get specific job details to check allocation
+    job_response = make_request('GET', f'/jobs/{job_id}', headers=headers)
+    
+    if job_response and job_response.status_code == 200:
+        job_details = job_response.json()
         
-        # Test fixer access
-        headers = {"Authorization": f"Bearer {fixer_token}"}
-        response = requests.get(f"{API_BASE}/admin/learning/analytics", headers=headers, timeout=30)
-        
-        if response.status_code == 403:
-            log_test("Non-Admin Access Block - Fixer", "PASS",
-                    "Fixer correctly denied access to admin analytics (HTTP 403)")
-        else:
-            log_test("Non-Admin Access Block - Fixer", "FAIL",
-                    f"Expected HTTP 403, got {response.status_code}")
+        if job_details.get('success'):
+            job_info = job_details.get('job', {})
+            job_status = job_info.get('status')
+            fixer_id = job_info.get('fixer_id')
             
-    except Exception as e:
-        log_test("Non-Admin Access Block", "FAIL", f"Exception: {str(e)}")
-
-def test_unauthenticated_access():
-    """Test that unauthenticated requests are properly rejected"""
-    try:
-        # Test learning progress without token
-        response = requests.get(f"{API_BASE}/learning/progress", timeout=30)
-        
-        if response.status_code == 401:
-            log_test("Unauthenticated Access Block - Learning Progress", "PASS",
-                    "Unauthenticated request correctly rejected (HTTP 401)")
-        else:
-            log_test("Unauthenticated Access Block - Learning Progress", "FAIL",
-                    f"Expected HTTP 401, got {response.status_code}")
-        
-        # Test admin analytics without token
-        response = requests.get(f"{API_BASE}/admin/learning/analytics", timeout=30)
-        
-        if response.status_code == 401:
-            log_test("Unauthenticated Access Block - Admin Analytics", "PASS",
-                    "Unauthenticated request correctly rejected (HTTP 401)")
-        else:
-            log_test("Unauthenticated Access Block - Admin Analytics", "FAIL",
-                    f"Expected HTTP 401, got {response.status_code}")
+            log_test("Job Details - Retrieval", True, f"Job details retrieved successfully")
             
-    except Exception as e:
-        log_test("Unauthenticated Access Block", "FAIL", f"Exception: {str(e)}")
+            # Check if job was automatically assigned
+            if job_status == 'assigned' and fixer_id:
+                log_test("Automatic Job Allocation", True, f"Job automatically assigned to fixer: {fixer_id}")
+            elif job_status == 'pending':
+                log_test("Automatic Job Allocation", False, f"Job still pending - no automatic assignment occurred")
+            else:
+                log_test("Automatic Job Allocation", False, f"Unexpected job status: {job_status}, fixer_id: {fixer_id}")
+        else:
+            log_test("Job Details - Retrieval", False, f"Failed to get job details: {job_details.get('message')}")
+    else:
+        log_test("Job Details - Retrieval", False, f"HTTP {job_response.status_code if job_response else 'No response'}")
+    
+    return job_id
 
-def test_user_data_isolation(client_data, fixer_data):
-    """Test that users can only see their own learning data"""
+def test_fixer_notifications(job_id=None):
+    """Test 2: Verify fixer notification system"""
+    print("🔄 Testing Fixer Notification System...")
+    
+    # Authenticate fixer
+    fixer_token, fixer_user = authenticate_user(FIXER_CREDENTIALS, "fixer")
+    if not fixer_token:
+        log_test("Fixer Notifications - Authentication", False, "Failed to authenticate fixer")
+        return
+    
+    log_test("Fixer Notifications - Authentication", True, f"Fixer authenticated: {fixer_user.get('display_name', 'Unknown')}")
+    
+    # Get fixer notifications
+    headers = {'Authorization': f'Bearer {fixer_token}'}
+    notifications_response = make_request('GET', '/fixer/notifications', headers=headers)
+    
+    if not notifications_response:
+        log_test("Fixer Notifications - API Call", False, "No response from notifications endpoint")
+        return
+    
+    if notifications_response.status_code != 200:
+        log_test("Fixer Notifications - API Call", False, f"HTTP {notifications_response.status_code}: {notifications_response.text}")
+        return
+    
     try:
-        client_progress = client_data.get("progress", [])
-        fixer_progress = fixer_data.get("progress", [])
+        notifications_data = notifications_response.json()
+    except:
+        log_test("Fixer Notifications - API Call", False, "Invalid JSON response")
+        return
+    
+    if not notifications_data.get('success'):
+        log_test("Fixer Notifications - API Call", False, f"Failed to get notifications: {notifications_data.get('message')}")
+        return
+    
+    notifications = notifications_data.get('notifications', [])
+    unread_count = notifications_data.get('unread_count', 0)
+    
+    log_test("Fixer Notifications - API Call", True, f"Retrieved {len(notifications)} notifications ({unread_count} unread)")
+    
+    # Check notification content
+    if notifications:
+        # Check for job assignment notifications
+        assignment_notifications = [n for n in notifications if n.get('notification_type') == 'job_assigned']
+        available_notifications = [n for n in notifications if n.get('notification_type') == 'job_available']
         
-        # Check that progress data is different
-        client_course_ids = set(p.get("course_id") for p in client_progress)
-        fixer_course_ids = set(p.get("course_id") for p in fixer_progress)
-        
-        if client_course_ids != fixer_course_ids:
-            log_test("User Data Isolation - Progress", "PASS",
-                    f"Client has {len(client_course_ids)} unique courses, Fixer has {len(fixer_course_ids)} unique courses - no overlap detected")
-        else:
-            log_test("User Data Isolation - Progress", "FAIL",
-                    "Users have identical course data - potential data leakage")
-        
-        # Check certificates isolation
-        client_certs = client_data.get("certificates", [])
-        fixer_certs = fixer_data.get("certificates", [])
-        
-        client_cert_ids = set(c.get("course_id") for c in client_certs)
-        fixer_cert_ids = set(c.get("course_id") for c in fixer_certs)
-        
-        if client_cert_ids != fixer_cert_ids:
-            log_test("User Data Isolation - Certificates", "PASS",
-                    f"Client has {len(client_cert_ids)} certificates, Fixer has {len(fixer_cert_ids)} certificates - proper isolation")
-        else:
-            log_test("User Data Isolation - Certificates", "FAIL",
-                    "Users have identical certificate data - potential data leakage")
+        if assignment_notifications:
+            log_test("Fixer Notifications - Job Assignment", True, f"Found {len(assignment_notifications)} job assignment notifications")
             
-    except Exception as e:
-        log_test("User Data Isolation", "FAIL", f"Exception: {str(e)}")
-
-def test_database_table_creation():
-    """Test that database tables are created automatically"""
-    try:
-        # This is tested implicitly through the API calls
-        # If tables don't exist, the API calls would fail
-        log_test("Database Table Creation", "PASS",
-                "Tables created automatically on first API access (verified through successful API calls)")
+            # Check notification details
+            sample_notification = assignment_notifications[0]
+            if sample_notification.get('job_details'):
+                log_test("Fixer Notifications - Job Details", True, "Notification includes job details")
+            else:
+                log_test("Fixer Notifications - Job Details", False, "Notification missing job details")
+        else:
+            log_test("Fixer Notifications - Job Assignment", False, "No job assignment notifications found")
         
-    except Exception as e:
-        log_test("Database Table Creation", "FAIL", f"Exception: {str(e)}")
+        if available_notifications:
+            log_test("Fixer Notifications - Available Jobs", True, f"Found {len(available_notifications)} available job notifications")
+        else:
+            log_test("Fixer Notifications - Available Jobs", False, "No available job notifications found")
+    else:
+        log_test("Fixer Notifications - Content", False, "No notifications found")
+    
+    return notifications
+
+def test_available_jobs():
+    """Test 3: Verify available jobs for fixers"""
+    print("🔄 Testing Available Jobs for Fixers...")
+    
+    # Authenticate fixer
+    fixer_token, fixer_user = authenticate_user(FIXER_CREDENTIALS, "fixer")
+    if not fixer_token:
+        log_test("Available Jobs - Authentication", False, "Failed to authenticate fixer")
+        return []
+    
+    # Get available jobs
+    headers = {'Authorization': f'Bearer {fixer_token}'}
+    jobs_response = make_request('GET', '/fixer/available-jobs', headers=headers)
+    
+    if not jobs_response:
+        log_test("Available Jobs - API Call", False, "No response from available jobs endpoint")
+        return []
+    
+    if jobs_response.status_code != 200:
+        log_test("Available Jobs - API Call", False, f"HTTP {jobs_response.status_code}: {jobs_response.text}")
+        return []
+    
+    try:
+        jobs_data = jobs_response.json()
+    except:
+        log_test("Available Jobs - API Call", False, "Invalid JSON response")
+        return []
+    
+    if not jobs_data.get('success'):
+        log_test("Available Jobs - API Call", False, f"Failed to get available jobs: {jobs_data.get('message')}")
+        return []
+    
+    available_jobs = jobs_data.get('available_jobs', [])
+    log_test("Available Jobs - API Call", True, f"Retrieved {len(available_jobs)} available jobs")
+    
+    # Check job details completeness
+    if available_jobs:
+        sample_job = available_jobs[0]
+        required_fields = ['id', 'service', 'description', 'location', 'estimated_price']
+        missing_fields = [field for field in required_fields if field not in sample_job or sample_job[field] is None]
+        
+        if not missing_fields:
+            log_test("Available Jobs - Job Details Complete", True, "All required job fields present")
+        else:
+            log_test("Available Jobs - Job Details Complete", False, f"Missing fields: {missing_fields}")
+    else:
+        log_test("Available Jobs - Job Details Complete", False, "No jobs available to check")
+    
+    return available_jobs
+
+def test_job_application(available_jobs):
+    """Test 4: Test job application process"""
+    print("🔄 Testing Job Application Process...")
+    
+    if not available_jobs:
+        log_test("Job Application - Prerequisites", False, "No available jobs to apply for")
+        return
+    
+    # Authenticate fixer
+    fixer_token, fixer_user = authenticate_user(FIXER_CREDENTIALS, "fixer")
+    if not fixer_token:
+        log_test("Job Application - Authentication", False, "Failed to authenticate fixer")
+        return
+    
+    # Select first available job
+    target_job = available_jobs[0]
+    job_id = target_job['id']
+    
+    log_test("Job Application - Target Selection", True, f"Selected job: {job_id} ({target_job.get('service', 'Unknown service')})")
+    
+    # Apply for the job
+    headers = {'Authorization': f'Bearer {fixer_token}'}
+    apply_response = make_request('POST', f'/fixer/apply-job/{job_id}', headers=headers)
+    
+    if not apply_response:
+        log_test("Job Application - API Call", False, "No response from job application endpoint")
+        return
+    
+    if apply_response.status_code != 200:
+        log_test("Job Application - API Call", False, f"HTTP {apply_response.status_code}: {apply_response.text}")
+        return
+    
+    try:
+        apply_data = apply_response.json()
+    except:
+        log_test("Job Application - API Call", False, "Invalid JSON response")
+        return
+    
+    if apply_data.get('success'):
+        log_test("Job Application - API Call", True, f"Successfully applied for job: {apply_data.get('message')}")
+        
+        # Verify job status changed to 'assigned'
+        time.sleep(1)  # Brief wait for database update
+        
+        # We need client credentials to check job status
+        client_token, client_user = authenticate_user(CLIENT_CREDENTIALS, "client")
+        if client_token:
+            client_headers = {'Authorization': f'Bearer {client_token}'}
+            job_check_response = make_request('GET', f'/jobs/{job_id}', headers=client_headers)
+            
+            if job_check_response and job_check_response.status_code == 200:
+                job_check_data = job_check_response.json()
+                if job_check_data.get('success'):
+                    job_info = job_check_data.get('job', {})
+                    if job_info.get('status') == 'assigned':
+                        log_test("Job Application - Status Update", True, "Job status updated to 'assigned'")
+                    else:
+                        log_test("Job Application - Status Update", False, f"Job status is '{job_info.get('status')}', expected 'assigned'")
+                else:
+                    log_test("Job Application - Status Update", False, "Failed to retrieve job details for verification")
+            else:
+                log_test("Job Application - Status Update", False, "Failed to check job status after application")
+        else:
+            log_test("Job Application - Status Update", False, "Could not authenticate client to verify job status")
+    else:
+        log_test("Job Application - API Call", False, f"Job application failed: {apply_data.get('message')}")
+
+def test_notification_management(notifications):
+    """Test 5: Test notification management"""
+    print("🔄 Testing Notification Management...")
+    
+    if not notifications:
+        log_test("Notification Management - Prerequisites", False, "No notifications to manage")
+        return
+    
+    # Authenticate fixer
+    fixer_token, fixer_user = authenticate_user(FIXER_CREDENTIALS, "fixer")
+    if not fixer_token:
+        log_test("Notification Management - Authentication", False, "Failed to authenticate fixer")
+        return
+    
+    # Find an unread notification
+    unread_notifications = [n for n in notifications if not n.get('is_read', True)]
+    
+    if not unread_notifications:
+        log_test("Notification Management - Unread Notifications", False, "No unread notifications found")
+        return
+    
+    target_notification = unread_notifications[0]
+    notification_id = target_notification['id']
+    
+    log_test("Notification Management - Target Selection", True, f"Selected notification: {notification_id}")
+    
+    # Mark notification as read
+    headers = {'Authorization': f'Bearer {fixer_token}'}
+    mark_read_response = make_request('POST', f'/fixer/notifications/{notification_id}/mark-read', headers=headers)
+    
+    if not mark_read_response:
+        log_test("Notification Management - Mark Read API", False, "No response from mark read endpoint")
+        return
+    
+    if mark_read_response.status_code != 200:
+        log_test("Notification Management - Mark Read API", False, f"HTTP {mark_read_response.status_code}: {mark_read_response.text}")
+        return
+    
+    try:
+        mark_read_data = mark_read_response.json()
+    except:
+        log_test("Notification Management - Mark Read API", False, "Invalid JSON response")
+        return
+    
+    if mark_read_data.get('success'):
+        log_test("Notification Management - Mark Read API", True, "Notification marked as read successfully")
+        
+        # Verify unread count decreased
+        time.sleep(1)  # Brief wait for database update
+        
+        updated_notifications_response = make_request('GET', '/fixer/notifications', headers=headers)
+        if updated_notifications_response and updated_notifications_response.status_code == 200:
+            updated_data = updated_notifications_response.json()
+            if updated_data.get('success'):
+                original_unread = len(unread_notifications)
+                new_unread_count = updated_data.get('unread_count', 0)
+                
+                if new_unread_count < original_unread:
+                    log_test("Notification Management - Unread Count Update", True, f"Unread count decreased from {original_unread} to {new_unread_count}")
+                else:
+                    log_test("Notification Management - Unread Count Update", False, f"Unread count did not decrease: {original_unread} -> {new_unread_count}")
+            else:
+                log_test("Notification Management - Unread Count Update", False, "Failed to retrieve updated notifications")
+        else:
+            log_test("Notification Management - Unread Count Update", False, "Failed to check updated notification count")
+    else:
+        log_test("Notification Management - Mark Read API", False, f"Failed to mark notification as read: {mark_read_data.get('message')}")
+
+def test_user_isolation():
+    """Test 6: Verify user isolation"""
+    print("🔄 Testing User Isolation...")
+    
+    # Test that client cannot access fixer endpoints
+    client_token, client_user = authenticate_user(CLIENT_CREDENTIALS, "client")
+    if not client_token:
+        log_test("User Isolation - Client Authentication", False, "Failed to authenticate client")
+        return
+    
+    client_headers = {'Authorization': f'Bearer {client_token}'}
+    
+    # Try to access fixer notifications with client token
+    client_notifications_response = make_request('GET', '/fixer/notifications', headers=client_headers)
+    
+    if client_notifications_response and client_notifications_response.status_code == 403:
+        log_test("User Isolation - Client Access Denied", True, "Client correctly denied access to fixer notifications")
+    elif client_notifications_response and client_notifications_response.status_code == 200:
+        log_test("User Isolation - Client Access Denied", False, "Client incorrectly allowed access to fixer notifications")
+    else:
+        log_test("User Isolation - Client Access Denied", False, f"Unexpected response: HTTP {client_notifications_response.status_code if client_notifications_response else 'No response'}")
+    
+    # Try to access available jobs with client token
+    client_jobs_response = make_request('GET', '/fixer/available-jobs', headers=client_headers)
+    
+    if client_jobs_response and client_jobs_response.status_code == 403:
+        log_test("User Isolation - Client Job Access Denied", True, "Client correctly denied access to fixer available jobs")
+    elif client_jobs_response and client_jobs_response.status_code == 200:
+        log_test("User Isolation - Client Job Access Denied", False, "Client incorrectly allowed access to fixer available jobs")
+    else:
+        log_test("User Isolation - Client Job Access Denied", False, f"Unexpected response: HTTP {client_jobs_response.status_code if client_jobs_response else 'No response'}")
+
+def test_database_operations():
+    """Test 7: Verify database operations"""
+    print("🔄 Testing Database Operations...")
+    
+    # Authenticate fixer to trigger table creation
+    fixer_token, fixer_user = authenticate_user(FIXER_CREDENTIALS, "fixer")
+    if not fixer_token:
+        log_test("Database Operations - Authentication", False, "Failed to authenticate fixer")
+        return
+    
+    # Access notifications endpoint to ensure table exists
+    headers = {'Authorization': f'Bearer {fixer_token}'}
+    notifications_response = make_request('GET', '/fixer/notifications', headers=headers)
+    
+    if notifications_response and notifications_response.status_code == 200:
+        log_test("Database Operations - Table Access", True, "fixer_notifications table accessible")
+        
+        try:
+            notifications_data = notifications_response.json()
+            if notifications_data.get('success'):
+                notifications = notifications_data.get('notifications', [])
+                
+                # Check data persistence by verifying notification structure
+                if notifications:
+                    sample_notification = notifications[0]
+                    required_fields = ['id', 'job_id', 'notification_type', 'title', 'message', 'is_read', 'created_at']
+                    missing_fields = [field for field in required_fields if field not in sample_notification]
+                    
+                    if not missing_fields:
+                        log_test("Database Operations - Data Structure", True, "Notification data structure complete")
+                    else:
+                        log_test("Database Operations - Data Structure", False, f"Missing fields in notification: {missing_fields}")
+                    
+                    # Check foreign key relationships
+                    if sample_notification.get('job_details'):
+                        log_test("Database Operations - Foreign Key Relationships", True, "Job details linked correctly to notifications")
+                    else:
+                        log_test("Database Operations - Foreign Key Relationships", False, "Job details not linked to notifications")
+                else:
+                    log_test("Database Operations - Data Persistence", True, "No notifications found (expected for new system)")
+            else:
+                log_test("Database Operations - Table Access", False, f"Failed to access notifications: {notifications_data.get('message')}")
+        except Exception as e:
+            log_test("Database Operations - Data Structure", False, f"Error parsing notification data: {str(e)}")
+    else:
+        log_test("Database Operations - Table Access", False, f"Failed to access fixer_notifications table: HTTP {notifications_response.status_code if notifications_response else 'No response'}")
 
 def main():
     """Main test execution"""
-    print("🚀 LEARNING PROGRESS TRACKING SYSTEM TESTING")
-    print("=" * 60)
+    print("=" * 80)
+    print("🚀 FIXMATE-SA AUTOMATIC JOB ALLOCATION SYSTEM TESTING")
+    print("=" * 80)
     print(f"Backend URL: {BACKEND_URL}")
-    print(f"Testing Time: {datetime.now().isoformat()}")
+    print(f"Test started at: {datetime.now().isoformat()}")
+    print("=" * 80)
     print()
     
-    # Step 1: Authenticate all users
-    print("📋 STEP 1: USER AUTHENTICATION")
-    print("-" * 40)
+    # Test 1: Job Creation and Automatic Allocation
+    job_id = test_job_creation_and_allocation()
     
-    client_token, client_id = authenticate_user("client")
-    fixer_token, fixer_id = authenticate_user("fixer")
-    admin_token, admin_id = authenticate_user("admin")
+    # Test 2: Fixer Notification System
+    notifications = test_fixer_notifications(job_id)
     
-    if not all([client_token, fixer_token, admin_token]):
-        print("❌ Authentication failed for one or more users. Cannot proceed with testing.")
-        return
+    # Test 3: Available Jobs for Fixers
+    available_jobs = test_available_jobs()
     
-    print()
+    # Test 4: Job Application Process
+    test_job_application(available_jobs)
     
-    # Step 2: Test unauthenticated access
-    print("📋 STEP 2: AUTHENTICATION SECURITY TESTING")
-    print("-" * 40)
+    # Test 5: Notification Management
+    test_notification_management(notifications)
     
-    test_unauthenticated_access()
-    print()
+    # Test 6: User Isolation
+    test_user_isolation()
     
-    # Step 3: User 1 (Client) Learning Progress Testing
-    print("📋 STEP 3: USER 1 (CLIENT) LEARNING PROGRESS TESTING")
-    print("-" * 40)
+    # Test 7: Database Operations
+    test_database_operations()
     
-    # First, get learning progress to trigger table creation
-    client_learning_data_initial = test_get_learning_progress(client_token, client_id, "client")
+    # Final Results
+    print("=" * 80)
+    print("📊 FINAL TEST RESULTS")
+    print("=" * 80)
+    print(f"Total Tests: {total_tests}")
+    print(f"Passed: {passed_tests} ✅")
+    print(f"Failed: {failed_tests} ❌")
+    print(f"Success Rate: {(passed_tests/total_tests*100):.1f}%" if total_tests > 0 else "No tests run")
+    print("=" * 80)
     
-    # Create learning progress for google-digital-marketing course
-    client_course_data = {
-        "course_id": "google-digital-marketing",
-        "course_title": "Google Digital Marketing Fundamentals",
-        "course_platform": "Google Skillshop",
-        "progress_percentage": 25.0,
-        "time_spent_minutes": 60,
-        "status": "in_progress",
-        "notes": "Learning about digital marketing strategies"
-    }
-    
-    test_learning_progress_creation(client_token, client_id, "client", client_course_data)
-    
-    # Update progress to 50% with 120 minutes
-    client_update_data = {
-        "course_title": "Google Digital Marketing Fundamentals",
-        "course_platform": "Google Skillshop",
-        "progress_percentage": 50.0,
-        "time_spent_minutes": 120,
-        "status": "in_progress"
-    }
-    
-    test_learning_progress_update(client_token, client_id, "client", "google-digital-marketing", client_update_data)
-    
-    # Add certificate for completed course
-    client_cert_data = {
-        "course_id": "google-digital-marketing",
-        "course_title": "Google Digital Marketing Fundamentals",
-        "course_platform": "Google Skillshop",
-        "certificate_type": "Professional Certificate",
-        "certificate_url": "https://skillshop.google.com/certificate/123456",
-        "completion_date": datetime.now().isoformat()
-    }
-    
-    test_add_certificate(client_token, client_id, "client", client_cert_data)
-    
-    # Get client's learning progress again
-    client_learning_data = test_get_learning_progress(client_token, client_id, "client")
-    
-    print()
-    
-    # Step 4: User 2 (Fixer) Learning Progress Testing
-    print("📋 STEP 4: USER 2 (FIXER) LEARNING PROGRESS TESTING")
-    print("-" * 40)
-    
-    # First, get learning progress to ensure tables exist
-    fixer_learning_data_initial = test_get_learning_progress(fixer_token, fixer_id, "fixer")
-    
-    # Create different learning progress for microsoft-azure-fundamentals
-    fixer_course_data = {
-        "course_id": "microsoft-azure-fundamentals",
-        "course_title": "Microsoft Azure Fundamentals",
-        "course_platform": "Microsoft Learn",
-        "progress_percentage": 40.0,
-        "time_spent_minutes": 90,
-        "status": "in_progress",
-        "notes": "Learning cloud computing basics"
-    }
-    
-    test_learning_progress_creation(fixer_token, fixer_id, "fixer", fixer_course_data)
-    
-    # Update progress to 75% with 180 minutes
-    fixer_update_data = {
-        "course_title": "Microsoft Azure Fundamentals",
-        "course_platform": "Microsoft Learn",
-        "progress_percentage": 75.0,
-        "time_spent_minutes": 180,
-        "status": "in_progress"
-    }
-    
-    test_learning_progress_update(fixer_token, fixer_id, "fixer", "microsoft-azure-fundamentals", fixer_update_data)
-    
-    # Get fixer's learning progress
-    fixer_learning_data = test_get_learning_progress(fixer_token, fixer_id, "fixer")
-    
-    print()
-    
-    # Step 5: Cross-User Data Isolation Testing
-    print("📋 STEP 5: CROSS-USER DATA ISOLATION TESTING")
-    print("-" * 40)
-    
-    if client_learning_data and fixer_learning_data:
-        test_user_data_isolation(client_learning_data, fixer_learning_data)
+    if failed_tests == 0:
+        print("🎉 ALL TESTS PASSED! Automatic Job Allocation System is working correctly!")
+    elif failed_tests <= 2:
+        print("⚠️  MOSTLY WORKING with minor issues that need attention")
     else:
-        log_test("User Data Isolation", "FAIL", "Could not retrieve learning data for comparison")
+        print("🚨 CRITICAL ISSUES DETECTED - System needs immediate attention")
     
-    print()
-    
-    # Step 6: Admin Analytics Testing
-    print("📋 STEP 6: ADMIN ANALYTICS TESTING")
-    print("-" * 40)
-    
-    admin_analytics = test_admin_learning_analytics(admin_token)
-    
-    # Test non-admin access blocking
-    test_non_admin_analytics_access(client_token, fixer_token)
-    
-    print()
-    
-    # Step 7: Database Operations Testing
-    print("📋 STEP 7: DATABASE OPERATIONS TESTING")
-    print("-" * 40)
-    
-    test_database_table_creation()
-    
-    print()
-    
-    # Final Results Summary
-    print("📊 FINAL TEST RESULTS SUMMARY")
-    print("=" * 60)
-    
-    total = test_results["total_tests"]
-    passed = test_results["passed_tests"]
-    failed = test_results["failed_tests"]
-    success_rate = (passed / total * 100) if total > 0 else 0
-    
-    print(f"Total Tests: {total}")
-    print(f"Passed: {passed} ✅")
-    print(f"Failed: {failed} ❌")
-    print(f"Success Rate: {success_rate:.1f}%")
-    print()
-    
-    if success_rate >= 90:
-        print("🎉 EXCELLENT! Learning Progress Tracking system is working excellently!")
-    elif success_rate >= 75:
-        print("✅ GOOD! Learning Progress Tracking system is working well with minor issues.")
-    elif success_rate >= 50:
-        print("⚠️ MODERATE! Learning Progress Tracking system has some issues that need attention.")
-    else:
-        print("❌ CRITICAL! Learning Progress Tracking system has major issues requiring immediate attention.")
-    
-    print()
-    
-    # Critical Success Criteria Verification
-    print("🎯 CRITICAL SUCCESS CRITERIA VERIFICATION")
-    print("-" * 50)
-    
-    criteria_met = 0
-    total_criteria = 6
-    
-    # Check each criterion
-    if any("User Data Isolation" in test["test"] and test["status"] == "PASS" for test in test_results["test_details"]):
-        print("✅ User progress completely isolated per user")
-        criteria_met += 1
-    else:
-        print("❌ User progress isolation failed")
-    
-    if any("Admin Learning Analytics" in test["test"] and test["status"] == "PASS" for test in test_results["test_details"]):
-        print("✅ Admin analytics aggregate all user data properly")
-        criteria_met += 1
-    else:
-        print("❌ Admin analytics failed")
-    
-    if admin_analytics and admin_analytics.get("ai_insights"):
-        print("✅ AI insights provide actionable recommendations")
-        criteria_met += 1
-    else:
-        print("❌ AI insights generation failed")
-    
-    if any("User Data Isolation" in test["test"] and test["status"] == "PASS" for test in test_results["test_details"]):
-        print("✅ No cross-user data contamination")
-        criteria_met += 1
-    else:
-        print("❌ Cross-user data contamination detected")
-    
-    if any("Authentication" in test["test"] and test["status"] == "PASS" for test in test_results["test_details"]):
-        print("✅ Robust authentication on all endpoints")
-        criteria_met += 1
-    else:
-        print("❌ Authentication issues detected")
-    
-    if any("Database" in test["test"] and test["status"] == "PASS" for test in test_results["test_details"]):
-        print("✅ Database tables created automatically")
-        criteria_met += 1
-    else:
-        print("❌ Database table creation failed")
-    
-    print()
-    print(f"Critical Criteria Met: {criteria_met}/{total_criteria} ({criteria_met/total_criteria*100:.1f}%)")
-    
-    if criteria_met == total_criteria:
-        print("🏆 ALL CRITICAL SUCCESS CRITERIA MET! System is production ready!")
-    elif criteria_met >= 4:
-        print("⚠️ Most critical criteria met, minor issues need addressing")
-    else:
-        print("🚨 CRITICAL ISSUES DETECTED! System needs significant fixes before production")
+    print(f"Test completed at: {datetime.now().isoformat()}")
+    print("=" * 80)
 
 if __name__ == "__main__":
     main()
