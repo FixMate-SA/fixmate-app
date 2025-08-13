@@ -20,12 +20,32 @@ const JobList = () => {
   const fetchJobs = async () => {
     try {
       setLoading(true);
-      const response = await apiService.getJobs();
+      // Fetch jobs for the current user only
+      const response = await apiService.getJobs({ client_id: user?.id });
       
-      // Ensure we always set an array
-      const jobsData = Array.isArray(response.data) ? response.data : 
-                       Array.isArray(response) ? response : [];
-      setJobs(jobsData);
+      // Handle the response based on the new API structure
+      let jobsData = [];
+      if (response.data?.jobs) {
+        // New API format: { success: true, jobs: [...] }
+        jobsData = Array.isArray(response.data.jobs) ? response.data.jobs : [];
+      } else if (response.data?.success && Array.isArray(response.data)) {
+        // Alternative format: { success: true, data: [...] }
+        jobsData = response.data;
+      } else if (Array.isArray(response.data)) {
+        // Direct array format
+        jobsData = response.data;
+      } else if (Array.isArray(response)) {
+        // Direct response format
+        jobsData = response;
+      }
+      
+      // Filter to ensure we only show jobs for the current user
+      const userJobs = jobsData.filter(job => 
+        job.client_id === user?.id || job.user_id === user?.id
+      );
+      
+      setJobs(userJobs);
+      console.log(`Fetched ${userJobs.length} jobs for user ${user?.id}`);
     } catch (err) {
       console.error('Error fetching jobs:', err);
       setError(t('errorFetchingJobs', 'Failed to fetch jobs. Please try again.'));
