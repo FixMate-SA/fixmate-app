@@ -1225,6 +1225,125 @@ async def get_user_compliance_requests(request: Request, db: Session = Depends(g
             data=[]
         )
 
+# Document Upload Endpoint for Business Compliance
+class DocumentUploadResponse(BaseModel):
+    success: bool
+    message: str
+    document: Optional[Dict[str, Any]] = None
+
+@app.post("/api/compliance/upload-document", response_model=DocumentUploadResponse)
+async def upload_compliance_document(
+    request: Request,
+    document: UploadFile = File(...),
+    request_id: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Upload a document for a compliance request"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Validate file type
+        allowed_extensions = {'.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'}
+        file_extension = '.' + document.filename.split('.')[-1].lower() if '.' in document.filename else ''
+        
+        if file_extension not in allowed_extensions:
+            return DocumentUploadResponse(
+                success=False,
+                message="Invalid file type. Allowed: PDF, DOC, DOCX, JPG, PNG"
+            )
+        
+        # Validate file size (10MB limit)
+        content = await document.read()
+        if len(content) > 10 * 1024 * 1024:  # 10MB
+            return DocumentUploadResponse(
+                success=False,
+                message="File size too large. Maximum 10MB allowed."
+            )
+        
+        # For this implementation, we'll just store document metadata
+        # In a production system, you'd save the file to disk/cloud storage
+        
+        # Generate unique document ID
+        doc_id = f"doc_{uuid.uuid4()}"
+        
+        # Determine document type based on extension
+        doc_type_map = {
+            '.pdf': 'PDF Document',
+            '.doc': 'Word Document', 
+            '.docx': 'Word Document',
+            '.jpg': 'Image',
+            '.jpeg': 'Image', 
+            '.png': 'Image'
+        }
+        doc_type = doc_type_map.get(file_extension, 'Document')
+        
+        # Create documents table if it doesn't exist
+        create_table_query = text("""
+            CREATE TABLE IF NOT EXISTS compliance_documents (
+                id VARCHAR PRIMARY KEY,
+                user_id VARCHAR NOT NULL,
+                request_id VARCHAR,
+                filename VARCHAR NOT NULL,
+                file_type VARCHAR NOT NULL,
+                file_size INTEGER NOT NULL,
+                uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        db.execute(create_table_query)
+        
+        # Insert document record
+        insert_query = text("""
+            INSERT INTO compliance_documents (
+                id, user_id, request_id, filename, file_type, file_size, uploaded_at
+            ) VALUES (
+                :id, :user_id, :request_id, :filename, :file_type, :file_size, :uploaded_at
+            )
+        """)
+        
+        db.execute(insert_query, {
+            'id': doc_id,
+            'user_id': user_id,
+            'request_id': request_id if request_id != 'new' else None,
+            'filename': document.filename,
+            'file_type': doc_type,
+            'file_size': len(content),
+            'uploaded_at': datetime.utcnow()
+        })
+        
+        db.commit()
+        
+        # Return document info in the format expected by frontend
+        document_info = {
+            "id": doc_id,
+            "name": document.filename,
+            "type": doc_type,
+            "size": len(content),
+            "uploaded_at": datetime.utcnow().isoformat(),
+            "request_id": request_id if request_id != 'new' else None
+        }
+        
+        return DocumentUploadResponse(
+            success=True,
+            message="Document uploaded successfully",
+            document=document_info
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Document upload error: {str(e)}")
+        return DocumentUploadResponse(
+            success=False,
+            message="Failed to upload document"
+        )
+
 # Existing endpoints (keeping for compatibility)
 @app.get("/api/test")
 async def test_endpoint():
