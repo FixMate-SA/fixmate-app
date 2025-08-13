@@ -987,9 +987,20 @@ async def get_fixers_by_service(service: str, db: Session = Depends(get_db)):
 
 # Dashboard API Endpoint
 @app.get("/api/dashboard/{user_id}")
-async def get_dashboard(user_id: str, db: Session = Depends(get_db)):
-    """Get dashboard statistics for a user"""
+async def get_dashboard(user_id: str, request: Request, db: Session = Depends(get_db)):
+    """Get dashboard statistics for authenticated user"""
     try:
+        # Extract and validate user from token
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Missing or invalid authorization token")
+            
+        authenticated_user_id = auth_header.replace('Bearer token_', '')
+        
+        # Security check: users can only access their own dashboard
+        if authenticated_user_id != user_id:
+            raise HTTPException(status_code=403, detail="Access denied: You can only access your own dashboard")
+        
         # Get user info
         user_query = text("SELECT role FROM users WHERE id = :user_id")
         user_result = db.execute(user_query, {'user_id': user_id}).fetchone()
