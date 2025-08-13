@@ -324,6 +324,36 @@ const B2BPortal = () => {
     }
   };
 
+  const handleRemoveLocation = async (locationId) => {
+    if (!window.confirm('Are you sure you want to remove this location?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/enterprise/locations/${locationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          alert('✅ Location removed successfully!');
+          fetchEnterpriseData(); // Refresh data
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } else {
+        alert('❌ Failed to remove location. Please try again.');
+      }
+    } catch (error) {
+      console.error('Remove location error:', error);
+      alert('❌ Error removing location. Please try again.');
+    }
+  };
+
   const handleBookServiceForLocation = async (locationId) => {
     try {
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/enterprise/locations/${locationId}/book-service`, {
