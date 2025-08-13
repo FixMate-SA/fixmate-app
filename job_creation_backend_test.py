@@ -13,8 +13,8 @@ from typing import Dict, Any, Optional
 
 class JobCreationTester:
     def __init__(self):
-        # Use local backend URL for testing
-        self.backend_url = "http://localhost:8001"
+        # Test both local and production URLs
+        self.backend_url = "https://fixmate-sa-app-a448c751e1d2.herokuapp.com"
         self.api_base = f"{self.backend_url}/api"
         
         # Test configuration
