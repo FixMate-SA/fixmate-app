@@ -663,6 +663,60 @@ class JobResponse(BaseModel):
     job_id: Optional[str] = None
     job: Optional[Dict[str, Any]] = None
 
+# Automatic Job Allocation System
+async def allocate_job_to_fixers(job_id: str, job_data: JobCreate, db: Session):
+    """
+    Automatically allocate job to available fixers based on service type and location
+    """
+    try:
+        # Find fixers that provide the required service
+        query = text("""
+            SELECT id, user_id, name, email, services, location, rating, 
+                   total_jobs, is_active, is_approved, jobs_completed
+            FROM fixers 
+            WHERE is_active = true 
+            AND is_approved = true
+            AND (services ILIKE :service_pattern OR services ILIKE :service_pattern2)
+            ORDER BY rating DESC, jobs_completed DESC
+            LIMIT 5
+        """)
+        
+        service_pattern = f'%"{job_data.category}"%'
+        service_pattern2 = f'%{job_data.category}%'
+        
+        result = db.execute(query, {
+            'service_pattern': service_pattern,
+            'service_pattern2': service_pattern2
+        }).fetchall()
+        
+        if result:
+            # Assign to the top-rated available fixer
+            selected_fixer = result[0]
+            fixer_id = selected_fixer[0]
+            
+            # Update job with assigned fixer
+            update_query = text("""
+                UPDATE jobs 
+                SET fixer_id = :fixer_id, status = 'assigned', updated_at = :updated_at
+                WHERE id = :job_id
+            """)
+            
+            db.execute(update_query, {
+                'fixer_id': fixer_id,
+                'job_id': job_id,
+                'updated_at': datetime.utcnow()
+            })
+            
+            print(f"✅ Job {job_id} assigned to fixer {selected_fixer[2]} ({fixer_id})")
+            return True
+        else:
+            print(f"⚠️ No available fixers found for service: {job_data.category}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Job allocation error: {str(e)}")
+        return False
+
 @app.post("/api/jobs", response_model=JobResponse)
 async def create_job(job_data: JobCreate, db: Session = Depends(get_db)):
     """Create a new job"""
