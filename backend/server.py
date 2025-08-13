@@ -55,6 +55,16 @@ class UserLogin(BaseModel):
     phone: str
     password: str
 
+class UserSignup(BaseModel):
+    phone: str
+    first_name: str
+    last_name: str
+    id_number: str
+    town: str
+    email: str
+    password: str
+    confirm_password: str
+
 class UserResponse(BaseModel):
     success: bool
     message: str
