@@ -30,8 +30,13 @@ const BusinessCompliance = () => {
 
   useEffect(() => {
     fetchCategories();
-    fetchUserRequests();
-  }, [user]); // Add user dependency to re-fetch when user changes
+    if (user?.id) {
+      // Clear any existing data when user changes
+      setUserRequests([]);
+      console.log('🔄 DEBUG: User changed, clearing requests and fetching fresh data for user:', user.id);
+      fetchUserRequests();
+    }
+  }, [user?.id]); // Watch for user ID changes specifically
 
   const fetchCategories = async () => {
     try {
