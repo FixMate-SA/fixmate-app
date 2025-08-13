@@ -703,6 +703,177 @@ async def get_job(job_id: str, db: Session = Depends(get_db)):
         print(f"Get job error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Fixer Management Endpoints
+@app.get("/api/fixers")
+async def get_fixers(db: Session = Depends(get_db)):
+    """Get all active fixers"""
+    try:
+        query = text("""
+            SELECT id, user_id, name, email, services, location, rating, 
+                   total_jobs, is_active, is_approved, jobs_completed,
+                   completion_percentage, created_at
+            FROM fixers 
+            WHERE is_active = true
+            ORDER BY rating DESC, jobs_completed DESC
+        """)
+        result = db.execute(query).fetchall()
+        
+        fixers_data = []
+        for row in result:
+            # Parse services (stored as JSON string)
+            services = []
+            if row[4]:  # services column
+                try:
+                    import json
+                    services = json.loads(row[4]) if isinstance(row[4], str) else row[4]
+                except:
+                    services = row[4].split(',') if isinstance(row[4], str) else []
+            
+            fixers_data.append({
+                "id": row[0],
+                "user_id": row[1], 
+                "name": row[2],
+                "email": row[3],
+                "services": services,
+                "location": row[5],
+                "rating": row[6] or 0.0,
+                "total_jobs": row[7] or 0,
+                "is_active": row[8],
+                "is_approved": row[9],
+                "jobs_completed": row[10] or 0,
+                "completion_percentage": row[11] or 0.0,
+                "created_at": row[12].isoformat() if row[12] else None
+            })
+        
+        return {
+            "success": True,
+            "fixers": fixers_data
+        }
+        
+    except Exception as e:
+        print(f"Get fixers error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/fixers/{fixer_id}")
+async def get_fixer(fixer_id: str, db: Session = Depends(get_db)):
+    """Get specific fixer by ID"""
+    try:
+        query = text("""
+            SELECT id, user_id, name, email, services, location, rating, 
+                   total_jobs, is_active, is_approved, jobs_completed,
+                   completion_percentage, skills, created_at
+            FROM fixers 
+            WHERE id = :fixer_id
+        """)
+        result = db.execute(query, {'fixer_id': fixer_id}).fetchone()
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Fixer not found")
+        
+        # Parse services
+        services = []
+        if result[4]:
+            try:
+                import json
+                services = json.loads(result[4]) if isinstance(result[4], str) else result[4]
+            except:
+                services = result[4].split(',') if isinstance(result[4], str) else []
+        
+        # Parse skills
+        skills = []
+        if result[12]:
+            try:
+                import json
+                skills = json.loads(result[12]) if isinstance(result[12], str) else result[12]
+            except:
+                skills = result[12].split(',') if isinstance(result[12], str) else []
+        
+        return {
+            "success": True,
+            "fixer": {
+                "id": result[0],
+                "user_id": result[1],
+                "name": result[2], 
+                "email": result[3],
+                "services": services,
+                "location": result[5],
+                "rating": result[6] or 0.0,
+                "total_jobs": result[7] or 0,
+                "is_active": result[8],
+                "is_approved": result[9],
+                "jobs_completed": result[10] or 0,
+                "completion_percentage": result[11] or 0.0,
+                "skills": skills,
+                "created_at": result[13].isoformat() if result[13] else None
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Get fixer error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/fixers/by-service/{service}")
+async def get_fixers_by_service(service: str, db: Session = Depends(get_db)):
+    """Get fixers that provide a specific service"""
+    try:
+        # Use ILIKE for case-insensitive search within JSON services
+        query = text("""
+            SELECT id, user_id, name, email, services, location, rating, 
+                   total_jobs, is_active, is_approved, jobs_completed,
+                   completion_percentage, created_at
+            FROM fixers 
+            WHERE is_active = true 
+            AND (services ILIKE :service_pattern OR services ILIKE :service_pattern2)
+            ORDER BY rating DESC, jobs_completed DESC
+        """)
+        
+        service_pattern = f'%"{service}"%'
+        service_pattern2 = f'%{service}%'
+        
+        result = db.execute(query, {
+            'service_pattern': service_pattern,
+            'service_pattern2': service_pattern2
+        }).fetchall()
+        
+        fixers_data = []
+        for row in result:
+            # Parse services
+            services = []
+            if row[4]:
+                try:
+                    import json
+                    services = json.loads(row[4]) if isinstance(row[4], str) else row[4]
+                except:
+                    services = row[4].split(',') if isinstance(row[4], str) else []
+            
+            fixers_data.append({
+                "id": row[0],
+                "user_id": row[1],
+                "name": row[2],
+                "email": row[3], 
+                "services": services,
+                "location": row[5],
+                "rating": row[6] or 0.0,
+                "total_jobs": row[7] or 0,
+                "is_active": row[8],
+                "is_approved": row[9],
+                "jobs_completed": row[10] or 0,
+                "completion_percentage": row[11] or 0.0,
+                "created_at": row[12].isoformat() if row[12] else None
+            })
+        
+        return {
+            "success": True,
+            "service": service,
+            "fixers": fixers_data
+        }
+        
+    except Exception as e:
+        print(f"Get fixers by service error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Existing endpoints (keeping for compatibility)
 @app.get("/api/test")
 async def test_endpoint():
