@@ -3439,6 +3439,289 @@ async def generate_learning_insights(analytics_data: dict) -> dict:
             "note": "Advanced AI analysis temporarily unavailable"
         }
 
+# Fixer Job Management Endpoints
+
+@app.get("/api/fixer/available-jobs")
+async def get_fixer_available_jobs(request: Request, db: Session = Depends(get_db)):
+    """Get available jobs for authenticated fixer"""
+    try:
+        # Extract fixer_id from Authorization header  
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Verify user is a fixer
+        fixer_check = text("SELECT id FROM fixers WHERE user_id = :user_id AND is_active = true")
+        fixer_result = db.execute(fixer_check, {'user_id': user_id}).fetchone()
+        
+        if not fixer_result:
+            raise HTTPException(status_code=403, detail="Fixer access required")
+            
+        fixer_id = fixer_result[0]
+        
+        # Get jobs that are either unassigned or available to this fixer
+        jobs_query = text("""
+            SELECT DISTINCT j.id, j.service, j.description, j.location, j.estimated_price, 
+                   j.priority_level, j.status, j.created_at, j.user_id as client_id,
+                   u.name as client_name
+            FROM jobs j
+            LEFT JOIN users u ON j.user_id = u.id
+            LEFT JOIN fixer_notifications fn ON j.id = fn.job_id AND fn.fixer_id = :fixer_id
+            WHERE (j.status IN ('pending', 'assigned') AND j.fixer_id IS NULL)
+            OR (fn.notification_type = 'job_available' AND j.status != 'completed')
+            ORDER BY j.created_at DESC
+            LIMIT 20
+        """)
+        
+        result = db.execute(jobs_query, {'fixer_id': fixer_id}).fetchall()
+        
+        available_jobs = []
+        for row in result:
+            available_jobs.append({
+                "id": row[0],
+                "service": row[1],
+                "description": row[2],
+                "location": row[3],
+                "estimated_price": float(row[4]) if row[4] else 0.0,
+                "priority_level": row[5],
+                "status": row[6],
+                "created_at": row[7].isoformat() if row[7] else None,
+                "client_id": row[8],
+                "client_name": row[9] or "Unknown Client"
+            })
+        
+        return {
+            "success": True,
+            "available_jobs": available_jobs,
+            "message": f"Found {len(available_jobs)} available jobs"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Get available jobs error: {str(e)}")
+        return {
+            "success": False,
+            "available_jobs": [],
+            "message": "Failed to load available jobs"
+        }
+
+@app.get("/api/fixer/notifications")
+async def get_fixer_notifications(request: Request, db: Session = Depends(get_db)):
+    """Get notifications for authenticated fixer"""
+    try:
+        # Extract fixer_id from Authorization header  
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Verify user is a fixer
+        fixer_check = text("SELECT id FROM fixers WHERE user_id = :user_id AND is_active = true")
+        fixer_result = db.execute(fixer_check, {'user_id': user_id}).fetchone()
+        
+        if not fixer_result:
+            raise HTTPException(status_code=403, detail="Fixer access required")
+            
+        fixer_id = fixer_result[0]
+        
+        # Get notifications for this fixer
+        notifications_query = text("""
+            SELECT fn.id, fn.job_id, fn.notification_type, fn.title, fn.message, 
+                   fn.is_read, fn.created_at,
+                   j.service, j.location, j.estimated_price, j.status as job_status
+            FROM fixer_notifications fn
+            LEFT JOIN jobs j ON fn.job_id = j.id
+            WHERE fn.fixer_id = :fixer_id
+            ORDER BY fn.created_at DESC
+            LIMIT 50
+        """)
+        
+        result = db.execute(notifications_query, {'fixer_id': fixer_id}).fetchall()
+        
+        notifications = []
+        unread_count = 0
+        
+        for row in result:
+            is_read = row[5]
+            if not is_read:
+                unread_count += 1
+                
+            notifications.append({
+                "id": row[0],
+                "job_id": row[1],
+                "notification_type": row[2],
+                "title": row[3],
+                "message": row[4],
+                "is_read": is_read,
+                "created_at": row[6].isoformat() if row[6] else None,
+                "job_details": {
+                    "service": row[7],
+                    "location": row[8],
+                    "estimated_price": float(row[9]) if row[9] else 0.0,
+                    "job_status": row[10]
+                } if row[7] else None
+            })
+        
+        return {
+            "success": True,
+            "notifications": notifications,
+            "unread_count": unread_count,
+            "message": f"Found {len(notifications)} notifications ({unread_count} unread)"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Get notifications error: {str(e)}")
+        return {
+            "success": False,
+            "notifications": [],
+            "unread_count": 0,
+            "message": "Failed to load notifications"
+        }
+
+@app.post("/api/fixer/notifications/{notification_id}/mark-read")
+async def mark_notification_read(notification_id: str, request: Request, db: Session = Depends(get_db)):
+    """Mark a notification as read"""
+    try:
+        # Extract fixer_id from Authorization header  
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Verify user is a fixer
+        fixer_check = text("SELECT id FROM fixers WHERE user_id = :user_id AND is_active = true")
+        fixer_result = db.execute(fixer_check, {'user_id': user_id}).fetchone()
+        
+        if not fixer_result:
+            raise HTTPException(status_code=403, detail="Fixer access required")
+            
+        fixer_id = fixer_result[0]
+        
+        # Mark notification as read
+        update_query = text("""
+            UPDATE fixer_notifications 
+            SET is_read = true 
+            WHERE id = :notification_id AND fixer_id = :fixer_id
+        """)
+        
+        result = db.execute(update_query, {
+            'notification_id': notification_id,
+            'fixer_id': fixer_id
+        })
+        
+        db.commit()
+        
+        if result.rowcount > 0:
+            return {
+                "success": True,
+                "message": "Notification marked as read"
+            }
+        else:
+            return {
+                "success": False,
+                "message": "Notification not found or already read"
+            }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Mark notification read error: {str(e)}")
+        return {
+            "success": False,
+            "message": "Failed to mark notification as read"
+        }
+
+@app.post("/api/fixer/apply-job/{job_id}")
+async def apply_for_job(job_id: str, request: Request, db: Session = Depends(get_db)):
+    """Allow fixer to apply for an available job"""
+    try:
+        # Extract fixer_id from Authorization header  
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Verify user is a fixer
+        fixer_check = text("SELECT id, name FROM fixers WHERE user_id = :user_id AND is_active = true")
+        fixer_result = db.execute(fixer_check, {'user_id': user_id}).fetchone()
+        
+        if not fixer_result:
+            raise HTTPException(status_code=403, detail="Fixer access required")
+            
+        fixer_id = fixer_result[0]
+        fixer_name = fixer_result[1]
+        
+        # Check if job exists and is available
+        job_check = text("""
+            SELECT status, fixer_id, service, description 
+            FROM jobs 
+            WHERE id = :job_id
+        """)
+        
+        job_result = db.execute(job_check, {'job_id': job_id}).fetchone()
+        
+        if not job_result:
+            return {
+                "success": False,
+                "message": "Job not found"
+            }
+        
+        job_status, current_fixer_id, service, description = job_result
+        
+        if job_status == 'completed':
+            return {
+                "success": False,
+                "message": "Job is already completed"
+            }
+        
+        if current_fixer_id and job_status == 'assigned':
+            return {
+                "success": False,
+                "message": "Job is already assigned to another fixer"
+            }
+        
+        # Assign job to this fixer
+        update_query = text("""
+            UPDATE jobs 
+            SET fixer_id = :fixer_id, status = 'assigned', updated_at = :updated_at
+            WHERE id = :job_id
+        """)
+        
+        db.execute(update_query, {
+            'fixer_id': fixer_id,
+            'job_id': job_id,
+            'updated_at': datetime.utcnow()
+        })
+        
+        db.commit()
+        
+        print(f"✅ Fixer {fixer_name} ({fixer_id}) applied and was assigned to job {job_id}")
+        
+        return {
+            "success": True,
+            "message": f"Successfully applied for {service} job! You are now assigned to this job.",
+            "job_id": job_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Apply for job error: {str(e)}")
+        return {
+            "success": False,
+            "message": "Failed to apply for job"
+        }
+
 # Existing endpoints (keeping for compatibility)
 @app.get("/api/test")
 async def test_endpoint():
