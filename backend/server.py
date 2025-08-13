@@ -2224,10 +2224,12 @@ async def book_service_for_location(location_id: str, request: Request, db: Sess
         job_insert_query = text("""
             INSERT INTO jobs (
                 id, user_id, service, description, location, 
-                estimated_price, status, priority_level, created_at
+                estimated_price, status, priority_level, created_at,
+                terms_accepted, workflow_stage, payment_status
             ) VALUES (
                 :id, :user_id, :service, :description, :location,
-                :estimated_price, :status, :priority_level, :created_at
+                :estimated_price, :status, :priority_level, :created_at,
+                :terms_accepted, :workflow_stage, :payment_status
             )
         """)
         
