@@ -720,27 +720,31 @@ async def create_job(job_data: JobCreate, db: Session = Depends(get_db)):
         )
 
 @app.get("/api/jobs")
-async def get_jobs(client_id: Optional[str] = None, db: Session = Depends(get_db)):
-    """Get jobs (optionally filtered by client_id)"""
+async def get_jobs(request: Request, client_id: Optional[str] = None, db: Session = Depends(get_db)):
+    """Get jobs for authenticated user"""
     try:
-        # Use raw SQL to match actual database schema
-        if client_id:
-            query = text("""
-                SELECT id, user_id, service, description, location, status, 
-                       estimated_price, priority_level, created_at, fixer_id
-                FROM jobs 
-                WHERE user_id = :client_id 
-                ORDER BY created_at DESC
-            """)
-            result = db.execute(query, {'client_id': client_id}).fetchall()
-        else:
-            query = text("""
-                SELECT id, user_id, service, description, location, status, 
-                       estimated_price, priority_level, created_at, fixer_id
-                FROM jobs 
-                ORDER BY created_at DESC
-            """)
-            result = db.execute(query).fetchall()
+        # Extract and validate user from token
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Missing or invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Verify user exists
+        user_check = text("SELECT id FROM users WHERE id = :user_id")
+        user_result = db.execute(user_check, {'user_id': user_id}).fetchone()
+        if not user_result:
+            raise HTTPException(status_code=401, detail="Invalid user token")
+        
+        # Always filter by authenticated user's ID for security
+        query = text("""
+            SELECT id, user_id, service, description, location, status, 
+                   estimated_price, priority_level, created_at, fixer_id
+            FROM jobs 
+            WHERE user_id = :user_id 
+            ORDER BY created_at DESC
+        """)
+        result = db.execute(query, {'user_id': user_id}).fetchall()
         
         jobs_data = []
         for row in result:
