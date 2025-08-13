@@ -2639,7 +2639,6 @@ async def renew_enterprise_contract(contract_id: str, request: Request, db: Sess
             }
         
         # Calculate new end date
-        from dateutil.relativedelta import relativedelta
         current_end_date = result[0]
         duration_months = result[1]
         new_end_date = current_end_date + relativedelta(months=duration_months)
