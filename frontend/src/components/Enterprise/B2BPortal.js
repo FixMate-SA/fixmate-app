@@ -107,13 +107,14 @@ const B2BPortal = () => {
     }
   ];
 
-  const analyticsData = {
-    monthly_spend: 45000,
-    jobs_completed: 156,
-    average_rating: 4.8,
-    cost_savings: 15000,
+  // Get analytics data from state instead of hardcoded
+  const analyticsData = enterpriseData.analytics || {
+    monthly_spend: 0,
+    jobs_completed: 0,
+    cost_savings: 0,
     response_time: '2.3 hours',
-    completion_rate: 94
+    completion_rate: 94,
+    customer_satisfaction: 4.8
   };
 
   const fetchEnterpriseData = async () => {
