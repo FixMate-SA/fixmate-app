@@ -419,7 +419,7 @@ const LearningPlatform = () => {
               <span className="text-2xl">📚</span>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-gray-600">Total Courses</p>
+              <p className="text-sm text-gray-600">Free Courses</p>
               <p className="text-xl font-semibold">{courses.length}</p>
             </div>
           </div>
@@ -428,11 +428,11 @@ const LearningPlatform = () => {
         <div className="bg-white p-4 rounded-lg shadow-sm border">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-full">
-              <span className="text-2xl">🏆</span>
+              <span className="text-2xl">🎓</span>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-gray-600">Completed</p>
-              <p className="text-xl font-semibold">0</p>
+              <p className="text-sm text-gray-600">With Certificates</p>
+              <p className="text-xl font-semibold">{courses.filter(c => c.certificate_available).length}</p>
             </div>
           </div>
         </div>
@@ -440,11 +440,11 @@ const LearningPlatform = () => {
         <div className="bg-white p-4 rounded-lg shadow-sm border">
           <div className="flex items-center">
             <div className="p-2 bg-yellow-100 rounded-full">
-              <span className="text-2xl">⏱️</span>
+              <span className="text-2xl">🏛️</span>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-gray-600">Learning Hours</p>
-              <p className="text-xl font-semibold">0h</p>
+              <p className="text-sm text-gray-600">Top Institutions</p>
+              <p className="text-xl font-semibold">{[...new Set(courses.map(c => c.platform))].length}</p>
             </div>
           </div>
         </div>
@@ -452,11 +452,11 @@ const LearningPlatform = () => {
         <div className="bg-white p-4 rounded-lg shadow-sm border">
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-full">
-              <span className="text-2xl">🎓</span>
+              <span className="text-2xl">⏱️</span>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-gray-600">Certificates</p>
-              <p className="text-xl font-semibold">0</p>
+              <p className="text-sm text-gray-600">Total Hours</p>
+              <p className="text-xl font-semibold">{Math.round(courses.reduce((sum, c) => sum + c.duration_minutes, 0) / 60)}h</p>
             </div>
           </div>
         </div>
