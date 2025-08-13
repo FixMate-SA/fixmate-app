@@ -121,15 +121,18 @@ user_problem_statement: "Add the announcement section for clients, fixers and ad
 backend:
   - task: "Job Creation API Endpoints - POST/GET /api/jobs"
     implemented: true
-    working: true
+    working: false
     file: "backend/server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "critical"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "✅ IMPLEMENTED JOB CREATION FIX: Added missing job creation API endpoints to resolve blank page issue when users click 'Create Job' button on Heroku deployment. ENDPOINTS ADDED: 1) POST /api/jobs - Creates new jobs with proper field mapping (category→service, client_id→user_id), 2) GET /api/jobs - Retrieves job lists with optional client filtering, 3) GET /api/jobs/{job_id} - Retrieves specific job details. TECHNICAL IMPLEMENTATION: Used raw SQL INSERT/SELECT to match actual database schema instead of ORM models, proper error handling and validation, database field mapping for frontend compatibility. TESTED LOCALLY: Job creation working perfectly (test job created successfully), job retrieval working (jobs list returns properly), all endpoints returning correct HTTP status codes. This fixes the core issue where job creation form would show blank page after submission."
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL ISSUE IDENTIFIED: Job Creation API endpoints have MAJOR DISCREPANCY between local and production deployments. LOCAL TESTING (100% SUCCESS): All 3 endpoints working perfectly - POST /api/jobs creates jobs successfully, GET /api/jobs retrieves 25+ jobs, GET /api/jobs/{job_id} returns complete job details, field mapping (category→service, client_id→user_id) working correctly, authentication functional. PRODUCTION TESTING (25% SUCCESS): ✅ Authentication working (Client role authenticated successfully), ✅ GET /api/jobs returns 20+ jobs with different response format (data array instead of jobs array), ❌ POST /api/jobs FAILING with HTTP 422 - requires 'user_id' and 'service' fields directly instead of 'client_id' and 'category' mapping, ❌ GET /api/jobs/{job_id} returns different response structure (direct job object instead of wrapped in success/job), ❌ Field mapping not working in production - expects different API schema. ROOT CAUSE: Production deployment appears to be running different/older version of job creation endpoints that don't include the new field mapping logic implemented locally. The production API expects direct database field names (user_id, service) while local implementation maps frontend fields (client_id, category). IMMEDIATE ACTION REQUIRED: Deploy the updated backend code with field mapping to production environment to resolve the blank page issue."
 
   - task: "Announcement System Database Models"
     implemented: true
