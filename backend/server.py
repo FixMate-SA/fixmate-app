@@ -2087,6 +2087,325 @@ async def remove_team_member(member_id: str, request: Request, db: Session = Dep
             "message": f"Failed to remove team member: {str(e)}"
         }
 
+# Enterprise Locations Management
+@app.get("/api/enterprise/locations")
+async def get_enterprise_locations(request: Request, db: Session = Depends(get_db)):
+    """Get enterprise locations"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Fetch locations
+        query = text("""
+            SELECT id, name, address, contact_person, contact_phone, 
+                   services_needed, status, created_at
+            FROM enterprise_locations 
+            WHERE user_id = :user_id 
+            ORDER BY created_at DESC
+        """)
+        
+        result = db.execute(query, {'user_id': user_id}).fetchall()
+        
+        locations = []
+        for row in result:
+            locations.append({
+                "id": row[0],
+                "name": row[1],
+                "address": row[2],
+                "contact_person": row[3],
+                "contact_phone": row[4],
+                "services_needed": row[5],
+                "status": row[6],
+                "created_at": row[7].isoformat() if row[7] else None
+            })
+        
+        return {
+            "success": True,
+            "locations": locations
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Get locations error: {str(e)}")
+        return {
+            "success": False,
+            "locations": []
+        }
+
+@app.post("/api/enterprise/locations")
+async def add_enterprise_location(location_data: LocationCreate, request: Request, db: Session = Depends(get_db)):
+    """Add a new enterprise location"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Generate location ID
+        location_id = f"loc_{uuid.uuid4()}"
+        
+        # Insert location
+        insert_query = text("""
+            INSERT INTO enterprise_locations (
+                id, user_id, name, address, contact_person, contact_phone,
+                services_needed, status, created_at
+            ) VALUES (
+                :id, :user_id, :name, :address, :contact_person, :contact_phone,
+                :services_needed, :status, :created_at
+            )
+        """)
+        
+        db.execute(insert_query, {
+            'id': location_id,
+            'user_id': user_id,
+            'name': location_data.name,
+            'address': location_data.address,
+            'contact_person': location_data.contact_person,
+            'contact_phone': location_data.contact_phone,
+            'services_needed': location_data.services_needed,
+            'status': 'active',
+            'created_at': datetime.utcnow()
+        })
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Location added successfully",
+            "location_id": location_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Add location error: {str(e)}")
+        return {
+            "success": False,
+            "message": f"Failed to add location: {str(e)}"
+        }
+
+@app.post("/api/enterprise/locations/{location_id}/book-service")
+async def book_service_for_location(location_id: str, request: Request, db: Session = Depends(get_db)):
+    """Book a service for a specific location"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Verify location belongs to user
+        location_query = text("""
+            SELECT name, services_needed
+            FROM enterprise_locations 
+            WHERE id = :location_id AND user_id = :user_id
+        """)
+        
+        location_result = db.execute(location_query, {
+            'location_id': location_id,
+            'user_id': user_id
+        }).fetchone()
+        
+        if not location_result:
+            raise HTTPException(status_code=404, detail="Location not found")
+        
+        # Create a job booking for this location
+        job_id = f"job_{uuid.uuid4()}"
+        
+        job_insert_query = text("""
+            INSERT INTO jobs (
+                id, user_id, service, description, location, 
+                estimated_price, status, priority_level, created_at
+            ) VALUES (
+                :id, :user_id, :service, :description, :location,
+                :estimated_price, :status, :priority_level, :created_at
+            )
+        """)
+        
+        db.execute(job_insert_query, {
+            'id': job_id,
+            'user_id': user_id,
+            'service': location_result[1][0] if location_result[1] else "General Service",  # First service from array
+            'description': f"Enterprise service booking for {location_result[0]}",
+            'location': location_result[0],
+            'estimated_price': 500.00,
+            'status': 'pending',
+            'priority_level': 'normal',
+            'created_at': datetime.utcnow()
+        })
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Service booked successfully for location",
+            "job_id": job_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Book service error: {str(e)}")
+        return {
+            "success": False,
+            "message": f"Failed to book service: {str(e)}"
+        }
+
+# Enterprise Invoicing
+@app.get("/api/enterprise/invoices")
+async def get_enterprise_invoices(request: Request, db: Session = Depends(get_db)):
+    """Get enterprise invoices"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Fetch invoices
+        query = text("""
+            SELECT id, booking_ids, amount, tax_amount, total_amount,
+                   status, invoice_date, due_date, created_at
+            FROM enterprise_invoices 
+            WHERE user_id = :user_id 
+            ORDER BY created_at DESC
+        """)
+        
+        result = db.execute(query, {'user_id': user_id}).fetchall()
+        
+        invoices = []
+        for row in result:
+            invoices.append({
+                "id": row[0],
+                "booking_ids": row[1],
+                "amount": float(row[2]),
+                "tax_amount": float(row[3]),
+                "total_amount": float(row[4]),
+                "status": row[5],
+                "invoice_date": row[6].isoformat() if row[6] else None,
+                "due_date": row[7].isoformat() if row[7] else None,
+                "created_at": row[8].isoformat() if row[8] else None
+            })
+        
+        return {
+            "success": True,
+            "invoices": invoices
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Get invoices error: {str(e)}")
+        return {
+            "success": False,
+            "invoices": []
+        }
+
+@app.post("/api/enterprise/generate-invoice")
+async def generate_enterprise_invoice(request: Request, db: Session = Depends(get_db)):
+    """Generate a new enterprise invoice"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Get unpaid bookings
+        bookings_query = text("""
+            SELECT id, total_amount
+            FROM enterprise_bookings 
+            WHERE user_id = :user_id 
+            AND status = 'active'
+            AND id NOT IN (
+                SELECT UNNEST(booking_ids) 
+                FROM enterprise_invoices 
+                WHERE user_id = :user_id
+            )
+        """)
+        
+        bookings_result = db.execute(bookings_query, {'user_id': user_id}).fetchall()
+        
+        if not bookings_result:
+            return {
+                "success": False,
+                "message": "No unbilled bookings found"
+            }
+        
+        # Calculate totals
+        booking_ids = [booking[0] for booking in bookings_result]
+        subtotal = sum(float(booking[1]) for booking in bookings_result)
+        tax_rate = 0.15  # 15% VAT
+        tax_amount = subtotal * tax_rate
+        total_amount = subtotal + tax_amount
+        
+        # Generate invoice
+        invoice_id = f"inv_{uuid.uuid4()}"
+        invoice_date = datetime.now().date()
+        due_date = invoice_date + timedelta(days=30)
+        
+        insert_query = text("""
+            INSERT INTO enterprise_invoices (
+                id, user_id, booking_ids, amount, tax_amount, total_amount,
+                status, invoice_date, due_date, created_at
+            ) VALUES (
+                :id, :user_id, :booking_ids, :amount, :tax_amount, :total_amount,
+                :status, :invoice_date, :due_date, :created_at
+            )
+        """)
+        
+        db.execute(insert_query, {
+            'id': invoice_id,
+            'user_id': user_id,
+            'booking_ids': booking_ids,
+            'amount': subtotal,
+            'tax_amount': tax_amount,
+            'total_amount': total_amount,
+            'status': 'draft',
+            'invoice_date': invoice_date,
+            'due_date': due_date,
+            'created_at': datetime.utcnow()
+        })
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Invoice generated successfully",
+            "invoice_id": invoice_id,
+            "invoice": {
+                "id": invoice_id,
+                "amount": subtotal,
+                "tax_amount": tax_amount,
+                "total_amount": total_amount,
+                "invoice_date": invoice_date.isoformat(),
+                "due_date": due_date.isoformat(),
+                "booking_count": len(booking_ids)
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Generate invoice error: {str(e)}")
+        return {
+            "success": False,
+            "message": f"Failed to generate invoice: {str(e)}"
+        }
+
 # Existing endpoints (keeping for compatibility)
 @app.get("/api/test")
 async def test_endpoint():
