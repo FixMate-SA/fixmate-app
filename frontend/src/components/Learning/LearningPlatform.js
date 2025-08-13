@@ -18,6 +18,12 @@ const LearningPlatform = () => {
     { id: 'general', name: 'General Handyman', icon: '🛠️' },
     { id: 'business', name: 'Business Skills', icon: '💼' },
     { id: 'safety', name: 'Safety & Compliance', icon: '🦺' },
+    { id: 'technology', name: 'Technology', icon: '💻' },
+    { id: 'project-management', name: 'Project Management', icon: '📋' },
+    { id: 'communication', name: 'Communication', icon: '🗣️' },
+    { id: 'finance', name: 'Finance', icon: '💰' },
+    { id: 'marketing', name: 'Marketing', icon: '📢' },
+    { id: 'personal-development', name: 'Personal Development', icon: '🌟' },
   ];
 
   const levels = [
