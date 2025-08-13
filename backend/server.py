@@ -874,6 +874,127 @@ async def get_fixers_by_service(service: str, db: Session = Depends(get_db)):
         print(f"Get fixers by service error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Dashboard API Endpoint
+@app.get("/api/dashboard/{user_id}")
+async def get_dashboard(user_id: str, db: Session = Depends(get_db)):
+    """Get dashboard statistics for a user"""
+    try:
+        # Get user info
+        user_query = text("SELECT role FROM users WHERE id = :user_id")
+        user_result = db.execute(user_query, {'user_id': user_id}).fetchone()
+        
+        if not user_result:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user_role = user_result[0]
+        
+        if user_role == 'client':
+            # Client dashboard statistics
+            stats_query = text("""
+                SELECT 
+                    COUNT(CASE WHEN status IN ('pending', 'assigned', 'in_progress') THEN 1 END) as active_jobs,
+                    COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_jobs,
+                    COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_jobs,
+                    COUNT(*) as total_jobs,
+                    COALESCE(SUM(CASE WHEN status = 'completed' THEN estimated_price ELSE 0 END), 0) as total_spent
+                FROM jobs 
+                WHERE user_id = :user_id
+            """)
+            
+            stats_result = db.execute(stats_query, {'user_id': user_id}).fetchone()
+            
+            return {
+                "success": True,
+                "user_id": user_id,
+                "role": user_role,
+                "stats": {
+                    "active_jobs": stats_result[0] or 0,
+                    "completed_jobs": stats_result[1] or 0,
+                    "pending_jobs": stats_result[2] or 0,
+                    "total_jobs": stats_result[3] or 0,
+                    "total_spent": float(stats_result[4] or 0)
+                },
+                "recent_jobs": []  # Could add recent jobs list here
+            }
+            
+        elif user_role == 'fixer':
+            # Fixer dashboard statistics
+            fixer_query = text("""
+                SELECT 
+                    jobs_completed,
+                    rating,
+                    total_earned,
+                    is_active
+                FROM fixers 
+                WHERE user_id = :user_id
+            """)
+            
+            fixer_result = db.execute(fixer_query, {'user_id': user_id}).fetchone()
+            
+            if fixer_result:
+                return {
+                    "success": True,
+                    "user_id": user_id,
+                    "role": user_role,
+                    "stats": {
+                        "jobs_completed": fixer_result[0] or 0,
+                        "rating": float(fixer_result[1] or 5.0),
+                        "total_earned": float(fixer_result[2] or 0),
+                        "is_active": fixer_result[3] or False
+                    }
+                }
+            else:
+                # Default stats for fixer without profile
+                return {
+                    "success": True,
+                    "user_id": user_id,
+                    "role": user_role,
+                    "stats": {
+                        "jobs_completed": 0,
+                        "rating": 5.0,
+                        "total_earned": 0,
+                        "is_active": False
+                    }
+                }
+                
+        elif user_role == 'admin':
+            # Admin dashboard statistics
+            admin_stats_query = text("""
+                SELECT 
+                    (SELECT COUNT(*) FROM jobs) as total_jobs,
+                    (SELECT COUNT(*) FROM users WHERE role = 'client') as total_clients,
+                    (SELECT COUNT(*) FROM fixers WHERE is_active = true) as active_fixers,
+                    (SELECT COUNT(CASE WHEN status = 'pending' THEN 1 END) FROM jobs) as pending_jobs
+            """)
+            
+            admin_result = db.execute(admin_stats_query).fetchone()
+            
+            return {
+                "success": True,
+                "user_id": user_id,
+                "role": user_role,
+                "stats": {
+                    "total_jobs": admin_result[0] or 0,
+                    "total_clients": admin_result[1] or 0,
+                    "active_fixers": admin_result[2] or 0,
+                    "pending_jobs": admin_result[3] or 0
+                }
+            }
+        
+        else:
+            return {
+                "success": True,
+                "user_id": user_id,
+                "role": user_role,
+                "stats": {}
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Dashboard error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Existing endpoints (keeping for compatibility)
 @app.get("/api/test")
 async def test_endpoint():
