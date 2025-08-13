@@ -620,25 +620,51 @@ const LearningPlatform = () => {
         </div>
       </div>
 
-      {/* Partner Institutions */}
+      {/* Partner Learning Platforms */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Our Partner Institutions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-3xl mb-2">🏛️</div>
-            <p className="text-sm font-medium">University of Cape Town</p>
-          </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Our Learning Partners</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="text-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
             <div className="text-3xl mb-2">🎓</div>
-            <p className="text-sm font-medium">Wits University</p>
+            <p className="text-sm font-medium">Google</p>
+            <p className="text-xs text-gray-600">Professional Certificates</p>
           </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-3xl mb-2">🏫</div>
-            <p className="text-sm font-medium">TVET Colleges</p>
+          <div className="text-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+            <div className="text-3xl mb-2">💼</div>
+            <p className="text-sm font-medium">Microsoft</p>
+            <p className="text-xs text-gray-600">Azure & Office Certifications</p>
           </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-3xl mb-2">🔧</div>
-            <p className="text-sm font-medium">Trade Associations</p>
+          <div className="text-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+            <div className="text-3xl mb-2">🏛️</div>
+            <p className="text-sm font-medium">Coursera</p>
+            <p className="text-xs text-gray-600">University Courses</p>
+          </div>
+          <div className="text-center p-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+            <div className="text-3xl mb-2">📚</div>
+            <p className="text-sm font-medium">edX</p>
+            <p className="text-xs text-gray-600">MIT, Harvard & More</p>
+          </div>
+          <div className="text-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
+            <div className="text-3xl mb-2">💻</div>
+            <p className="text-sm font-medium">freeCodeCamp</p>
+            <p className="text-xs text-gray-600">Programming & Web Dev</p>
+          </div>
+          <div className="text-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+            <div className="text-3xl mb-2">🔗</div>
+            <p className="text-sm font-medium">LinkedIn</p>
+            <p className="text-xs text-gray-600">Professional Skills</p>
+          </div>
+        </div>
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600 mb-4">
+            All courses are completely free to audit. Certificates are available for a fee or through financial aid on most platforms.
+          </p>
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h3 className="font-semibold text-blue-900 mb-2">💡 Pro Tip for Fixers & Clients</h3>
+            <p className="text-sm text-blue-800">
+              Many platforms offer financial aid for certificates. Apply through the course page to get certified for free! 
+              These certificates can help you build credibility with clients and advance your career.
+            </p>
           </div>
         </div>
       </div>
