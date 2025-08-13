@@ -88,7 +88,12 @@ def authenticate_user(user_type):
             "password": user_data["password"]
         }
         
+        print(f"🔍 Attempting authentication for {user_type}: {user_data['phone']}")
+        
         response = requests.post(f"{API_BASE}/auth/login", json=login_data, timeout=30)
+        
+        print(f"🔍 Response status: {response.status_code}")
+        print(f"🔍 Response headers: {dict(response.headers)}")
         
         if response.status_code == 200:
             data = response.json()
@@ -102,7 +107,7 @@ def authenticate_user(user_type):
                 return None, None
         else:
             log_test(f"Authentication - {user_type.title()}", "FAIL", 
-                    f"HTTP {response.status_code}: {response.text}")
+                    f"HTTP {response.status_code}: {response.text[:200]}")
             return None, None
             
     except Exception as e:
