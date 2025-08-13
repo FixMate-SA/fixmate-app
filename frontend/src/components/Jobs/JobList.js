@@ -14,8 +14,10 @@ const JobList = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetchJobs();
-  }, []);
+    if (user?.id) {
+      fetchJobs();
+    }
+  }, [user?.id]);
 
   const fetchJobs = async () => {
     try {
