@@ -968,6 +968,12 @@ const B2BPortal = () => {
                   >
                     Book Service
                   </button>
+                  <button
+                    onClick={() => handleRemoveLocation(location.id)}
+                    className="text-red-600 hover:text-red-800 text-sm"
+                  >
+                    Remove
+                  </button>
                 </div>
               </div>
             ))
