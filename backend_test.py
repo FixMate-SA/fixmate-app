@@ -562,7 +562,7 @@ def main():
     else:
         print("❌ AI insights generation failed")
     
-    if any("Cross-User" in test["test"] and test["status"] == "PASS" for test in test_results["test_details"]):
+    if any("User Data Isolation" in test["test"] and test["status"] == "PASS" for test in test_results["test_details"]):
         print("✅ No cross-user data contamination")
         criteria_met += 1
     else:
