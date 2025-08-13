@@ -119,6 +119,18 @@
 user_problem_statement: "Add the announcement section for clients, fixers and admin, whereby admin can choose to update client or fixers separately or both at the same time. It must also have a chat section for all the users to respond if the admin allows them, meaning the admin must have a setting to close the chat for control."
 
 backend:
+  - task: "Job Creation API Endpoints - POST/GET /api/jobs"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "✅ IMPLEMENTED JOB CREATION FIX: Added missing job creation API endpoints to resolve blank page issue when users click 'Create Job' button on Heroku deployment. ENDPOINTS ADDED: 1) POST /api/jobs - Creates new jobs with proper field mapping (category→service, client_id→user_id), 2) GET /api/jobs - Retrieves job lists with optional client filtering, 3) GET /api/jobs/{job_id} - Retrieves specific job details. TECHNICAL IMPLEMENTATION: Used raw SQL INSERT/SELECT to match actual database schema instead of ORM models, proper error handling and validation, database field mapping for frontend compatibility. TESTED LOCALLY: Job creation working perfectly (test job created successfully), job retrieval working (jobs list returns properly), all endpoints returning correct HTTP status codes. This fixes the core issue where job creation form would show blank page after submission."
+
   - task: "Announcement System Database Models"
     implemented: true
     working: true
