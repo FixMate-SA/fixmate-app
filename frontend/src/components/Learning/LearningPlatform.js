@@ -552,21 +552,36 @@ const LearningPlatform = () => {
 
       {/* All Courses */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">All Courses</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">All Free Courses with Certificates</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCourses.map(course => (
             <div key={course.id} className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
-              <img 
-                src={course.thumbnail_url} 
-                alt={course.title}
-                className="w-full h-32 object-cover rounded-t-lg"
-              />
+              <div className="relative">
+                <img 
+                  src={course.thumbnail_url} 
+                  alt={course.title}
+                  className="w-full h-32 object-cover rounded-t-lg"
+                />
+                {course.certificate_available && (
+                  <span className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                    🎓 Certificate
+                  </span>
+                )}
+              </div>
               <div className="p-4">
                 <h3 className="font-semibold text-gray-900 mb-2">{course.title}</h3>
                 <p className="text-sm text-gray-600 mb-3">{course.description}</p>
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+                <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
                   <span>👨‍🏫 {course.instructor_name}</span>
                   <span>⏱️ {formatDuration(course.duration_minutes)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    📚 {course.platform}
+                  </span>
+                  <span className="text-green-600 font-medium text-xs">
+                    {course.certificate_type}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between mb-3">
                   <span className={`px-2 py-1 text-xs rounded-full ${getDifficultyColor(course.difficulty_level)}`}>
@@ -575,12 +590,30 @@ const LearningPlatform = () => {
                   <div className="flex items-center space-x-2">
                     <span className="text-yellow-500">⭐</span>
                     <span className="text-sm">{course.rating}</span>
-                    <span className="text-sm text-gray-500">({course.enrollment_count})</span>
+                    <span className="text-sm text-gray-500">({course.enrollment_count.toLocaleString()})</span>
                   </div>
                 </div>
-                <button className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors">
-                  Enroll Now
-                </button>
+                <div className="mb-3">
+                  <p className="text-xs text-gray-600 mb-1">Skills:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {course.skills.slice(0, 2).map((skill, index) => (
+                      <span key={index} className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">
+                        {skill}
+                      </span>
+                    ))}
+                    {course.skills.length > 2 && (
+                      <span className="text-xs text-gray-500">+{course.skills.length - 2}</span>
+                    )}
+                  </div>
+                </div>
+                <a 
+                  href={course.course_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors block text-center"
+                >
+                  Enroll Free
+                </a>
               </div>
             </div>
           ))}
