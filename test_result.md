@@ -4508,15 +4508,10 @@ agent_communication:
 
 test_plan:
   current_focus:
-    - "User Data Isolation - Critical Security Testing" 
-    - "Authentication System - Token Validation"
-    - "Job Management API - Data Isolation"
-    - "Dashboard API - Data Isolation"
-    - "Business Compliance User Data Isolation Testing (COMPLETED)"
-    - "Enterprise Contract Management API Testing (COMPLETED)"
-    - "Enterprise Portal Backend API Testing (COMPLETED)"
-    - "Enterprise Portal Frontend Integration Testing (COMPLETED)"
-    - "Learning Progress Tracking System Testing (COMPLETED)"
+    - "Learning Platform - User Progress Tracking"
+    - "Admin Learning Analytics Dashboard"
+    - "Learning System User Data Isolation"
+    - "Learning System Mobile Responsiveness"
   stuck_tasks:
     - "Missing Enterprise Invoice Detail Endpoint - GET /api/enterprise/invoice/{invoice_id}"
     - "Missing Enterprise Location Delete Endpoint - DELETE /api/enterprise/locations/{location_id}"
