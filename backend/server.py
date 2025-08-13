@@ -2242,7 +2242,10 @@ async def book_service_for_location(location_id: str, request: Request, db: Sess
             'estimated_price': 500.00,
             'status': 'pending',
             'priority_level': 'normal',
-            'created_at': datetime.utcnow()
+            'created_at': datetime.utcnow(),
+            'terms_accepted': True,
+            'workflow_stage': 'pending',
+            'payment_status': 'pending'
         })
         
         db.commit()
