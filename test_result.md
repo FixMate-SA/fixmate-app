@@ -4633,13 +4633,10 @@ agent_communication:
 
 test_plan:
   current_focus:
-    - "Automatic Job Allocation System - Backend Testing"
-    - "Fixer Available Jobs API Endpoint - GET /api/fixer/available-jobs"
-    - "Fixer Notifications API Endpoint - GET /api/fixer/notifications"
-    - "Job Assignment Workflow End-to-End Testing"
+    - "All critical backend job allocation tasks completed successfully"
   stuck_tasks:
     - "Missing Enterprise Invoice Detail Endpoint - GET /api/enterprise/invoice/{invoice_id}"
     - "Missing Enterprise Location Delete Endpoint - DELETE /api/enterprise/locations/{location_id}"
   test_all: false
-  test_priority: "backend_job_allocation_critical"
+  test_priority: "backend_job_allocation_completed"
 
