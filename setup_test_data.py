@@ -8,7 +8,7 @@ import requests
 import json
 import os
 
-BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://7309dccc-5109-4150-b632-8181bb5fde8e.preview.emergentagent.com')
+BACKEND_URL = os.getenv('REACT_APP_BACKEND_URL', 'https://auto-job-match-1.preview.emergentagent.com')
 API_BASE = f"{BACKEND_URL}/api"
 
 def make_request(method, endpoint, headers=None, json_data=None):

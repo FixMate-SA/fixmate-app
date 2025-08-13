@@ -8,7 +8,7 @@ import json
 import os
 
 def test_specific_scenarios():
-    backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://7309dccc-5109-4150-b632-8181bb5fde8e.preview.emergentagent.com')
+    backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://auto-job-match-1.preview.emergentagent.com')
     api_base = f"{backend_url}/api"
     
     print("🔒 TESTING SPECIFIC SECURITY SCENARIOS FROM REVIEW REQUEST")
