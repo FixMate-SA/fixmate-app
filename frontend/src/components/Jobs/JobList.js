@@ -22,34 +22,44 @@ const JobList = () => {
   const fetchJobs = async () => {
     try {
       setLoading(true);
+      console.log('Fetching jobs for user:', user?.id);
+      
       // Fetch jobs for the current user only
       const response = await apiService.getJobs({ client_id: user?.id });
+      console.log('Raw API response:', response);
       
       // Handle the response based on the new API structure
       let jobsData = [];
       if (response.data?.jobs) {
         // New API format: { success: true, jobs: [...] }
         jobsData = Array.isArray(response.data.jobs) ? response.data.jobs : [];
+        console.log('Using response.data.jobs format');
       } else if (response.data?.success && Array.isArray(response.data)) {
         // Alternative format: { success: true, data: [...] }
         jobsData = response.data;
+        console.log('Using response.data format');
       } else if (Array.isArray(response.data)) {
         // Direct array format
         jobsData = response.data;
+        console.log('Using direct response.data format');
       } else if (Array.isArray(response)) {
         // Direct response format
         jobsData = response;
+        console.log('Using direct response format');
       }
+      
+      console.log('Processed jobs data:', jobsData);
       
       // Filter to ensure we only show jobs for the current user
       const userJobs = jobsData.filter(job => 
         job.client_id === user?.id || job.user_id === user?.id
       );
       
+      console.log(`Filtered ${userJobs.length} jobs for user ${user?.id} from ${jobsData.length} total jobs`);
       setJobs(userJobs);
-      console.log(`Fetched ${userJobs.length} jobs for user ${user?.id}`);
     } catch (err) {
       console.error('Error fetching jobs:', err);
+      console.error('Error details:', err.response?.data || err.message);
       setError(t('errorFetchingJobs', 'Failed to fetch jobs. Please try again.'));
       setJobs([]); // Set empty array on error
     } finally {
