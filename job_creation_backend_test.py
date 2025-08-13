@@ -202,9 +202,18 @@ class JobCreationTester:
             if response.status_code == 200:
                 data = response.json()
                 
+                # Handle both local and production API response formats
                 if data.get("success") and "jobs" in data:
+                    # Local API format
                     jobs = data["jobs"]
-                    
+                elif "data" in data:
+                    # Production API format
+                    jobs = data["data"]
+                    data = {"success": True, "jobs": jobs}  # Normalize format
+                else:
+                    jobs = []
+                
+                if jobs is not None:
                     self.log_test_result(
                         "Job List API - GET /api/jobs (No Auth)",
                         True,
