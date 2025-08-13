@@ -448,6 +448,9 @@ def main():
     print("📋 STEP 4: USER 2 (FIXER) LEARNING PROGRESS TESTING")
     print("-" * 40)
     
+    # First, get learning progress to ensure tables exist
+    fixer_learning_data_initial = test_get_learning_progress(fixer_token, fixer_id, "fixer")
+    
     # Create different learning progress for microsoft-azure-fundamentals
     fixer_course_data = {
         "course_id": "microsoft-azure-fundamentals",
