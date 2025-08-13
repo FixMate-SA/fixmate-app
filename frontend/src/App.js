@@ -196,6 +196,16 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin/learning-analytics"
+                element={
+                  <ProtectedRoute>
+                    <ProfessionalLayout>
+                      <AdminLearningAnalytics />
+                    </ProfessionalLayout>
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Admin Panel for admin-specific features */}              
               <Route
