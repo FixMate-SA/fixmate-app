@@ -116,7 +116,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Add the announcement section for clients, fixers and admin, whereby admin can choose to update client or fixers separately or both at the same time. It must also have a chat section for all the users to respond if the admin allows them, meaning the admin must have a setting to close the chat for control."
+user_problem_statement: "Test the Enterprise Portal backend API endpoints to verify all functionality is working correctly. I need comprehensive testing of all Enterprise Portal endpoints that were recently implemented."
 
 backend:
   - task: "Job Creation API Endpoints - POST/GET /api/jobs"
