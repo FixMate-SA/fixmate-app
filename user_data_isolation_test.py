@@ -86,12 +86,16 @@ class UserDataIsolationTester:
                 "password": user["password"]
             }
             
+            print(f"     🔍 Attempting login for {user_key}: {user['phone']}")
+            
             response = requests.post(
                 f"{self.api_base}/auth/login",
                 json=login_data,
                 headers={"Content-Type": "application/json"},
                 timeout=10
             )
+            
+            print(f"     🔍 Response status: {response.status_code}")
             
             if response.status_code == 200:
                 data = response.json()
@@ -104,7 +108,7 @@ class UserDataIsolationTester:
                     print(f"     ❌ {user_key} authentication failed: {data}")
                     return False
             else:
-                print(f"     ❌ {user_key} HTTP {response.status_code}: {response.text}")
+                print(f"     ❌ {user_key} HTTP {response.status_code}: {response.text[:200]}")
                 return False
                 
         except Exception as e:
