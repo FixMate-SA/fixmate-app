@@ -736,70 +736,140 @@ const LearningPlatform = () => {
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Featured Courses with Certificates</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourses.filter(course => course.is_featured).map(course => (
-            <div key={course.id} className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
-              <div className="relative">
-                <img 
-                  src={course.thumbnail_url} 
-                  alt={course.title}
-                  className="w-full h-32 object-cover rounded-md mb-3"
-                />
-                <span className="absolute top-2 right-2 bg-yellow-400 text-yellow-800 text-xs px-2 py-1 rounded-full font-medium">
-                  ⭐ Featured
-                </span>
-                {course.certificate_available && (
-                  <span className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                    🎓 Certificate
+          {filteredCourses.filter(course => course.is_featured).map(course => {
+            const courseProgress = getCourseProgress(course.id);
+            const hasUserCertificate = hasCertificate(course.id);
+            
+            return (
+              <div key={course.id} className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
+                <div className="relative">
+                  <img 
+                    src={course.thumbnail_url} 
+                    alt={course.title}
+                    className="w-full h-32 object-cover rounded-md mb-3"
+                  />
+                  <span className="absolute top-2 right-2 bg-yellow-400 text-yellow-800 text-xs px-2 py-1 rounded-full font-medium">
+                    ⭐ Featured
                   </span>
-                )}
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">{course.title}</h3>
-              <p className="text-sm text-gray-600 mb-3">{course.description}</p>
-              <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-                <span>👨‍🏫 {course.instructor_name}</span>
-                <span>⏱️ {formatDuration(course.duration_minutes)}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                  📚 {course.platform}
-                </span>
-                <span className="text-green-600 font-medium">
-                  {course.certificate_type}
-                </span>
-              </div>
-              <div className="flex items-center justify-between mb-3">
-                <span className={`px-2 py-1 text-xs rounded-full ${getDifficultyColor(course.difficulty_level)}`}>
-                  {course.difficulty_level}
-                </span>
-                <div className="flex items-center space-x-2">
-                  <span className="text-yellow-500">⭐</span>
-                  <span className="text-sm">{course.rating}</span>
-                  <span className="text-sm text-gray-500">({course.enrollment_count.toLocaleString()})</span>
-                </div>
-              </div>
-              <div className="mb-3">
-                <p className="text-xs text-gray-600 mb-1">Skills you'll learn:</p>
-                <div className="flex flex-wrap gap-1">
-                  {course.skills.slice(0, 3).map((skill, index) => (
-                    <span key={index} className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">
-                      {skill}
+                  {course.certificate_available && (
+                    <span className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                      🎓 Certificate
                     </span>
-                  ))}
-                  {course.skills.length > 3 && (
-                    <span className="text-xs text-gray-500">+{course.skills.length - 3} more</span>
+                  )}
+                  {hasUserCertificate && (
+                    <span className="absolute bottom-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                      ✅ Certified
+                    </span>
+                  )}
+                </div>
+                
+                <h3 className="font-semibold text-gray-900 mb-2">{course.title}</h3>
+                <p className="text-sm text-gray-600 mb-3">{course.description}</p>
+                
+                {/* Progress bar if user has started */}
+                {courseProgress && (
+                  <div className="mb-3">
+                    <div className="flex justify-between text-xs text-gray-600 mb-1">
+                      <span>Progress</span>
+                      <span>{courseProgress.progress_percentage}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                        style={{ width: `${courseProgress.progress_percentage}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>Status: {courseProgress.status}</span>
+                      <span>{Math.round(courseProgress.time_spent_minutes / 60)}h learned</span>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+                  <span>👨‍🏫 {course.instructor_name}</span>
+                  <span>⏱️ {formatDuration(course.duration_minutes)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    📚 {course.platform}
+                  </span>
+                  <span className="text-green-600 font-medium">
+                    {course.certificate_type}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`px-2 py-1 text-xs rounded-full ${getDifficultyColor(course.difficulty_level)}`}>
+                    {course.difficulty_level}
+                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-yellow-500">⭐</span>
+                    <span className="text-sm">{course.rating}</span>
+                    <span className="text-sm text-gray-500">({course.enrollment_count.toLocaleString()})</span>
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <p className="text-xs text-gray-600 mb-1">Skills you'll learn:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {course.skills.slice(0, 3).map((skill, index) => (
+                      <span key={index} className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">
+                        {skill}
+                      </span>
+                    ))}
+                    {course.skills.length > 3 && (
+                      <span className="text-xs text-gray-500">+{course.skills.length - 3} more</span>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Action buttons */}
+                <div className="flex space-x-2">
+                  {!courseProgress ? (
+                    <button
+                      onClick={() => startCourse(course)}
+                      className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors text-center"
+                    >
+                      Start Learning
+                    </button>
+                  ) : (
+                    <div className="flex-1 space-y-2">
+                      <a 
+                        href={course.course_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors block text-center"
+                      >
+                        Continue Learning
+                      </a>
+                      <button
+                        onClick={() => {
+                          setSelectedCourse(course);
+                          setProgressForm({
+                            progress_percentage: courseProgress.progress_percentage,
+                            time_spent_minutes: courseProgress.time_spent_minutes,
+                            status: courseProgress.status,
+                            notes: courseProgress.notes || ''
+                          });
+                          setShowProgressModal(true);
+                        }}
+                        className="w-full bg-purple-600 text-white py-1 px-4 rounded-md hover:bg-purple-700 transition-colors text-sm"
+                      >
+                        Update Progress
+                      </button>
+                    </div>
+                  )}
+                  {courseProgress && courseProgress.progress_percentage >= 100 && !hasUserCertificate && (
+                    <button
+                      onClick={() => addCertificate(course)}
+                      className="bg-yellow-500 text-white py-2 px-3 rounded-md hover:bg-yellow-600 transition-colors text-xs"
+                    >
+                      🎓 Add Certificate
+                    </button>
                   )}
                 </div>
               </div>
-              <a 
-                href={course.course_url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors block text-center"
-              >
-                Start Learning Free
-              </a>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
