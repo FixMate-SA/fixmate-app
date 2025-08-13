@@ -51,24 +51,31 @@ def make_request(method, endpoint, headers=None, data=None, json_data=None):
     """Make HTTP request with error handling"""
     try:
         url = f"{API_BASE}{endpoint}"
+        print(f"🔗 Making {method} request to: {url}")
+        
+        # Set default headers
+        if headers is None:
+            headers = {}
+        headers.setdefault('Content-Type', 'application/json')
         
         if method.upper() == 'GET':
-            response = requests.get(url, headers=headers, timeout=30)
+            response = requests.get(url, headers=headers, timeout=30, verify=False)
         elif method.upper() == 'POST':
             if json_data:
-                response = requests.post(url, headers=headers, json=json_data, timeout=30)
+                response = requests.post(url, headers=headers, json=json_data, timeout=30, verify=False)
             else:
-                response = requests.post(url, headers=headers, data=data, timeout=30)
+                response = requests.post(url, headers=headers, data=data, timeout=30, verify=False)
         elif method.upper() == 'PUT':
-            response = requests.put(url, headers=headers, json=json_data, timeout=30)
+            response = requests.put(url, headers=headers, json=json_data, timeout=30, verify=False)
         elif method.upper() == 'DELETE':
-            response = requests.delete(url, headers=headers, timeout=30)
+            response = requests.delete(url, headers=headers, timeout=30, verify=False)
         else:
             raise ValueError(f"Unsupported method: {method}")
-            
+        
+        print(f"📡 Response: HTTP {response.status_code}")
         return response
     except requests.exceptions.RequestException as e:
-        print(f"Request error: {e}")
+        print(f"❌ Request error: {e}")
         return None
 
 def authenticate_user(credentials, user_type="client"):
