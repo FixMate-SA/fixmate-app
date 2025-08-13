@@ -783,7 +783,14 @@ async def allocate_job_to_fixers(job_id: str, job_data: JobCreate, db: Session):
                 'updated_at': datetime.utcnow()
             })
             
-            print(f"✅ Job {job_id} assigned to fixer {selected_fixer[2]} ({fixer_id})")
+            # Create notification for the assigned fixer
+            await create_fixer_notification(fixer_id, job_id, job_data, db)
+            
+            # Also create notifications for other qualified fixers (available jobs)
+            for fixer in result[1:]:  # Skip the first one as it's already assigned
+                await create_available_job_notification(fixer[0], job_id, job_data, db)
+            
+            print(f"✅ Job {job_id} assigned to fixer {selected_fixer[2]} ({fixer_id}) with notifications sent")
             return True
         else:
             print(f"⚠️ No available fixers found for service: {job_data.category}")
