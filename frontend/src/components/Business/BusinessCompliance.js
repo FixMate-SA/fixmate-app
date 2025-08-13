@@ -228,6 +228,10 @@ const BusinessCompliance = () => {
   const fetchUserRequests = async () => {
     try {
       console.log('✅ Loading user compliance requests...');
+      console.log('🔍 DEBUG: Current user:', user);
+      console.log('🔍 DEBUG: Current user ID:', user?.id);
+      console.log('🔍 DEBUG: Current user role:', roleInfo?.role);
+      console.log('🔍 DEBUG: Token from localStorage:', localStorage.getItem('fixmate_token')?.substring(0, 20) + '...');
       
       // Use enhanced endpoint to get requests with documents and payments
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/requests/enhanced`, {
@@ -239,6 +243,8 @@ const BusinessCompliance = () => {
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Enhanced compliance requests loaded:', data);
+        console.log('🔍 DEBUG: Number of requests returned:', data.data ? data.data.length : 0);
+        console.log('🔍 DEBUG: First request (if exists):', data.data && data.data.length > 0 ? data.data[0] : 'No requests');
         
         if (data.success && data.data) {
           setUserRequests(data.data);
@@ -248,10 +254,12 @@ const BusinessCompliance = () => {
         }
       } else {
         console.error('❌ Failed to load requests:', response.status);
+        const errorData = await response.json();
+        console.error('❌ Error response:', errorData);
         setUserRequests([]);
       }
     } catch (error) {
-      console.error('❌ Error fetching user requests:', error);
+      console.error('❌ Error loading compliance requests:', error);
       setUserRequests([]);
     }
   };
