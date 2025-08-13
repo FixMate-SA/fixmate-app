@@ -1124,6 +1124,83 @@ const BusinessCompliance = () => {
                         Make Payment
                       </button>
                     </div>
+
+                    {/* Documents and Payments Tracking */}
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Documents Section */}
+                      <div className="border-t pt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium text-sm text-gray-700">📄 Documents</h4>
+                          <span className="text-xs text-gray-500">
+                            {request.documents?.length || 0} files
+                          </span>
+                        </div>
+                        {request.documents && request.documents.length > 0 ? (
+                          <div className="space-y-1">
+                            {request.documents.slice(0, 3).map((doc, docIndex) => (
+                              <div key={docIndex} className="flex items-center justify-between p-2 bg-blue-50 rounded text-xs">
+                                <div className="flex items-center space-x-2">
+                                  <span>{doc.type === 'PDF Document' ? '📄' : doc.type === 'Image' ? '🖼️' : '📋'}</span>
+                                  <span className="truncate max-w-[120px]">{doc.name}</span>
+                                </div>
+                                <span className="text-gray-500">
+                                  {new Date(doc.uploaded_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                            ))}
+                            {request.documents.length > 3 && (
+                              <div className="text-xs text-gray-500 text-center py-1">
+                                +{request.documents.length - 3} more documents
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-500 italic py-2">
+                            No documents uploaded yet
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Payments Section */}
+                      <div className="border-t pt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium text-sm text-gray-700">💳 Payments</h4>
+                          <span className="text-xs text-gray-500">
+                            R{request.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0}
+                          </span>
+                        </div>
+                        {request.payments && request.payments.length > 0 ? (
+                          <div className="space-y-1">
+                            {request.payments.slice(0, 2).map((payment, payIndex) => (
+                              <div key={payIndex} className="flex items-center justify-between p-2 bg-green-50 rounded text-xs">
+                                <div className="flex items-center space-x-2">
+                                  <span className={`px-2 py-1 rounded text-xs ${
+                                    payment.status === 'completed' ? 'bg-green-200 text-green-800' : 
+                                    payment.status === 'pending' ? 'bg-yellow-200 text-yellow-800' : 
+                                    'bg-gray-200 text-gray-800'
+                                  }`}>
+                                    {payment.status}
+                                  </span>
+                                  <span>R{payment.amount}</span>
+                                </div>
+                                <span className="text-gray-500">
+                                  {new Date(payment.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                            ))}
+                            {request.payments.length > 2 && (
+                              <div className="text-xs text-gray-500 text-center py-1">
+                                +{request.payments.length - 2} more payments
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-500 italic py-2">
+                            No payments made yet
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
                 
