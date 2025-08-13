@@ -369,6 +369,8 @@ const BusinessCompliance = () => {
         const data = await response.json();
         setUploadedDocuments(prev => [...prev, data.document]);
         alert('✅ Document uploaded successfully!');
+        setShowDocumentUpload(false);
+        fetchUserRequests(); // Refresh the status tracking
       } else {
         alert('❌ Failed to upload document. Please try again.');
       }
