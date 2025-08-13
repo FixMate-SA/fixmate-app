@@ -345,7 +345,7 @@ const LearningPlatform = () => {
   useEffect(() => {
     // Simulate API call
     setTimeout(() => {
-      setCourses(sampleCourses);
+      setCourses(realFreeCourses);
       setLoading(false);
     }, 1000);
   }, []);
