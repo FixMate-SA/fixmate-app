@@ -493,74 +493,154 @@ const B2BPortal = () => {
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Bulk Service Bookings</h2>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+          <button 
+            onClick={() => setShowBulkBookingModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          >
             New Bulk Booking
           </button>
         </div>
         
         <div className="mb-6">
-          <h3 className="font-medium mb-3">Quick Actions</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 transition-colors">
-              <div className="text-center">
-                <span className="text-3xl mb-2 block">🏢</span>
-                <p className="font-medium">Property Maintenance</p>
-                <p className="text-sm text-gray-600">Schedule recurring maintenance</p>
-              </div>
-            </button>
-            <button className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 transition-colors">
-              <div className="text-center">
-                <span className="text-3xl mb-2 block">🧹</span>
-                <p className="font-medium">Office Cleaning</p>
-                <p className="text-sm text-gray-600">Book cleaning services</p>
-              </div>
-            </button>
-            <button className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 transition-colors">
-              <div className="text-center">
-                <span className="text-3xl mb-2 block">🔧</span>
-                <p className="font-medium">Emergency Repairs</p>
-                <p className="text-sm text-gray-600">24/7 emergency support</p>
-              </div>
-            </button>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <p className="text-blue-600 font-medium">Active Bookings</p>
+              <p className="text-2xl font-bold text-blue-800">{enterpriseData.bookings.length}</p>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg">
+              <p className="text-green-600 font-medium">This Month</p>
+              <p className="text-2xl font-bold text-green-800">R{formatCurrency(analyticsData.monthly_spend)}</p>
+            </div>
+            <div className="bg-purple-50 p-4 rounded-lg">
+              <p className="text-purple-600 font-medium">Cost Savings</p>
+              <p className="text-2xl font-bold text-purple-800">R{formatCurrency(analyticsData.cost_savings)}</p>
+            </div>
           </div>
         </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-3">Service</th>
-                <th className="text-left py-3">Location</th>
-                <th className="text-left py-3">Date</th>
-                <th className="text-left py-3">Status</th>
-                <th className="text-left py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {enterpriseData.bookings.map((booking) => (
-                <tr key={booking.id} className="border-b">
-                  <td className="py-3">{booking.service}</td>
-                  <td className="py-3">{booking.location}</td>
-                  <td className="py-3">{booking.date}</td>
-                  <td className="py-3">
+        
+        {/* Recent Bookings */}
+        <div>
+          <h3 className="font-medium mb-3">Recent Bulk Bookings</h3>
+          {enterpriseData.bookings.length > 0 ? (
+            <div className="space-y-3">
+              {enterpriseData.bookings.map((booking, index) => (
+                <div key={booking.id || index} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{booking.services ? booking.services.join(', ') : 'Multiple Services'}</p>
+                      <p className="text-sm text-gray-600">{booking.locations ? booking.locations.join(', ') : booking.location || 'Multiple Locations'}</p>
+                      <p className="text-xs text-gray-500">
+                        {booking.schedule_type} • {booking.start_date || booking.date}
+                      </p>
+                    </div>
                     <span className={`px-2 py-1 text-xs rounded-full ${
-                      booking.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      booking.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                      'bg-yellow-100 text-yellow-800'
+                      booking.status === 'active' ? 'bg-green-100 text-green-800' :
+                      booking.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                      booking.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
                     }`}>
                       {booking.status}
                     </span>
-                  </td>
-                  <td className="py-3">
-                    <button className="text-blue-600 hover:text-blue-800 mr-2">View</button>
-                    <button className="text-green-600 hover:text-green-800">Edit</button>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p>No bulk bookings yet. Create your first bulk booking to get started!</p>
+            </div>
+          )}
         </div>
       </div>
+      
+      {/* Bulk Booking Modal */}
+      {showBulkBookingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-xl font-semibold mb-4">Create Bulk Booking</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Services (comma-separated)</label>
+                <input
+                  type="text"
+                  value={newBulkBooking.services.join(', ')}
+                  onChange={(e) => setNewBulkBooking({
+                    ...newBulkBooking,
+                    services: e.target.value.split(',').map(s => s.trim())
+                  })}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="Cleaning, Maintenance, Repairs"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Locations (comma-separated)</label>
+                <input
+                  type="text"
+                  value={newBulkBooking.locations.join(', ')}
+                  onChange={(e) => setNewBulkBooking({
+                    ...newBulkBooking,
+                    locations: e.target.value.split(',').map(l => l.trim())
+                  })}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="Office A, Office B, Warehouse"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Schedule Type</label>
+                <select
+                  value={newBulkBooking.schedule_type}
+                  onChange={(e) => setNewBulkBooking({...newBulkBooking, schedule_type: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="one-time">One-time</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Start Date</label>
+                <input
+                  type="date"
+                  value={newBulkBooking.start_date}
+                  onChange={(e) => setNewBulkBooking({...newBulkBooking, start_date: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                />
+              </div>
+              
+              {newBulkBooking.schedule_type !== 'one-time' && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">End Date</label>
+                  <input
+                    type="date"
+                    value={newBulkBooking.end_date}
+                    onChange={(e) => setNewBulkBooking({...newBulkBooking, end_date: e.target.value})}
+                    className="w-full p-2 border rounded-md"
+                  />
+                </div>
+              )}
+            </div>
+            
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={handleCreateBulkBooking}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+              >
+                Create Booking
+              </button>
+              <button
+                onClick={() => setShowBulkBookingModal(false)}
+                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
