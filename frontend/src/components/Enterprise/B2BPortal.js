@@ -171,10 +171,18 @@ const B2BPortal = () => {
         invoicesData = invoices.success ? invoices.invoices : [];
       }
       
+      // Fetch contracts
+      const contractsResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/enterprise/contracts`, { headers });
+      let contractsData = [];
+      if (contractsResponse.ok) {
+        const contracts = await contractsResponse.json();
+        contractsData = contracts.success ? contracts.contracts : [];
+      }
+      
       // Update state with real data
       setEnterpriseData({
         bookings: overviewData.recent_bookings || [],
-        contracts: [], // Will be added later if needed
+        contracts: contractsData,
         analytics: overviewData.analytics || {},
         invoices: invoicesData,
         team: teamData,
