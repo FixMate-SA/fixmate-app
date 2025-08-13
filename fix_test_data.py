@@ -32,11 +32,11 @@ def fix_test_data():
             
             insert_fixer_query = text("""
                 INSERT INTO fixers (
-                    id, user_id, name, email, services, location, rating, 
+                    id, user_id, phone, name, email, services, location, rating, 
                     total_jobs, is_active, is_approved, jobs_completed, 
                     completion_percentage, skills, created_at
                 ) VALUES (
-                    :id, :user_id, :name, :email, :services, :location, :rating,
+                    :id, :user_id, :phone, :name, :email, :services, :location, :rating,
                     :total_jobs, :is_active, :is_approved, :jobs_completed,
                     :completion_percentage, :skills, :created_at
                 )
@@ -48,6 +48,7 @@ def fix_test_data():
             db.execute(insert_fixer_query, {
                 'id': fixer_id,
                 'user_id': fixer_user_id,
+                'phone': 'whatsapp:+27800000003',  # Add phone number
                 'name': 'Test Fixer User',
                 'email': 'testfixer@fixmate.test',
                 'services': json.dumps(["Electrical", "Plumbing", "Handyman"]),
