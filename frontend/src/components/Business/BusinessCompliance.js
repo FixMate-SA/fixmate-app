@@ -232,16 +232,32 @@ const BusinessCompliance = () => {
 
   const fetchUserRequests = async () => {
     try {
+      // Ensure we have a valid user before making requests
+      if (!user?.id) {
+        console.log('⚠️ DEBUG: No user ID available, skipping request fetch');
+        setUserRequests([]);
+        return;
+      }
+
       console.log('✅ Loading user compliance requests...');
       console.log('🔍 DEBUG: Current user:', user);
       console.log('🔍 DEBUG: Current user ID:', user?.id);
       console.log('🔍 DEBUG: Current user role:', roleInfo?.role);
-      console.log('🔍 DEBUG: Token from localStorage:', localStorage.getItem('fixmate_token')?.substring(0, 20) + '...');
+      
+      const currentToken = localStorage.getItem('fixmate_token');
+      console.log('🔍 DEBUG: Token from localStorage:', currentToken?.substring(0, 20) + '...');
+      
+      // Verify token matches current user
+      if (currentToken && currentToken.includes(user.id)) {
+        console.log('✅ DEBUG: Token matches current user ID');
+      } else {
+        console.log('⚠️ DEBUG: Token may not match current user - potential session issue');
+      }
       
       // Use enhanced endpoint to get requests with documents and payments
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/requests/enhanced`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`
+          'Authorization': `Bearer ${currentToken}`
         }
       });
       
