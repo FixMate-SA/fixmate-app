@@ -521,6 +521,157 @@ async def create_test_users(db: Session = Depends(get_db)):
         db.rollback()
         return {"success": False, "error": str(e)}
 
+# Job Management Endpoints
+class JobCreate(BaseModel):
+    title: str
+    description: str
+    location: str
+    urgency: str = "medium"
+    budget_min: Optional[float] = 0
+    budget_max: Optional[float] = 0
+    preferred_date: Optional[str] = None
+    preferred_time: Optional[str] = None
+    category: str
+    images: Optional[List[str]] = []
+    communication_preference: str = "phone"
+    whatsapp_notifications: bool = True
+    client_id: str
+
+class JobResponse(BaseModel):
+    success: bool
+    message: str
+    job_id: Optional[str] = None
+    job: Optional[Dict[str, Any]] = None
+
+@app.post("/api/jobs", response_model=JobResponse)
+async def create_job(job_data: JobCreate, db: Session = Depends(get_db)):
+    """Create a new job"""
+    try:
+        # Generate unique job ID
+        job_id = f"job_{uuid.uuid4()}"
+        
+        # Parse preferred_date if provided
+        preferred_date_obj = None
+        if job_data.preferred_date:
+            try:
+                preferred_date_obj = datetime.strptime(job_data.preferred_date, "%Y-%m-%d")
+            except ValueError:
+                pass
+        
+        # Create new job
+        new_job = Job(
+            id=job_id,
+            title=job_data.title,
+            description=job_data.description,
+            location=job_data.location,
+            urgency=job_data.urgency,
+            estimated_price=job_data.budget_max or 0,
+            category=job_data.category,
+            client_id=job_data.client_id,
+            images=job_data.images,
+            preferred_date=preferred_date_obj,
+            preferred_time=job_data.preferred_time,
+            status=JobStatus.PENDING,
+            priority=JobPriority.MEDIUM if job_data.urgency == "medium" else 
+                     JobPriority.LOW if job_data.urgency == "low" else
+                     JobPriority.HIGH if job_data.urgency == "high" else
+                     JobPriority.URGENT
+        )
+        
+        db.add(new_job)
+        db.commit()
+        db.refresh(new_job)
+        
+        return JobResponse(
+            success=True,
+            message="Job created successfully",
+            job_id=job_id,
+            job={
+                "id": new_job.id,
+                "title": new_job.title,
+                "description": new_job.description,
+                "location": new_job.location,
+                "status": new_job.status.value,
+                "created_at": new_job.created_at.isoformat() if new_job.created_at else None
+            }
+        )
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Job creation error: {str(e)}")
+        return JobResponse(
+            success=False,
+            message=f"Failed to create job: {str(e)}"
+        )
+
+@app.get("/api/jobs")
+async def get_jobs(client_id: Optional[str] = None, db: Session = Depends(get_db)):
+    """Get jobs (optionally filtered by client_id)"""
+    try:
+        query = db.query(Job)
+        if client_id:
+            query = query.filter(Job.client_id == client_id)
+        
+        jobs = query.order_by(Job.created_at.desc()).all()
+        
+        jobs_data = []
+        for job in jobs:
+            jobs_data.append({
+                "id": job.id,
+                "title": job.title,
+                "description": job.description,
+                "location": job.location,
+                "category": job.category,
+                "status": job.status.value,
+                "urgency": job.urgency,
+                "estimated_price": job.estimated_price,
+                "created_at": job.created_at.isoformat() if job.created_at else None,
+                "client_id": job.client_id,
+                "fixer_id": job.fixer_id
+            })
+        
+        return {
+            "success": True,
+            "jobs": jobs_data
+        }
+        
+    except Exception as e:
+        print(f"Get jobs error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/jobs/{job_id}")
+async def get_job(job_id: str, db: Session = Depends(get_db)):
+    """Get a specific job by ID"""
+    try:
+        job = db.query(Job).filter(Job.id == job_id).first()
+        
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        return {
+            "success": True,
+            "job": {
+                "id": job.id,
+                "title": job.title,
+                "description": job.description,
+                "location": job.location,
+                "category": job.category,
+                "status": job.status.value,
+                "urgency": job.urgency,
+                "estimated_price": job.estimated_price,
+                "created_at": job.created_at.isoformat() if job.created_at else None,
+                "client_id": job.client_id,
+                "fixer_id": job.fixer_id,
+                "images": job.images or []
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Get job error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Existing endpoints (keeping for compatibility)
 @app.get("/api/test")
 async def test_endpoint():
