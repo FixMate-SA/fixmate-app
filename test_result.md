@@ -116,7 +116,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the Enterprise Portal backend API endpoints to verify all functionality is working correctly. I need comprehensive testing of all Enterprise Portal endpoints that were recently implemented."
+user_problem_statement: "Test the new Enterprise Contract Management API endpoints to verify they are working correctly. I have just implemented contract management functionality for the Enterprise Portal."
 
 backend:
   - task: "Enterprise Portal Overview API - GET /api/enterprise/overview"
