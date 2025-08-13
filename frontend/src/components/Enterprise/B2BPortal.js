@@ -16,6 +16,30 @@ const B2BPortal = () => {
     locations: []
   });
   const [loading, setLoading] = useState(true);
+  const [showBulkBookingModal, setShowBulkBookingModal] = useState(false);
+  const [showTeamMemberModal, setShowTeamMemberModal] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [newBulkBooking, setNewBulkBooking] = useState({
+    services: [],
+    locations: [],
+    schedule_type: 'one-time',
+    start_date: '',
+    end_date: '',
+    notes: ''
+  });
+  const [newTeamMember, setNewTeamMember] = useState({
+    name: '',
+    email: '',
+    role: '',
+    permissions: []
+  });
+  const [newLocation, setNewLocation] = useState({
+    name: '',
+    address: '',
+    contact_person: '',
+    contact_phone: '',
+    services_needed: []
+  });
 
   const tabs = [
     { id: 'overview', name: t('overview'), shortName: t('overview'), icon: '📊' },
