@@ -227,28 +227,31 @@ const BusinessCompliance = () => {
 
   const fetchUserRequests = async () => {
     try {
-      const token = localStorage.getItem('fixmate_token');
-      const apiUrl = process.env.REACT_APP_BACKEND_URL || '/api';
+      console.log('✅ Loading user compliance requests...');
       
-      const response = await fetch(`${apiUrl}/api/compliance/requests`, {
+      // Use enhanced endpoint to get requests with documents and payments
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/requests/enhanced`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`
         }
       });
       
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
+        console.log('✅ Enhanced compliance requests loaded:', data);
+        
+        if (data.success && data.data) {
           setUserRequests(data.data);
           console.log('✅ User compliance requests loaded:', data.data.length);
+        } else {
+          setUserRequests([]);
         }
       } else {
-        console.warn('⚠️ Could not fetch user requests (may be first time user)');
+        console.error('❌ Failed to load requests:', response.status);
         setUserRequests([]);
       }
     } catch (error) {
-      console.error('❌ Error fetching user compliance requests:', error);
+      console.error('❌ Error fetching user requests:', error);
       setUserRequests([]);
     }
   };
