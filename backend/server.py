@@ -531,11 +531,11 @@ class JobCreate(BaseModel):
     budget_max: Optional[float] = 0
     preferred_date: Optional[str] = None
     preferred_time: Optional[str] = None
-    category: str
+    category: str  # Frontend uses 'category', we'll map to 'service'
     images: Optional[List[str]] = []
     communication_preference: str = "phone"
     whatsapp_notifications: bool = True
-    client_id: str
+    client_id: str  # Frontend uses 'client_id', we'll map to 'user_id'
 
 class JobResponse(BaseModel):
     success: bool
@@ -551,48 +551,56 @@ async def create_job(job_data: JobCreate, db: Session = Depends(get_db)):
         job_id = f"job_{uuid.uuid4()}"
         
         # Parse preferred_date if provided
-        preferred_date_obj = None
+        scheduled_at = None
         if job_data.preferred_date:
             try:
-                preferred_date_obj = datetime.strptime(job_data.preferred_date, "%Y-%m-%d")
+                scheduled_at = datetime.strptime(job_data.preferred_date, "%Y-%m-%d")
             except ValueError:
                 pass
         
-        # Create new job
-        new_job = Job(
-            id=job_id,
-            title=job_data.title,
-            description=job_data.description,
-            location=job_data.location,
-            urgency=job_data.urgency,
-            estimated_price=job_data.budget_max or 0,
-            category=job_data.category,
-            client_id=job_data.client_id,
-            images=job_data.images,
-            preferred_date=preferred_date_obj,
-            preferred_time=job_data.preferred_time,
-            status=JobStatus.PENDING,
-            priority=JobPriority.MEDIUM if job_data.urgency == "medium" else 
-                     JobPriority.LOW if job_data.urgency == "low" else
-                     JobPriority.HIGH if job_data.urgency == "high" else
-                     JobPriority.URGENT
-        )
+        # Create new job using raw SQL INSERT to match the actual database schema
+        db.execute(text("""
+            INSERT INTO jobs (
+                id, user_id, service, description, location, 
+                estimated_price, status, priority_level, 
+                scheduled_at, created_at, updated_at,
+                terms_accepted, workflow_stage, payment_status
+            ) VALUES (
+                :id, :user_id, :service, :description, :location,
+                :estimated_price, :status, :priority_level,
+                :scheduled_at, :created_at, :updated_at,
+                :terms_accepted, :workflow_stage, :payment_status
+            )
+        """), {
+            'id': job_id,
+            'user_id': job_data.client_id,  # Map client_id to user_id
+            'service': job_data.category,   # Map category to service
+            'description': job_data.description,
+            'location': job_data.location,
+            'estimated_price': job_data.budget_max or 0,
+            'status': 'pending',
+            'priority_level': job_data.urgency,
+            'scheduled_at': scheduled_at,
+            'created_at': datetime.utcnow(),
+            'updated_at': datetime.utcnow(),
+            'terms_accepted': True,
+            'workflow_stage': 'pending',
+            'payment_status': 'pending'
+        })
         
-        db.add(new_job)
         db.commit()
-        db.refresh(new_job)
         
         return JobResponse(
             success=True,
             message="Job created successfully",
             job_id=job_id,
             job={
-                "id": new_job.id,
-                "title": new_job.title,
-                "description": new_job.description,
-                "location": new_job.location,
-                "status": new_job.status.value,
-                "created_at": new_job.created_at.isoformat() if new_job.created_at else None
+                "id": job_id,
+                "title": job_data.title,
+                "description": job_data.description,
+                "location": job_data.location,
+                "status": "pending",
+                "created_at": datetime.utcnow().isoformat()
             }
         )
         
