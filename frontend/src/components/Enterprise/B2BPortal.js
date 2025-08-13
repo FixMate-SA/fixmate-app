@@ -180,6 +180,203 @@ const B2BPortal = () => {
     }
   };
 
+  // Bulk booking handlers
+  const handleCreateBulkBooking = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/enterprise/bulk-booking`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newBulkBooking)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          alert('✅ Bulk booking created successfully!');
+          setShowBulkBookingModal(false);
+          fetchEnterpriseData(); // Refresh data
+          // Reset form
+          setNewBulkBooking({
+            services: [],
+            locations: [],
+            schedule_type: 'one-time',
+            start_date: '',
+            end_date: '',
+            notes: ''
+          });
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } else {
+        alert('❌ Failed to create bulk booking. Please try again.');
+      }
+    } catch (error) {
+      console.error('Bulk booking error:', error);
+      alert('❌ Error creating bulk booking. Please try again.');
+    }
+  };
+
+  // Team management handlers
+  const handleAddTeamMember = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/enterprise/team`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newTeamMember)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          alert('✅ Team member added successfully!');
+          setShowTeamMemberModal(false);
+          fetchEnterpriseData(); // Refresh data
+          // Reset form
+          setNewTeamMember({
+            name: '',
+            email: '',
+            role: '',
+            permissions: []
+          });
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } else {
+        alert('❌ Failed to add team member. Please try again.');
+      }
+    } catch (error) {
+      console.error('Add team member error:', error);
+      alert('❌ Error adding team member. Please try again.');
+    }
+  };
+
+  const handleRemoveTeamMember = async (memberId) => {
+    if (!window.confirm('Are you sure you want to remove this team member?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/enterprise/team/${memberId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          alert('✅ Team member removed successfully!');
+          fetchEnterpriseData(); // Refresh data
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } else {
+        alert('❌ Failed to remove team member. Please try again.');
+      }
+    } catch (error) {
+      console.error('Remove team member error:', error);
+      alert('❌ Error removing team member. Please try again.');
+    }
+  };
+
+  // Location management handlers
+  const handleAddLocation = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/enterprise/locations`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newLocation)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          alert('✅ Location added successfully!');
+          setShowLocationModal(false);
+          fetchEnterpriseData(); // Refresh data
+          // Reset form
+          setNewLocation({
+            name: '',
+            address: '',
+            contact_person: '',
+            contact_phone: '',
+            services_needed: []
+          });
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } else {
+        alert('❌ Failed to add location. Please try again.');
+      }
+    } catch (error) {
+      console.error('Add location error:', error);
+      alert('❌ Error adding location. Please try again.');
+    }
+  };
+
+  const handleBookServiceForLocation = async (locationId) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/enterprise/locations/${locationId}/book-service`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          alert('✅ Service booked successfully for location!');
+          fetchEnterpriseData(); // Refresh data
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } else {
+        alert('❌ Failed to book service. Please try again.');
+      }
+    } catch (error) {
+      console.error('Book service error:', error);
+      alert('❌ Error booking service. Please try again.');
+    }
+  };
+
+  // Invoice generation
+  const handleGenerateInvoice = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/enterprise/generate-invoice`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          alert(`✅ Invoice generated successfully! Total: R${result.invoice.total_amount}`);
+          fetchEnterpriseData(); // Refresh data
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } else {
+        alert('❌ Failed to generate invoice. Please try again.');
+      }
+    } catch (error) {
+      console.error('Generate invoice error:', error);
+      alert('❌ Error generating invoice. Please try again.');
+    }
+  };
+
   useEffect(() => {
     fetchEnterpriseData();
   }, []);
