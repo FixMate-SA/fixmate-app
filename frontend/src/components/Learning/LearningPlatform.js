@@ -8,6 +8,20 @@ const LearningPlatform = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedLevel, setSelectedLevel] = useState('all');
+  
+  // User progress tracking state
+  const [userProgress, setUserProgress] = useState([]);
+  const [userCertificates, setUserCertificates] = useState([]);
+  const [userAnalytics, setUserAnalytics] = useState({});
+  const [progressLoading, setProgressLoading] = useState(false);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [progressForm, setProgressForm] = useState({
+    progress_percentage: 0,
+    time_spent_minutes: 0,
+    status: 'started',
+    notes: ''
+  });
 
   const categories = [
     { id: 'all', name: 'All Categories', icon: '📚' },
