@@ -2515,7 +2515,6 @@ async def create_enterprise_contract(contract_data: ContractCreate, request: Req
         contract_id = f"contract_{uuid.uuid4()}"
         
         # Calculate end date
-        from dateutil.relativedelta import relativedelta
         start_date = datetime.strptime(contract_data.start_date, '%Y-%m-%d').date()
         end_date = start_date + relativedelta(months=contract_data.duration_months)
         
