@@ -616,26 +616,39 @@ async def create_job(job_data: JobCreate, db: Session = Depends(get_db)):
 async def get_jobs(client_id: Optional[str] = None, db: Session = Depends(get_db)):
     """Get jobs (optionally filtered by client_id)"""
     try:
-        query = db.query(Job)
+        # Use raw SQL to match actual database schema
         if client_id:
-            query = query.filter(Job.client_id == client_id)
-        
-        jobs = query.order_by(Job.created_at.desc()).all()
+            query = text("""
+                SELECT id, user_id, service, description, location, status, 
+                       estimated_price, priority_level, created_at, fixer_id
+                FROM jobs 
+                WHERE user_id = :client_id 
+                ORDER BY created_at DESC
+            """)
+            result = db.execute(query, {'client_id': client_id}).fetchall()
+        else:
+            query = text("""
+                SELECT id, user_id, service, description, location, status, 
+                       estimated_price, priority_level, created_at, fixer_id
+                FROM jobs 
+                ORDER BY created_at DESC
+            """)
+            result = db.execute(query).fetchall()
         
         jobs_data = []
-        for job in jobs:
+        for row in result:
             jobs_data.append({
-                "id": job.id,
-                "title": job.title,
-                "description": job.description,
-                "location": job.location,
-                "category": job.category,
-                "status": job.status.value,
-                "urgency": job.urgency,
-                "estimated_price": job.estimated_price,
-                "created_at": job.created_at.isoformat() if job.created_at else None,
-                "client_id": job.client_id,
-                "fixer_id": job.fixer_id
+                "id": row[0],
+                "title": row[2],  # Use service as title since no title column exists
+                "description": row[3],
+                "location": row[4],
+                "category": row[2],  # Map service to category for frontend
+                "status": row[5],
+                "urgency": row[7],  # priority_level
+                "estimated_price": row[6],
+                "created_at": row[8].isoformat() if row[8] else None,
+                "client_id": row[1],  # Map user_id to client_id for frontend
+                "fixer_id": row[9]
             })
         
         return {
