@@ -252,12 +252,43 @@ const Dashboard = () => {
     <div className="space-y-6">
       {/* Header Section */}
       <div className="dashboard-card">
-        <h1 className="dashboard-title">{content.title}</h1>
-        <p className="dashboard-subtitle">{content.subtitle}</p>
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <h1 className="dashboard-title">{content.title}</h1>
+            <p className="dashboard-subtitle">{content.subtitle}</p>
+          </div>
+          <div className="flex items-center space-x-3">
+            {lastUpdated && (
+              <div className="text-sm text-gray-500">
+                <span className="hidden sm:inline">{t('lastUpdated', 'Last updated')}: </span>
+                <span>{lastUpdated.toLocaleTimeString()}</span>
+              </div>
+            )}
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="flex items-center space-x-2 px-3 py-2 bg-blue-100 hover:bg-blue-200 disabled:bg-gray-100 disabled:cursor-not-allowed text-blue-700 disabled:text-gray-400 rounded-lg transition-colors duration-200"
+              title={t('refreshData', 'Refresh data')}
+            >
+              <span className={`text-lg ${loading ? 'animate-spin' : ''}`}>
+                {loading ? '🔄' : '↻'}
+              </span>
+              <span className="hidden sm:inline text-sm font-medium">
+                {loading ? t('updating', 'Updating...') : t('refresh', 'Refresh')}
+              </span>
+            </button>
+          </div>
+        </div>
         
         {error && (
-          <div className="alert alert-error">
+          <div className="alert alert-error mt-4">
             <strong>{t('error')}:</strong> {error}
+            <button 
+              onClick={handleRefresh}
+              className="ml-3 text-sm underline hover:no-underline"
+            >
+              {t('tryAgain', 'Try again')}
+            </button>
           </div>
         )}
       </div>
