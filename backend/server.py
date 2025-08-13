@@ -2408,93 +2408,275 @@ async def generate_enterprise_invoice(request: Request, db: Session = Depends(ge
         print(f"Generate invoice error: {str(e)}")
         return {
             "success": False,
-            "message": f"Failed to generate invoice: {str(e)}"
+            "message": "Failed to generate invoice"
         }
 
-# Existing endpoints (keeping for compatibility)
-@app.get("/api/test")
-async def test_endpoint():
-    return {"message": "FixMate-SA API is running with emergency services!", "timestamp": datetime.now().isoformat()}
+# Enterprise Contract Management Endpoints
 
-@app.post("/api/whatsapp/webhook")
-async def whatsapp_webhook(request: Request):
-    """WhatsApp webhook endpoint"""
-    try:
-        body = await request.json()
-        result = await whatsapp_service.handle_webhook(body)
-        return result
-    except Exception as e:
-        print(f"WhatsApp webhook error: {e}")
-        return {"error": str(e)}
+class ContractCreate(BaseModel):
+    name: str
+    description: str
+    service_type: str
+    contract_value: float
+    duration_months: int
+    start_date: str
+    auto_renewal: bool = False
+    terms: Optional[str] = None
 
-@app.get("/api/whatsapp/stats")  
-async def get_whatsapp_stats(db: Session = Depends(get_db)):
-    """Get WhatsApp statistics"""
+@app.get("/api/enterprise/contracts")
+async def get_enterprise_contracts(request: Request, db: Session = Depends(get_db)):
+    """Get all enterprise contracts"""
     try:
-        stats = db.query(WhatsAppStatistics).order_by(WhatsAppStatistics.date.desc()).limit(30).all()
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Create contracts table if it doesn't exist
+        create_table_query = text("""
+            CREATE TABLE IF NOT EXISTS enterprise_contracts (
+                id VARCHAR PRIMARY KEY,
+                user_id VARCHAR NOT NULL,
+                name VARCHAR NOT NULL,
+                description TEXT,
+                service_type VARCHAR NOT NULL,
+                contract_value DECIMAL(10,2) NOT NULL,
+                duration_months INTEGER NOT NULL,
+                start_date DATE NOT NULL,
+                end_date DATE NOT NULL,
+                status VARCHAR DEFAULT 'active',
+                auto_renewal BOOLEAN DEFAULT false,
+                terms TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        db.execute(create_table_query)
+        db.commit()
+        
+        # Fetch user's contracts
+        query = text("""
+            SELECT id, name, description, service_type, contract_value, duration_months,
+                   start_date, end_date, status, auto_renewal, terms, created_at
+            FROM enterprise_contracts 
+            WHERE user_id = :user_id 
+            ORDER BY created_at DESC
+        """)
+        
+        result = db.execute(query, {'user_id': user_id}).fetchall()
+        
+        contracts = []
+        for row in result:
+            contracts.append({
+                "id": row[0],
+                "name": row[1],
+                "description": row[2],
+                "service_type": row[3],
+                "value": float(row[4]),
+                "duration_months": row[5],
+                "start_date": row[6].isoformat() if row[6] else None,
+                "end_date": row[7].isoformat() if row[7] else None,
+                "status": row[8],
+                "auto_renewal": row[9],
+                "terms": row[10],
+                "created_at": row[11].isoformat() if row[11] else None
+            })
+        
         return {
             "success": True,
-            "statistics": [{
-                "date": stat.date,
-                "total_messages": stat.total_messages,
-                "unique_users": stat.unique_users,
-                "successful_jobs": stat.successful_jobs
-            } for stat in stats]
+            "contracts": contracts
         }
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Get contracts error: {str(e)}")
+        return {
+            "success": False,
+            "contracts": []
+        }
 
-# Serve React static files
-frontend_build_path = Path(__file__).parent.parent / "frontend" / "build"
-static_path = Path(__file__).parent.parent / "frontend" / "build" / "static"
-
-print(f"🔍 Looking for React build at: {frontend_build_path}")
-print(f"🔍 Static path exists: {static_path.exists()}")
-print(f"🔍 Frontend build exists: {frontend_build_path.exists()}")
-
-if frontend_build_path.exists():
-    # Mount static files
-    if static_path.exists():
-        app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
-        print("✅ Static files mounted from React build")
-    
-    # Serve React app
-    @app.get("/")
-    async def serve_react_app():
-        index_file = frontend_build_path / "index.html"
-        if index_file.exists():
-            print(f"🔍 Index.html references: main.a2ae5212.js")
-            return FileResponse(str(index_file))
-        return {"error": "React app not found"}
-    
-    # Catch-all route for React Router
-    @app.get("/{full_path:path}")
-    async def serve_react_routes(full_path: str):
-        # Serve specific files if they exist
-        file_path = frontend_build_path / full_path
-        if file_path.exists() and file_path.is_file():
-            return FileResponse(str(file_path))
+@app.post("/api/enterprise/contracts")
+async def create_enterprise_contract(contract_data: ContractCreate, request: Request, db: Session = Depends(get_db)):
+    """Create a new enterprise contract"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
         
-        # For React routes, serve index.html
-        index_file = frontend_build_path / "index.html"
-        if index_file.exists():
-            return FileResponse(str(index_file))
+        # Generate unique contract ID
+        contract_id = f"contract_{uuid.uuid4()}"
         
-        return {"error": "File not found", "path": full_path}
+        # Calculate end date
+        from dateutil.relativedelta import relativedelta
+        start_date = datetime.strptime(contract_data.start_date, '%Y-%m-%d').date()
+        end_date = start_date + relativedelta(months=contract_data.duration_months)
+        
+        # Insert contract
+        insert_query = text("""
+            INSERT INTO enterprise_contracts (
+                id, user_id, name, description, service_type, contract_value,
+                duration_months, start_date, end_date, status, auto_renewal, terms, created_at, updated_at
+            ) VALUES (
+                :id, :user_id, :name, :description, :service_type, :contract_value,
+                :duration_months, :start_date, :end_date, :status, :auto_renewal, :terms, :created_at, :updated_at
+            )
+        """)
+        
+        db.execute(insert_query, {
+            'id': contract_id,
+            'user_id': user_id,
+            'name': contract_data.name,
+            'description': contract_data.description,
+            'service_type': contract_data.service_type,
+            'contract_value': contract_data.contract_value,
+            'duration_months': contract_data.duration_months,
+            'start_date': start_date,
+            'end_date': end_date,
+            'status': 'active',
+            'auto_renewal': contract_data.auto_renewal,
+            'terms': contract_data.terms,
+            'created_at': datetime.utcnow(),
+            'updated_at': datetime.utcnow()
+        })
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Contract created successfully",
+            "contract_id": contract_id,
+            "contract": {
+                "id": contract_id,
+                "name": contract_data.name,
+                "value": contract_data.contract_value,
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+                "status": "active"
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Create contract error: {str(e)}")
+        return {
+            "success": False,
+            "message": "Failed to create contract"
+        }
 
-else:
-    print("⚠️ React build directory not found")
-    @app.get("/")
-    async def root():
-        return {"message": "FixMate-SA API Server with Emergency Services", "frontend": "build not found"}
+@app.delete("/api/enterprise/contracts/{contract_id}")
+async def delete_enterprise_contract(contract_id: str, request: Request, db: Session = Depends(get_db)):
+    """Delete an enterprise contract"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Delete contract
+        delete_query = text("""
+            DELETE FROM enterprise_contracts 
+            WHERE id = :contract_id AND user_id = :user_id
+        """)
+        
+        result = db.execute(delete_query, {'contract_id': contract_id, 'user_id': user_id})
+        db.commit()
+        
+        if result.rowcount > 0:
+            return {
+                "success": True,
+                "message": "Contract deleted successfully"
+            }
+        else:
+            return {
+                "success": False,
+                "message": "Contract not found or not authorized"
+            }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Delete contract error: {str(e)}")
+        return {
+            "success": False,
+            "message": "Failed to delete contract"
+        }
 
-# Serve marketing website
-website_path = Path(__file__).parent.parent / "website"
-if website_path.exists():
-    app.mount("/website", StaticFiles(directory=str(website_path), html=True), name="website")
-    print("✅ Marketing website mounted at /website")
+@app.put("/api/enterprise/contracts/{contract_id}/renew")
+async def renew_enterprise_contract(contract_id: str, request: Request, db: Session = Depends(get_db)):
+    """Renew an enterprise contract"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Get current contract details
+        query = text("""
+            SELECT end_date, duration_months FROM enterprise_contracts 
+            WHERE id = :contract_id AND user_id = :user_id
+        """)
+        
+        result = db.execute(query, {'contract_id': contract_id, 'user_id': user_id}).fetchone()
+        
+        if not result:
+            return {
+                "success": False,
+                "message": "Contract not found or not authorized"
+            }
+        
+        # Calculate new end date
+        from dateutil.relativedelta import relativedelta
+        current_end_date = result[0]
+        duration_months = result[1]
+        new_end_date = current_end_date + relativedelta(months=duration_months)
+        
+        # Update contract
+        update_query = text("""
+            UPDATE enterprise_contracts 
+            SET end_date = :new_end_date, status = 'active', updated_at = :updated_at
+            WHERE id = :contract_id AND user_id = :user_id
+        """)
+        
+        db.execute(update_query, {
+            'new_end_date': new_end_date,
+            'updated_at': datetime.utcnow(),
+            'contract_id': contract_id,
+            'user_id': user_id
+        })
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Contract renewed successfully",
+            "new_end_date": new_end_date.isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Renew contract error: {str(e)}")
+        return {
+            "success": False,
+            "message": "Failed to renew contract"
+        }
 
-# Development server
+# Include other routes and main execution
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
