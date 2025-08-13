@@ -19,6 +19,7 @@ const B2BPortal = () => {
   const [showBulkBookingModal, setShowBulkBookingModal] = useState(false);
   const [showTeamMemberModal, setShowTeamMemberModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [showContractModal, setShowContractModal] = useState(false);
   const [newBulkBooking, setNewBulkBooking] = useState({
     services: [],
     locations: [],
@@ -39,6 +40,16 @@ const B2BPortal = () => {
     contact_person: '',
     contact_phone: '',
     services_needed: []
+  });
+  const [newContract, setNewContract] = useState({
+    name: '',
+    description: '',
+    service_type: '',
+    contract_value: '',
+    duration_months: 12,
+    start_date: '',
+    auto_renewal: false,
+    terms: ''
   });
 
   const tabs = [
