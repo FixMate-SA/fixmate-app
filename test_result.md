@@ -116,7 +116,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test user data isolation to ensure each client can only see their own data. This is critical for privacy and security."
+user_problem_statement: "Test the enhanced Learning Progress Tracking system I just implemented. This is a comprehensive learning platform with user-specific progress tracking, certificate management, and AI-powered admin analytics."
 
 backend:
   - task: "User Data Isolation - Critical Security Testing"
