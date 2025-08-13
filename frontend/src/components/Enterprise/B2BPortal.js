@@ -116,27 +116,71 @@ const B2BPortal = () => {
     completion_rate: 94
   };
 
-  useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
+  const fetchEnterpriseData = async () => {
+    try {
+      setLoading(true);
+      console.log('🏢 Fetching enterprise data...');
+      
+      const token = localStorage.getItem('fixmate_token');
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      
+      // Fetch overview data
+      const overviewResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/enterprise/overview`, { headers });
+      let overviewData = {};
+      if (overviewResponse.ok) {
+        const overview = await overviewResponse.json();
+        overviewData = overview.success ? overview.data : {};
+      }
+      
+      // Fetch team members
+      const teamResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/enterprise/team`, { headers });
+      let teamData = [];
+      if (teamResponse.ok) {
+        const team = await teamResponse.json();
+        teamData = team.success ? team.team_members : [];
+      }
+      
+      // Fetch locations
+      const locationsResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/enterprise/locations`, { headers });
+      let locationsData = [];
+      if (locationsResponse.ok) {
+        const locations = await locationsResponse.json();
+        locationsData = locations.success ? locations.locations : [];
+      }
+      
+      // Fetch invoices
+      const invoicesResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/enterprise/invoices`, { headers });
+      let invoicesData = [];
+      if (invoicesResponse.ok) {
+        const invoices = await invoicesResponse.json();
+        invoicesData = invoices.success ? invoices.invoices : [];
+      }
+      
+      // Update state with real data
       setEnterpriseData({
-        bookings: [
-          { id: 1, service: 'Office Cleaning', location: 'Sandton Office', date: '2024-01-20', status: 'completed' },
-          { id: 2, service: 'HVAC Maintenance', location: 'Cape Town Branch', date: '2024-01-22', status: 'in_progress' },
-          { id: 3, service: 'Electrical Repairs', location: 'Durban Store', date: '2024-01-25', status: 'scheduled' }
-        ],
-        contracts: [
-          { id: 1, name: 'Property Management - Sandton', value: 150000, status: 'active', renewal: '2024-06-01' },
-          { id: 2, name: 'Office Maintenance - Cape Town', value: 80000, status: 'active', renewal: '2024-04-15' }
-        ],
-        analytics: analyticsData,
-        invoices: [
-          { id: 1, amount: 25000, date: '2024-01-15', status: 'paid' },
-          { id: 2, amount: 18000, date: '2024-01-01', status: 'pending' }
-        ]
+        bookings: overviewData.recent_bookings || [],
+        contracts: [], // Will be added later if needed
+        analytics: overviewData.analytics || {},
+        invoices: invoicesData,
+        team: teamData,
+        locations: locationsData
       });
+      
+      console.log('✅ Enterprise data loaded successfully');
+      
+    } catch (error) {
+      console.error('❌ Error fetching enterprise data:', error);
+      // Keep default empty data on error
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
+
+  useEffect(() => {
+    fetchEnterpriseData();
   }, []);
 
   const renderOverview = () => (
