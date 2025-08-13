@@ -1384,6 +1384,315 @@ async def get_user_documents(request: Request, db: Session = Depends(get_db)):
         print(f"Get documents error: {str(e)}")
         return []
 
+# Send Reminder Endpoint
+class ReminderRequest(BaseModel):
+    request_id: str
+    message: Optional[str] = None
+
+class ReminderResponse(BaseModel):
+    success: bool
+    message: str
+
+@app.post("/api/compliance/send-reminder", response_model=ReminderResponse)
+async def send_compliance_reminder(reminder_data: ReminderRequest, request: Request, db: Session = Depends(get_db)):
+    """Send a reminder for a compliance request"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Verify the request belongs to the user
+        verify_query = text("""
+            SELECT category, description, status
+            FROM business_compliance_requests 
+            WHERE id = :request_id AND user_id = :user_id
+        """)
+        
+        request_result = db.execute(verify_query, {
+            'request_id': reminder_data.request_id,
+            'user_id': user_id
+        }).fetchone()
+        
+        if not request_result:
+            raise HTTPException(status_code=404, detail="Request not found")
+        
+        # Create reminders table if it doesn't exist
+        create_reminders_table_query = text("""
+            CREATE TABLE IF NOT EXISTS compliance_reminders (
+                id VARCHAR PRIMARY KEY,
+                user_id VARCHAR NOT NULL,
+                request_id VARCHAR NOT NULL,
+                message TEXT,
+                sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                reminder_type VARCHAR DEFAULT 'manual'
+            )
+        """)
+        
+        db.execute(create_reminders_table_query)
+        
+        # Insert reminder record
+        reminder_id = f"rem_{uuid.uuid4()}"
+        default_message = f"Reminder: Your {request_result[0]} request is {request_result[2]}. Please check the status and provide any required documentation."
+        
+        insert_reminder_query = text("""
+            INSERT INTO compliance_reminders (
+                id, user_id, request_id, message, sent_at, reminder_type
+            ) VALUES (
+                :id, :user_id, :request_id, :message, :sent_at, :reminder_type
+            )
+        """)
+        
+        db.execute(insert_reminder_query, {
+            'id': reminder_id,
+            'user_id': user_id,
+            'request_id': reminder_data.request_id,
+            'message': reminder_data.message or default_message,
+            'sent_at': datetime.utcnow(),
+            'reminder_type': 'manual'
+        })
+        
+        db.commit()
+        
+        # In a real implementation, you would send email/SMS here
+        # For now, we'll just log the reminder
+        print(f"Reminder sent for request {reminder_data.request_id}: {default_message}")
+        
+        return ReminderResponse(
+            success=True,
+            message="Reminder sent successfully"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Send reminder error: {str(e)}")
+        return ReminderResponse(
+            success=False,
+            message="Failed to send reminder"
+        )
+
+# Process Payment Endpoint
+class PaymentRequest(BaseModel):
+    amount: float
+    request_id: str
+    payment_method: str = "eft"
+
+class PaymentResponse(BaseModel):
+    success: bool
+    message: str
+    payment_id: Optional[str] = None
+    transaction_details: Optional[Dict[str, Any]] = None
+
+@app.post("/api/compliance/process-payment", response_model=PaymentResponse)
+async def process_compliance_payment(payment_data: PaymentRequest, request: Request, db: Session = Depends(get_db)):
+    """Process payment for a compliance request"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Verify the request belongs to the user
+        verify_query = text("""
+            SELECT category, description, status
+            FROM business_compliance_requests 
+            WHERE id = :request_id AND user_id = :user_id
+        """)
+        
+        request_result = db.execute(verify_query, {
+            'request_id': payment_data.request_id,
+            'user_id': user_id
+        }).fetchone()
+        
+        if not request_result:
+            raise HTTPException(status_code=404, detail="Request not found")
+        
+        # Create payments table if it doesn't exist
+        create_payments_table_query = text("""
+            CREATE TABLE IF NOT EXISTS compliance_payments (
+                id VARCHAR PRIMARY KEY,
+                user_id VARCHAR NOT NULL,
+                request_id VARCHAR NOT NULL,
+                amount DECIMAL(10,2) NOT NULL,
+                payment_method VARCHAR NOT NULL,
+                status VARCHAR DEFAULT 'completed',
+                transaction_reference VARCHAR,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        db.execute(create_payments_table_query)
+        
+        # Generate payment ID and transaction reference
+        payment_id = f"pay_{uuid.uuid4()}"
+        transaction_ref = f"TXN{datetime.now().strftime('%Y%m%d%H%M%S')}{payment_id[-6:]}"
+        
+        # Insert payment record
+        insert_payment_query = text("""
+            INSERT INTO compliance_payments (
+                id, user_id, request_id, amount, payment_method, 
+                status, transaction_reference, created_at
+            ) VALUES (
+                :id, :user_id, :request_id, :amount, :payment_method,
+                :status, :transaction_reference, :created_at
+            )
+        """)
+        
+        db.execute(insert_payment_query, {
+            'id': payment_id,
+            'user_id': user_id,
+            'request_id': payment_data.request_id,
+            'amount': payment_data.amount,
+            'payment_method': payment_data.payment_method,
+            'status': 'completed',
+            'transaction_reference': transaction_ref,
+            'created_at': datetime.utcnow()
+        })
+        
+        # Update request status to indicate payment received
+        update_request_query = text("""
+            UPDATE business_compliance_requests 
+            SET status = 'in_progress', updated_at = :updated_at
+            WHERE id = :request_id AND status = 'pending'
+        """)
+        
+        db.execute(update_request_query, {
+            'request_id': payment_data.request_id,
+            'updated_at': datetime.utcnow()
+        })
+        
+        db.commit()
+        
+        # In a real implementation, you would integrate with payment processor here
+        # For now, we'll simulate a successful payment
+        
+        return PaymentResponse(
+            success=True,
+            message="Payment processed successfully",
+            payment_id=payment_id,
+            transaction_details={
+                "transaction_reference": transaction_ref,
+                "amount": payment_data.amount,
+                "payment_method": payment_data.payment_method,
+                "status": "completed",
+                "processed_at": datetime.utcnow().isoformat()
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Process payment error: {str(e)}")
+        return PaymentResponse(
+            success=False,
+            message="Failed to process payment"
+        )
+
+# Enhanced compliance requests endpoint to include documents and payments
+@app.get("/api/compliance/requests/enhanced", response_model=ComplianceResponse)
+async def get_enhanced_compliance_requests(request: Request, db: Session = Depends(get_db)):
+    """Get compliance requests with associated documents and payments"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Fetch user's compliance requests
+        requests_query = text("""
+            SELECT id, category, description, urgency_level, contact_preference,
+                   status, admin_notes, estimated_cost, estimated_completion,
+                   created_at, updated_at
+            FROM business_compliance_requests 
+            WHERE user_id = :user_id 
+            ORDER BY created_at DESC
+        """)
+        
+        requests_result = db.execute(requests_query, {'user_id': user_id}).fetchall()
+        
+        enhanced_requests = []
+        for req_row in requests_result:
+            request_id = req_row[0]
+            
+            # Get documents for this request
+            docs_query = text("""
+                SELECT id, filename, file_type, file_size, uploaded_at
+                FROM compliance_documents 
+                WHERE user_id = :user_id AND (request_id = :request_id OR request_id IS NULL)
+            """)
+            docs_result = db.execute(docs_query, {'user_id': user_id, 'request_id': request_id}).fetchall()
+            
+            documents = []
+            for doc_row in docs_result:
+                documents.append({
+                    "id": doc_row[0],
+                    "name": doc_row[1],
+                    "type": doc_row[2],
+                    "size": doc_row[3],
+                    "uploaded_at": doc_row[4].isoformat() if doc_row[4] else None
+                })
+            
+            # Get payments for this request
+            payments_query = text("""
+                SELECT id, amount, payment_method, status, transaction_reference, created_at
+                FROM compliance_payments 
+                WHERE user_id = :user_id AND request_id = :request_id
+                ORDER BY created_at DESC
+            """)
+            payments_result = db.execute(payments_query, {'user_id': user_id, 'request_id': request_id}).fetchall()
+            
+            payments = []
+            for pay_row in payments_result:
+                payments.append({
+                    "id": pay_row[0],
+                    "amount": float(pay_row[1]),
+                    "payment_method": pay_row[2],
+                    "status": pay_row[3],
+                    "transaction_reference": pay_row[4],
+                    "created_at": pay_row[5].isoformat() if pay_row[5] else None
+                })
+            
+            enhanced_requests.append({
+                "id": req_row[0],
+                "category": req_row[1],
+                "description": req_row[2],
+                "urgency_level": req_row[3],
+                "contact_preference": req_row[4],
+                "status": req_row[5],
+                "admin_notes": req_row[6],
+                "estimated_cost": float(req_row[7]) if req_row[7] else None,
+                "estimated_completion": req_row[8].isoformat() if req_row[8] else None,
+                "created_at": req_row[9].isoformat() if req_row[9] else None,
+                "updated_at": req_row[10].isoformat() if req_row[10] else None,
+                "documents": documents,
+                "payments": payments
+            })
+        
+        return ComplianceResponse(
+            success=True,
+            message=f"Found {len(enhanced_requests)} compliance requests with details",
+            data=enhanced_requests
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Get enhanced compliance requests error: {str(e)}")
+        return ComplianceResponse(
+            success=False,
+            message="Failed to fetch enhanced compliance requests",
+            data=[]
+        )
+
 # Existing endpoints (keeping for compatibility)
 @app.get("/api/test")
 async def test_endpoint():
