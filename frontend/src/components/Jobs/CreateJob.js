@@ -113,6 +113,9 @@ const CreateJob = () => {
       
       setSuccess(t('jobCreatedSuccessfully', 'Job created successfully! You will be notified when fixers apply.'));
       
+      // Trigger dashboard refresh across tabs/windows
+      localStorage.setItem('fixmate_dashboard_refresh', Date.now().toString());
+      
       // Reset form
       setJobData({
         title: '',
