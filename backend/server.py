@@ -1344,6 +1344,46 @@ async def upload_compliance_document(
             message="Failed to upload document"
         )
 
+@app.get("/api/compliance/documents", response_model=List[Dict[str, Any]])
+async def get_user_documents(request: Request, db: Session = Depends(get_db)):
+    """Get all documents uploaded by the authenticated user"""
+    try:
+        # Extract user_id from Authorization header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Invalid authorization token")
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Fetch user's documents
+        query = text("""
+            SELECT id, filename, file_type, file_size, request_id, uploaded_at
+            FROM compliance_documents 
+            WHERE user_id = :user_id 
+            ORDER BY uploaded_at DESC
+        """)
+        
+        result = db.execute(query, {'user_id': user_id}).fetchall()
+        
+        documents = []
+        for row in result:
+            documents.append({
+                "id": row[0],
+                "name": row[1],
+                "type": row[2],
+                "size": row[3],
+                "request_id": row[4],
+                "uploaded_at": row[5].isoformat() if row[5] else None
+            })
+        
+        return documents
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Get documents error: {str(e)}")
+        return []
+
 # Existing endpoints (keeping for compatibility)
 @app.get("/api/test")
 async def test_endpoint():
