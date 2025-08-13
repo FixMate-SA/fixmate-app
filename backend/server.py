@@ -664,26 +664,36 @@ async def get_jobs(client_id: Optional[str] = None, db: Session = Depends(get_db
 async def get_job(job_id: str, db: Session = Depends(get_db)):
     """Get a specific job by ID"""
     try:
-        job = db.query(Job).filter(Job.id == job_id).first()
+        # Use raw SQL to match actual database schema
+        query = text("""
+            SELECT id, user_id, service, description, location, status, 
+                   estimated_price, priority_level, created_at, fixer_id,
+                   scheduled_at, updated_at
+            FROM jobs 
+            WHERE id = :job_id
+        """)
+        result = db.execute(query, {'job_id': job_id}).fetchone()
         
-        if not job:
+        if not result:
             raise HTTPException(status_code=404, detail="Job not found")
         
         return {
             "success": True,
             "job": {
-                "id": job.id,
-                "title": job.title,
-                "description": job.description,
-                "location": job.location,
-                "category": job.category,
-                "status": job.status.value,
-                "urgency": job.urgency,
-                "estimated_price": job.estimated_price,
-                "created_at": job.created_at.isoformat() if job.created_at else None,
-                "client_id": job.client_id,
-                "fixer_id": job.fixer_id,
-                "images": job.images or []
+                "id": result[0],
+                "title": result[2],  # Use service as title since no title column exists
+                "description": result[3],
+                "location": result[4],
+                "category": result[2],  # Map service to category for frontend
+                "status": result[5],
+                "urgency": result[7],  # priority_level
+                "estimated_price": result[6],
+                "created_at": result[8].isoformat() if result[8] else None,
+                "client_id": result[1],  # Map user_id to client_id for frontend
+                "fixer_id": result[9],
+                "scheduled_at": result[10].isoformat() if result[10] else None,
+                "updated_at": result[11].isoformat() if result[11] else None,
+                "images": []  # No images column in current schema
             }
         }
         
