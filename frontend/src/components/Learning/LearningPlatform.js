@@ -387,10 +387,28 @@ const LearningPlatform = () => {
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg p-6">
         <h1 className="text-3xl font-bold mb-2">FixMate Learning Academy</h1>
-        <p className="text-blue-100">
-          Enhance your skills with free courses from our partner institutions. 
-          Learn new techniques, improve your craft, and grow your business.
+        <p className="text-blue-100 mb-4">
+          Access world-class free courses from top universities and companies. Learn new skills, 
+          get certified, and grow your business - all completely free!
         </p>
+        <div className="flex flex-wrap gap-4 text-sm">
+          <div className="flex items-center">
+            <span className="mr-2">🎓</span>
+            <span>Free Certificates Available</span>
+          </div>
+          <div className="flex items-center">
+            <span className="mr-2">🌍</span>
+            <span>Top Global Institutions</span>
+          </div>
+          <div className="flex items-center">
+            <span className="mr-2">📱</span>
+            <span>Learn Anytime, Anywhere</span>
+          </div>
+          <div className="flex items-center">
+            <span className="mr-2">💼</span>
+            <span>Skills for Fixers & Clients</span>
+          </div>
+        </div>
       </div>
 
       {/* Stats Cards */}
