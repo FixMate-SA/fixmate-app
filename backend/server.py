@@ -3089,13 +3089,13 @@ async def update_user_learning_analytics(user_id: str, db: Session):
                 :streak_days, :last_activity, :created_at, :updated_at
             )
             ON CONFLICT (user_id) DO UPDATE SET
-                total_courses_started = :total_started,
-                total_courses_completed = :total_completed,
-                total_time_spent_minutes = :total_time,
-                total_certificates_earned = :total_certificates,
-                favorite_category = :favorite_category,
-                last_activity_date = :last_activity,
-                updated_at = :updated_at
+                total_courses_started = EXCLUDED.total_courses_started,
+                total_courses_completed = EXCLUDED.total_courses_completed,
+                total_time_spent_minutes = EXCLUDED.total_time_spent_minutes,
+                total_certificates_earned = EXCLUDED.total_certificates_earned,
+                favorite_category = EXCLUDED.favorite_category,
+                last_activity_date = EXCLUDED.last_activity_date,
+                updated_at = EXCLUDED.updated_at
         """)
         
         analytics_id = f"analytics_{uuid.uuid4()}"
