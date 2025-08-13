@@ -991,6 +991,82 @@ const LearningPlatform = () => {
           </div>
         </div>
       </div>
+      
+      {/* Progress Update Modal */}
+      {showProgressModal && selectedCourse && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-xl font-semibold mb-4">Update Progress: {selectedCourse.title}</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Progress Percentage</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={progressForm.progress_percentage}
+                  onChange={(e) => setProgressForm({...progressForm, progress_percentage: parseFloat(e.target.value) || 0})}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="0-100"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Time Spent (minutes)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={progressForm.time_spent_minutes}
+                  onChange={(e) => setProgressForm({...progressForm, time_spent_minutes: parseInt(e.target.value) || 0})}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="Time in minutes"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Status</label>
+                <select
+                  value={progressForm.status}
+                  onChange={(e) => setProgressForm({...progressForm, status: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="started">Started</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="paused">Paused</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Notes (Optional)</label>
+                <textarea
+                  value={progressForm.notes}
+                  onChange={(e) => setProgressForm({...progressForm, notes: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                  rows="3"
+                  placeholder="Add notes about your learning experience..."
+                />
+              </div>
+            </div>
+            
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={updateProgress}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+              >
+                Update Progress
+              </button>
+              <button
+                onClick={() => setShowProgressModal(false)}
+                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
