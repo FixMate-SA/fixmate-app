@@ -34,15 +34,30 @@ const FixerList = () => {
   useEffect(() => {
     const fetchFixers = async () => {
       try {
+        console.log('Fetching fixers...');
         const response = await apiService.getFixers();
-        setFixers(response.data);
+        console.log('Raw fixers response:', response);
+        
+        // Handle the new API response format: { success: true, fixers: [...] }
+        let fixersData = [];
+        if (response.data?.fixers) {
+          fixersData = response.data.fixers;
+        } else if (Array.isArray(response.data)) {
+          fixersData = response.data;
+        } else if (Array.isArray(response)) {
+          fixersData = response;
+        }
+        
+        console.log('Processed fixers data:', fixersData);
+        setFixers(fixersData);
         
         // If admin, fetch match history for each fixer
         if (isAdmin) {
-          fetchFixersMatchHistory(response.data);
+          fetchFixersMatchHistory(fixersData);
         }
       } catch (err) {
         console.error('Error fetching fixers:', err);
+        console.error('Error details:', err.response?.data || err.message);
         setError('Failed to load fixers');
       } finally {
         setLoading(false);
