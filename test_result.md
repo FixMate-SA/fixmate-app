@@ -116,7 +116,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the new Enterprise Contract Management API endpoints to verify they are working correctly. I have just implemented contract management functionality for the Enterprise Portal."
+user_problem_statement: "Test user data isolation to ensure each client can only see their own data. This is critical for privacy and security."
 
 backend:
   - task: "Enterprise Portal Overview API - GET /api/enterprise/overview"
