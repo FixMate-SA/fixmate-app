@@ -856,43 +856,142 @@ const B2BPortal = () => {
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Location Management</h2>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+          <button 
+            onClick={() => setShowLocationModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          >
             Add Location
           </button>
         </div>
         
         {/* Locations grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            { name: 'Head Office', address: '123 Business District, Cape Town', active_bookings: 8, total_spend: 'R12,450' },
-            { name: 'Warehouse North', address: '456 Industrial Ave, Johannesburg', active_bookings: 3, total_spend: 'R8,200' },
-            { name: 'Branch Office', address: '789 Commerce St, Durban', active_bookings: 5, total_spend: 'R6,800' },
-            { name: 'Factory East', address: '321 Manufacturing Rd, Port Elizabeth', active_bookings: 12, total_spend: 'R15,600' }
-          ].map((location, index) => (
-            <div key={index} className="p-4 border rounded-lg hover:bg-gray-50">
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-medium">{location.name}</h3>
-                <span className="text-2xl">📍</span>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">{location.address}</p>
-              <div className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span>Active Bookings:</span>
-                  <span className="font-medium">{location.active_bookings}</span>
+          {enterpriseData.locations.length > 0 ? (
+            enterpriseData.locations.map((location) => (
+              <div key={location.id} className="p-4 border rounded-lg hover:bg-gray-50">
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="font-medium">{location.name}</h3>
+                  <span className="text-2xl">📍</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span>Monthly Spend:</span>
-                  <span className="font-medium text-green-600">{location.total_spend}</span>
+                <p className="text-sm text-gray-600 mb-3">{location.address}</p>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span>Contact:</span>
+                    <span className="font-medium">{location.contact_person}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Phone:</span>
+                    <span className="font-medium">{location.contact_phone}</span>
+                  </div>
+                  {location.services_needed && location.services_needed.length > 0 && (
+                    <div className="mt-2">
+                      <span className="text-sm text-gray-500">Services: </span>
+                      <span className="text-sm">{location.services_needed.join(', ')}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-3 flex space-x-2">
+                  <button className="text-blue-600 hover:text-blue-800 text-sm">Manage</button>
+                  <button 
+                    onClick={() => handleBookServiceForLocation(location.id)}
+                    className="text-green-600 hover:text-green-800 text-sm"
+                  >
+                    Book Service
+                  </button>
                 </div>
               </div>
-              <div className="mt-3 flex space-x-2">
-                <button className="text-blue-600 hover:text-blue-800 text-sm">Manage</button>
-                <button className="text-green-600 hover:text-green-800 text-sm">Book Service</button>
-              </div>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-8 text-gray-500">
+              <p>No locations added yet. Add your first location to manage enterprise services!</p>
             </div>
-          ))}
+          )}
         </div>
       </div>
+      
+      {/* Location Modal */}
+      {showLocationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-xl font-semibold mb-4">Add Location</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Location Name</label>
+                <input
+                  type="text"
+                  value={newLocation.name}
+                  onChange={(e) => setNewLocation({...newLocation, name: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="Head Office"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Address</label>
+                <input
+                  type="text"
+                  value={newLocation.address}
+                  onChange={(e) => setNewLocation({...newLocation, address: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="123 Business District, Cape Town"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Contact Person</label>
+                <input
+                  type="text"
+                  value={newLocation.contact_person}
+                  onChange={(e) => setNewLocation({...newLocation, contact_person: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="John Manager"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Contact Phone</label>
+                <input
+                  type="tel"
+                  value={newLocation.contact_phone}
+                  onChange={(e) => setNewLocation({...newLocation, contact_phone: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="+27 11 123 4567"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Services Needed (comma-separated)</label>
+                <input
+                  type="text"
+                  value={newLocation.services_needed.join(', ')}
+                  onChange={(e) => setNewLocation({
+                    ...newLocation, 
+                    services_needed: e.target.value.split(',').map(s => s.trim())
+                  })}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="Cleaning, Maintenance, Security"
+                />
+              </div>
+            </div>
+            
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={handleAddLocation}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+              >
+                Add Location
+              </button>
+              <button
+                onClick={() => setShowLocationModal(false)}
+                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
