@@ -726,38 +726,128 @@ const B2BPortal = () => {
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Team Management</h2>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+          <button 
+            onClick={() => setShowTeamMemberModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          >
             Add Team Member
           </button>
         </div>
         
         {/* Team members list */}
         <div className="space-y-4">
-          {[
-            { name: 'John Manager', role: 'Account Manager', email: 'john@company.com', status: 'Active', permissions: 'Full Access' },
-            { name: 'Sarah Supervisor', role: 'Site Supervisor', email: 'sarah@company.com', status: 'Active', permissions: 'Location Manager' },
-            { name: 'Mike Facilities', role: 'Facilities Coordinator', email: 'mike@company.com', status: 'Active', permissions: 'Booking Only' }
-          ].map((member, index) => (
-            <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
-                  {member.name.split(' ').map(n => n[0]).join('')}
+          {enterpriseData.team.length > 0 ? (
+            enterpriseData.team.map((member) => (
+              <div key={member.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
+                    {member.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div>
+                    <h3 className="font-medium">{member.name}</h3>
+                    <p className="text-sm text-gray-600">{member.role} • {member.email}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-medium">{member.name}</h3>
-                  <p className="text-sm text-gray-600">{member.role} • {member.email}</p>
+                <div className="text-right flex items-center space-x-3">
+                  <div>
+                    <span className="inline-block px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full mb-1">
+                      Active
+                    </span>
+                    <p className="text-sm text-gray-500">{member.permissions ? member.permissions.join(', ') : 'Basic Access'}</p>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveTeamMember(member.id)}
+                    className="text-red-600 hover:text-red-800 text-sm px-2 py-1 rounded"
+                  >
+                    Remove
+                  </button>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="inline-block px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full mb-1">
-                  {member.status}
-                </span>
-                <p className="text-sm text-gray-500">{member.permissions}</p>
-              </div>
+            ))
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p>No team members added yet. Add your first team member to manage enterprise services!</p>
             </div>
-          ))}
+          )}
         </div>
       </div>
+      
+      {/* Team Member Modal */}
+      {showTeamMemberModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-xl font-semibold mb-4">Add Team Member</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Name</label>
+                <input
+                  type="text"
+                  value={newTeamMember.name}
+                  onChange={(e) => setNewTeamMember({...newTeamMember, name: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="John Doe"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Email</label>
+                <input
+                  type="email"
+                  value={newTeamMember.email}
+                  onChange={(e) => setNewTeamMember({...newTeamMember, email: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="john@company.com"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Role</label>
+                <select
+                  value={newTeamMember.role}
+                  onChange={(e) => setNewTeamMember({...newTeamMember, role: e.target.value})}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="">Select Role</option>
+                  <option value="Account Manager">Account Manager</option>
+                  <option value="Site Supervisor">Site Supervisor</option>
+                  <option value="Facilities Coordinator">Facilities Coordinator</option>
+                  <option value="Team Lead">Team Lead</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Permissions (comma-separated)</label>
+                <input
+                  type="text"
+                  value={newTeamMember.permissions.join(', ')}
+                  onChange={(e) => setNewTeamMember({
+                    ...newTeamMember, 
+                    permissions: e.target.value.split(',').map(p => p.trim())
+                  })}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="Full Access, Location Manager, Booking Only"
+                />
+              </div>
+            </div>
+            
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={handleAddTeamMember}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+              >
+                Add Member
+              </button>
+              <button
+                onClick={() => setShowTeamMemberModal(false)}
+                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
