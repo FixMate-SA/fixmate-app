@@ -426,6 +426,107 @@ const B2BPortal = () => {
     }
   };
 
+  // Contract management handlers
+  const handleAddContract = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/enterprise/contracts`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newContract)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          alert('✅ Contract added successfully!');
+          setShowContractModal(false);
+          fetchEnterpriseData(); // Refresh data
+          // Reset form
+          setNewContract({
+            name: '',
+            description: '',
+            service_type: '',
+            contract_value: '',
+            duration_months: 12,
+            start_date: '',
+            auto_renewal: false,
+            terms: ''
+          });
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } else {
+        alert('❌ Failed to add contract. Please try again.');
+      }
+    } catch (error) {
+      console.error('Add contract error:', error);
+      alert('❌ Error adding contract. Please try again.');
+    }
+  };
+
+  const handleRemoveContract = async (contractId) => {
+    if (!window.confirm('Are you sure you want to remove this contract?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/enterprise/contracts/${contractId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          alert('✅ Contract removed successfully!');
+          fetchEnterpriseData(); // Refresh data
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } else {
+        alert('❌ Failed to remove contract. Please try again.');
+      }
+    } catch (error) {
+      console.error('Remove contract error:', error);
+      alert('❌ Error removing contract. Please try again.');
+    }
+  };
+
+  const handleRenewContract = async (contractId) => {
+    if (!window.confirm('Are you sure you want to renew this contract?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/enterprise/contracts/${contractId}/renew`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          alert(`✅ Contract renewed successfully! New end date: ${result.new_end_date}`);
+          fetchEnterpriseData(); // Refresh data
+        } else {
+          alert(`❌ Error: ${result.message}`);
+        }
+      } else {
+        alert('❌ Failed to renew contract. Please try again.');
+      }
+    } catch (error) {
+      console.error('Renew contract error:', error);
+      alert('❌ Error renewing contract. Please try again.');
+    }
+  };
+
   useEffect(() => {
     fetchEnterpriseData();
   }, []);
