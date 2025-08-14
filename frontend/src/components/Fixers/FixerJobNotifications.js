@@ -127,12 +127,33 @@ const FixerJobNotifications = () => {
   };
 
   useEffect(() => {
-    if (user) {
-      fetchNotifications();
-      
-      // Set up polling for new notifications every 30 seconds
-      const interval = setInterval(fetchNotifications, 30000);
-      return () => clearInterval(interval);
+    // Only fetch if user exists and has proper authentication
+    if (user && user.id) {
+      try {
+        fetchNotifications();
+        
+        // Set up polling for new notifications every 30 seconds
+        const interval = setInterval(() => {
+          try {
+            fetchNotifications();
+          } catch (error) {
+            console.error('Error in notification polling:', error);
+          }
+        }, 30000);
+        
+        return () => clearInterval(interval);
+      } catch (error) {
+        console.error('Error setting up notifications:', error);
+        // Set safe defaults
+        setNotifications([]);
+        setUnreadCount(0);
+        setLoading(false);
+      }
+    } else {
+      // No user - set empty state
+      setNotifications([]);
+      setUnreadCount(0);
+      setLoading(false);
     }
   }, [user]);
 
