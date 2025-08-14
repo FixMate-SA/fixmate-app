@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
 
-// FixerAvailableJobs Component - Job Allocation System v2.1.0
+// FixerAvailableJobs Component - Job Allocation System v2.2.0 - Heroku Production Fix
 const FixerAvailableJobs = () => {
   const [availableJobs, setAvailableJobs] = useState([]);
   const [loading, setLoading] = useState(true);
