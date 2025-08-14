@@ -14,6 +14,14 @@ const FixerAvailableJobs = () => {
     try {
       setLoading(true);
       
+      // Debug logging for production
+      console.log('🔍 Fetching available jobs - Environment:', {
+        NODE_ENV: process.env.NODE_ENV,
+        BACKEND_URL: process.env.REACT_APP_BACKEND_URL,
+        currentHost: window.location.host,
+        apiBaseUrl: process.env.REACT_APP_BACKEND_URL || 'relative'
+      });
+      
       // Check if user is authenticated
       const token = localStorage.getItem('fixmate_token');
       if (!token) {
@@ -22,16 +30,26 @@ const FixerAvailableJobs = () => {
         return;
       }
 
+      console.log('🔍 Making API call to available jobs endpoint...');
       const response = await apiService.getFixerAvailableJobs();
+      console.log('🔍 Available jobs API response:', response);
       
       if (response?.data?.success) {
         setAvailableJobs(response.data.available_jobs || []);
+        console.log('✅ Available jobs loaded successfully:', response.data.available_jobs?.length || 0);
       } else {
         console.warn('Failed to fetch available jobs:', response?.data?.message);
         setAvailableJobs([]);
       }
     } catch (error) {
-      console.error('Error fetching available jobs:', error);
+      console.error('❌ Error fetching available jobs:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL
+      });
       
       // Set empty state instead of leaving undefined
       setAvailableJobs([]);
