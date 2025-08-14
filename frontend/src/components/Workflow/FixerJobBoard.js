@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { API_BASE_URL } from '../../utils/apiConfig';
 import FixerJobNotifications from '../Fixers/FixerJobNotifications';
+import FixerAvailableJobs from '../Fixers/FixerAvailableJobs';
 import JobCompletionForm from '../Jobs/JobCompletionForm';
 
 const FixerJobBoard = () => {
