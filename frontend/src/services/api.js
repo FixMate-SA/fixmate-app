@@ -277,6 +277,14 @@ export const apiService = {
   postChatMessage: (announcementId, message) => api.post(`/announcements/${announcementId}/chat`, { message }),
   deleteChatMessage: (announcementId, messageId) => api.delete(`/announcements/${announcementId}/chat/${messageId}`),
 
+  // Fixer Job Allocation System - NEW ENDPOINTS
+  getFixerAvailableJobs: () => api.get('/fixer/available-jobs'),
+  getFixerNotifications: () => api.get('/fixer/notifications'),
+  markNotificationRead: (notificationId) => api.post(`/fixer/notifications/${notificationId}/mark-read`),
+  
+  // Job Application (from existing apply-for-job endpoint)
+  applyForJob: (jobId) => api.post(`/jobs/${jobId}/apply-for-job`),
+
   // Generic API methods
   get: (endpoint, options = {}) => api.get(endpoint, options),
   post: (endpoint, data, options = {}) => api.post(endpoint, data, options),
