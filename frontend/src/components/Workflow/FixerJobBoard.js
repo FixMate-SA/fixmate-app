@@ -355,36 +355,7 @@ const FixerJobBoard = () => {
           )}
 
           {activeTab === 'available' && (
-            <div>
-              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">{t('availableJobs')}</h3>
-              {availableJobs.length === 0 ? (
-                <div className="text-center py-8 md:py-12 text-gray-500">
-                  <div className="text-4xl md:text-6xl mb-4">📋</div>
-                  <h3 className="text-base md:text-lg font-medium mb-2">{t('noJobsTitle', 'No Jobs Available')}</h3>
-                  <p className="max-w-md mx-auto text-sm md:text-base">{t('noJobsDescription', 'Check back later for new job opportunities that match your skills and location.')}</p>
-                </div>
-              ) : (
-                <div className="grid gap-4 md:gap-6">
-                  {availableJobs.map((job) => (
-                    <div key={job.id} className="bg-white border border-gray-200 rounded-lg p-3 md:p-6">
-                      <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
-                            {job.service?.replace('_', ' ').toUpperCase()}
-                          </h3>
-                          <p className="text-gray-600 mb-3 text-sm md:text-base">{job.description}</p>
-                          <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm text-gray-500">
-                            <span>📍 {job.location}</span>
-                            {job.estimated_price && <span>💰 R{job.estimated_price}</span>}
-                            <span>⏰ {new Date(job.created_at).toLocaleString()}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <FixerAvailableJobs />
           )}
 
           {activeTab === 'completed' && (
