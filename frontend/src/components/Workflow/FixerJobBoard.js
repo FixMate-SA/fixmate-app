@@ -310,7 +310,12 @@ const FixerJobBoard = () => {
         {/* Tab Content */}
         <div className="p-3 md:p-6">
           {activeTab === 'notifications' && (
-            <FixerJobNotifications />
+            <ErrorBoundary 
+              title="Error Loading Notifications" 
+              message="There was an issue loading your job notifications. Please try refreshing the page or contact support if the problem persists."
+            >
+              <FixerJobNotifications />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'active' && (
