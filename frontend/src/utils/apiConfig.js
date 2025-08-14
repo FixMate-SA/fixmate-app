@@ -1,4 +1,5 @@
 // API URL utility for consistent backend URL handling across environments
+// Version 2.2.0 - Production Heroku Fix - Updated: 2025-01-14
 
 const getBackendUrl = () => {
   // Get current environment information
