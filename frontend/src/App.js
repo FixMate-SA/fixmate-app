@@ -2,7 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
 
-// FixMate-SA App v2.1.0 - Job Allocation System Deployed
+// FixMate-SA App v2.2.0 - Production Heroku Fix - Job Allocation System
 
 // Core Context Providers
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
