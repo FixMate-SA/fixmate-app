@@ -26,6 +26,8 @@ import CreateJob from "./components/Jobs/CreateJob";
 import JobList from "./components/Jobs/JobList";
 import ClientRateJobs from "./components/Jobs/ClientRateJobs";
 import FixerList from "./components/Fixers/FixerList";
+import FixerAvailableJobs from "./components/Fixers/FixerAvailableJobs";
+import FixerJobNotifications from "./components/Fixers/FixerJobNotifications";
 import Profile from "./components/Profile/Profile";
 
 // Admin Components  
