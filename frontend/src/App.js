@@ -231,6 +231,30 @@ function App() {
                 }
               />
 
+              {/* Fixer Available Jobs - Direct Route */}
+              <Route
+                path="/fixer/available-jobs"
+                element={
+                  <ProtectedRoute>
+                    <ProfessionalLayout>
+                      <FixerAvailableJobs />
+                    </ProfessionalLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Fixer Notifications - Direct Route */}
+              <Route
+                path="/fixer/notifications"
+                element={
+                  <ProtectedRoute>
+                    <ProfessionalLayout>
+                      <FixerJobNotifications />
+                    </ProfessionalLayout>
+                  </ProtectedRoute>
+                }
+              />
+
               {/* Legacy Dashboard Route - Redirect based on role */}
               <Route
                 path="/dashboard"
