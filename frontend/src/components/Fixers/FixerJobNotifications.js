@@ -197,6 +197,26 @@ const FixerJobNotifications = () => {
 
   return (
     <div className="space-y-6">
+      {/* Temporary Production Debug Panel */}
+      {process.env.NODE_ENV === 'production' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+          <details>
+            <summary className="cursor-pointer text-blue-700 font-medium">
+              🔍 Production Debug Info (Click to expand)
+            </summary>
+            <div className="mt-2 text-blue-600">
+              <div><strong>Environment:</strong> {process.env.NODE_ENV}</div>
+              <div><strong>Backend URL:</strong> {process.env.REACT_APP_BACKEND_URL || 'Not set (using relative URLs)'}</div>
+              <div><strong>Current Host:</strong> {window.location.host}</div>
+              <div><strong>User:</strong> {user ? `${user.id} (${user.role})` : 'Not authenticated'}</div>
+              <div><strong>Token:</strong> {localStorage.getItem('fixmate_token') ? 'Present' : 'Missing'}</div>
+              <div><strong>Notifications Count:</strong> {notifications.length}</div>
+              <div><strong>Unread Count:</strong> {unreadCount}</div>
+            </div>
+          </details>
+        </div>
+      )}
+      
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <h2 className="text-2xl font-bold text-gray-900">Job Notifications</h2>
