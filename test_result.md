@@ -4681,10 +4681,14 @@ agent_communication:
 
 test_plan:
   current_focus:
-    - "All critical backend job allocation tasks completed successfully"
+    - "Fixer Available Jobs Frontend Integration"
+    - "Fixer Notifications Frontend Integration"
+    - "Fixer Dashboard Quick Actions Integration"
+    - "Fixer Job Board Integration"
+    - "End-to-End Job Allocation Workflow Testing"
   stuck_tasks:
     - "Missing Enterprise Invoice Detail Endpoint - GET /api/enterprise/invoice/{invoice_id}"
     - "Missing Enterprise Location Delete Endpoint - DELETE /api/enterprise/locations/{location_id}"
   test_all: false
-  test_priority: "backend_job_allocation_completed"
+  test_priority: "frontend_job_allocation_integration"
 
