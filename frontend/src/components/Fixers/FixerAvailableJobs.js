@@ -111,12 +111,31 @@ const FixerAvailableJobs = () => {
   });
 
   useEffect(() => {
-    if (user) {
-      fetchAvailableJobs();
-      
-      // Set up polling for new jobs every 15 seconds
-      const interval = setInterval(fetchAvailableJobs, 15000);
-      return () => clearInterval(interval);
+    // Only fetch if user exists and has proper authentication
+    if (user && user.id) {
+      try {
+        fetchAvailableJobs();
+        
+        // Set up polling for new jobs every 15 seconds
+        const interval = setInterval(() => {
+          try {
+            fetchAvailableJobs();
+          } catch (error) {
+            console.error('Error in job polling:', error);
+          }
+        }, 15000);
+        
+        return () => clearInterval(interval);
+      } catch (error) {
+        console.error('Error setting up available jobs:', error);
+        // Set safe defaults
+        setAvailableJobs([]);
+        setLoading(false);
+      }
+    } else {
+      // No user - set empty state
+      setAvailableJobs([]);
+      setLoading(false);
     }
   }, [user]);
 
