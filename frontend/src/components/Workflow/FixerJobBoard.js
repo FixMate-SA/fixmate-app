@@ -36,6 +36,16 @@ const FixerJobBoard = () => {
   const [fixerInfo, setFixerInfo] = useState(null);
   const [activeTab, setActiveTab] = useState('notifications');
 
+  // Production debugging - log environment info
+  useEffect(() => {
+    console.log('🔍 FixerJobBoard - Environment Debug:', {
+      NODE_ENV: process.env.NODE_ENV,
+      REACT_APP_BACKEND_URL: process.env.REACT_APP_BACKEND_URL,
+      currentHost: typeof window !== 'undefined' ? window.location.host : 'unknown',
+      user: user ? { id: user.id, role: user.role } : 'not authenticated'
+    });
+  }, [user]);
+
   useEffect(() => {
     fetchFixerInfo();
   }, [user]);
