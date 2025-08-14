@@ -14,16 +14,37 @@ const FixerJobNotifications = () => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
+      
+      // Check if user is authenticated
+      const token = localStorage.getItem('fixmate_token');
+      if (!token) {
+        console.warn('No authentication token found');
+        setNotifications([]);
+        setUnreadCount(0);
+        return;
+      }
+
       const response = await apiService.getFixerNotifications();
       
-      if (response.data.success) {
+      if (response?.data?.success) {
         setNotifications(response.data.notifications || []);
         setUnreadCount(response.data.unread_count || 0);
       } else {
-        console.error('Failed to fetch notifications:', response.data.message);
+        console.warn('Failed to fetch notifications:', response?.data?.message);
+        setNotifications([]);
+        setUnreadCount(0);
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
+      
+      // Set empty state instead of leaving undefined
+      setNotifications([]);
+      setUnreadCount(0);
+      
+      // Don't throw the error - handle gracefully
+      if (error.response?.status === 401) {
+        console.warn('Authentication failed - user may need to log in again');
+      }
     } finally {
       setLoading(false);
     }
