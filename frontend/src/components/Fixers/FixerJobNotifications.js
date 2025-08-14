@@ -4,20 +4,22 @@ import { apiService } from '../../services/api';
 
 const FixerJobNotifications = () => {
   const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [markingRead, setMarkingRead] = useState({});
+  const [applyingJobs, setApplyingJobs] = useState({});
   const { user } = useAuth();
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/fixer/notifications`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`
-        }
-      });
+      setLoading(true);
+      const response = await apiService.getFixerNotifications();
       
-      if (response.ok) {
-        const data = await response.json();
-        setNotifications(data);
+      if (response.data.success) {
+        setNotifications(response.data.notifications || []);
+        setUnreadCount(response.data.unread_count || 0);
+      } else {
+        console.error('Failed to fetch notifications:', response.data.message);
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -26,31 +28,89 @@ const FixerJobNotifications = () => {
     }
   };
 
-  const acceptJob = async (jobId) => {
+  const markAsRead = async (notificationId) => {
+    if (markingRead[notificationId]) return;
+    
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/jobs/${jobId}/accept-fixer`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`
-        }
-      });
+      setMarkingRead(prev => ({ ...prev, [notificationId]: true }));
+      const response = await apiService.markNotificationRead(notificationId);
       
-      if (response.ok) {
-        alert('✅ Job accepted successfully!');
-        fetchNotifications(); // Refresh notifications
-      } else {
-        const error = await response.json();
-        alert(`❌ Failed to accept job: ${error.detail}`);
+      if (response.data.success) {
+        // Update the notification in the local state
+        setNotifications(prev => prev.map(notification => 
+          notification.id === notificationId 
+            ? { ...notification, is_read: true }
+            : notification
+        ));
+        
+        // Update unread count
+        setUnreadCount(prev => Math.max(0, prev - 1));
       }
     } catch (error) {
-      console.error('Error accepting job:', error);
-      alert('❌ Failed to accept job. Please try again.');
+      console.error('Error marking notification as read:', error);
+    } finally {
+      setMarkingRead(prev => ({ ...prev, [notificationId]: false }));
+    }
+  };
+
+  const applyForJob = async (jobId, notificationId) => {
+    if (applyingJobs[jobId]) return;
+    
+    try {
+      setApplyingJobs(prev => ({ ...prev, [jobId]: true }));
+      const response = await apiService.applyForJob(jobId);
+      
+      if (response.data.success) {
+        alert('✅ ' + response.data.message);
+        
+        // Mark the notification as read
+        await markAsRead(notificationId);
+        
+        // Refresh notifications to get updated status
+        fetchNotifications();
+      } else {
+        alert('❌ ' + (response.data.message || 'Failed to apply for job'));
+      }
+    } catch (error) {
+      console.error('Error applying for job:', error);
+      if (error.response?.status === 403) {
+        alert('❌ Job is no longer available or has been assigned to another fixer');
+      } else {
+        alert('❌ Failed to apply for job. Please try again.');
+      }
+    } finally {
+      setApplyingJobs(prev => ({ ...prev, [jobId]: false }));
+    }
+  };
+
+  const getNotificationIcon = (notificationType) => {
+    switch (notificationType) {
+      case 'job_assigned': return '🎯';
+      case 'job_available': return '📋';
+      case 'job_cancelled': return '❌';
+      case 'job_completed': return '✅';
+      default: return '🔔';
+    }
+  };
+
+  const getNotificationColor = (notificationType, isRead) => {
+    if (isRead) return 'bg-gray-50 border-gray-200';
+    
+    switch (notificationType) {
+      case 'job_assigned': return 'bg-green-50 border-green-200';
+      case 'job_available': return 'bg-blue-50 border-blue-200';
+      case 'job_cancelled': return 'bg-red-50 border-red-200';
+      default: return 'bg-orange-50 border-orange-200';
     }
   };
 
   useEffect(() => {
     if (user) {
       fetchNotifications();
+      
+      // Set up polling for new notifications every 30 seconds
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
     }
   }, [user]);
 
@@ -58,6 +118,7 @@ const FixerJobNotifications = () => {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+        <span className="ml-3 text-gray-600">Loading notifications...</span>
       </div>
     );
   }
@@ -65,10 +126,18 @@ const FixerJobNotifications = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Job Notifications</h2>
+        <div className="flex items-center space-x-3">
+          <h2 className="text-2xl font-bold text-gray-900">Job Notifications</h2>
+          {unreadCount > 0 && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              {unreadCount} new
+            </span>
+          )}
+        </div>
         <button
           onClick={fetchNotifications}
-          className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-colors"
+          disabled={loading}
+          className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
         >
           🔄 Refresh
         </button>
@@ -85,19 +154,18 @@ const FixerJobNotifications = () => {
           {notifications.map((notification) => (
             <div
               key={notification.id}
-              className={`border rounded-lg p-6 ${
-                notification.read 
-                  ? 'bg-gray-50 border-gray-200' 
-                  : 'bg-orange-50 border-orange-200'
-              }`}
+              className={`border rounded-lg p-6 ${getNotificationColor(notification.notification_type, notification.is_read)}`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center mb-2">
+                    <span className="text-lg mr-2">
+                      {getNotificationIcon(notification.notification_type)}
+                    </span>
                     <h3 className="text-lg font-semibold text-gray-900">
                       {notification.title}
                     </h3>
-                    {!notification.read && (
+                    {!notification.is_read && (
                       <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                         New
                       </span>
@@ -106,27 +174,62 @@ const FixerJobNotifications = () => {
                   
                   <p className="text-gray-600 mb-4">{notification.message}</p>
                   
-                  <div className="text-sm text-gray-500">
-                    {new Date(notification.created_at).toLocaleString()}
+                  {/* Job Details */}
+                  {notification.job_details && (
+                    <div className="bg-white bg-opacity-50 rounded-md p-3 mb-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                        <div><strong>Service:</strong> {notification.job_details.service}</div>
+                        <div><strong>Location:</strong> {notification.job_details.location}</div>
+                        <div><strong>Price:</strong> R{notification.job_details.estimated_price}</div>
+                      </div>
+                      <div className="mt-2 text-sm">
+                        <strong>Status:</strong> <span className="capitalize">{notification.job_details.job_status}</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <span>{new Date(notification.created_at).toLocaleString()}</span>
+                    <span className="capitalize">{notification.notification_type.replace('_', ' ')}</span>
                   </div>
                 </div>
                 
-                {notification.job_id && (
-                  <div className="ml-4 space-y-2">
+                <div className="ml-4 space-y-2 flex flex-col">
+                  {/* Apply for Job Button (for available jobs) */}
+                  {notification.job_id && notification.notification_type === 'job_available' && (
                     <button
-                      onClick={() => acceptJob(notification.job_id)}
-                      className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
+                      onClick={() => applyForJob(notification.job_id, notification.id)}
+                      disabled={applyingJobs[notification.job_id]}
+                      className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
                     >
-                      ✅ Accept Job
+                      {applyingJobs[notification.job_id] ? '⏳ Applying...' : '✅ Apply for Job'}
                     </button>
-                    
+                  )}
+                  
+                  {/* Mark as Read Button */}
+                  {!notification.is_read && (
                     <button
-                      className="block w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors text-sm"
+                      onClick={() => markAsRead(notification.id)}
+                      disabled={markingRead[notification.id]}
+                      className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 px-4 py-2 rounded-lg transition-colors text-sm"
+                    >
+                      {markingRead[notification.id] ? '⏳ Marking...' : '📖 Mark as Read'}
+                    </button>
+                  )}
+                  
+                  {/* View Job Details Button */}
+                  {notification.job_id && (
+                    <button
+                      onClick={() => {
+                        // Open job details in a new tab or navigate to job details page
+                        window.open(`/jobs/${notification.job_id}`, '_blank');
+                      }}
+                      className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg transition-colors text-sm"
                     >
                       👀 View Details
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           ))}
