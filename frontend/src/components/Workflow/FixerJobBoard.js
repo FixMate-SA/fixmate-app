@@ -11,6 +11,23 @@ const FixerJobBoard = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
   
+  // Safety check - ensure user is authenticated before rendering
+  if (!user) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+        <div className="text-yellow-400 text-4xl mb-4">🔐</div>
+        <h3 className="text-lg font-medium text-yellow-900 mb-2">Authentication Required</h3>
+        <p className="text-yellow-600 mb-4">Please log in to access the job board.</p>
+        <button
+          onClick={() => window.location.href = '/login'}
+          className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg transition-colors"
+        >
+          Go to Login
+        </button>
+      </div>
+    );
+  }
+
   const [availableJobs, setAvailableJobs] = useState([]);
   const [currentJob, setCurrentJob] = useState(null);
   const [loading, setLoading] = useState(true);
