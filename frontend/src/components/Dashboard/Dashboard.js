@@ -177,6 +177,13 @@ const Dashboard = () => {
               color: 'bg-orange-600 hover:bg-orange-700'
             },
             { 
+              title: t('notifications', 'Job Notifications'), 
+              desc: t('viewJobNotifications', 'View job assignments and opportunities'), 
+              path: '/fixer/notifications', 
+              icon: '🔔',
+              color: 'bg-red-600 hover:bg-red-700'
+            },
+            { 
               title: t('businessSetup', 'Business Setup'), 
               desc: t('businessSetupDesc', 'Professional licensing, business registration, compliance'), 
               path: '/fixer/business-compliance', 
