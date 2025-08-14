@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
 
+// FixerAvailableJobs Component - Job Allocation System v2.1.0
 const FixerAvailableJobs = () => {
   const [availableJobs, setAvailableJobs] = useState([]);
   const [loading, setLoading] = useState(true);
