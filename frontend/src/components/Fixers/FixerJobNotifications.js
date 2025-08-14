@@ -166,6 +166,17 @@ const FixerJobNotifications = () => {
     );
   }
 
+  // Safety check for user authentication
+  if (!user) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+        <div className="text-yellow-400 text-4xl mb-4">🔐</div>
+        <h3 className="text-lg font-medium text-yellow-900 mb-2">Authentication Required</h3>
+        <p className="text-yellow-600">Please log in to view your job notifications.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
