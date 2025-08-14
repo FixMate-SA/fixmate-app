@@ -361,7 +361,12 @@ const FixerJobBoard = () => {
           )}
 
           {activeTab === 'available' && (
-            <FixerAvailableJobs />
+            <ErrorBoundary 
+              title="Error Loading Available Jobs" 
+              message="There was an issue loading available jobs. Please try refreshing the page or contact support if the problem persists."
+            >
+              <FixerAvailableJobs />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'completed' && (
