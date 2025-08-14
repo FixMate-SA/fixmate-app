@@ -148,6 +148,17 @@ const FixerAvailableJobs = () => {
     );
   }
 
+  // Safety check for user authentication
+  if (!user) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+        <div className="text-yellow-400 text-4xl mb-4">🔐</div>
+        <h3 className="text-lg font-medium text-yellow-900 mb-2">Authentication Required</h3>
+        <p className="text-yellow-600">Please log in to view available jobs.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
