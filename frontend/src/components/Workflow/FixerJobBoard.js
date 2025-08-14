@@ -5,6 +5,7 @@ import { API_BASE_URL } from '../../utils/apiConfig';
 import FixerJobNotifications from '../Fixers/FixerJobNotifications';
 import FixerAvailableJobs from '../Fixers/FixerAvailableJobs';
 import JobCompletionForm from '../Jobs/JobCompletionForm';
+import ErrorBoundary from '../Common/ErrorBoundary';
 
 const FixerJobBoard = () => {
   const { user } = useAuth();
