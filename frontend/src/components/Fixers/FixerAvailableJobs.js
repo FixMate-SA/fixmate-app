@@ -13,15 +13,33 @@ const FixerAvailableJobs = () => {
   const fetchAvailableJobs = async () => {
     try {
       setLoading(true);
+      
+      // Check if user is authenticated
+      const token = localStorage.getItem('fixmate_token');
+      if (!token) {
+        console.warn('No authentication token found');
+        setAvailableJobs([]);
+        return;
+      }
+
       const response = await apiService.getFixerAvailableJobs();
       
-      if (response.data.success) {
+      if (response?.data?.success) {
         setAvailableJobs(response.data.available_jobs || []);
       } else {
-        console.error('Failed to fetch available jobs:', response.data.message);
+        console.warn('Failed to fetch available jobs:', response?.data?.message);
+        setAvailableJobs([]);
       }
     } catch (error) {
       console.error('Error fetching available jobs:', error);
+      
+      // Set empty state instead of leaving undefined
+      setAvailableJobs([]);
+      
+      // Don't throw the error - handle gracefully
+      if (error.response?.status === 401) {
+        console.warn('Authentication failed - user may need to log in again');
+      }
     } finally {
       setLoading(false);
     }
