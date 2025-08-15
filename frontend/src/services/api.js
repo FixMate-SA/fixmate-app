@@ -282,6 +282,10 @@ export const apiService = {
   getFixerNotifications: () => api.get('/fixer/notifications'),
   markNotificationRead: (notificationId) => api.post(`/fixer/notifications/${notificationId}/mark-read`),
   
+  // Fixer Payment Methods - NEW ENDPOINTS
+  processFixerCardPayment: (paymentData) => api.post('/fixer/payment/card', paymentData),
+  processFixerEFTPayment: (paymentData) => api.post('/fixer/payment/eft', paymentData),
+  
   // Job Application (from existing apply-for-job endpoint)
   applyForJob: (jobId) => api.post(`/jobs/${jobId}/apply-for-job`),
 
