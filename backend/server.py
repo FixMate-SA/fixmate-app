@@ -4276,7 +4276,7 @@ async def get_fixer_reputation(fixer_id: str, db: Session = Depends(get_db)):
             "avg_job_value": float(stats_result[3]) if stats_result and stats_result[3] else 0,
             "completion_rate": round((completed_jobs / max(1, stats_result[0])) * 100, 1) if stats_result else 0,
             "service_categories": fixer_result[3] or [],
-            "bio": fixer_result[6] or "Professional fixer providing quality services",
+            "bio": fixer_result[4] or "Professional fixer providing quality services",
             "badges": [],
             "performance_metrics": {
                 "response_time": "< 2 hours",
