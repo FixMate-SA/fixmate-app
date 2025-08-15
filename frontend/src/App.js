@@ -385,26 +385,6 @@ function App() {
                 }
               />
               <Route
-                path="/fixer/payment"
-                element={
-                  <ProtectedRoute>
-                    <ProfessionalLayout>
-                      <PaymentOptions />
-                    </ProfessionalLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/fixer/business-compliance"
-                element={
-                  <ProtectedRoute>
-                    <ProfessionalLayout>
-                      <BusinessCompliance />
-                    </ProfessionalLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
                 path="/admin/payment"
                 element={
                   <ProtectedRoute>
