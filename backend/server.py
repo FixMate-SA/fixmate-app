@@ -1223,7 +1223,7 @@ async def get_dashboard(user_id: str, request: Request, db: Session = Depends(ge
             notification_stats_query = text("""
                 SELECT 
                     COUNT(*) as total_notifications,
-                    COUNT(CASE WHEN is_read = false THEN 1 END) as unread_notifications
+                    COUNT(CASE WHEN read = false THEN 1 END) as unread_notifications
                 FROM notifications 
                 WHERE fixer_id = :user_id
             """)
