@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 # Configuration
-BACKEND_URL = "https://auto-job-match-1.preview.emergentagent.com/api"
+BACKEND_URL = "https://fixmate-deploy-2.preview.emergentagent.com/api"
 
 # Test credentials
 TEST_CLIENT_PHONE = "+27800000002"

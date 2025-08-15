@@ -1,69 +1,20 @@
 <analysis>
-The AI engineer's work involved a series of debugging and feature implementations on the FixMate-SA application. Initially, the focus was on stabilizing core functionalities: fixing authentication, deployment issues (blank screens on Heroku), and ensuring local preview accuracy. This required meticulous adjustments to backend endpoints, database schemas, and frontend environment variables. Subsequent tasks focused on enhancing various modules like the Enterprise Portal, Learning section, and Business Compliance, often involving the creation of new backend APIs and their corresponding frontend integrations. A recurring challenge was ensuring proper user data isolation, which led to the discovery and resolution of critical security vulnerabilities in authentication and data filtering. Deployment consistency on Heroku was another common issue, frequently requiring investigation into missing dependencies, accidental code removals, or build/cache invalidation. The work consistently followed a pattern of identifying missing backend logic, implementing it, updating the frontend, and then rigorously testing, often encountering and resolving deployment-specific issues or security flaws in the process. The engineer is currently addressing an issue where the database changes for job allocation were not being committed, which was the final action point.
+The AI engineer's work primarily focused on stabilizing, enhancing, and debugging the FixMate-SA application. The trajectory shows a systematic approach to feature development, starting with core functionalities like authentication and deployment, then expanding to modules such as Enterprise Portal, Learning, Business Compliance, and critically, an automatic job allocation system. A persistent challenge throughout was ensuring correct Heroku deployment and resolving related frontend configuration issues, often requiring multiple troubleshooting attempts and leveraging the . The engineer consistently followed a pattern of backend implementation, frontend integration, and rigorous testing, iterating on fixes for database persistence, API configuration, and UI rendering issues. The work concluded with persistent Heroku deployment issues for the jobs and payments sections, and a new redirection bug in the business compliance section.
 </analysis>
 
 <product_requirements>
-FixMate-SA is a South African mobile/web application facilitating connections between clients and service professionals via a FixMate Job Request and Assignment Workflow. It encompasses user authentication (Admin, Fixer, Client), job management, fixer profiles, ratings, and multi-channel support (SMS/USSD, WhatsApp). The objective is to be a comprehensive platform with refined role-based routing, improved UI/UX, and Afrikaans localization.
+FixMate-SA is a South African mobile/web application designed to connect clients with service professionals through a FixMate Job Request and Assignment Workflow. Key features include user authentication (Admin, Fixer, Client roles), job management, fixer profiles, ratings, and multi-channel support (SMS/USSD, WhatsApp). The overarching goal is a comprehensive platform with refined role-based routing, improved UI/UX, and Afrikaans localization.
 
-So far, the application has undergone significant development focusing on:
-*   **Authentication & Deployment**: Resolved login failures, Heroku blank screens, and local preview inconsistencies.
-*   **Job Management**: Ensured new jobs appear correctly, fixed blank pages post-creation, and addressed backend data mismatches.
-*   **Fixer Section**: Enabled functional browsing for fixers.
-*   **Client Dashboard**: Implemented automatic updates for job statistics.
-*   **Client Signup**: Fixed Method Not Allowed errors.
-*   **Business Compliance**: Enabled successful submission of requests, document uploads, and made Status Tracking, Send Reminder, Upload Document, and Make Payment sections functional and auto-updating with user-specific data.
-*   **Enterprise Portal**: Made Overview, Bulk Booking, Analytics, Team Management, Locations, Invoicing, and Contract sections functional with real-time data and actionable buttons.
-*   **Learning Section**: Enhanced with real free courses offering certificates, with a user-specific progress tracking system and an AI-powered admin analytics dashboard.
-*   **User Data Isolation**: Ensured all user data (especially jobs, dashboard, business compliance, learning progress) is strictly private to the logged-in user, while the admin dashboard aggregates relevant information from all accounts.
-*   **Automatic Job Allocation**: The system needs to automatically allocate jobs to relevant fixers, send notifications, and display available jobs and notifications in the fixer's Jobs section.
+To date, significant progress has been made: authentication and deployment issues (e.g., login failures, Heroku blank screens) have been resolved. Core functionalities like job management, fixer browsing, and client dashboard updates are operational. Critical modules like Business Compliance, Enterprise Portal, and Learning sections have been made functional, incorporating real-time data, user-specific progress tracking, and admin analytics. User data isolation has been a priority, ensuring privacy across modules. Most recently, an automatic job allocation system has been implemented to assign jobs to fixers and send notifications, with associated frontend integrations for fixers to view available jobs and notifications.
 </product_requirements>
 
 <key_technical_concepts>
--   **Full-stack Architecture**: React.js (frontend) and FastAPI (backend).
--   **Database**: PostgreSQL (primary), with SQLAlchemy ORM.
--   **API Communication**: REST API, with Kubernetes ingress ( prefix).
--   **Cloud Deployment**: Heroku, with Supervisor for process management.
--   **Authentication**: JWT, React Context for role-based access, bcrypt.
--   **Internationalization**: .
--   **AI Integration**: Optional usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
-              [-o ORGANIZATION] [-t {openai,azure}]
-              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
-              [--azure-ad-token AZURE_AD_TOKEN] [-V]
-              {api,tools,migrate,grit} ...
-
-positional arguments:
-  {api,tools,migrate,grit}
-    api                 Direct API calls
-    tools               Client side tools for convenience
-
-options:
-  -h, --help            show this help message and exit
-  -v, --verbose         Set verbosity.
-  -b API_BASE, --api-base API_BASE
-                        What API base url to use.
-  -k API_KEY, --api-key API_KEY
-                        What API key to use.
-  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
-                        What proxy to use.
-  -o ORGANIZATION, --organization ORGANIZATION
-                        Which organization to run as (will use your default
-                        organization if not specified)
-  -t {openai,azure}, --api-type {openai,azure}
-                        The backend API to call, must be `openai` or `azure`
-  --api-version API_VERSION
-                        The Azure API version, e.g.
-                        'https://learn.microsoft.com/en-us/azure/ai-
-                        services/openai/reference#rest-api-versioning'
-  --azure-endpoint AZURE_ENDPOINT
-                        The Azure endpoint, e.g.
-                        'https://endpoint.openai.azure.com'
-  --azure-ad-token AZURE_AD_TOKEN
-                        A token from Azure Active Directory,
-                        https://www.microsoft.com/en-
-                        us/security/business/identity-access/microsoft-entra-
-                        id
-  -V, --version         show program's version number and exit and  for AI analytics (handled gracefully if missing).
--   **Database Schema Management**: Direct SQL queries and .
+- **Full-stack Architecture**: React.js (frontend) and FastAPI (backend).
+- **Database**: PostgreSQL (primary) with SQLAlchemy ORM.
+- **API Communication**: REST API via  prefix for Kubernetes ingress.
+- **Cloud Deployment**: Heroku, managed by Supervisor.
+- **Authentication**: JWT, React Context for role-based access, bcrypt.
+- **Environment Variables**: Strict usage of  and .
 </key_technical_concepts>
 
 <code_architecture>
@@ -73,96 +24,101 @@ The application uses a full-stack architecture with React for the frontend and F
 
 -   ****:
     -   **Importance**: Central FastAPI application for all backend API definitions.
-    -   **Changes**:
-        -   **Authentication**: Implemented authentication for  and , ensuring token validation and user-specific data.
-        -   **Enterprise Portal**: Added comprehensive APIs for all enterprise functionality (overview, bulk booking, team management, locations, invoicing, contracts).
-        -   **Learning Progress**: Added APIs for  management (create, get, update, delete) and  aggregation.
-        -   **Job Allocation**: Implemented automatic job allocation logic, including assigning jobs to fixers and creating notifications. Added API endpoints for fixers to view  and .
-        -   **Refinements**: Moved  import to top-level, made usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
-              [-o ORGANIZATION] [-t {openai,azure}]
-              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
-              [--azure-ad-token AZURE_AD_TOKEN] [-V]
-              {api,tools,migrate,grit} ...
-
-positional arguments:
-  {api,tools,migrate,grit}
-    api                 Direct API calls
-    tools               Client side tools for convenience
-
-options:
-  -h, --help            show this help message and exit
-  -v, --verbose         Set verbosity.
-  -b API_BASE, --api-base API_BASE
-                        What API base url to use.
-  -k API_KEY, --api-key API_KEY
-                        What API key to use.
-  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
-                        What proxy to use.
-  -o ORGANIZATION, --organization ORGANIZATION
-                        Which organization to run as (will use your default
-                        organization if not specified)
-  -t {openai,azure}, --api-type {openai,azure}
-                        The backend API to call, must be `openai` or `azure`
-  --api-version API_VERSION
-                        The Azure API version, e.g.
-                        'https://learn.microsoft.com/en-us/azure/ai-
-                        services/openai/reference#rest-api-versioning'
-  --azure-endpoint AZURE_ENDPOINT
-                        The Azure endpoint, e.g.
-                        'https://endpoint.openai.azure.com'
-  --azure-ad-token AZURE_AD_TOKEN
-                        A token from Azure Active Directory,
-                        https://www.microsoft.com/en-
-                        us/security/business/identity-access/microsoft-entra-
-                        id
-  -V, --version         show program's version number and exit and  imports optional for Heroku compatibility, added graceful error handling for AI insights and learning endpoints, and restored accidentally removed critical endpoints (e.g., , WhatsApp endpoints, static file serving).
+    -   **Changes**: Implemented authentication for  and , ensuring token validation and user-specific data. Added comprehensive APIs for Enterprise Portal, Learning Progress, and automatic job allocation (including  and  creation, and endpoints for fixers: , , ). Critical fixes included adding  for job allocation persistence, handling  vs  column names, and  vs  in notifications/payments queries. New endpoints for fixer payments (, , , , , ) and associated logic were added.
 -   ****:
     -   **Importance**: Defines SQLAlchemy ORM database schemas.
-    -   **Changes**: Created  and  models to support new features. Added  and  models for job allocation.
+    -   **Changes**: Created  and  models. Added  and  models for job allocation. Introduced a simplified  table.
 -   ****:
     -   **Importance**: Lists Python dependencies for the backend.
-    -   **Changes**: Added  to support date calculations for contracts.
--   ****:
-    -   **Importance**: Frontend component for the Enterprise Portal.
-    -   **Changes**: Integrated real data from new backend enterprise APIs for overview, bulk booking, analytics, team management, locations, invoicing, and contracts. Connected action buttons (add/remove team members/locations, create contracts, renew contracts) to backend handlers.
--   ****:
-    -   **Importance**: Frontend component for the Learning section.
-    -   **Changes**: Replaced hardcoded courses with real free courses offering certificates. Implemented user-specific progress tracking (state management, functions like , ). Updated course cards and featured courses to display progress. Added a progress update modal.
--   ****:
-    -   **Importance**: New frontend component for admin-specific learning analytics.
-    -   **Changes**: Created to display aggregated learning statistics from all users and AI-powered insights.
+    -   **Changes**: Added .
 -   ****:
     -   **Importance**: Defines main React application structure and routing.
-    -   **Changes**: Added routes for  dashboard and ensured proper role-based access.
+    -   **Changes**: Added routes for , , and . Ensured proper role-based access. Removed duplicate  route to ensure  is rendered.
+-   ****:
+    -   **Importance**: Frontend component for the Enterprise Portal.
+    -   **Changes**: Integrated real data from new backend enterprise APIs.
+-   ****:
+    -   **Importance**: Frontend component for the Learning section.
+    -   **Changes**: Replaced hardcoded courses with real ones, implemented user-specific progress tracking.
+-   ****:
+    -   **Importance**: New frontend component for admin-specific learning analytics.
+    -   **Changes**: Created to display aggregated learning statistics.
 -   ****:
     -   **Importance**: Frontend component for business compliance.
-    -   **Changes**: Added user-specific cache key and forced fresh data fetch when user changes to ensure correct data isolation across different logged-in users and devices. Improved token validation.
+    -   **Changes**: Added user-specific cache key and forced fresh data fetch. Critically, refactored API calls to use the centralized  and  instead of direct  access to fix Heroku deployment issues.
+-   ****:
+    -   **Importance**: Centralized service for frontend API calls.
+    -   **Changes**: Added , , , , , , , , .
+-   ****:
+    -   **Importance**: Displays job notifications for fixers.
+    -   **Changes**: Updated to use new backend endpoints, added real-time fetching, unread count, and mark as read functionality. Integrated  and  for error handling and debugging.
+-   ****:
+    -   **Importance**: New component to display jobs available for fixers.
+    -   **Changes**: Created with real-time job fetching, filtering, priority display, and apply functionality. Integrated  and .
+-   ****:
+    -   **Importance**: Main job management interface for fixers.
+    -   **Changes**: Integrated  and . Wrapped child components in  for robustness. Added an authentication safety check.
+-   ****:
+    -   **Importance**: User dashboard for clients and fixers.
+    -   **Changes**: Enhanced fixer stats to display real job statistics (jobs completed, active jobs, total earnings, rating, available jobs, new notifications) from backend API. Added Job Notifications quick action.
+-   ****:
+    -   **Importance**: New component for fixers to pay R20 service fees.
+    -   **Changes**: Created to handle card and EFT payment options, display outstanding payments, and integrate with backend payment services. Added production debug panel for API configuration.
+-   ****:
+    -   **Importance**: Manages fixer payment options and history.
+    -   **Changes**: Updated to render  component and fetch outstanding payment data.
+-   ****:
+    -   **Importance**: Centralized API URL configuration for frontend.
+    -   **Changes**: Modified to robustly handle environment variables (e.g., ) and provide a bulletproof, domain-based solution for Heroku production environments, ensuring environment independence and proper API routing. Includes extensive logging for debugging.
+-   ****:
+    -   **Importance**: Generic React Error Boundary component.
+    -   **Changes**: Newly created to catch and display UI errors gracefully.
+-   ****:
+    -   **Importance**: Helper component to display production-specific debug information.
+    -   **Changes**: Newly created to show API URLs, environment variables, and build timestamps.
+-   ****:
+    -   **Importance**: Supervisor configuration for backend and frontend processes.
+    -   **Changes**: Modified  to serve a production build () instead of running the development server (yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.).
 </code_architecture>
 
 <pending_tasks>
--   Complete the frontend integration for the Available Jobs and Notifications sections in the fixer's account, linking them to the newly created backend endpoints.
--   Address the minor  issue where newly signed-up clients are detected as admin during login (though the signup itself is functional).
--   Re-evaluate and potentially re-implement authentication context and protected routes if the decision is to keep the  route protected (this was temporarily removed during initial debugging but not explicitly re-addressed as a pending task).
+- Address the minor  issue where newly signed-up clients are detected as admin during login.
+- Re-evaluate and potentially re-implement authentication context and protected routes if the decision is to keep the  route protected.
+- Investigate and fix the issue where the business compliance section redirects to the fixer's dashboard on both Heroku and local preview.
 </pending_tasks>
 
 <current_work>
-Immediately before this summary request, the AI engineer was working on implementing the automatic job allocation system. This involved a multi-faceted approach:
+Immediately before this summary request, the AI engineer was attempting to resolve persistent Heroku deployment issues for the Jobs and Payment sections of the fixer's account. While these sections were confirmed to be working perfectly on the local preview, they consistently failed to render correctly or displayed outdated content after Heroku deployment.
 
-1.  **Backend Logic for Allocation**: Within the  endpoint in , logic was added to:
-    *   Find suitable fixers based on the newly created job's details (e.g., service type, location).
-    *   Create  records in the database, linking the job to assigned fixers.
-    *   Create  records for each assigned fixer, informing them of the new job.
-    *   Update the job's status to reflect its allocation.
-2.  **Notification System**: Helper functions were likely integrated or created to manage sending notifications to fixers.
-3.  **Fixer-Specific Endpoints**: New API endpoints were created in  to allow fixers to retrieve their:
-    *   : To list jobs they have been allocated but not yet accepted.
-    *   : To view all their job-related notifications.
+Initial attempts focused on fixing hardcoded preview URLs in  and implementing robust environment-independent API URL detection. This involved:
+1.  **Refining **: To prioritize  and fall back to relative URLs for production, along with adding detailed debug logging.
+2.  **Cache Busting**: Updating  versions and adding build timestamps to components (, ) to force frontend rebuilds and browser cache invalidation.
+3.  **Error Handling & Debugging Components**: Implementing ,  and integrating them into , , , and  to provide better diagnostics in production.
 
-During the testing phase of this automatic job allocation, a critical bug was identified: the database changes made during the job allocation process (e.g., creating  and  records) were not being persisted to the database because  was missing after the allocation logic.
+Despite these code-level fixes, the problem persisted on Heroku. The  was then invoked multiple times, finally identifying the root cause: Heroku was running the *development server* (yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.) instead of serving a *production build*.
 
-The current state is that this  issue has just been identified and fixed, and the AI engineer is about to restart the backend to retest the complete automatic job allocation system with the fix in place.
+The latest action was to fix this by:
+1.  Running yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. to create an optimized production build.
+2.  Installing  (yarn add v1.22.22
+info No lockfile found.
+[1/5] Validating package.json...
+info Visit https://yarnpkg.com/en/docs/cli/add for documentation about this command.).
+3.  Modifying  to change the frontend command from yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. to .
+4.  Restarting supervisor services (backend: stopped
+code-server: stopped
+mongodb: stopped
+frontend: ERROR (no such file)
+backend: started
+code-server: started
+mongodb: started).
+
+This last fix successfully enabled the production build to run locally, showing all new features. However, the user then reported that the business compliance section was now redirecting to the fixer's dashboard on both Heroku and local preview, indicating a new issue had been introduced or exacerbated.
 </current_work>
 
 <optional_next_step>
-Restart the backend and retest the complete automatic job allocation system to confirm the  fix resolves the issue.
+Investigate and fix the redirection issue in the business compliance section, ensuring it loads correctly without redirecting.
 </optional_next_step>

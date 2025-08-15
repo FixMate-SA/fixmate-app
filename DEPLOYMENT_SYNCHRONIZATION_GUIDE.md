@@ -9,7 +9,7 @@ Your FixMate-SA application is fully functional in the **Emergent local environm
 ## 🔍 **Root Cause Analysis**
 
 ### **Environment Configuration Mismatch**
-- **Local Emergent**: `REACT_APP_BACKEND_URL=https://auto-job-match-1.preview.emergentagent.com`
+- **Local Emergent**: `REACT_APP_BACKEND_URL=https://fixmate-deploy-2.preview.emergentagent.com`
 - **Expected Heroku**: `REACT_APP_BACKEND_URL=https://fixmate-sa-app-a448c751e1d2.herokuapp.com`
 
 ### **The Problem**
@@ -52,7 +52,7 @@ echo "WDS_SOCKET_PORT=443" >> /app/frontend/.env.production
 ```bash
 # Update the current .env file for deployment
 cd /app/frontend
-sed -i 's|https://auto-job-match-1.preview.emergentagent.com|https://fixmate-sa-app-a448c751e1d2.herokuapp.com|g' .env
+sed -i 's|https://fixmate-deploy-2.preview.emergentagent.com|https://fixmate-sa-app-a448c751e1d2.herokuapp.com|g' .env
 ```
 
 ### **Phase 3: Prepare All Files for Deployment**

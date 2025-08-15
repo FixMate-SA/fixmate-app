@@ -8,7 +8,7 @@ import json
 import os
 
 def test_specific_scenarios():
-    backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://auto-job-match-1.preview.emergentagent.com')
+    backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://fixmate-deploy-2.preview.emergentagent.com')
     api_base = f"{backend_url}/api"
     
     print("🔒 TESTING SPECIFIC SECURITY SCENARIOS FROM REVIEW REQUEST")

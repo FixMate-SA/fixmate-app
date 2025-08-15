@@ -13,7 +13,7 @@ from typing import Dict, Any, Optional
 class EnterprisePortalTester:
     def __init__(self):
         # Get backend URL from environment
-        self.backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://auto-job-match-1.preview.emergentagent.com')
+        self.backend_url = os.getenv('REACT_APP_BACKEND_URL', 'https://fixmate-deploy-2.preview.emergentagent.com')
         self.api_base = f"{self.backend_url}/api"
         
         # Test configuration - using existing test credentials
