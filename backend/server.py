@@ -3848,6 +3848,11 @@ async def get_current_user(request: Request, db: Session):
     except:
         return None
 
+@app.get("/api/fixer/test-endpoint")
+async def test_fixer_endpoint():
+    """Test endpoint to verify API registration"""
+    return {"success": True, "message": "Test endpoint working"}
+
 @app.get("/api/fixer/outstanding-payments")
 async def get_fixer_outstanding_payments(request: Request, db: Session = Depends(get_db)):
     """Get outstanding payments for fixer"""
