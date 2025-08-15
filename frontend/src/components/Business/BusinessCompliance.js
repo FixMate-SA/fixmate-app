@@ -334,8 +334,7 @@ const BusinessCompliance = () => {
   const fetchChecklist = async (category) => {
     setLoading(true);
     try {
-      const apiUrl = process.env.REACT_APP_BACKEND_URL || '/api';
-      const response = await fetch(`${apiUrl}/api/compliance/checklist/${category}`);
+      const response = await fetch(`${API_BASE_URL}/compliance/checklist/${category}`);
       
       if (response.ok) {
         const data = await response.json();
