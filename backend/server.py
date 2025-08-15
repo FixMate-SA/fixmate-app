@@ -3913,7 +3913,7 @@ async def get_fixer_payment_history(request: Request, db: Session = Depends(get_
         query = text("""
             SELECT id, amount, status, payment_method, payment_reference, 
                    paid_date, description, due_date, created_at
-            FROM fixer_payments 
+            FROM fixer_service_fees 
             WHERE fixer_id = :fixer_id
             ORDER BY created_at DESC
             LIMIT 50
