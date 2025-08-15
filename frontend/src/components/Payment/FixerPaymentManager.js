@@ -143,6 +143,9 @@ const FixerPaymentManager = ({ fixerId: propFixerId, isAdmin = false }) => {
 
   return (
     <div className="space-y-6">
+      {/* Real Payment Interface for Outstanding Fees */}
+      <FixerJobFeePayment outstandingPayments={paymentStatus?.outstanding_payments || []} />
+      
       {/* Payment Status Overview */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h3 className="text-lg font-semibold mb-4">
