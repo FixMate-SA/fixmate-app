@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { API_BASE_URL } from '../../utils/apiConfig';
 
 const BusinessCompliance = () => {
   const { user, roleInfo } = useAuth(); // Get roleInfo separately
