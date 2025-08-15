@@ -4259,7 +4259,8 @@ async def get_fixer_reputation(fixer_id: str, db: Session = Depends(get_db)):
             tier_color = "amber"
         
         # Calculate reputation score (0-100)
-        reputation_score = min(100, int((rating * 15) + (completed_jobs * 2) + (fixer_result[5] * 0.5)))
+        total_jobs = fixer_result[6] if fixer_result[6] else 0
+        reputation_score = min(100, int((rating * 15) + (completed_jobs * 2) + (total_jobs * 0.5)))
         
         reputation_data = {
             "fixer_id": fixer_result[0],
