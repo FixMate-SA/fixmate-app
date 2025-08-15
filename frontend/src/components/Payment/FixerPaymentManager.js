@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
+import FixerJobFeePayment from './FixerJobFeePayment';
 
 const FixerPaymentManager = ({ fixerId: propFixerId, isAdmin = false }) => {
   const { t } = useLanguage();
