@@ -256,7 +256,7 @@ const BusinessCompliance = () => {
       }
       
       // Use enhanced endpoint to get requests with documents and payments
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/requests/enhanced`, {
+      const response = await fetch(`${API_BASE_URL}/compliance/requests/enhanced`, {
         headers: {
           'Authorization': `Bearer ${currentToken}`
         }
