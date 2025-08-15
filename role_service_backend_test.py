@@ -129,7 +129,8 @@ def test_admin_role_detection():
     admin_phone = "+27800000001"
     
     # Check role via role-check endpoint
-    response = make_request('GET', f'/auth/role-check/{admin_phone}')
+    encoded_phone = quote(admin_phone, safe='')
+    response = make_request('GET', f'/auth/role-check/{encoded_phone}')
     
     if response and response.status_code == 200:
         data = response.json()
