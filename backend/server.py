@@ -1225,7 +1225,7 @@ async def get_dashboard(user_id: str, request: Request, db: Session = Depends(ge
                     COUNT(*) as total_notifications,
                     COUNT(CASE WHEN read = false THEN 1 END) as unread_notifications
                 FROM notifications 
-                WHERE fixer_id = :user_id
+                WHERE user_id = :user_id
             """)
             
             fixer_result = db.execute(fixer_query, {'user_id': user_id}).fetchone()
