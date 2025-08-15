@@ -331,20 +331,24 @@ const FixerJobFeePayment = ({ outstandingPayments = [] }) => {
     <div className="space-y-6">
       {/* Production Debug Panel for Payment System */}
       {process.env.NODE_ENV === 'production' && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+        <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 text-sm">
+          <div className="bg-red-600 text-white px-3 py-1 rounded mb-3 font-bold text-center">
+            🚨 DEFINITIVE PRODUCTION STATUS - FixerJobFeePayment Component LOADED 🚨
+          </div>
           <details>
-            <summary className="cursor-pointer text-blue-700 font-medium">
-              🔍 Payment System Debug Info (Production) - Click to expand
+            <summary className="cursor-pointer text-red-700 font-bold">
+              🔍 CRITICAL Payment System Debug Info - EXPAND TO VERIFY HEROKU FIX
             </summary>
-            <div className="mt-2 text-blue-600">
-              <div><strong>Environment:</strong> {process.env.NODE_ENV}</div>
-              <div><strong>Backend URL:</strong> {apiDebugInfo.backendUrl}</div>
-              <div><strong>Current Host:</strong> {apiDebugInfo.currentHost}</div>
-              <div><strong>API Base URL:</strong> {apiDebugInfo.apiBaseUrl}</div>
-              <div><strong>Payment Endpoint:</strong> {apiDebugInfo.paymentEndpoint}</div>
-              <div><strong>User:</strong> {user ? `${user.id?.slice(0, 8)}... (${user.role})` : 'Not authenticated'}</div>
-              <div><strong>Outstanding Payments:</strong> {outstandingPayments.length}</div>
-              <div><strong>Component Status:</strong> FixerJobFeePayment Loaded</div>
+            <div className="mt-2 text-red-800 font-medium">
+              <div><strong>✅ Component Status:</strong> FixerJobFeePayment Successfully Loaded</div>
+              <div><strong>🌍 Environment:</strong> {process.env.NODE_ENV}</div>
+              <div><strong>🏠 Current Host:</strong> {apiDebugInfo.currentHost}</div>
+              <div><strong>🔗 Backend URL:</strong> {apiDebugInfo.backendUrl}</div>
+              <div><strong>📡 API Base URL:</strong> {apiDebugInfo.apiBaseUrl}</div>
+              <div><strong>💳 Payment Endpoint:</strong> {apiDebugInfo.paymentEndpoint}</div>
+              <div><strong>👤 User:</strong> {user ? `${user.id?.slice(0, 8)}... (${user.role})` : 'Not authenticated'}</div>
+              <div><strong>📋 Outstanding Payments:</strong> {outstandingPayments.length}</div>
+              <div><strong>🎯 Expected Behavior:</strong> {apiDebugInfo.backendUrl === 'relative URLs' ? '✅ Should work with Heroku' : '⚠️ May have API issues'}</div>
             </div>
           </details>
         </div>
