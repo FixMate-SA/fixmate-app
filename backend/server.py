@@ -4377,9 +4377,9 @@ async def update_fixer_performance(fixer_id: str, performance_data: dict, db: Se
             update_fields.append("rating = :rating")
             update_params['rating'] = performance_data['rating']
             
-        if 'reviews_count' in performance_data:
-            update_fields.append("reviews_count = :reviews_count")
-            update_params['reviews_count'] = performance_data['reviews_count']
+        if 'total_jobs' in performance_data:
+            update_fields.append("total_jobs = :total_jobs")
+            update_params['total_jobs'] = performance_data['total_jobs']
         
         if update_fields:
             update_query = text(f"""
