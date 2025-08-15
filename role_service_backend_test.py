@@ -43,6 +43,7 @@ def make_request(method, endpoint, data=None, headers=None, timeout=30):
     """Make HTTP request with error handling"""
     try:
         url = f"{API_BASE}{endpoint}"
+        print(f"Making {method} request to: {url}")  # Debug logging
         
         if method.upper() == 'GET':
             response = requests.get(url, headers=headers, timeout=timeout, verify=False)
@@ -53,6 +54,7 @@ def make_request(method, endpoint, data=None, headers=None, timeout=30):
         elif method.upper() == 'DELETE':
             response = requests.delete(url, headers=headers, timeout=timeout, verify=False)
         
+        print(f"Response status: {response.status_code}")  # Debug logging
         return response
     except requests.exceptions.RequestException as e:
         print(f"Request failed: {str(e)}")
