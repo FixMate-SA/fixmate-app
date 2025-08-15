@@ -1196,7 +1196,7 @@ async def get_dashboard(user_id: str, request: Request, db: Session = Depends(ge
             }
             
         elif user_role == 'fixer':
-            # Fixer dashboard statistics
+            # Fixer dashboard statistics with real job data
             fixer_query = text("""
                 SELECT 
                     jobs_completed,
@@ -1207,22 +1207,55 @@ async def get_dashboard(user_id: str, request: Request, db: Session = Depends(ge
                 WHERE user_id = :user_id
             """)
             
-            fixer_result = db.execute(fixer_query, {'user_id': user_id}).fetchone()
+            # Get real job statistics for this fixer
+            job_stats_query = text("""
+                SELECT 
+                    COUNT(CASE WHEN status IN ('assigned', 'in_progress') THEN 1 END) as active_jobs,
+                    COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_jobs,
+                    COUNT(CASE WHEN status = 'pending' THEN 1 END) as available_jobs,
+                    COALESCE(SUM(CASE WHEN status = 'completed' THEN estimated_price END), 0) as total_earnings,
+                    COUNT(*) as total_jobs
+                FROM jobs 
+                WHERE assigned_fixer_id = :user_id
+            """)
             
-            if fixer_result:
+            # Get fixer notification count
+            notification_stats_query = text("""
+                SELECT 
+                    COUNT(*) as total_notifications,
+                    COUNT(CASE WHEN is_read = false THEN 1 END) as unread_notifications
+                FROM notifications 
+                WHERE fixer_id = :user_id
+            """)
+            
+            fixer_result = db.execute(fixer_query, {'user_id': user_id}).fetchone()
+            job_stats_result = db.execute(job_stats_query, {'user_id': user_id}).fetchone()
+            notification_result = db.execute(notification_stats_query, {'user_id': user_id}).fetchone()
+            
+            # Combine fixer profile data with real job statistics
+            if fixer_result or job_stats_result:
+                # Use job stats for earnings if available, otherwise use fixer table
+                actual_earnings = float(job_stats_result[3] or 0) if job_stats_result else (float(fixer_result[2] or 0) if fixer_result else 0)
+                actual_completed = int(job_stats_result[1] or 0) if job_stats_result else (int(fixer_result[0] or 0) if fixer_result else 0)
+                
                 return {
                     "success": True,
                     "user_id": user_id,
                     "role": user_role,
                     "stats": {
-                        "jobs_completed": fixer_result[0] or 0,
-                        "rating": float(fixer_result[1] or 5.0),
-                        "total_earned": float(fixer_result[2] or 0),
-                        "is_active": fixer_result[3] or False
+                        "jobs_completed": actual_completed,
+                        "rating": float(fixer_result[1] or 5.0) if fixer_result else 5.0,
+                        "total_earned": actual_earnings,
+                        "active_jobs": int(job_stats_result[0] or 0) if job_stats_result else 0,
+                        "available_jobs": int(job_stats_result[2] or 0) if job_stats_result else 0,
+                        "total_jobs": int(job_stats_result[4] or 0) if job_stats_result else 0,
+                        "is_active": fixer_result[3] if fixer_result else True,
+                        "total_notifications": int(notification_result[0] or 0) if notification_result else 0,
+                        "unread_notifications": int(notification_result[1] or 0) if notification_result else 0
                     }
                 }
             else:
-                # Default stats for fixer without profile
+                # Default stats for fixer without profile or jobs
                 return {
                     "success": True,
                     "user_id": user_id,
@@ -1231,7 +1264,12 @@ async def get_dashboard(user_id: str, request: Request, db: Session = Depends(ge
                         "jobs_completed": 0,
                         "rating": 5.0,
                         "total_earned": 0,
-                        "is_active": False
+                        "active_jobs": 0,
+                        "available_jobs": 0,
+                        "total_jobs": 0,
+                        "is_active": True,
+                        "total_notifications": 0,
+                        "unread_notifications": 0
                     }
                 }
                 
