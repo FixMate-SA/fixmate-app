@@ -10,6 +10,21 @@ const FixerJobFeePayment = ({ outstandingPayments = [] }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [apiDebugInfo, setApiDebugInfo] = useState({});
+  
+  // Debug API configuration in production
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') {
+      const debugInfo = {
+        backendUrl: process.env.REACT_APP_BACKEND_URL || 'relative URLs',
+        currentHost: window.location.host,
+        apiBaseUrl: `${process.env.REACT_APP_BACKEND_URL || ''}/api`,
+        paymentEndpoint: `${process.env.REACT_APP_BACKEND_URL || ''}/api/fixer/outstanding-payments`
+      };
+      setApiDebugInfo(debugInfo);
+      console.log('🔍 Payment System API Debug Info:', debugInfo);
+    }
+  }, []);
 
   // Calculate total outstanding amount
   const totalOutstanding = outstandingPayments.reduce((sum, payment) => sum + payment.amount, 0);
