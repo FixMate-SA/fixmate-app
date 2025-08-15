@@ -410,7 +410,7 @@ const BusinessCompliance = () => {
 
   const updateRequestStatus = async (requestId, status) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/requests/${requestId}/status`, {
+      const response = await fetch(`${API_BASE_URL}/compliance/requests/${requestId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
