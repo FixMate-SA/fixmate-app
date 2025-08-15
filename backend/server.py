@@ -3837,24 +3837,23 @@ async def apply_as_fixer(request: Request, db: Session = Depends(get_db)):
         except (ValueError, TypeError):
             experience_years = 0
         
-        # Extract services offered (convert to list if it's a string)
+        # Extract services offered (ensure it's a string for database compatibility)
         services_offered = form_data['services_offered']
         if isinstance(services_offered, str):
-            services_list = [s.strip() for s in services_offered.split(',') if s.strip()]
+            services_string = services_offered  # Keep as string for database
         else:
-            services_list = services_offered
+            services_string = ', '.join(str(s) for s in services_offered)
         
+        # Create fixer record with only existing columns
         fixer_insert_query = text("""
             INSERT INTO fixers (
                 id, user_id, name, phone, services, location, 
                 rating, total_jobs, is_active, is_approved, 
-                jobs_completed, completion_percentage, created_at,
-                experience_years, qualifications, previous_work, why_fixer
+                jobs_completed, completion_percentage, created_at
             ) VALUES (
                 :id, :user_id, :name, :phone, :services, :location,
                 :rating, :total_jobs, :is_active, :is_approved,
-                :jobs_completed, :completion_percentage, :created_at,
-                :experience_years, :qualifications, :previous_work, :why_fixer
+                :jobs_completed, :completion_percentage, :created_at
             )
         """)
         
@@ -3863,7 +3862,7 @@ async def apply_as_fixer(request: Request, db: Session = Depends(get_db)):
             'user_id': user_id,
             'name': f"{user_result[2]} {user_result[3]}",  # first_name + last_name
             'phone': user_result[1],
-            'services': services_list,
+            'services': services_string,  # Use string instead of list
             'location': "South Africa",  # Default location
             'rating': 4.5,  # Default starting rating
             'total_jobs': 0,
@@ -3871,11 +3870,7 @@ async def apply_as_fixer(request: Request, db: Session = Depends(get_db)):
             'is_approved': True,  # Auto-approve for now
             'jobs_completed': 0,
             'completion_percentage': 100,
-            'created_at': datetime.utcnow(),
-            'experience_years': experience_years,
-            'qualifications': form_data.get('qualifications', ''),
-            'previous_work': form_data.get('previous_work', ''),
-            'why_fixer': form_data['why_fixer']
+            'created_at': datetime.utcnow()
         })
         
         db.commit()
