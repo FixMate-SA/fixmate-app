@@ -179,6 +179,38 @@ const FixerAvailableJobs = () => {
 
   return (
     <div className="space-y-6">
+      {/* Environment Variable Independent Debug Panel */}
+      {(process.env.NODE_ENV === 'production' || window.location.host.includes('.com')) && (
+        <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4 text-sm">
+          <div className="bg-green-600 text-white px-3 py-1 rounded mb-3 font-bold text-center">
+            🚨 ENVIRONMENT INDEPENDENT - FixerAvailableJobs Component LOADED 🚨
+          </div>
+          <details>
+            <summary className="cursor-pointer text-green-700 font-bold">
+              🔍 Available Jobs System Debug - VERIFY HEROKU DEPLOYMENT
+            </summary>
+            <div className="mt-2 text-green-800 font-medium space-y-1">
+              <div><strong>✅ Component:</strong> FixerAvailableJobs Loaded</div>
+              <div><strong>🌍 Environment:</strong> {
+                window.location.host.includes('localhost') ? 'LOCAL_DEVELOPMENT' :
+                window.location.host.includes('preview.emergentagent.com') ? 'PREVIEW_ENVIRONMENT' :
+                window.location.host.includes('herokuapp.com') ? 'HEROKU_PRODUCTION' :
+                'PRODUCTION_DOMAIN'
+              }</div>
+              <div><strong>👤 User:</strong> {user ? `${user.id?.slice(0, 8)}... (${user.role})` : 'Not authenticated'}</div>
+              <div><strong>📋 Available Jobs:</strong> {availableJobs.length} jobs</div>
+              <div><strong>🔍 Current Filter:</strong> {filter}</div>
+              <div><strong>🔧 Environment Variables:</strong> {
+                (!process.env.NODE_ENV || !Object.keys(process.env).some(key => key.startsWith('REACT_APP'))) 
+                  ? '⚠️ MISSING (Using domain detection)' 
+                  : '✅ AVAILABLE'
+              }</div>
+              <div><strong>🎯 Expected Result:</strong> Real-time available jobs from backend with apply functionality</div>
+            </div>
+          </details>
+        </div>
+      )}
+      
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div className="flex items-center space-x-3">
           <h2 className="text-2xl font-bold text-gray-900">Available Jobs</h2>
