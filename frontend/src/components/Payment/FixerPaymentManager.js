@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
 import FixerJobFeePayment from './FixerJobFeePayment';
 
-const FixerPaymentManager = ({ fixerId: propFixerId, isAdmin = false }) => {
+// FixerPaymentManager - Payment System v2.3.0 - Heroku Production Fix
   const { t } = useLanguage();
   const { user } = useAuth();
   const [paymentStatus, setPaymentStatus] = useState(null);
