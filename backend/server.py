@@ -4145,32 +4145,14 @@ async def process_fixer_eft_payment(request: Request, db: Session = Depends(get_
         
         # Create EFT payment record
         try:
-            import time
-            import random
-            
             payment_ids = data['payment_ids']
             eft_reference = f"EFT{int(time.time())}{random.randint(100, 999)}"
-            
-            # Create fixer_payments table if it doesn't exist
-            create_table_query = text("""
-                CREATE TABLE IF NOT EXISTS fixer_payments (
-                    id VARCHAR PRIMARY KEY,
-                    fixer_id VARCHAR NOT NULL,
-                    amount DECIMAL(10,2) NOT NULL,
-                    status VARCHAR DEFAULT 'pending',
-                    payment_method VARCHAR,
-                    payment_reference VARCHAR,
-                    paid_date TIMESTAMP,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            db.execute(create_table_query)
             
             # Mark payments as pending EFT
             updated_payments = []
             for payment_id in payment_ids:
                 update_query = text("""
-                    UPDATE fixer_payments 
+                    UPDATE fixer_service_fees 
                     SET payment_method = 'eft', payment_reference = :eft_reference, 
                         status = 'pending_verification'
                     WHERE id = :payment_id AND fixer_id = :fixer_id
