@@ -385,7 +385,7 @@ const BusinessCompliance = () => {
       formData.append('document', file);
       formData.append('request_id', requestId);
       
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/upload-document`, {
+      const response = await fetch(`${API_BASE_URL}/compliance/upload-document`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('fixmate_token')}`
