@@ -8,6 +8,10 @@ import requests
 import json
 import time
 from datetime import datetime
+import urllib3
+
+# Disable SSL warnings for testing
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Configuration
 BACKEND_URL = "https://fixmate-deploy-2.preview.emergentagent.com/api"
