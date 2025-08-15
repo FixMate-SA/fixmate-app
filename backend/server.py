@@ -4065,25 +4065,9 @@ async def process_fixer_card_payment(request: Request, db: Session = Depends(get
                 payment_ids = data['payment_ids']
                 updated_payments = []
                 
-                # Create fixer_payments table if it doesn't exist
-                create_table_query = text("""
-                    CREATE TABLE IF NOT EXISTS fixer_payments (
-                        id VARCHAR PRIMARY KEY,
-                        fixer_id VARCHAR NOT NULL,
-                        amount DECIMAL(10,2) NOT NULL,
-                        status VARCHAR DEFAULT 'pending',
-                        payment_method VARCHAR,
-                        payment_reference VARCHAR,
-                        paid_date TIMESTAMP,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                db.execute(create_table_query)
-                
                 for payment_id in payment_ids:
-                    # Update payment status
                     update_query = text("""
-                        UPDATE fixer_payments 
+                        UPDATE fixer_service_fees 
                         SET status = 'paid', payment_method = 'card', 
                             payment_reference = :transaction_id, paid_date = :paid_date
                         WHERE id = :payment_id AND fixer_id = :fixer_id
@@ -4091,7 +4075,7 @@ async def process_fixer_card_payment(request: Request, db: Session = Depends(get
                     
                     result = db.execute(update_query, {
                         'transaction_id': transaction_id,
-                        'paid_date': datetime.utcnow(),
+                        'paid_date': datetime.now(),
                         'payment_id': payment_id,
                         'fixer_id': current_user['id']
                     })
