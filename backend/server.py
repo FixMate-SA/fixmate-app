@@ -4269,7 +4269,7 @@ async def get_fixer_reputation(fixer_id: str, db: Session = Depends(get_db)):
             "tier_color": tier_color,
             "reputation_score": reputation_score,
             "current_rating": rating,
-            "total_reviews": fixer_result[5] or 0,
+            "total_reviews": total_jobs,  # Use total_jobs as proxy for reviews
             "jobs_completed": completed_jobs,
             "total_jobs": stats_result[0] if stats_result else 0,
             "active_jobs": stats_result[2] if stats_result else 0,
