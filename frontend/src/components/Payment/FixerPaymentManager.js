@@ -33,24 +33,33 @@ const FixerPaymentManager = ({ fixerId: propFixerId, isAdmin = false }) => {
     try {
       setLoading(true);
       
-      // Try to fetch fixer payment data
+      // Try to fetch fixer payment data from the database
       try {
-        const [statusResponse, historyResponse] = await Promise.all([
-          apiService.get(`/fixer/${fixerId}/payment-status`),
-          apiService.get(`/fixer/${fixerId}/payment-history`)
-        ]);
+        // First create test payments if needed (development only)
+        await apiService.post('/fixer/create-test-payments');
+        
+        // Get outstanding payments from fixer_payments table
+        const outstandingResponse = await apiService.get('/fixer/outstanding-payments');
+        const historyResponse = await apiService.get('/fixer/payment-history');
 
-        setPaymentStatus(statusResponse);
-        setPaymentHistory(historyResponse.payments || []);
+        setPaymentStatus({
+          payment_status: 'pending',
+          total_outstanding: outstandingResponse.data?.total_outstanding || 0,
+          can_receive_jobs: outstandingResponse.data?.can_receive_jobs !== false,
+          overdue_payments: outstandingResponse.data?.overdue_count || 0,
+          outstanding_payments: outstandingResponse.data?.payments || []
+        });
+        
+        setPaymentHistory(historyResponse.data?.payments || []);
         setError('');
       } catch (apiError) {
-        // If API endpoints don't exist, show a basic payment interface
         console.log('Payment API not available, showing basic interface');
         setPaymentStatus({
           payment_status: 'pending',
-          total_earnings: 0,
+          total_outstanding: 0,
           pending_amount: 0,
-          available_balance: 0
+          available_balance: 0,
+          outstanding_payments: []
         });
         setPaymentHistory([]);
         setError('');
