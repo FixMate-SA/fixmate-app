@@ -3848,6 +3848,105 @@ async def get_current_user(request: Request, db: Session):
     except:
         return None
 
+@app.get("/api/fixer/outstanding-payments")
+async def get_fixer_outstanding_payments(request: Request, db: Session = Depends(get_db)):
+    """Get outstanding payments for fixer"""
+    try:
+        current_user = await get_current_user(request, db)
+        if current_user is None:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        
+        # Query outstanding payments for the fixer
+        query = text("""
+            SELECT id, amount, status, description, due_date, created_at
+            FROM fixer_payments 
+            WHERE fixer_id = :fixer_id AND status IN ('pending', 'overdue')
+            ORDER BY due_date ASC
+        """)
+        
+        result = db.execute(query, {'fixer_id': current_user['id']})
+        rows = result.fetchall()
+        
+        payments = []
+        total_outstanding = 0
+        overdue_count = 0
+        
+        for row in rows:
+            payment = {
+                'id': row[0],
+                'amount': float(row[1]),
+                'status': row[2],
+                'description': row[3],
+                'due_date': row[4].isoformat() if row[4] else None,
+                'created_at': row[5].isoformat() if row[5] else None
+            }
+            
+            # Check if overdue
+            if row[4] and row[4] < datetime.utcnow():
+                payment['status'] = 'overdue'
+                overdue_count += 1
+            
+            payments.append(payment)
+            total_outstanding += payment['amount']
+        
+        return {
+            "success": True,
+            "payments": payments,
+            "total_outstanding": total_outstanding,
+            "overdue_count": overdue_count,
+            "can_receive_jobs": overdue_count == 0  # Can receive jobs if no overdue payments
+        }
+        
+    except Exception as e:
+        print(f"Error fetching outstanding payments: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch outstanding payments")
+
+@app.get("/api/fixer/payment-history")
+async def get_fixer_payment_history(request: Request, db: Session = Depends(get_db)):
+    """Get payment history for fixer"""
+    try:
+        current_user = await get_current_user(request, db)
+        if current_user is None:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        
+        # Query payment history for the fixer
+        query = text("""
+            SELECT id, amount, status, payment_method, payment_reference, 
+                   paid_date, description, due_date, created_at
+            FROM fixer_payments 
+            WHERE fixer_id = :fixer_id
+            ORDER BY created_at DESC
+            LIMIT 50
+        """)
+        
+        result = db.execute(query, {'fixer_id': current_user['id']})
+        rows = result.fetchall()
+        
+        payments = []
+        for row in rows:
+            payment = {
+                'id': row[0],
+                'amount': float(row[1]),
+                'status': row[2],
+                'payment_method': row[3],
+                'payment_reference': row[4],
+                'paid_date': row[5].isoformat() if row[5] else None,
+                'description': row[6],
+                'due_date': row[7].isoformat() if row[7] else None,
+                'created_at': row[8].isoformat() if row[8] else None
+            }
+            payments.append(payment)
+        
+        return {
+            "success": True,
+            "payments": payments,
+            "total_payments": len(payments)
+        }
+        
+    except Exception as e:
+        print(f"Error fetching payment history: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch payment history")
+
 @app.post("/api/fixer/create-test-payments")
 async def create_test_payments(request: Request, db: Session = Depends(get_db)):
     """Create test outstanding payments for fixer (development only)"""
