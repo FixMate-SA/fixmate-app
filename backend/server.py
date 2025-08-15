@@ -3838,12 +3838,12 @@ async def apply_as_fixer(request: Request, db: Session = Depends(get_db)):
         
         # Parse experience years
         try:
-            experience_years = int(form_data['experience_years'])
+            experience_years = int(json_data['experience_years'])
         except (ValueError, TypeError):
             experience_years = 0
         
         # Extract services offered (ensure it's a string for database compatibility)
-        services_offered = form_data['services_offered']
+        services_offered = json_data['services_offered']
         if isinstance(services_offered, str):
             services_string = services_offered  # Keep as string for database
         else:
