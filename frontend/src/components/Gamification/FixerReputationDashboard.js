@@ -28,7 +28,8 @@ const FixerReputationDashboard = () => {
       // Try to get fixer data directly from fixers API
       try {
         const fixersResponse = await apiService.getFixers();
-        const currentUserFixer = fixersResponse.data?.find(fixer => 
+        const fixersList = fixersResponse.data?.fixers || fixersResponse.data;
+        const currentUserFixer = fixersList?.find(fixer => 
           fixer.user_id === user.id || fixer.phone === user.phone
         );
         
