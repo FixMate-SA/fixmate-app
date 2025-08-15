@@ -432,7 +432,7 @@ const BusinessCompliance = () => {
     try {
       setSubmitting(true);
       
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/process-payment`, {
+      const response = await fetch(`${API_BASE_URL}/compliance/process-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
