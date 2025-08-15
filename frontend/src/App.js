@@ -408,6 +408,16 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/fixer/business-compliance"
+                element={
+                  <ProtectedRoute>
+                    <ProfessionalLayout>
+                      <BusinessCompliance />
+                    </ProfessionalLayout>
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Role-based SMS Routes */}
               <Route
