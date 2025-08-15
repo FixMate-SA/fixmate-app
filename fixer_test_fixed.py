@@ -14,7 +14,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Configuration
-BACKEND_URL = "https://fixmate-deploy-2.preview.emergentagent.com/api"
+BACKEND_URL = "http://localhost:8001/api"
 TEST_USER_ID = "c417ef19-cdb6-44ee-80aa-8128e0ff8e75"  # TestFixer user
 TEST_PHONE = "+27800000003"  # TestFixer phone number
 
