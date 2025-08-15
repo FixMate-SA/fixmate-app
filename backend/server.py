@@ -4214,7 +4214,7 @@ async def get_fixer_reputation(fixer_id: str, db: Session = Depends(get_db)):
     try:
         # Check if fixer exists
         fixer_query = text("""
-            SELECT id, name, phone, service_categories, bio, rating, reviews_count
+            SELECT id, name, phone, services, email, rating, total_jobs
             FROM fixers 
             WHERE id = :fixer_id OR user_id = :fixer_id
         """)
