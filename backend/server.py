@@ -3955,7 +3955,7 @@ async def create_test_payments(request: Request, db: Session = Depends(get_db)):
         if current_user is None:
             raise HTTPException(status_code=401, detail="Authentication required")
         
-        # Create fixer_payments table if it doesn't exist
+        # Create fixer_payments table if it doesn't exist or update schema
         create_table_query = text("""
             CREATE TABLE IF NOT EXISTS fixer_payments (
                 id VARCHAR PRIMARY KEY,
@@ -3967,6 +3967,7 @@ async def create_test_payments(request: Request, db: Session = Depends(get_db)):
                 paid_date TIMESTAMP,
                 description VARCHAR,
                 due_date TIMESTAMP,
+                payment_type VARCHAR DEFAULT 'service_fee',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
