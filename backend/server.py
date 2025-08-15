@@ -3859,7 +3859,7 @@ async def get_fixer_outstanding_payments(request: Request, db: Session = Depends
         # Query outstanding payments for the fixer
         query = text("""
             SELECT id, amount, status, description, due_date, created_at
-            FROM fixer_payments 
+            FROM fixer_service_fees 
             WHERE fixer_id = :fixer_id AND status IN ('pending', 'overdue')
             ORDER BY due_date ASC
         """)
