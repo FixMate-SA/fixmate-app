@@ -5,6 +5,7 @@ import { apiService } from '../../services/api';
 import FixerJobFeePayment from './FixerJobFeePayment';
 
 // FixerPaymentManager - Payment System v2.3.0 - Heroku Production Fix
+const FixerPaymentManager = ({ fixerId: propFixerId, isAdmin = false }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
   const [paymentStatus, setPaymentStatus] = useState(null);
