@@ -3820,6 +3820,251 @@ if frontend_build_path.exists():
 else:
     print("⚠️ Frontend build not found. React routes will not be served.")
 
+# Fixer Payment Processing Endpoints
+
+async def get_current_user(request: Request, db: Session):
+    """Helper function to get current user from request"""
+    try:
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            return None
+            
+        user_id = auth_header.replace('Bearer token_', '')
+        
+        # Get user info
+        user_query = text("SELECT id, first_name, last_name, role FROM users WHERE id = :user_id")
+        user_result = db.execute(user_query, {'user_id': user_id}).fetchone()
+        
+        if user_result:
+            return {
+                'id': user_result[0],
+                'first_name': user_result[1],
+                'last_name': user_result[2],
+                'role': user_result[3]
+            }
+        return None
+    except:
+        return None
+
+@app.post("/api/fixer/payment/card")
+async def process_fixer_card_payment(request: Request, db: Session = Depends(get_db)):
+    """Process fixer service fee payment via card"""
+    try:
+        current_user = await get_current_user(request, db)
+        if current_user is None:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        
+        data = await request.json()
+        
+        # Validate required fields
+        required_fields = ['amount', 'card_number', 'expiry_month', 'expiry_year', 'cvv', 'card_holder', 'payment_ids']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+        
+        # Validate payment amount
+        amount = float(data['amount'])
+        if amount <= 0 or amount > 1000:  # Reasonable limits
+            raise HTTPException(status_code=400, detail="Invalid payment amount")
+        
+        # Basic card validation
+        card_number = data['card_number'].replace(' ', '')
+        if len(card_number) < 13 or len(card_number) > 19:
+            raise HTTPException(status_code=400, detail="Invalid card number length")
+        
+        cvv = data['cvv']
+        if len(cvv) < 3 or len(cvv) > 4:
+            raise HTTPException(status_code=400, detail="Invalid CVV")
+        
+        # For demo purposes - simulate card processing
+        # In production, this would integrate with PayFast, Stripe, or other payment processors
+        
+        # Simulate processing time
+        import time
+        time.sleep(2)
+        
+        # Simulate success/failure (90% success rate for demo)
+        import random
+        if random.random() < 0.9:
+            # Success - generate transaction ID
+            transaction_id = f"TXN{int(time.time())}{random.randint(1000, 9999)}"
+            
+            # Update payment records in database
+            try:
+                payment_ids = data['payment_ids']
+                updated_payments = []
+                
+                # Create fixer_payments table if it doesn't exist
+                create_table_query = text("""
+                    CREATE TABLE IF NOT EXISTS fixer_payments (
+                        id VARCHAR PRIMARY KEY,
+                        fixer_id VARCHAR NOT NULL,
+                        amount DECIMAL(10,2) NOT NULL,
+                        status VARCHAR DEFAULT 'pending',
+                        payment_method VARCHAR,
+                        payment_reference VARCHAR,
+                        paid_date TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                db.execute(create_table_query)
+                
+                for payment_id in payment_ids:
+                    # Update payment status
+                    update_query = text("""
+                        UPDATE fixer_payments 
+                        SET status = 'paid', payment_method = 'card', 
+                            payment_reference = :transaction_id, paid_date = :paid_date
+                        WHERE id = :payment_id AND fixer_id = :fixer_id
+                    """)
+                    
+                    result = db.execute(update_query, {
+                        'transaction_id': transaction_id,
+                        'paid_date': datetime.utcnow(),
+                        'payment_id': payment_id,
+                        'fixer_id': current_user['id']
+                    })
+                    
+                    if result.rowcount > 0:
+                        updated_payments.append(payment_id)
+                
+                db.commit()
+                
+                return {
+                    "success": True,
+                    "message": f"Payment of R{amount:.2f} processed successfully",
+                    "transaction_id": transaction_id,
+                    "payments_updated": len(updated_payments),
+                    "amount_processed": amount
+                }
+                
+            except Exception as db_error:
+                db.rollback()
+                print(f"Database error during card payment: {db_error}")
+                # Even if DB update fails, we can still return success for the payment
+                return {
+                    "success": True,
+                    "message": f"Payment of R{amount:.2f} processed successfully",
+                    "transaction_id": transaction_id,
+                    "note": "Payment successful, records will be updated shortly"
+                }
+        else:
+            # Simulate failure
+            failure_reasons = [
+                "Insufficient funds",
+                "Card declined by bank",
+                "Invalid card details",
+                "Payment limit exceeded"
+            ]
+            raise HTTPException(status_code=400, detail=random.choice(failure_reasons))
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Card payment error: {e}")
+        raise HTTPException(status_code=500, detail="Payment processing failed")
+
+@app.post("/api/fixer/payment/eft")
+async def process_fixer_eft_payment(request: Request, db: Session = Depends(get_db)):
+    """Process fixer service fee payment via EFT"""
+    try:
+        current_user = await get_current_user(request, db)
+        if current_user is None:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        
+        data = await request.json()
+        
+        # Validate required fields
+        required_fields = ['amount', 'account_holder', 'bank_name', 'payment_ids']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+        
+        # Validate payment amount
+        amount = float(data['amount'])
+        if amount <= 0 or amount > 1000:
+            raise HTTPException(status_code=400, detail="Invalid payment amount")
+        
+        # Generate reference number
+        reference = data.get('reference', f"FIXER-{current_user['id'][:8]}-FEE")
+        
+        # Create EFT payment record
+        try:
+            import time
+            import random
+            
+            payment_ids = data['payment_ids']
+            eft_reference = f"EFT{int(time.time())}{random.randint(100, 999)}"
+            
+            # Create fixer_payments table if it doesn't exist
+            create_table_query = text("""
+                CREATE TABLE IF NOT EXISTS fixer_payments (
+                    id VARCHAR PRIMARY KEY,
+                    fixer_id VARCHAR NOT NULL,
+                    amount DECIMAL(10,2) NOT NULL,
+                    status VARCHAR DEFAULT 'pending',
+                    payment_method VARCHAR,
+                    payment_reference VARCHAR,
+                    paid_date TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            db.execute(create_table_query)
+            
+            # Mark payments as pending EFT
+            updated_payments = []
+            for payment_id in payment_ids:
+                update_query = text("""
+                    UPDATE fixer_payments 
+                    SET payment_method = 'eft', payment_reference = :eft_reference, 
+                        status = 'pending_verification'
+                    WHERE id = :payment_id AND fixer_id = :fixer_id
+                """)
+                
+                result = db.execute(update_query, {
+                    'eft_reference': eft_reference,
+                    'payment_id': payment_id,
+                    'fixer_id': current_user['id']
+                })
+                
+                if result.rowcount > 0:
+                    updated_payments.append(payment_id)
+            
+            db.commit()
+            
+            return {
+                "success": True,
+                "message": "EFT payment details recorded successfully",
+                "reference": reference,
+                "eft_reference": eft_reference,
+                "banking_details": {
+                    "bank": "First National Bank (FNB)",
+                    "account_name": "FixMate-SA (Pty) Ltd",
+                    "account_number": "1234567890",
+                    "branch_code": "250655",
+                    "reference": reference,
+                    "amount": f"R{amount:.2f}"
+                },
+                "payments_updated": len(updated_payments),
+                "instructions": [
+                    f"Transfer R{amount:.2f} to the account details provided",
+                    f"Use reference: {reference}",
+                    "Keep your proof of payment",
+                    "Payment will be verified within 24 hours"
+                ]
+            }
+            
+        except Exception as db_error:
+            db.rollback()
+            print(f"Database error during EFT setup: {db_error}")
+            raise HTTPException(status_code=500, detail="Failed to setup EFT payment")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"EFT payment error: {e}")
+        raise HTTPException(status_code=500, detail="EFT payment setup failed")
+
 # Include other routes and main execution
 if __name__ == "__main__":
     import uvicorn
