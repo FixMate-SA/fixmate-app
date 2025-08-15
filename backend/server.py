@@ -3918,22 +3918,27 @@ async def request_password_reset(request: Request, db: Session = Depends(get_db)
         
         # Store reset code in database (create table if needed)
         try:
-            # Try to create password_resets table if it doesn't exist
+            # Try to create password_resets table if it doesn't exist (PostgreSQL compatible)
             create_table_query = text("""
                 CREATE TABLE IF NOT EXISTS password_resets (
                     id SERIAL PRIMARY KEY,
                     user_id VARCHAR(255) NOT NULL,
                     phone VARCHAR(20) NOT NULL,
                     reset_code VARCHAR(10) NOT NULL,
-                    expires_at TIMESTAMP NOT NULL,
+                    expires_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
                     used BOOLEAN DEFAULT FALSE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
                 )
             """)
             db.execute(create_table_query)
             db.commit()
-        except Exception:
-            pass  # Table might already exist
+        except Exception as table_error:
+            # Table creation failed, but continue - table might already exist
+            print(f"Password resets table creation info: {table_error}")
+            try:
+                db.rollback()
+            except:
+                pass
         
         # Insert reset code
         insert_reset_query = text("""
