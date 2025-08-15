@@ -4051,17 +4051,49 @@ async def reset_password(request: Request, db: Session = Depends(get_db)):
         # Hash new password using pwd_context
         hashed_password = pwd_context.hash(new_password)
         
-        # Update user password
-        update_password_query = text("""
-            UPDATE users 
-            SET password_hash = :password_hash
-            WHERE id = :user_id
-        """)
-        
-        db.execute(update_password_query, {
-            'password_hash': hashed_password,
-            'user_id': reset_result[1]
-        })
+        # Try to update user password - handle both password and password_hash columns
+        try:
+            # First try with password_hash column
+            update_password_query = text("""
+                UPDATE users 
+                SET password_hash = :password_hash
+                WHERE id = :user_id
+            """)
+            
+            result = db.execute(update_password_query, {
+                'password_hash': hashed_password,
+                'user_id': reset_result[1]
+            })
+            
+            # Check if any rows were affected
+            if result.rowcount == 0:
+                # Try with password column instead
+                update_password_query_alt = text("""
+                    UPDATE users 
+                    SET password = :password
+                    WHERE id = :user_id
+                """)
+                
+                db.execute(update_password_query_alt, {
+                    'password': hashed_password,
+                    'user_id': reset_result[1]
+                })
+                
+        except Exception as password_update_error:
+            # If password_hash column doesn't exist, try password column
+            try:
+                update_password_query_alt = text("""
+                    UPDATE users 
+                    SET password = :password
+                    WHERE id = :user_id
+                """)
+                
+                db.execute(update_password_query_alt, {
+                    'password': hashed_password,
+                    'user_id': reset_result[1]
+                })
+            except Exception as alt_error:
+                raise HTTPException(status_code=500, detail="Failed to update password")
         
         # Mark reset code as used
         mark_used_query = text("""
