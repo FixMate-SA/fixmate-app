@@ -3803,16 +3803,21 @@ async def get_whatsapp_stats(db: Session = Depends(get_db)):
 async def apply_as_fixer(request: Request, db: Session = Depends(get_db)):
     """Submit fixer application"""
     try:
-        # Parse form data
-        form_data = await request.form()
+        # Parse JSON data instead of form data
+        try:
+            json_data = await request.json()
+        except Exception:
+            # Fallback to form data for compatibility
+            form_data = await request.form()
+            json_data = dict(form_data)
         
         # Required fields
         required_fields = ['services_offered', 'experience_years', 'why_fixer', 'user_id']
         for field in required_fields:
-            if field not in form_data or not form_data[field]:
+            if field not in json_data or not json_data[field]:
                 raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
         
-        user_id = form_data['user_id']
+        user_id = json_data['user_id']
         
         # Check if user exists
         user_query = text("SELECT id, phone, first_name, last_name FROM users WHERE id = :user_id")
