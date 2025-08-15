@@ -463,7 +463,7 @@ const BusinessCompliance = () => {
 
   const sendAutomatedReminder = async (requestId) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/compliance/send-reminder`, {
+      const response = await fetch(`${API_BASE_URL}/compliance/send-reminder`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
