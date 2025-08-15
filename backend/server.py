@@ -3995,13 +3995,14 @@ async def create_test_payments(request: Request, db: Session = Depends(get_db)):
         
         for payment in test_payments:
             insert_query = text("""
-                INSERT INTO fixer_payments (id, fixer_id, amount, status, description, due_date, created_at)
-                VALUES (:id, :fixer_id, :amount, :status, :description, :due_date, :created_at)
+                INSERT INTO fixer_payments (id, fixer_id, amount, status, description, due_date, payment_type, created_at)
+                VALUES (:id, :fixer_id, :amount, :status, :description, :due_date, :payment_type, :created_at)
                 ON CONFLICT (id) DO NOTHING
             """)
             
             db.execute(insert_query, {
                 **payment,
+                'payment_type': 'service_fee',
                 'created_at': datetime.utcnow()
             })
         
