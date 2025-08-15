@@ -4330,8 +4330,7 @@ async def initialize_fixer_reputation(fixer_id: str, db: Session = Depends(get_d
             UPDATE fixers 
             SET 
                 rating = COALESCE(rating, 4.5),
-                reviews_count = COALESCE(reviews_count, 0),
-                bio = COALESCE(bio, 'Professional fixer providing quality services')
+                total_jobs = COALESCE(total_jobs, 0)
             WHERE id = :fixer_id OR user_id = :fixer_id
         """)
         
