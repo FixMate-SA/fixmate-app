@@ -10,6 +10,7 @@ import time
 from datetime import datetime
 import os
 import urllib3
+from urllib.parse import quote
 
 # Disable SSL warnings for testing
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
