@@ -4312,7 +4312,7 @@ async def initialize_fixer_reputation(fixer_id: str, db: Session = Depends(get_d
     try:
         # Check if fixer exists
         fixer_query = text("""
-            SELECT id, name, phone, rating, reviews_count
+            SELECT id, name, phone, rating, total_jobs
             FROM fixers 
             WHERE id = :fixer_id OR user_id = :fixer_id
         """)
