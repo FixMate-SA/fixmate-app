@@ -197,21 +197,32 @@ const FixerJobNotifications = () => {
 
   return (
     <div className="space-y-6">
-      {/* Temporary Production Debug Panel */}
-      {process.env.NODE_ENV === 'production' && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+      {/* Environment Variable Independent Debug Panel */}
+      {(process.env.NODE_ENV === 'production' || window.location.host.includes('.com')) && (
+        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 text-sm">
+          <div className="bg-blue-600 text-white px-3 py-1 rounded mb-3 font-bold text-center">
+            🚨 ENVIRONMENT INDEPENDENT - FixerJobNotifications Component LOADED 🚨
+          </div>
           <details>
-            <summary className="cursor-pointer text-blue-700 font-medium">
-              🔍 Production Debug Info (Click to expand)
+            <summary className="cursor-pointer text-blue-700 font-bold">
+              🔍 Job Allocation System Debug - VERIFY HEROKU DEPLOYMENT
             </summary>
-            <div className="mt-2 text-blue-600">
-              <div><strong>Environment:</strong> {process.env.NODE_ENV}</div>
-              <div><strong>Backend URL:</strong> {process.env.REACT_APP_BACKEND_URL || 'Not set (using relative URLs)'}</div>
-              <div><strong>Current Host:</strong> {window.location.host}</div>
-              <div><strong>User:</strong> {user ? `${user.id} (${user.role})` : 'Not authenticated'}</div>
-              <div><strong>Token:</strong> {localStorage.getItem('fixmate_token') ? 'Present' : 'Missing'}</div>
-              <div><strong>Notifications Count:</strong> {notifications.length}</div>
-              <div><strong>Unread Count:</strong> {unreadCount}</div>
+            <div className="mt-2 text-blue-800 font-medium space-y-1">
+              <div><strong>✅ Component:</strong> FixerJobNotifications Loaded</div>
+              <div><strong>🌍 Environment:</strong> {
+                window.location.host.includes('localhost') ? 'LOCAL_DEVELOPMENT' :
+                window.location.host.includes('preview.emergentagent.com') ? 'PREVIEW_ENVIRONMENT' :
+                window.location.host.includes('herokuapp.com') ? 'HEROKU_PRODUCTION' :
+                'PRODUCTION_DOMAIN'
+              }</div>
+              <div><strong>👤 User:</strong> {user ? `${user.id?.slice(0, 8)}... (${user.role})` : 'Not authenticated'}</div>
+              <div><strong>📋 Notifications:</strong> {notifications.length} total, {unreadCount} unread</div>
+              <div><strong>🔧 Environment Variables:</strong> {
+                (!process.env.NODE_ENV || !Object.keys(process.env).some(key => key.startsWith('REACT_APP'))) 
+                  ? '⚠️ MISSING (Using domain detection)' 
+                  : '✅ AVAILABLE'
+              }</div>
+              <div><strong>🎯 Expected Result:</strong> Real-time job notifications from backend</div>
             </div>
           </details>
         </div>
