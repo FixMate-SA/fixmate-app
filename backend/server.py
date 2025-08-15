@@ -4207,6 +4207,203 @@ async def process_fixer_eft_payment(request: Request, db: Session = Depends(get_
         print(f"EFT payment error: {e}")
         raise HTTPException(status_code=500, detail="EFT payment setup failed")
 
+# Fixer Reputation API Endpoints
+@app.get("/api/fixer/{fixer_id}/reputation")
+async def get_fixer_reputation(fixer_id: str, db: Session = Depends(get_db)):
+    """Get fixer reputation data"""
+    try:
+        # Check if fixer exists
+        fixer_query = text("""
+            SELECT id, name, phone, service_categories, bio, rating, reviews_count
+            FROM fixers 
+            WHERE id = :fixer_id OR user_id = :fixer_id
+        """)
+        
+        fixer_result = db.execute(fixer_query, {'fixer_id': fixer_id}).fetchone()
+        
+        if not fixer_result:
+            return {
+                "success": False,
+                "message": "Fixer not found"
+            }
+        
+        # Get job statistics for this fixer
+        stats_query = text("""
+            SELECT 
+                COUNT(*) as total_jobs,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_jobs,
+                COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as active_jobs,
+                AVG(CASE WHEN status = 'completed' AND estimated_price IS NOT NULL THEN estimated_price END) as avg_job_value
+            FROM jobs 
+            WHERE assigned_fixer_id = :fixer_id
+        """)
+        
+        stats_result = db.execute(stats_query, {'fixer_id': fixer_id}).fetchone()
+        
+        # Calculate reputation tier based on completed jobs and rating
+        completed_jobs = stats_result[1] if stats_result else 0
+        rating = fixer_result[4] if fixer_result[4] else 4.5
+        
+        # Determine tier based on performance
+        if completed_jobs >= 50 and rating >= 4.8:
+            tier = "Platinum"
+            tier_color = "purple"
+        elif completed_jobs >= 25 and rating >= 4.5:
+            tier = "Gold"
+            tier_color = "yellow"
+        elif completed_jobs >= 10 and rating >= 4.0:
+            tier = "Silver"
+            tier_color = "gray"
+        else:
+            tier = "Bronze"
+            tier_color = "amber"
+        
+        # Calculate reputation score (0-100)
+        reputation_score = min(100, int((rating * 15) + (completed_jobs * 2) + (fixer_result[5] * 0.5)))
+        
+        reputation_data = {
+            "fixer_id": fixer_result[0],
+            "fixer_name": fixer_result[1],
+            "tier": tier,
+            "tier_color": tier_color,
+            "reputation_score": reputation_score,
+            "current_rating": rating,
+            "total_reviews": fixer_result[5] or 0,
+            "jobs_completed": completed_jobs,
+            "total_jobs": stats_result[0] if stats_result else 0,
+            "active_jobs": stats_result[2] if stats_result else 0,
+            "avg_job_value": float(stats_result[3]) if stats_result and stats_result[3] else 0,
+            "completion_rate": round((completed_jobs / max(1, stats_result[0])) * 100, 1) if stats_result else 0,
+            "service_categories": fixer_result[3] or [],
+            "bio": fixer_result[6] or "Professional fixer providing quality services",
+            "badges": [],
+            "performance_metrics": {
+                "response_time": "< 2 hours",
+                "completion_rate": f"{round((completed_jobs / max(1, stats_result[0])) * 100, 1)}%",
+                "customer_satisfaction": f"{rating:.1f}/5.0",
+                "reliability": "Excellent" if rating >= 4.5 else "Good" if rating >= 4.0 else "Fair"
+            }
+        }
+        
+        # Add badges based on performance
+        if completed_jobs >= 10:
+            reputation_data["badges"].append("Experienced Professional")
+        if rating >= 4.5:
+            reputation_data["badges"].append("Top Rated")
+        if completed_jobs >= 50:
+            reputation_data["badges"].append("Veteran Fixer")
+        
+        return {
+            "success": True,
+            "reputation": reputation_data
+        }
+        
+    except Exception as e:
+        print(f"Get fixer reputation error: {e}")
+        return {
+            "success": False,
+            "message": f"Failed to fetch reputation data: {str(e)}"
+        }
+
+@app.post("/api/fixer/{fixer_id}/reputation/initialize")
+async def initialize_fixer_reputation(fixer_id: str, db: Session = Depends(get_db)):
+    """Initialize fixer reputation (creates basic profile if needed)"""
+    try:
+        # Check if fixer exists
+        fixer_query = text("""
+            SELECT id, name, phone, rating, reviews_count
+            FROM fixers 
+            WHERE id = :fixer_id OR user_id = :fixer_id
+        """)
+        
+        fixer_result = db.execute(fixer_query, {'fixer_id': fixer_id}).fetchone()
+        
+        if not fixer_result:
+            return {
+                "success": False,
+                "message": "Fixer not found. Please complete your fixer profile first."
+            }
+        
+        # Update fixer with default reputation values if needed
+        update_query = text("""
+            UPDATE fixers 
+            SET 
+                rating = COALESCE(rating, 4.5),
+                reviews_count = COALESCE(reviews_count, 0),
+                bio = COALESCE(bio, 'Professional fixer providing quality services')
+            WHERE id = :fixer_id OR user_id = :fixer_id
+        """)
+        
+        db.execute(update_query, {'fixer_id': fixer_id})
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Fixer reputation initialized successfully"
+        }
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Initialize fixer reputation error: {e}")
+        return {
+            "success": False,
+            "message": f"Failed to initialize reputation: {str(e)}"
+        }
+
+@app.post("/api/fixer/{fixer_id}/reputation/update")
+async def update_fixer_performance(fixer_id: str, performance_data: dict, db: Session = Depends(get_db)):
+    """Update fixer performance metrics"""
+    try:
+        # Check if fixer exists
+        fixer_query = text("""
+            SELECT id FROM fixers 
+            WHERE id = :fixer_id OR user_id = :fixer_id
+        """)
+        
+        fixer_result = db.execute(fixer_query, {'fixer_id': fixer_id}).fetchone()
+        
+        if not fixer_result:
+            return {
+                "success": False,
+                "message": "Fixer not found"
+            }
+        
+        # Update performance metrics (this is a simplified version)
+        # In a real system, you'd want more sophisticated tracking
+        update_fields = []
+        update_params = {'fixer_id': fixer_id}
+        
+        if 'rating' in performance_data:
+            update_fields.append("rating = :rating")
+            update_params['rating'] = performance_data['rating']
+            
+        if 'reviews_count' in performance_data:
+            update_fields.append("reviews_count = :reviews_count")
+            update_params['reviews_count'] = performance_data['reviews_count']
+        
+        if update_fields:
+            update_query = text(f"""
+                UPDATE fixers 
+                SET {', '.join(update_fields)}
+                WHERE id = :fixer_id OR user_id = :fixer_id
+            """)
+            
+            db.execute(update_query, update_params)
+            db.commit()
+        
+        return {
+            "success": True,
+            "message": "Performance metrics updated successfully"
+        }
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Update fixer performance error: {e}")
+        return {
+            "success": False,
+            "message": f"Failed to update performance: {str(e)}"
+        }
+
 # Include other routes and main execution
 if __name__ == "__main__":
     import uvicorn
