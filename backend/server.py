@@ -3955,31 +3955,9 @@ async def create_test_payments(request: Request, db: Session = Depends(get_db)):
         if current_user is None:
             raise HTTPException(status_code=401, detail="Authentication required")
         
-        # Ensure fixer profile exists (create if needed)
-        fixer_check_query = text("SELECT id FROM fixers WHERE user_id = :user_id")
-        fixer_result = db.execute(fixer_check_query, {'user_id': current_user['id']}).fetchone()
-        
-        if not fixer_result:
-            # Create basic fixer profile
-            create_fixer_query = text("""
-                INSERT INTO fixers (id, user_id, jobs_completed, rating, total_earned, is_active, payment_status)
-                VALUES (:id, :user_id, :jobs_completed, :rating, :total_earned, :is_active, :payment_status)
-                ON CONFLICT (id) DO NOTHING
-            """)
-            
-            db.execute(create_fixer_query, {
-                'id': str(uuid.uuid4()),
-                'user_id': current_user['id'],
-                'jobs_completed': 0,
-                'rating': 5.0,
-                'total_earned': 0.0,
-                'is_active': True,
-                'payment_status': 'active'
-            })
-        
-        # Create fixer_payments table if it doesn't exist or update schema
+        # Create fixer_service_fees table (standalone, no foreign keys)
         create_table_query = text("""
-            CREATE TABLE IF NOT EXISTS fixer_payments (
+            CREATE TABLE IF NOT EXISTS fixer_service_fees (
                 id VARCHAR PRIMARY KEY,
                 fixer_id VARCHAR NOT NULL,
                 amount DECIMAL(10,2) NOT NULL,
@@ -3989,7 +3967,6 @@ async def create_test_payments(request: Request, db: Session = Depends(get_db)):
                 paid_date TIMESTAMP,
                 description VARCHAR,
                 due_date TIMESTAMP,
-                payment_type VARCHAR DEFAULT 'service_fee',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
