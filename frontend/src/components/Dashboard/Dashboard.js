@@ -214,9 +214,11 @@ const Dashboard = () => {
           ],
           stats: [
             { label: t('jobsCompleted'), value: dashboardData?.stats?.jobs_completed || 0, icon: '✅' },
-            { label: t('currentRating', 'Current Rating'), value: dashboardData?.stats?.rating || '5.0', icon: '⭐' },
+            { label: t('activeJobs'), value: dashboardData?.stats?.active_jobs || 0, icon: '🔄' },
             { label: t('totalEarnings'), value: `R${dashboardData?.stats?.total_earned || 0}`, icon: '💰' },
-            { label: t('activeJobs'), value: dashboardData?.stats?.active_jobs || 0, icon: '🔄' }
+            { label: t('currentRating', 'Current Rating'), value: dashboardData?.stats?.rating || '5.0', icon: '⭐' },
+            { label: t('availableJobs', 'Available Jobs'), value: dashboardData?.stats?.available_jobs || 0, icon: '📋' },
+            { label: t('unreadNotifications', 'New Notifications'), value: dashboardData?.stats?.unread_notifications || 0, icon: '🔔' }
           ]
         };
       case 'admin':
