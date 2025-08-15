@@ -3798,6 +3798,300 @@ async def get_whatsapp_stats(db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Fixer Application Endpoint
+@app.post("/api/fixer/apply")
+async def apply_as_fixer(request: Request, db: Session = Depends(get_db)):
+    """Submit fixer application"""
+    try:
+        # Parse form data
+        form_data = await request.form()
+        
+        # Required fields
+        required_fields = ['services_offered', 'experience_years', 'why_fixer', 'user_id']
+        for field in required_fields:
+            if field not in form_data or not form_data[field]:
+                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+        
+        user_id = form_data['user_id']
+        
+        # Check if user exists
+        user_query = text("SELECT id, phone, first_name, last_name FROM users WHERE id = :user_id")
+        user_result = db.execute(user_query, {'user_id': user_id}).fetchone()
+        
+        if not user_result:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Check if fixer application already exists
+        existing_fixer_query = text("SELECT id FROM fixers WHERE user_id = :user_id")
+        existing_fixer = db.execute(existing_fixer_query, {'user_id': user_id}).fetchone()
+        
+        if existing_fixer:
+            raise HTTPException(status_code=400, detail="Fixer application already exists for this user")
+        
+        # Create fixer record
+        fixer_id = f"fixer_{uuid.uuid4()}"
+        
+        # Parse experience years
+        try:
+            experience_years = int(form_data['experience_years'])
+        except (ValueError, TypeError):
+            experience_years = 0
+        
+        # Extract services offered (convert to list if it's a string)
+        services_offered = form_data['services_offered']
+        if isinstance(services_offered, str):
+            services_list = [s.strip() for s in services_offered.split(',') if s.strip()]
+        else:
+            services_list = services_offered
+        
+        fixer_insert_query = text("""
+            INSERT INTO fixers (
+                id, user_id, name, phone, services, location, 
+                rating, total_jobs, is_active, is_approved, 
+                jobs_completed, completion_percentage, created_at,
+                experience_years, qualifications, previous_work, why_fixer
+            ) VALUES (
+                :id, :user_id, :name, :phone, :services, :location,
+                :rating, :total_jobs, :is_active, :is_approved,
+                :jobs_completed, :completion_percentage, :created_at,
+                :experience_years, :qualifications, :previous_work, :why_fixer
+            )
+        """)
+        
+        db.execute(fixer_insert_query, {
+            'id': fixer_id,
+            'user_id': user_id,
+            'name': f"{user_result[2]} {user_result[3]}",  # first_name + last_name
+            'phone': user_result[1],
+            'services': services_list,
+            'location': "South Africa",  # Default location
+            'rating': 4.5,  # Default starting rating
+            'total_jobs': 0,
+            'is_active': True,
+            'is_approved': True,  # Auto-approve for now
+            'jobs_completed': 0,
+            'completion_percentage': 100,
+            'created_at': datetime.utcnow(),
+            'experience_years': experience_years,
+            'qualifications': form_data.get('qualifications', ''),
+            'previous_work': form_data.get('previous_work', ''),
+            'why_fixer': form_data['why_fixer']
+        })
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Fixer application submitted successfully",
+            "fixer_id": fixer_id
+        }
+        
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Fixer application error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to submit fixer application")
+
+# Password Reset Endpoints
+@app.post("/api/auth/request-password-reset")
+async def request_password_reset(request: Request, db: Session = Depends(get_db)):
+    """Request password reset code"""
+    try:
+        form_data = await request.form()
+        phone = form_data.get('phone', '').strip()
+        
+        if not phone:
+            raise HTTPException(status_code=400, detail="Phone number is required")
+        
+        # Check if user exists
+        user_query = text("SELECT id, first_name FROM users WHERE phone = :phone")
+        user_result = db.execute(user_query, {'phone': phone}).fetchone()
+        
+        if not user_result:
+            # For security, don't reveal if user exists or not
+            return {
+                "success": True,
+                "message": "If this phone number is registered, you will receive a reset code",
+                "dev_code": "123456"  # Development code
+            }
+        
+        # Generate reset code (6 digits)
+        reset_code = str(random.randint(100000, 999999))
+        expires_at = datetime.utcnow() + timedelta(minutes=15)  # Code expires in 15 minutes
+        
+        # Store reset code in database (create table if needed)
+        try:
+            # Try to create password_resets table if it doesn't exist
+            create_table_query = text("""
+                CREATE TABLE IF NOT EXISTS password_resets (
+                    id SERIAL PRIMARY KEY,
+                    user_id VARCHAR(255) NOT NULL,
+                    phone VARCHAR(20) NOT NULL,
+                    reset_code VARCHAR(10) NOT NULL,
+                    expires_at TIMESTAMP NOT NULL,
+                    used BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            db.execute(create_table_query)
+            db.commit()
+        except Exception:
+            pass  # Table might already exist
+        
+        # Insert reset code
+        insert_reset_query = text("""
+            INSERT INTO password_resets (user_id, phone, reset_code, expires_at)
+            VALUES (:user_id, :phone, :reset_code, :expires_at)
+        """)
+        
+        db.execute(insert_reset_query, {
+            'user_id': user_result[0],
+            'phone': phone,
+            'reset_code': reset_code,
+            'expires_at': expires_at
+        })
+        
+        db.commit()
+        
+        # In production, send SMS here
+        # For development, return the code
+        return {
+            "success": True,
+            "message": "Password reset code sent successfully",
+            "dev_code": reset_code  # Only for development
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Password reset request error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to process password reset request")
+
+@app.post("/api/auth/verify-reset-code")
+async def verify_reset_code(request: Request, db: Session = Depends(get_db)):
+    """Verify password reset code"""
+    try:
+        form_data = await request.form()
+        phone = form_data.get('phone', '').strip()
+        reset_code = form_data.get('reset_code', '').strip()
+        
+        if not phone or not reset_code:
+            raise HTTPException(status_code=400, detail="Phone number and reset code are required")
+        
+        # Find valid reset code
+        verify_query = text("""
+            SELECT id, user_id, expires_at, used
+            FROM password_resets 
+            WHERE phone = :phone AND reset_code = :reset_code
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+        
+        reset_result = db.execute(verify_query, {
+            'phone': phone,
+            'reset_code': reset_code
+        }).fetchone()
+        
+        if not reset_result:
+            raise HTTPException(status_code=400, detail="Invalid reset code")
+        
+        if reset_result[3]:  # used
+            raise HTTPException(status_code=400, detail="Reset code has already been used")
+        
+        if datetime.utcnow() > reset_result[2]:  # expires_at
+            raise HTTPException(status_code=400, detail="Reset code has expired")
+        
+        return {
+            "success": True,
+            "message": "Reset code verified successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Verify reset code error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to verify reset code")
+
+@app.post("/api/auth/reset-password")
+async def reset_password(request: Request, db: Session = Depends(get_db)):
+    """Reset password with verified code"""
+    try:
+        form_data = await request.form()
+        phone = form_data.get('phone', '').strip()
+        reset_code = form_data.get('reset_code', '').strip()
+        new_password = form_data.get('new_password', '').strip()
+        
+        if not phone or not reset_code or not new_password:
+            raise HTTPException(status_code=400, detail="All fields are required")
+        
+        if len(new_password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
+        
+        # Find and verify reset code again
+        verify_query = text("""
+            SELECT id, user_id, expires_at, used
+            FROM password_resets 
+            WHERE phone = :phone AND reset_code = :reset_code
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+        
+        reset_result = db.execute(verify_query, {
+            'phone': phone,
+            'reset_code': reset_code
+        }).fetchone()
+        
+        if not reset_result:
+            raise HTTPException(status_code=400, detail="Invalid reset code")
+        
+        if reset_result[3]:  # used
+            raise HTTPException(status_code=400, detail="Reset code has already been used")
+        
+        if datetime.utcnow() > reset_result[2]:  # expires_at
+            raise HTTPException(status_code=400, detail="Reset code has expired")
+        
+        # Hash new password using pwd_context
+        hashed_password = pwd_context.hash(new_password)
+        
+        # Update user password
+        update_password_query = text("""
+            UPDATE users 
+            SET password_hash = :password_hash
+            WHERE id = :user_id
+        """)
+        
+        db.execute(update_password_query, {
+            'password_hash': hashed_password,
+            'user_id': reset_result[1]
+        })
+        
+        # Mark reset code as used
+        mark_used_query = text("""
+            UPDATE password_resets 
+            SET used = TRUE
+            WHERE id = :reset_id
+        """)
+        
+        db.execute(mark_used_query, {'reset_id': reset_result[0]})
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Password reset successfully"
+        }
+        
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Reset password error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to reset password")
+
 # Fixer Reputation API Endpoints
 @app.get("/api/fixer/{fixer_id}/reputation")
 async def get_fixer_reputation(fixer_id: str, db: Session = Depends(get_db)):
