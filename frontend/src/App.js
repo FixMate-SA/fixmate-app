@@ -675,13 +675,13 @@ function App() {
                 }
               />
 
-              {/* Payment Features */}
+              {/* Fixer Payment Management */}
               <Route
-                path="/payment"
+                path="/fixer/payment"
                 element={
                   <ProtectedRoute>
                     <ProfessionalLayout>
-                      <PaymentOptions />
+                      <FixerPaymentManager />
                     </ProfessionalLayout>
                   </ProtectedRoute>
                 }
