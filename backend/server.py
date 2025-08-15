@@ -3848,6 +3848,76 @@ async def get_current_user(request: Request, db: Session):
     except:
         return None
 
+@app.post("/api/fixer/create-test-payments")
+async def create_test_payments(request: Request, db: Session = Depends(get_db)):
+    """Create test outstanding payments for fixer (development only)"""
+    try:
+        current_user = await get_current_user(request, db)
+        if current_user is None:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        
+        # Create fixer_payments table if it doesn't exist
+        create_table_query = text("""
+            CREATE TABLE IF NOT EXISTS fixer_payments (
+                id VARCHAR PRIMARY KEY,
+                fixer_id VARCHAR NOT NULL,
+                amount DECIMAL(10,2) NOT NULL,
+                status VARCHAR DEFAULT 'pending',
+                payment_method VARCHAR,
+                payment_reference VARCHAR,
+                paid_date TIMESTAMP,
+                description VARCHAR,
+                due_date TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        db.execute(create_table_query)
+        
+        # Create test payments
+        test_payments = [
+            {
+                'id': str(uuid.uuid4()),
+                'fixer_id': current_user['id'],
+                'amount': 20.00,
+                'status': 'pending',
+                'description': 'Service fee for plumbing job completed on 2025-01-10',
+                'due_date': datetime.utcnow() + timedelta(days=5)
+            },
+            {
+                'id': str(uuid.uuid4()),
+                'fixer_id': current_user['id'],
+                'amount': 20.00,
+                'status': 'overdue',
+                'description': 'Service fee for electrical job completed on 2025-01-05',
+                'due_date': datetime.utcnow() - timedelta(days=2)
+            }
+        ]
+        
+        for payment in test_payments:
+            insert_query = text("""
+                INSERT INTO fixer_payments (id, fixer_id, amount, status, description, due_date, created_at)
+                VALUES (:id, :fixer_id, :amount, :status, :description, :due_date, :created_at)
+                ON CONFLICT (id) DO NOTHING
+            """)
+            
+            db.execute(insert_query, {
+                **payment,
+                'created_at': datetime.utcnow()
+            })
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": f"Created {len(test_payments)} test payments for fixer",
+            "payments": test_payments
+        }
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating test payments: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create test payments")
+
 @app.post("/api/fixer/payment/card")
 async def process_fixer_card_payment(request: Request, db: Session = Depends(get_db)):
     """Process fixer service fee payment via card"""
