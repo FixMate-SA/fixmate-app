@@ -3806,18 +3806,28 @@ async def apply_as_fixer(request: Request, db: Session = Depends(get_db)):
         # Parse JSON data instead of form data
         try:
             json_data = await request.json()
-        except Exception:
+            print(f"🔍 Fixer apply received JSON data: {json_data}")
+        except Exception as json_error:
+            print(f"⚠️ JSON parsing failed: {json_error}")
             # Fallback to form data for compatibility
             form_data = await request.form()
             json_data = dict(form_data)
+            print(f"🔍 Fixer apply received form data: {json_data}")
         
         # Required fields
         required_fields = ['services_offered', 'experience_years', 'why_fixer', 'user_id']
+        missing_fields = []
         for field in required_fields:
             if field not in json_data or not json_data[field]:
-                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+                missing_fields.append(field)
+        
+        if missing_fields:
+            print(f"❌ Missing fields: {missing_fields}")
+            print(f"❌ Available fields: {list(json_data.keys())}")
+            raise HTTPException(status_code=400, detail=f"Missing required field: {missing_fields[0]}")
         
         user_id = json_data['user_id']
+        print(f"✅ Fixer application for user_id: {user_id}")
         
         # Check if user exists
         user_query = text("SELECT id, phone, first_name, last_name FROM users WHERE id = :user_id")
