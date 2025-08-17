@@ -56,6 +56,9 @@ import SMSInterface from "./components/SMS/SMSInterface";
 import VoiceRecorder from "./components/VoiceRecorder/VoiceRecorder";
 import FixerReputationDashboard from "./components/Gamification/FixerReputationDashboard";
 
+// Common Components
+import PWAInstallPrompt from "./components/Common/PWAInstallPrompt";
+
 // Payment Components
 import PaymentOptions from "./components/Payment/PaymentOptions";
 import FixerPaymentManager from "./components/Payment/FixerPaymentManager";
