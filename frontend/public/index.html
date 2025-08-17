@@ -1,35 +1,119 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-ZA">
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
-        <meta name="theme-color" content="#3b82f6" />
+        
+        <!-- PWA Configuration -->
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#f97316" />
+        
+        <!-- iOS Safari PWA Support -->
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="FixMate-SA" />
+        <link rel="apple-touch-icon" href="/fixmate-logo.jpg" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/fixmate-logo.jpg" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/fixmate-logo.jpg" />
+        
+        <!-- Android Chrome PWA Support -->
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="description" content="FixMate-SA - Connect with trusted fixers across South Africa. Mobile-optimized platform for all your service needs." />
+        <meta name="theme-color" content="#f97316" />
         
-        <!-- iOS Safari specific meta tags -->
+        <!-- Standard Meta Tags -->
+        <meta name="description" content="FixMate-SA - South Africa's premier platform connecting clients with verified professional fixers for home repairs and maintenance services. Available as a Progressive Web App with offline support." />
+        <meta name="keywords" content="fixers, repairs, maintenance, South Africa, home services, plumbing, electrical, PWA, progressive web app" />
+        <meta name="author" content="FixMate-SA" />
+        
+        <!-- PWA Splash Screens for iOS -->
         <meta name="apple-touch-fullscreen" content="yes" />
-        <meta name="format-detection" content="telephone=no" />
         
-        <!-- Android Chrome specific -->
-        <meta name="theme-color" content="#3b82f6" />
+        <!-- Additional PWA Meta Tags -->
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="msapplication-TileColor" content="#f97316" />
+        <meta name="msapplication-TileImage" content="/fixmate-logo.jpg" />
         
         <!-- Prevent automatic zooming on form inputs in iOS -->
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
         
-        <title>FixMate-SA - Find Trusted Fixers</title>
+        <title>FixMate-SA - Find Trusted Fixers | Progressive Web App</title>
         
         <!-- Preload critical fonts for better mobile performance -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        
+        <!-- Favicon -->
+        <link rel="icon" href="/fixmate-logo.jpg" />
+        
+        <!-- PWA Service Worker Registration -->
+        <script>
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(function(registration) {
+                            console.log('🔧 FixMate-SA PWA: Service Worker registered successfully:', registration.scope);
+                            
+                            // Check for updates
+                            registration.addEventListener('updatefound', function() {
+                                const newWorker = registration.installing;
+                                console.log('📦 FixMate-SA PWA: New version available');
+                                
+                                newWorker.addEventListener('statechange', function() {
+                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        // New version installed, show update notification
+                                        if (window.confirm('New version of FixMate-SA is available. Update now?')) {
+                                            window.location.reload();
+                                        }
+                                    }
+                                });
+                            });
+                        })
+                        .catch(function(error) {
+                            console.log('❌ FixMate-SA PWA: Service Worker registration failed:', error);
+                        });
+                });
+                
+                // Listen for messages from service worker
+                navigator.serviceWorker.addEventListener('message', function(event) {
+                    console.log('📨 Message from Service Worker:', event.data);
+                });
+            }
+        </script>
+        
+        <!-- PWA Installation Detection -->
+        <script>
+            // Detect if app is installed
+            window.addEventListener('beforeinstallprompt', (e) => {
+                console.log('📱 PWA: Install prompt available');
+                // Store the event for later use
+                window.deferredPrompt = e;
+            });
+            
+            // Track installation
+            window.addEventListener('appinstalled', (evt) => {
+                console.log('📱 PWA: App installed successfully');
+                // Track installation event
+                if (window.gtag) {
+                    window.gtag('event', 'pwa_install', {
+                        'event_category': 'PWA',
+                        'event_label': 'App Installed'
+                    });
+                }
+            });
+        </script>
     </head>
     <body>
-        <noscript>You need to enable JavaScript to run this app.</noscript>
+        <noscript>
+            <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+                <h2>JavaScript Required</h2>
+                <p>FixMate-SA requires JavaScript to run properly. Please enable JavaScript in your browser and reload the page.</p>
+                <p>For the best experience, consider installing our Progressive Web App!</p>
+            </div>
+        </noscript>
         <div id="root"></div>
 
+        <!-- Analytics (PostHog) -->
         <script>
             !(function (t, e) {
                 var o, n, p, r;
