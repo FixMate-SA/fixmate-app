@@ -1,282 +1,357 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-ZA">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FixMate-SA - You're Offline</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%);
-            color: white;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .offline-container {
-            text-align: center;
-            padding: 2rem;
-            max-width: 500px;
-        }
-        
-        .logo {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 2rem;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            color: #3B82F6;
-        }
-        
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            font-weight: 700;
-        }
-        
-        p {
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
-            line-height: 1.6;
-        }
-        
-        .offline-features {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            backdrop-filter: blur(10px);
-        }
-        
-        .offline-features h3 {
-            margin-top: 0;
-            margin-bottom: 1rem;
-            font-size: 1.3rem;
-        }
-        
-        .offline-features ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        
-        .offline-features li {
-            margin-bottom: 0.5rem;
-            padding-left: 1.5rem;
-            position: relative;
-        }
-        
-        .offline-features li:before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            color: #10B981;
-            font-weight: bold;
-        }
-        
-        .retry-button {
-            background: white;
-            color: #3B82F6;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            margin-right: 1rem;
-        }
-        
-        .retry-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-        }
-        
-        .home-button {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid white;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-            display: inline-block;
-        }
-        
-        .home-button:hover {
-            background: white;
-            color: #3B82F6;
-            transform: translateY(-2px);
-        }
-        
-        .status {
-            margin-top: 2rem;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            font-size: 0.9rem;
-        }
-        
-        .online {
-            background: rgba(16, 185, 129, 0.2);
-            border: 1px solid #10B981;
-        }
-        
-        .offline {
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid #EF4444;
-        }
-        
-        @media (max-width: 640px) {
-            .offline-container {
-                padding: 1rem;
-            }
-            
-            h1 {
-                font-size: 2rem;
-            }
-            
-            .logo {
-                width: 100px;
-                height: 100px;
-                font-size: 2.5rem;
-            }
-            
-            .retry-button, .home-button {
-                display: block;
-                margin: 0.5rem auto;
-                width: 200px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FixMate-SA - Offline Mode</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .offline-container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px 30px;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      animation: slideUp 0.6s ease-out;
+    }
+    
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .logo {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    
+    .offline-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+      color: #f97316;
+    }
+    
+    h1 {
+      font-size: 28px;
+      color: #1f2937;
+      margin-bottom: 16px;
+      font-weight: 700;
+    }
+    
+    .subtitle {
+      font-size: 18px;
+      color: #6b7280;
+      margin-bottom: 30px;
+      line-height: 1.5;
+    }
+    
+    .features {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 30px 0;
+      text-align: left;
+    }
+    
+    .features h3 {
+      color: #374151;
+      margin-bottom: 15px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .feature-list {
+      list-style: none;
+    }
+    
+    .feature-list li {
+      padding: 8px 0;
+      color: #6b7280;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .feature-list li::before {
+      content: '✓';
+      color: #10b981;
+      font-weight: bold;
+      margin-right: 10px;
+      width: 16px;
+    }
+    
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 30px;
+    }
+    
+    .btn {
+      padding: 14px 24px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3);
+    }
+    
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+    
+    .connection-status {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    
+    .status-offline {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+    
+    .status-online {
+      background: #f0fdf4;
+      color: #16a34a;
+      border: 1px solid #bbf7d0;
+    }
+    
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+      color: #9ca3af;
+      font-size: 12px;
+    }
+    
+    @media (max-width: 480px) {
+      .offline-container {
+        padding: 30px 20px;
+      }
+      
+      h1 {
+        font-size: 24px;
+      }
+      
+      .subtitle {
+        font-size: 16px;
+      }
+    }
+    
+    /* Loading animation */
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #f97316;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
-    <div class="offline-container">
-        <div class="logo">
-            🔧
-        </div>
-        
-        <h1>You're Offline</h1>
-        
-        <p>
-            Don't worry! FixMate-SA works offline too. 
-            You can still browse cached content and create jobs that will sync when you're back online.
-        </p>
-        
-        <div class="offline-features">
-            <h3>Available Offline:</h3>
-            <ul>
-                <li>Browse previously viewed fixers</li>
-                <li>View cached job history</li>
-                <li>Create new service requests</li>
-                <li>Access your profile information</li>
-                <li>View saved locations and preferences</li>
-            </ul>
-        </div>
-        
-        <div>
-            <button class="retry-button" onclick="checkConnection()">
-                Try Again
-            </button>
-            <a href="/" class="home-button">
-                Go to Dashboard
-            </a>
-        </div>
-        
-        <div id="connection-status" class="status offline">
-            <strong>Status:</strong> Offline - Your data will sync when connection is restored
-        </div>
+  <div class="offline-container">
+    <div class="logo">FM</div>
+    
+    <div class="offline-icon" id="connectionIcon">📡</div>
+    
+    <h1 id="statusTitle">You're Offline</h1>
+    <p class="subtitle" id="statusMessage">
+      Don't worry! FixMate-SA works offline too. Some features are still available while you're disconnected.
+    </p>
+    
+    <div class="features">
+      <h3>Available Offline:</h3>
+      <ul class="feature-list">
+        <li>View cached fixers and jobs</li>
+        <li>Browse your profile information</li>
+        <li>Access emergency contacts</li>
+        <li>View saved documents</li>
+        <li>Draft new job requests</li>
+      </ul>
     </div>
-
-    <script>
-        // Check connection status
-        function updateConnectionStatus() {
-            const status = document.getElementById('connection-status');
-            
-            if (navigator.onLine) {
-                status.className = 'status online';
-                status.innerHTML = '<strong>Status:</strong> Back online! Refreshing page...';
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-            } else {
-                status.className = 'status offline';
-                status.innerHTML = '<strong>Status:</strong> Offline - Your data will sync when connection is restored';
-            }
-        }
+    
+    <div class="connection-status status-offline" id="connectionStatus">
+      <span id="statusText">🔴 No internet connection</span>
+    </div>
+    
+    <div class="actions">
+      <button class="btn btn-primary" onclick="retryConnection()" id="retryBtn">
+        <span class="loading" id="loadingIcon" style="display: none;"></span>
+        <span id="retryText">🔄 Try Again</span>
+      </button>
+      
+      <a href="/" class="btn btn-secondary">
+        📱 Continue Offline
+      </a>
+      
+      <button class="btn btn-secondary" onclick="openCachedData()">
+        💾 View Cached Data
+      </button>
+    </div>
+    
+    <div class="footer">
+      <p>FixMate-SA • Progressive Web App</p>
+      <p>Your data will sync when connection is restored</p>
+    </div>
+  </div>
+  
+  <script>
+    // Check connection status
+    function updateConnectionStatus() {
+      const isOnline = navigator.onLine;
+      const statusIcon = document.getElementById('connectionIcon');
+      const statusTitle = document.getElementById('statusTitle');
+      const statusMessage = document.getElementById('statusMessage');
+      const connectionStatus = document.getElementById('connectionStatus');
+      const statusText = document.getElementById('statusText');
+      const retryBtn = document.getElementById('retryBtn');
+      
+      if (isOnline) {
+        statusIcon.textContent = '✅';
+        statusTitle.textContent = 'Connection Restored!';
+        statusMessage.textContent = 'Great! You\'re back online. Redirecting to FixMate-SA...';
+        connectionStatus.className = 'connection-status status-online';
+        statusText.textContent = '🟢 Connected to internet';
+        retryBtn.textContent = '🚀 Go to App';
         
-        // Check connection manually
-        function checkConnection() {
-            updateConnectionStatus();
-            
-            if (navigator.onLine) {
-                // Try to fetch a resource to verify real connectivity
-                fetch('/', { 
-                    method: 'HEAD',
-                    cache: 'no-cache'
-                })
-                .then(() => {
-                    window.location.reload();
-                })
-                .catch(() => {
-                    alert('Still having connection issues. Please check your internet connection.');
-                });
-            } else {
-                alert('No internet connection detected. Please check your network settings.');
-            }
-        }
-        
-        // Listen for connection changes
-        window.addEventListener('online', updateConnectionStatus);
-        window.addEventListener('offline', updateConnectionStatus);
-        
-        // Check connection on load
+        // Auto-redirect after 2 seconds
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+      } else {
+        statusIcon.textContent = '📡';
+        statusTitle.textContent = 'You\'re Offline';
+        statusMessage.textContent = 'Don\'t worry! FixMate-SA works offline too. Some features are still available while you\'re disconnected.';
+        connectionStatus.className = 'connection-status status-offline';
+        statusText.textContent = '🔴 No internet connection';
+      }
+    }
+    
+    // Retry connection
+    function retryConnection() {
+      const loadingIcon = document.getElementById('loadingIcon');
+      const retryText = document.getElementById('retryText');
+      const retryBtn = document.getElementById('retryBtn');
+      
+      // Show loading
+      loadingIcon.style.display = 'inline-block';
+      retryText.textContent = 'Checking...';
+      retryBtn.disabled = true;
+      
+      // Check connection after a delay
+      setTimeout(() => {
         updateConnectionStatus();
         
-        // Register service worker if available
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.ready.then(registration => {
-                console.log('Service Worker is ready');
-                
-                // Listen for messages from service worker
-                navigator.serviceWorker.addEventListener('message', event => {
-                    if (event.data.type === 'SYNC_COMPLETE') {
-                        const status = document.getElementById('connection-status');
-                        status.innerHTML = '<strong>Status:</strong> Data synced successfully!';
-                        setTimeout(updateConnectionStatus, 3000);
-                    }
-                });
-            });
-        }
+        // Reset button
+        loadingIcon.style.display = 'none';
+        retryText.textContent = navigator.onLine ? '🚀 Go to App' : '🔄 Try Again';
+        retryBtn.disabled = false;
         
-        // Add some interactivity
-        document.addEventListener('DOMContentLoaded', function() {
-            // Animate logo
-            const logo = document.querySelector('.logo');
-            logo.style.animation = 'pulse 2s infinite';
-            
-            // Add CSS animation
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes pulse {
-                    0%, 100% { transform: scale(1); }
-                    50% { transform: scale(1.05); }
-                }
-            `;
-            document.head.appendChild(style);
+        // If online, redirect
+        if (navigator.onLine) {
+          window.location.href = '/';
+        }
+      }, 1500);
+    }
+    
+    // Open cached data
+    function openCachedData() {
+      // Try to open the main app
+      window.location.href = '/';
+    }
+    
+    // Listen for connection changes
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
+    
+    // Initial status check
+    updateConnectionStatus();
+    
+    // Periodic connection check
+    setInterval(() => {
+      if (!navigator.onLine) {
+        // Try a small network request to verify connectivity
+        fetch('/manifest.json', { 
+          method: 'HEAD',
+          cache: 'no-cache',
+          signal: AbortSignal.timeout(3000)
+        })
+        .then(() => {
+          if (!navigator.onLine) {
+            // Force online status update
+            updateConnectionStatus();
+          }
+        })
+        .catch(() => {
+          // Still offline
         });
-    </script>
+      }
+    }, 5000);
+  </script>
 </body>
 </html>
