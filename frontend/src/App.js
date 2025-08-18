@@ -60,6 +60,9 @@ import FixerReputationDashboard from "./components/Gamification/FixerReputationD
 import PWAInstallPrompt from "./components/Common/PWAInstallPrompt";
 import PWAStatus from "./components/Common/PWAStatus";
 
+// Push Notification Component
+import PushNotificationManager from "./components/PushNotifications/PushNotificationManager";
+
 // Payment Components
 import PaymentOptions from "./components/Payment/PaymentOptions";
 import FixerPaymentManager from "./components/Payment/FixerPaymentManager";
