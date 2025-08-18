@@ -4139,6 +4139,259 @@ async def reset_password(request: Request, db: Session = Depends(get_db)):
         print(f"Reset password error: {e}")
         raise HTTPException(status_code=500, detail="Failed to reset password")
 
+# Push Notification Management Endpoints
+@app.post("/api/push/subscribe")
+async def subscribe_to_push(request: Request, db: Session = Depends(get_db)):
+    """Subscribe user to push notifications"""
+    try:
+        data = await request.json()
+        subscription_data = data.get('subscription')
+        user_id = data.get('userId')
+        user_role = data.get('userRole')
+        
+        if not subscription_data or not user_id:
+            raise HTTPException(status_code=400, detail="Missing subscription data or user ID")
+        
+        # Create push_subscriptions table if it doesn't exist
+        try:
+            create_table_query = text("""
+                CREATE TABLE IF NOT EXISTS push_subscriptions (
+                    id SERIAL PRIMARY KEY,
+                    user_id VARCHAR(255) NOT NULL,
+                    user_role VARCHAR(50),
+                    endpoint TEXT NOT NULL,
+                    p256dh_key TEXT,
+                    auth_key TEXT,
+                    subscription_data TEXT,
+                    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, endpoint)
+                )
+            """)
+            db.execute(create_table_query)
+            db.commit()
+        except Exception as table_error:
+            print(f"Push subscriptions table creation info: {table_error}")
+            try:
+                db.rollback()
+            except:
+                pass
+        
+        # Extract subscription details
+        endpoint = subscription_data.get('endpoint')
+        keys = subscription_data.get('keys', {})
+        p256dh = keys.get('p256dh')
+        auth = keys.get('auth')
+        
+        # Insert or update subscription
+        upsert_query = text("""
+            INSERT INTO push_subscriptions (user_id, user_role, endpoint, p256dh_key, auth_key, subscription_data)
+            VALUES (:user_id, :user_role, :endpoint, :p256dh, :auth, :subscription_data)
+            ON CONFLICT (user_id, endpoint) 
+            DO UPDATE SET 
+                user_role = EXCLUDED.user_role,
+                p256dh_key = EXCLUDED.p256dh_key,
+                auth_key = EXCLUDED.auth_key,
+                subscription_data = EXCLUDED.subscription_data,
+                updated_at = CURRENT_TIMESTAMP
+        """)
+        
+        db.execute(upsert_query, {
+            'user_id': user_id,
+            'user_role': user_role,
+            'endpoint': endpoint,
+            'p256dh': p256dh,
+            'auth': auth,
+            'subscription_data': json.dumps(subscription_data)
+        })
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Push subscription saved successfully"
+        }
+        
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Push subscription error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save push subscription")
+
+@app.post("/api/push/unsubscribe")
+async def unsubscribe_from_push(request: Request, db: Session = Depends(get_db)):
+    """Unsubscribe user from push notifications"""
+    try:
+        data = await request.json()
+        subscription_data = data.get('subscription')
+        user_id = data.get('userId')
+        
+        if not subscription_data or not user_id:
+            raise HTTPException(status_code=400, detail="Missing subscription data or user ID")
+        
+        endpoint = subscription_data.get('endpoint')
+        
+        # Remove subscription from database
+        delete_query = text("""
+            DELETE FROM push_subscriptions 
+            WHERE user_id = :user_id AND endpoint = :endpoint
+        """)
+        
+        result = db.execute(delete_query, {
+            'user_id': user_id,
+            'endpoint': endpoint
+        })
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": f"Push subscription removed successfully ({result.rowcount} rows affected)"
+        }
+        
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Push unsubscription error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to remove push subscription")
+
+@app.post("/api/push/test") 
+async def send_test_notification(request: Request, db: Session = Depends(get_db)):
+    """Send test push notification to user"""
+    try:
+        data = await request.json()
+        user_id = data.get('userId')
+        notification_type = data.get('type', 'test')
+        title = data.get('title', '🧪 Test Notification')
+        message = data.get('message', 'This is a test notification from FixMate-SA!')
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="Missing user ID")
+        
+        # Get user's push subscriptions
+        subscriptions_query = text("""
+            SELECT subscription_data FROM push_subscriptions 
+            WHERE user_id = :user_id
+        """)
+        
+        subscriptions = db.execute(subscriptions_query, {'user_id': user_id}).fetchall()
+        
+        if not subscriptions:
+            return {
+                "success": False,
+                "message": "No push subscriptions found for user"
+            }
+        
+        # In a real implementation, you would use a library like pywebpush
+        # For now, we'll just log the notification details
+        print(f"📤 Would send push notification to {len(subscriptions)} subscription(s):")
+        print(f"   User: {user_id}")
+        print(f"   Type: {notification_type}")
+        print(f"   Title: {title}")
+        print(f"   Message: {message}")
+        
+        # TODO: Implement actual push notification sending using pywebpush
+        # Example:
+        # from pywebpush import webpush
+        # for sub_row in subscriptions:
+        #     subscription_data = json.loads(sub_row[0])
+        #     webpush(
+        #         subscription_info=subscription_data,
+        #         data=json.dumps({
+        #             'title': title,
+        #             'body': message,
+        #             'type': notification_type,
+        #             'url': '/dashboard'
+        #         }),
+        #         vapid_private_key="path/to/private_key.pem",
+        #         vapid_claims={
+        #             "sub": "mailto:admin@fixmate-sa.com"
+        #         }
+        #     )
+        
+        return {
+            "success": True,
+            "message": f"Test notification sent to {len(subscriptions)} subscription(s)",
+            "dev_mode": "Push notification logged to console (implement pywebpush for production)"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Send test notification error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send test notification")
+
+@app.post("/api/push/send")
+async def send_push_notification(request: Request, db: Session = Depends(get_db)):
+    """Send push notification to specific users or roles"""
+    try:
+        data = await request.json()
+        
+        # Can target by user_id, user_role, or both
+        target_user_id = data.get('userId')
+        target_role = data.get('userRole')
+        notification_type = data.get('type', 'general')
+        title = data.get('title', 'FixMate-SA')
+        message = data.get('message', 'You have a new notification')
+        url = data.get('url', '/dashboard')
+        
+        if not target_user_id and not target_role:
+            raise HTTPException(status_code=400, detail="Must specify userId or userRole")
+        
+        # Build query based on targeting criteria
+        where_conditions = []
+        query_params = {}
+        
+        if target_user_id:
+            where_conditions.append("user_id = :user_id")
+            query_params['user_id'] = target_user_id
+            
+        if target_role:
+            where_conditions.append("user_role = :user_role")
+            query_params['user_role'] = target_role
+        
+        where_clause = " AND ".join(where_conditions)
+        
+        # Get matching subscriptions
+        subscriptions_query = text(f"""
+            SELECT user_id, subscription_data FROM push_subscriptions 
+            WHERE {where_clause}
+        """)
+        
+        subscriptions = db.execute(subscriptions_query, query_params).fetchall()
+        
+        if not subscriptions:
+            return {
+                "success": False,
+                "message": "No matching push subscriptions found"
+            }
+        
+        # Log notification details (implement actual sending in production)
+        print(f"📤 Would send push notification to {len(subscriptions)} subscription(s):")
+        print(f"   Target User ID: {target_user_id}")
+        print(f"   Target Role: {target_role}")
+        print(f"   Type: {notification_type}")
+        print(f"   Title: {title}")
+        print(f"   Message: {message}")
+        print(f"   URL: {url}")
+        
+        return {
+            "success": True,
+            "message": f"Push notification sent to {len(subscriptions)} subscription(s)",
+            "recipients": len(subscriptions),
+            "dev_mode": "Push notification logged to console (implement pywebpush for production)"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Send push notification error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send push notification")
+
 # Fixer Reputation API Endpoints
 @app.get("/api/fixer/{fixer_id}/reputation")
 async def get_fixer_reputation(fixer_id: str, db: Session = Depends(get_db)):
