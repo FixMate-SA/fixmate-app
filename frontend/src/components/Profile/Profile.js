@@ -381,7 +381,7 @@ const Profile = () => {
         </div>
         
         <div className="p-6">
-          <PushNotificationManager />
+          <PushNotificationTest />
         </div>
       </div>
     </div>
