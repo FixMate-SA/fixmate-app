@@ -6,7 +6,6 @@ Generate VAPID keys for push notifications
 from py_vapid import Vapid
 import json
 import os
-from cryptography.hazmat.primitives import serialization
 
 def generate_vapid_keys():
     """Generate VAPID public and private keys"""
@@ -15,18 +14,18 @@ def generate_vapid_keys():
     vapid = Vapid()
     vapid.generate_keys()
     
-    # Get the keys in proper format
-    private_key_bytes = vapid.private_key.private_bytes(
-        encoding=serialization.Encoding.Raw,
-        format=serialization.PrivateFormat.Raw,
-        encryption_algorithm=serialization.NoEncryption()
-    )
-    public_key_bytes = vapid.public_key_bytes
+    # Save to PEM files first
+    vapid.save_key('/tmp/private_key.pem')
     
-    # Convert to base64url format
-    import base64
-    private_key_b64 = base64.urlsafe_b64encode(private_key_bytes).decode('utf-8').rstrip('=')
-    public_key_b64 = base64.urlsafe_b64encode(public_key_bytes).decode('utf-8').rstrip('=')
+    # Read the PEM file to get base64url encoded keys
+    with open('/tmp/private_key.pem', 'rb') as f:
+        private_key_pem = f.read()
+    
+    # Get public key
+    public_key_b64 = vapid.public_key
+    
+    # Get private key from PEM - we'll use the vapid object directly
+    private_key_b64 = vapid.private_key_base64()
     
     print("🔑 VAPID Keys Generated Successfully!")
     print("=" * 50)
