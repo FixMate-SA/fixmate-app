@@ -58,6 +58,7 @@ import FixerReputationDashboard from "./components/Gamification/FixerReputationD
 
 // Common Components
 import PWAInstallPrompt from "./components/Common/PWAInstallPrompt";
+import PWAStatus from "./components/Common/PWAStatus";
 
 // Payment Components
 import PaymentOptions from "./components/Payment/PaymentOptions";
