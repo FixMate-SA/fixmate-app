@@ -4179,28 +4179,33 @@ async def subscribe_to_push(request: Request, db: Session = Depends(get_db)):
         
         # Create push_subscriptions table if it doesn't exist
         try:
-            # Drop and recreate table to ensure clean state
-            drop_table_query = text("DROP TABLE IF EXISTS push_subscriptions")
-            db.execute(drop_table_query)
-            
-            # Create table with proper constraint
-            create_table_query = text("""
-                CREATE TABLE push_subscriptions (
-                    id SERIAL PRIMARY KEY,
-                    user_id VARCHAR(255) NOT NULL,
-                    user_role VARCHAR(50),
-                    endpoint TEXT NOT NULL,
-                    p256dh_key TEXT,
-                    auth_key TEXT,
-                    subscription_data TEXT,
-                    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            # Check if table exists
+            check_table_query = text("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = 'push_subscriptions'
                 )
             """)
-            db.execute(create_table_query)
-            print("✅ Created push_subscriptions table")
+            table_exists = db.execute(check_table_query).fetchone()[0]
             
-            db.commit()
+            if not table_exists:
+                # Create table only if it doesn't exist
+                create_table_query = text("""
+                    CREATE TABLE push_subscriptions (
+                        id SERIAL PRIMARY KEY,
+                        user_id VARCHAR(255) NOT NULL,
+                        user_role VARCHAR(50),
+                        endpoint TEXT NOT NULL,
+                        p256dh_key TEXT,
+                        auth_key TEXT,
+                        subscription_data TEXT,
+                        created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                db.execute(create_table_query)
+                print("✅ Created push_subscriptions table")
+                db.commit()
         except Exception as table_error:
             print(f"Push subscriptions table creation error: {table_error}")
             try:
