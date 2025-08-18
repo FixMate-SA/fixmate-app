@@ -52,7 +52,7 @@ const PWAStatus = () => {
   // Don't show anything if already installed
   if (isInstalled || isPWA) {
     return (
-      <div className="fixed top-4 right-4 bg-green-100 text-green-800 text-xs px-3 py-2 rounded-full shadow-lg z-50 flex items-center space-x-2">
+      <div className="fixed bottom-4 right-4 bg-green-100 text-green-800 text-xs px-3 py-2 rounded-full shadow-lg z-40 flex items-center space-x-2">
         <span className="text-green-600">✅</span>
         <span>PWA Active</span>
       </div>
@@ -62,7 +62,7 @@ const PWAStatus = () => {
   // Show PWA availability indicator
   if (isInstallable) {
     return (
-      <div className="fixed top-4 right-4 z-50">
+      <div className="fixed bottom-4 right-4 z-40">
         <button
           onClick={() => setShowPWAInfo(!showPWAInfo)}
           className="bg-orange-500 text-white text-xs px-3 py-2 rounded-full shadow-lg hover:bg-orange-600 transition-colors flex items-center space-x-2"
@@ -72,7 +72,7 @@ const PWAStatus = () => {
         </button>
         
         {showPWAInfo && (
-          <div className="absolute top-12 right-0 bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-72 z-50">
+          <div className="absolute bottom-12 right-0 bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-72 z-50">
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
                 <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
