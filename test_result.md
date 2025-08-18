@@ -5193,9 +5193,11 @@ agent_communication:
 
 test_plan:
   current_focus:
+    - "Enhanced Profile Management System - Role-Specific Components"
     - "Push Notification Manager Component"
     - "Push Notification API Endpoints"
   stuck_tasks:
+    - "Enhanced Profile Management System - Role-Specific Components"
     - "Push Notification Manager Component"
     - "Push Notification API Endpoints"
     - "Missing Enterprise Invoice Detail Endpoint - GET /api/enterprise/invoice/{invoice_id}"
