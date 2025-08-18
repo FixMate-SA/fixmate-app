@@ -4928,6 +4928,90 @@ backend:
         comment: "🎉 ENTERPRISE PORTAL FRONTEND TESTING COMPLETED WITH 100% SUCCESS! Comprehensive testing achieved complete verification of all Enterprise Portal functionality: ✅ AUTHENTICATION & ACCESS: Client login (+27800000002/client2024test) working perfectly, Enterprise Portal accessible from client dashboard, all navigation working correctly ✅ OVERVIEW SECTION: Real analytics data loading correctly (Monthly Spend: R 3.00-4.00, Jobs Completed: 2, Cost Savings: R 0.45), KPI cards display REAL backend data (not hardcoded 1,247), Enterprise Service Packages displaying 4 packages correctly, Recent Activity showing real booking data ✅ BULK BOOKINGS SECTION: 'New Bulk Booking' button opens modal correctly, form submission working (POST /api/enterprise/bulk-booking successful), real-time data refresh after creation (fetchEnterpriseData() called), booking appears in list after creation ✅ TEAM MANAGEMENT SECTION: Team member list loads correctly (initially 1, then 2 after addition), 'Add Team Member' modal working perfectly, form submission successful (POST /api/enterprise/team), team member 'Test Manager' added successfully, Remove button functional, real-time UI updates working ✅ LOCATION MANAGEMENT SECTION: Location list loads correctly (2 initially, then 3 after addition), 'Add Location' modal working perfectly, form submission successful (POST /api/enterprise/locations), location 'Test Office Location' added successfully, 'Book Service' button functional (POST /api/enterprise/locations/{id}/book-service), Remove button available ✅ INVOICING SECTION: Billing overview shows real calculations (Outstanding: R 0.00, Total Invoices: 2), invoice list displays real data, 'Generate Invoice' button working (POST /api/enterprise/generate-invoice), invoice generation successful (invoices increased from 1 to 2), real invoice data displayed ✅ ANALYTICS SECTION: KPI cards show real data (Total Bookings: 4, Total Spend: R 4.00), metrics match actual data from other sections, performance metrics display correctly, NO hardcoded 1,247 values found ✅ MOBILE RESPONSIVENESS: Navigation tabs working on mobile viewport (390x844), horizontal scrolling functional, all sections accessible on mobile ✅ DATA INTEGRATION: Real-time updates after CRUD operations verified, fetchEnterpriseData() called after all operations, state management working correctly, API integrations fully functional. CONCLUSION: Enterprise Portal frontend is PRODUCTION-READY with complete real backend integration, all CRUD operations functional, and excellent mobile responsiveness!"
 
 backend:
+  - task: "Enhanced Profile Management System - GET /api/profile/{user_id}"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ PROFILE RETRIEVAL WORKING EXCELLENTLY! GET /api/profile/{user_id} endpoint successfully retrieves user profiles with role-specific fields. Client profiles include basic fields (id, first_name, last_name, email, phone, town, address, role, created_at), Admin profiles include additional admin-specific fields (admin_level, department). Database field verification confirmed all new profile fields are properly implemented and accessible. Profile data structure matches expected schema with proper role-based field inclusion."
+
+  - task: "Enhanced Profile Management System - PUT /api/profile/{user_id}"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ PROFILE UPDATE WORKING PERFECTLY! PUT /api/profile/{user_id} endpoint successfully updates user profiles with role-specific data. Client profile updates work with basic fields (first_name, last_name, email, phone, town, address), Admin profile updates include admin-specific fields (admin_level, department). Profile updates persist correctly in database and return success responses. Role-based field handling working as expected for different user types."
+
+  - task: "Enhanced Profile Management System - POST /api/profile/{user_id}/upload-image"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ PROFILE IMAGE UPLOAD WORKING SUCCESSFULLY! POST /api/profile/{user_id}/upload-image endpoint successfully handles file uploads with proper validation. Valid image files (PNG) are accepted and stored in correct directory (/app/frontend/public/uploads/profiles), Invalid file types (text files) are properly rejected with appropriate error messages, Image URLs are generated correctly with expected pattern (/uploads/profiles/profile_{user_id}_{timestamp}.{extension}). File upload validation and storage functionality working as designed."
+
+  - task: "Enhanced Profile Management System - Database Field Verification"
+    implemented: true
+    working: true
+    file: "backend/server.py, backend/models.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ DATABASE FIELD VERIFICATION SUCCESSFUL! All new profile fields properly added to users table and accessible via API endpoints. Basic fields verified: id, first_name, last_name, email, phone, town, role, created_at, New address field successfully implemented and accessible, Role-specific fields working: Admin users have admin_level and department fields, Profile image field structure ready for implementation. Database schema matches profile management requirements."
+
+  - task: "Enhanced Profile Management System - Authentication & Security"
+    implemented: true
+    working: false
+    file: "backend/server.py"
+    stuck_count: 1
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "⚠️ PROFILE AUTHENTICATION SECURITY ISSUES DETECTED! Profile endpoints have authentication gaps: GET /api/profile/{user_id} returns HTTP 404 for non-existent users (good) but allows access without authentication for existing users, PUT /api/profile/{user_id} allows updates without proper authentication verification, POST /api/profile/{user_id}/upload-image accepts file uploads without authentication checks. Cross-user profile access not properly restricted - users can access other users' profile data. Authentication middleware not consistently applied to profile endpoints."
+
+  - task: "Enhanced Profile Management System - Role-Specific Profile Testing"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ ROLE-SPECIFIC PROFILE FUNCTIONALITY WORKING! Client profile management working perfectly with basic information updates (name, email, phone, town, address), Admin profile management working with administrative settings (admin_level, department), Profile retrieval returns appropriate role-specific fields based on user role. Fixer profile testing blocked by authentication credentials issue but endpoint structure supports fixer-specific fields (services, experience_years, hourly_rate, availability_status, service_area, certifications, portfolio_images, rating, total_jobs)."
+
+  - task: "Enhanced Profile Management System - File Upload Functionality"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ FILE UPLOAD FUNCTIONALITY EXCELLENT! Profile image upload system working comprehensively: File validation properly rejects non-image files (text/plain) with appropriate error responses, Valid image files (image/png) accepted and processed successfully, File storage working correctly in designated directory (/app/frontend/public/uploads/profiles), Unique filename generation working (profile_{user_id}_{timestamp}.{extension}), Image URL generation and return working properly. Upload validation and storage system production-ready."
+
   - task: "Automatic Job Allocation System - Backend Testing"
     implemented: true
     working: true
