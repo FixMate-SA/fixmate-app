@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { apiService } from '../../services/api';
 import LanguageSelector from '../Common/LanguageSelector';
-import PushNotificationTest from '../PushNotifications/PushNotificationTest';
+import PushNotificationManager from '../PushNotifications/PushNotificationManager';
 
 const Profile = () => {
   const { user, getUserRole } = useAuth();
