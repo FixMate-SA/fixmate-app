@@ -11,120 +11,98 @@ import AdminProfile from './AdminProfile';
 const Profile = () => {
   const { user, getUserRole } = useAuth();
   const { t } = useLanguage();
-  const [loading, setLoading] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [profileData, setProfileData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    location: user?.location || '',
-    bio: user?.bio || '',
-    skills: user?.skills || [],
-    experience_years: user?.experience_years || 0,
-    hourly_rate: user?.hourly_rate || 0,
-    availability: user?.availability || 'available'
-  });
 
-  const userRole = getUserRole();
-  const skillOptions = [
-    { value: 'plumbing', label: t('plumbing') },
-    { value: 'electrical', label: t('electrical') },
-    { value: 'carpentry', label: t('carpentry') },
-    { value: 'painting', label: t('painting') },
-    { value: 'gardening', label: t('gardening') },
-    { value: 'cleaning', label: t('cleaning') },
-    { value: 'appliance_repair', label: t('applianceRepair') },
-    { value: 'other', label: t('other') }
-  ];
-
-  const availabilityOptions = [
-    { value: 'available', label: t('available', 'Available'), color: 'text-green-600' },
-    { value: 'busy', label: t('busy', 'Busy'), color: 'text-yellow-600' },
-    { value: 'unavailable', label: t('unavailable', 'Unavailable'), color: 'text-red-600' }
-  ];
+  const fetchUserProfile = async () => {
+    if (!user?.id) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await apiService.getProfile(user.id);
+      if (response.data.success) {
+        setUserProfile(response.data.user);
+      } else {
+        setError('Failed to load profile');
+      }
+    } catch (error) {
+      console.error('Profile fetch error:', error);
+      setError('Failed to load profile data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (user) {
-      setProfileData({
-        name: user.name || '',
-        email: user.email || '',
-        phone: user.phone || '',
-        location: user.location || '',
-        bio: user.bio || '',
-        skills: user.skills || [],
-        experience_years: user.experience_years || 0,
-        hourly_rate: user.hourly_rate || 0,
-        availability: user.availability || 'available'
-      });
-    }
-  }, [user]);
+    fetchUserProfile();
+  }, [user?.id]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setProfileData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const handleProfileUpdate = () => {
+    // Refresh profile data after update
+    fetchUserProfile();
   };
 
-  const handleSkillsChange = (skillValue) => {
-    setProfileData(prev => ({
-      ...prev,
-      skills: prev.skills.includes(skillValue)
-        ? prev.skills.filter(s => s !== skillValue)
-        : [...prev.skills, skillValue]
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      const response = await apiService.updateProfile(profileData);
-      setSuccess(t('profileUpdatedSuccessfully', 'Profile updated successfully!'));
-      
-      // Update user context if needed
-      if (response.data) {
-        // The AuthContext should refresh the user data
-      }
-    } catch (err) {
-      console.error('Profile update error:', err);
-      setError(err.response?.data?.detail || t('profileUpdateError', 'Failed to update profile. Please try again.'));
-    }
-
-    setLoading(false);
-  };
-
-  const getRoleColor = () => {
+  const renderRoleSpecificProfile = () => {
+    const userRole = getUserRole();
+    
     switch (userRole) {
-      case 'admin': return 'border-red-500 bg-red-50';
-      case 'fixer': return 'border-orange-500 bg-orange-50';
-      case 'client': return 'border-blue-500 bg-blue-50';
-      default: return 'border-gray-500 bg-gray-50';
+      case 'client':
+        return (
+          <ClientProfile 
+            userProfile={userProfile} 
+            onUpdateProfile={handleProfileUpdate}
+          />
+        );
+      case 'fixer':
+        return (
+          <FixerProfile 
+            userProfile={userProfile} 
+            onUpdateProfile={handleProfileUpdate}
+          />
+        );
+      case 'admin':
+        return (
+          <AdminProfile 
+            userProfile={userProfile} 
+            onUpdateProfile={handleProfileUpdate}
+          />
+        );
+      default:
+        return (
+          <ClientProfile 
+            userProfile={userProfile} 
+            onUpdateProfile={handleProfileUpdate}
+          />
+        );
     }
   };
 
-  const getRoleIcon = () => {
-    switch (userRole) {
-      case 'admin': return '👨‍💼';
-      case 'fixer': return '🔧';
-      case 'client': return '👤';
-      default: return '👤';
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+        </div>
+      </div>
+    );
+  }
 
-  const getRoleName = () => {
-    switch (userRole) {
-      case 'admin': return t('admin');
-      case 'fixer': return t('fixer');
-      case 'client': return t('client');
-      default: return t('user', 'User');
-    }
-  };
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <p className="text-red-800">{error}</p>
+          <button 
+            onClick={fetchUserProfile}
+            className="mt-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-6">
