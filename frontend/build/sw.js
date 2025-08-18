@@ -69,16 +69,6 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Handle messages from main app
-self.addEventListener('message', (event) => {
-  console.log('📨 Service Worker received message:', event.data);
-  
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    console.log('⚡ Service Worker: Skipping waiting phase');
-    self.skipWaiting();
-  }
-});
-
 // Activate event - cleanup old caches
 self.addEventListener('activate', (event) => {
   console.log('🚀 FixMate-SA Service Worker: Activating...');
@@ -290,9 +280,9 @@ async function syncFailedMessages() {
   console.log('🔄 Syncing failed messages...');
 }
 
-// Push notification handler
+// Push notification handler with enhanced features
 self.addEventListener('push', (event) => {
-  console.log('🔔 Push notification received');
+  console.log('🔔 Push notification received:', event);
   
   let notificationData = {
     title: 'FixMate-SA',
@@ -301,27 +291,101 @@ self.addEventListener('push', (event) => {
     badge: '/fixmate-logo.jpg',
     tag: 'fixmate-notification',
     requireInteraction: false,
-    actions: []
+    vibrate: [200, 100, 200],
+    data: {
+      url: '/',
+      timestamp: Date.now()
+    },
+    actions: [
+      {
+        action: 'view',
+        title: '👀 View',
+        icon: '/fixmate-logo.jpg'
+      },
+      {
+        action: 'dismiss',
+        title: '❌ Dismiss'
+      }
+    ]
   };
   
   if (event.data) {
     try {
-      const data = event.data.json();
-      notificationData = {
-        ...notificationData,
-        ...data,
-        actions: [
-          {
-            action: 'view',
-            title: 'View',
-            icon: '/fixmate-logo.jpg'
+      const pushData = event.data.json();
+      console.log('📨 Push data received:', pushData);
+      
+      // Customize notification based on type
+      if (pushData.type === 'job_assigned') {
+        notificationData = {
+          ...notificationData,
+          title: '🔧 New Job Assigned!',
+          body: `You have been assigned a ${pushData.service} job`,
+          tag: 'job-assignment',
+          requireInteraction: true,
+          data: {
+            url: '/fixer/available-jobs',
+            jobId: pushData.jobId,
+            type: 'job_assigned'
           },
-          {
-            action: 'dismiss',
-            title: 'Dismiss'
+          actions: [
+            {
+              action: 'view_job',
+              title: '🔧 View Job',
+              icon: '/fixmate-logo.jpg'
+            },
+            {
+              action: 'dismiss',
+              title: 'Later'
+            }
+          ]
+        };
+      } else if (pushData.type === 'job_completed') {
+        notificationData = {
+          ...notificationData,
+          title: '✅ Job Completed!',
+          body: pushData.message || 'A job has been marked as completed',
+          tag: 'job-completion',
+          data: {
+            url: '/dashboard',
+            jobId: pushData.jobId,
+            type: 'job_completed'
           }
-        ]
-      };
+        };
+      } else if (pushData.type === 'payment_received') {
+        notificationData = {
+          ...notificationData,
+          title: '💰 Payment Received!',
+          body: `You received R${pushData.amount} for your service`,
+          tag: 'payment',
+          data: {
+            url: '/fixer/payment',
+            amount: pushData.amount,
+            type: 'payment_received'
+          }
+        };
+      } else if (pushData.type === 'message') {
+        notificationData = {
+          ...notificationData,
+          title: '💬 New Message',
+          body: pushData.message || 'You have a new message',
+          tag: 'message',
+          data: {
+            url: pushData.url || '/dashboard',
+            type: 'message'
+          }
+        };
+      } else {
+        // Generic notification
+        notificationData = {
+          ...notificationData,
+          title: pushData.title || notificationData.title,
+          body: pushData.body || pushData.message || notificationData.body,
+          data: {
+            url: pushData.url || '/',
+            ...pushData
+          }
+        };
+      }
     } catch (error) {
       console.log('❌ Error parsing push data:', error);
     }
@@ -332,47 +396,378 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Notification click handler
+// Enhanced notification click handler
 self.addEventListener('notificationclick', (event) => {
-  console.log('🔔 Notification clicked:', event.action);
+  console.log('🔔 Notification clicked:', event.action, event.notification.data);
   
   event.notification.close();
   
-  if (event.action === 'view') {
-    // Open the app or specific page
-    event.waitUntil(
-      self.clients.openWindow(event.notification.data?.url || '/')
-    );
+  const notificationData = event.notification.data || {};
+  let targetUrl = '/';
+  
+  if (event.action === 'view_job') {
+    targetUrl = `/fixer/available-jobs${notificationData.jobId ? '?job=' + notificationData.jobId : ''}`;
+  } else if (event.action === 'view') {
+    targetUrl = notificationData.url || '/dashboard';
   } else if (event.action === 'dismiss') {
     // Just close the notification
     return;
   } else {
-    // Default click action
-    event.waitUntil(
-      self.clients.openWindow('/')
-    );
+    // Default click action - open the URL from notification data
+    targetUrl = notificationData.url || '/';
+  }
+  
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clients) => {
+        // Check if there's already a window open
+        for (let client of clients) {
+          if ('focus' in client) {
+            client.focus();
+            client.postMessage({
+              type: 'NOTIFICATION_CLICK',
+              url: targetUrl,
+              data: notificationData
+            });
+            return;
+          }
+        }
+        
+        // No window open, create new one
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(targetUrl);
+        }
+      })
+  );
+});
+
+// Handle notification close
+self.addEventListener('notificationclose', (event) => {
+  console.log('🔔 Notification closed:', event.notification.tag);
+  
+  // Track notification dismissal
+  if (event.notification.data && event.notification.data.trackClose) {
+    // Send analytics or tracking data
+    console.log('📊 Tracking notification dismissal');
   }
 });
 
 // Helper functions for IndexedDB operations
 async function getFailedJobs() {
-  // Implementation for retrieving failed jobs from IndexedDB
-  return [];
+  try {
+    const db = await openIndexedDB();
+    const transaction = db.transaction(['failed_jobs'], 'readonly');
+    const store = transaction.objectStore('failed_jobs');
+    const jobs = await store.getAll();
+    return jobs;
+  } catch (error) {
+    console.log('❌ Error getting failed jobs:', error);
+    return [];
+  }
 }
 
 async function removeFailedJob(jobId) {
-  // Implementation for removing synced job from IndexedDB
-  console.log('Removing synced job:', jobId);
+  try {
+    const db = await openIndexedDB();
+    const transaction = db.transaction(['failed_jobs'], 'readwrite');
+    const store = transaction.objectStore('failed_jobs');
+    await store.delete(jobId);
+    console.log('✅ Removed synced job from IndexedDB:', jobId);
+  } catch (error) {
+    console.log('❌ Error removing synced job:', error);
+  }
+}
+
+async function saveFailedJob(jobData) {
+  try {
+    const db = await openIndexedDB();
+    const transaction = db.transaction(['failed_jobs'], 'readwrite');
+    const store = transaction.objectStore('failed_jobs');
+    const failedJob = {
+      id: Date.now(),
+      data: jobData,
+      timestamp: new Date(),
+      retryCount: 0
+    };
+    await store.add(failedJob);
+    console.log('💾 Saved failed job to IndexedDB for retry');
+    
+    // Register background sync for retry
+    if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+      self.registration.sync.register('background-job-sync');
+    }
+  } catch (error) {
+    console.log('❌ Error saving failed job:', error);
+  }
+}
+
+async function openIndexedDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('FixMateSA_DB', 1);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      
+      // Create object stores for offline data
+      if (!db.objectStoreNames.contains('failed_jobs')) {
+        const jobStore = db.createObjectStore('failed_jobs', { keyPath: 'id' });
+        jobStore.createIndex('timestamp', 'timestamp', { unique: false });
+      }
+      
+      if (!db.objectStoreNames.contains('cached_data')) {
+        const cacheStore = db.createObjectStore('cached_data', { keyPath: 'key' });
+        cacheStore.createIndex('lastUpdated', 'lastUpdated', { unique: false });
+      }
+      
+      if (!db.objectStoreNames.contains('offline_actions')) {
+        const actionStore = db.createObjectStore('offline_actions', { keyPath: 'id' });
+        actionStore.createIndex('type', 'type', { unique: false });
+        actionStore.createIndex('timestamp', 'timestamp', { unique: false });
+      }
+    };
+  });
+}
+
+// Enhanced offline action storage
+async function saveOfflineAction(actionType, actionData) {
+  try {
+    const db = await openIndexedDB();
+    const transaction = db.transaction(['offline_actions'], 'readwrite');
+    const store = transaction.objectStore('offline_actions');
+    
+    const action = {
+      id: Date.now() + Math.random(),
+      type: actionType,
+      data: actionData,
+      timestamp: new Date(),
+      synced: false
+    };
+    
+    await store.add(action);
+    console.log(`💾 Saved offline action: ${actionType}`);
+    
+    // Register for background sync
+    if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+      self.registration.sync.register(`background-${actionType}-sync`);
+    }
+  } catch (error) {
+    console.log('❌ Error saving offline action:', error);
+  }
+}
+
+// Cache critical user data for offline access
+async function cacheUserData(key, data) {
+  try {
+    const db = await openIndexedDB();
+    const transaction = db.transaction(['cached_data'], 'readwrite');
+    const store = transaction.objectStore('cached_data');
+    
+    const cacheEntry = {
+      key: key,
+      data: data,
+      lastUpdated: new Date(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+    };
+    
+    await store.put(cacheEntry);
+    console.log(`💾 Cached data for offline access: ${key}`);
+  } catch (error) {
+    console.log('❌ Error caching data:', error);
+  }
+}
+
+// Retrieve cached data for offline access
+async function getCachedData(key) {
+  try {
+    const db = await openIndexedDB();
+    const transaction = db.transaction(['cached_data'], 'readonly');
+    const store = transaction.objectStore('cached_data');
+    const entry = await store.get(key);
+    
+    if (entry && entry.expiresAt > new Date()) {
+      console.log(`📦 Retrieved cached data: ${key}`);
+      return entry.data;
+    }
+    
+    return null;
+  } catch (error) {
+    console.log('❌ Error retrieving cached data:', error);
+    return null;
+  }
 }
 
 // Periodic background sync
 self.addEventListener('periodicsync', (event) => {
+  console.log('📱 Periodic sync triggered:', event.tag);
+  
   if (event.tag === 'content-sync') {
     event.waitUntil(syncContent());
+  } else if (event.tag === 'user-data-sync') {
+    event.waitUntil(syncUserData());
+  } else if (event.tag === 'notification-sync') {
+    event.waitUntil(syncNotifications());
   }
 });
 
 async function syncContent() {
   console.log('📱 Periodic sync: Updating app content...');
-  // Sync critical app data in the background
+  try {
+    // Sync critical app data in the background
+    const endpoints = [
+      '/api/fixers',
+      '/api/jobs',
+      '/api/announcements'
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint);
+        if (response.ok) {
+          const data = await response.json();
+          await cacheUserData(endpoint, data);
+          console.log(`✅ Synced ${endpoint}`);
+        }
+      } catch (error) {
+        console.log(`❌ Failed to sync ${endpoint}:`, error);
+      }
+    }
+  } catch (error) {
+    console.log('❌ Content sync error:', error);
+  }
 }
+
+async function syncUserData() {
+  console.log('👤 Syncing user-specific data...');
+  try {
+    // Get user token from cache or storage
+    const token = await getCachedData('auth_token');
+    if (!token) return;
+    
+    const userEndpoints = [
+      '/api/dashboard',
+      '/api/profile',
+      '/api/notifications'
+    ];
+    
+    for (const endpoint of userEndpoints) {
+      try {
+        const response = await fetch(endpoint, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          await cacheUserData(`user_${endpoint}`, data);
+          console.log(`✅ Synced user data: ${endpoint}`);
+        }
+      } catch (error) {
+        console.log(`❌ Failed to sync user data ${endpoint}:`, error);
+      }
+    }
+  } catch (error) {
+    console.log('❌ User data sync error:', error);
+  }
+}
+
+async function syncNotifications() {
+  console.log('🔔 Syncing notifications...');
+  try {
+    // Sync offline actions that were queued
+    const db = await openIndexedDB();
+    const transaction = db.transaction(['offline_actions'], 'readonly');
+    const store = transaction.objectStore('offline_actions');
+    const actions = await store.getAll();
+    
+    for (const action of actions) {
+      if (!action.synced) {
+        try {
+          // Attempt to sync the action
+          const success = await syncOfflineAction(action);
+          if (success) {
+            // Mark as synced
+            const updateTransaction = db.transaction(['offline_actions'], 'readwrite');
+            const updateStore = updateTransaction.objectStore('offline_actions');
+            action.synced = true;
+            await updateStore.put(action);
+          }
+        } catch (error) {
+          console.log(`❌ Failed to sync action ${action.id}:`, error);
+        }
+      }
+    }
+  } catch (error) {
+    console.log('❌ Notification sync error:', error);
+  }
+}
+
+async function syncOfflineAction(action) {
+  try {
+    const token = await getCachedData('auth_token');
+    if (!token) return false;
+    
+    let endpoint, method, body;
+    
+    switch (action.type) {
+      case 'job_create':
+        endpoint = '/api/jobs';
+        method = 'POST';
+        body = JSON.stringify(action.data);
+        break;
+      case 'profile_update':
+        endpoint = '/api/profile';
+        method = 'PUT';
+        body = JSON.stringify(action.data);
+        break;
+      case 'notification_read':
+        endpoint = `/api/notifications/${action.data.id}/read`;
+        method = 'POST';
+        break;
+      default:
+        return false;
+    }
+    
+    const response = await fetch(endpoint, {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: body
+    });
+    
+    return response.ok;
+  } catch (error) {
+    console.log('❌ Error syncing offline action:', error);
+    return false;
+  }
+}
+
+// Enhanced message handling for offline actions
+self.addEventListener('message', (event) => {
+  console.log('📨 Service Worker received message:', event.data);
+  
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('⚡ Service Worker: Skipping waiting phase');
+    self.skipWaiting();
+  } else if (event.data && event.data.type === 'SAVE_OFFLINE_ACTION') {
+    // Save action for offline sync
+    saveOfflineAction(event.data.actionType, event.data.actionData);
+  } else if (event.data && event.data.type === 'CACHE_USER_DATA') {
+    // Cache important user data
+    cacheUserData(event.data.key, event.data.data);
+  } else if (event.data && event.data.type === 'SHOW_TEST_NOTIFICATION') {
+    // Show test notification
+    self.registration.showNotification(event.data.data.title, {
+      body: event.data.data.body,
+      icon: '/fixmate-logo.jpg',
+      badge: '/fixmate-logo.jpg',
+      tag: 'test-notification',
+      data: event.data.data
+    });
+  }
+});
