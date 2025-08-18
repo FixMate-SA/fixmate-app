@@ -4426,20 +4426,107 @@ async def send_push_notification(request: Request, db: Session = Depends(get_db)
                 "message": "No matching push subscriptions found"
             }
         
-        # Log notification details (implement actual sending in production)
-        print(f"📤 Would send push notification to {len(subscriptions)} subscription(s):")
-        print(f"   Target User ID: {target_user_id}")
-        print(f"   Target Role: {target_role}")
-        print(f"   Type: {notification_type}")
-        print(f"   Title: {title}")
-        print(f"   Message: {message}")
-        print(f"   URL: {url}")
+        # Implement actual push notification sending
+        sent_count = 0
+        failed_count = 0
+        
+        if PYWEBPUSH_AVAILABLE:
+            # Load VAPID keys from environment
+            vapid_private_key = os.getenv('VAPID_PRIVATE_KEY')
+            vapid_subject = os.getenv('VAPID_SUBJECT', 'mailto:support@fixmate-sa.com')
+            
+            if not vapid_private_key:
+                return {
+                    "success": True,
+                    "message": f"Push notification simulated for {len(subscriptions)} subscription(s)",
+                    "recipients": len(subscriptions),
+                    "dev_mode": "VAPID keys not configured - notifications simulated"
+                }
+            
+            for sub_row in subscriptions:
+                try:
+                    user_id_from_db = sub_row[0]
+                    subscription_data = json.loads(sub_row[1])
+                    
+                    # Prepare notification payload based on type
+                    payload = {
+                        'title': title,
+                        'body': message,
+                        'type': notification_type,
+                        'url': url,
+                        'icon': '/fixmate-logo.jpg',
+                        'badge': '/fixmate-logo.jpg',
+                        'tag': f'{notification_type}-{int(time.time())}',
+                        'timestamp': int(time.time() * 1000),
+                        'userId': user_id_from_db
+                    }
+                    
+                    # Add specific data based on notification type
+                    if notification_type == 'job_assigned':
+                        payload.update({
+                            'actions': [
+                                {'action': 'view_job', 'title': '🔧 View Job'},
+                                {'action': 'dismiss', 'title': 'Later'}
+                            ],
+                            'requireInteraction': True
+                        })
+                    elif notification_type == 'payment_received':
+                        payload.update({
+                            'actions': [
+                                {'action': 'view', 'title': '💰 View Payment'},
+                                {'action': 'dismiss', 'title': 'OK'}
+                            ]
+                        })
+                    
+                    # Send push notification
+                    webpush(
+                        subscription_info=subscription_data,
+                        data=json.dumps(payload),
+                        vapid_private_key=vapid_private_key,
+                        vapid_claims={"sub": vapid_subject}
+                    )
+                    
+                    sent_count += 1
+                    print(f"✅ Sent push notification to user {user_id_from_db}")
+                    
+                except WebPushException as e:
+                    failed_count += 1
+                    print(f"❌ WebPush error for user {sub_row[0]}: {e}")
+                    
+                    # If subscription is invalid, remove it from database
+                    if e.response and e.response.status_code in [410, 404]:
+                        try:
+                            delete_invalid_sub = text("""
+                                DELETE FROM push_subscriptions 
+                                WHERE subscription_data = :sub_data
+                            """)
+                            db.execute(delete_invalid_sub, {'sub_data': sub_row[1]})
+                            db.commit()
+                            print(f"🗑️ Removed invalid subscription for user {sub_row[0]}")
+                        except Exception as cleanup_error:
+                            print(f"Failed to cleanup invalid subscription: {cleanup_error}")
+                    
+                except Exception as e:
+                    failed_count += 1
+                    print(f"❌ Push notification error for user {sub_row[0]}: {e}")
+        else:
+            # Fallback to simulation
+            sent_count = len(subscriptions)
+            print(f"📤 Simulated push notification to {len(subscriptions)} subscription(s):")
+            print(f"   Target User ID: {target_user_id}")
+            print(f"   Target Role: {target_role}")
+            print(f"   Type: {notification_type}")
+            print(f"   Title: {title}")
+            print(f"   Message: {message}")
+            print(f"   URL: {url}")
         
         return {
-            "success": True,
-            "message": f"Push notification sent to {len(subscriptions)} subscription(s)",
+            "success": sent_count > 0,
+            "message": f"Push notification sent to {sent_count}/{len(subscriptions)} subscription(s)",
             "recipients": len(subscriptions),
-            "dev_mode": "Push notification logged to console (implement pywebpush for production)"
+            "sent": sent_count,
+            "failed": failed_count,
+            "simulation_mode": not PYWEBPUSH_AVAILABLE or not os.getenv('VAPID_PRIVATE_KEY')
         }
         
     except HTTPException:
