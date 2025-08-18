@@ -4179,41 +4179,30 @@ async def subscribe_to_push(request: Request, db: Session = Depends(get_db)):
         
         # Create push_subscriptions table if it doesn't exist
         try:
-            # Check if table exists and has the right constraint
-            check_constraint_query = text("""
-                SELECT constraint_name FROM information_schema.table_constraints 
-                WHERE table_name = 'push_subscriptions' 
-                AND constraint_type = 'UNIQUE'
-                AND constraint_name = 'push_subscriptions_user_endpoint_unique'
-            """)
-            constraint_result = db.execute(check_constraint_query).fetchone()
+            # Drop and recreate table to ensure clean state
+            drop_table_query = text("DROP TABLE IF EXISTS push_subscriptions")
+            db.execute(drop_table_query)
             
-            if not constraint_result:
-                # Drop table if it exists without proper constraint and recreate
-                drop_table_query = text("DROP TABLE IF EXISTS push_subscriptions")
-                db.execute(drop_table_query)
-                
-                # Create table with proper constraint
-                create_table_query = text("""
-                    CREATE TABLE push_subscriptions (
-                        id SERIAL PRIMARY KEY,
-                        user_id VARCHAR(255) NOT NULL,
-                        user_role VARCHAR(50),
-                        endpoint TEXT NOT NULL,
-                        p256dh_key TEXT,
-                        auth_key TEXT,
-                        subscription_data TEXT,
-                        created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                        CONSTRAINT push_subscriptions_user_endpoint_unique UNIQUE (user_id, endpoint)
-                    )
-                """)
-                db.execute(create_table_query)
-                print("✅ Created push_subscriptions table with proper unique constraint")
+            # Create table with proper constraint
+            create_table_query = text("""
+                CREATE TABLE push_subscriptions (
+                    id SERIAL PRIMARY KEY,
+                    user_id VARCHAR(255) NOT NULL,
+                    user_role VARCHAR(50),
+                    endpoint TEXT NOT NULL,
+                    p256dh_key TEXT,
+                    auth_key TEXT,
+                    subscription_data TEXT,
+                    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            db.execute(create_table_query)
+            print("✅ Created push_subscriptions table")
             
             db.commit()
         except Exception as table_error:
-            print(f"Push subscriptions table creation info: {table_error}")
+            print(f"Push subscriptions table creation error: {table_error}")
             try:
                 db.rollback()
             except:
