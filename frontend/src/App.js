@@ -698,8 +698,9 @@ function App() {
               <Route path="*" element={<DefaultRoute />} />
             </Routes>
             
-            {/* PWA Install Prompt - Available globally */}
+            {/* PWA Components - Available globally */}
             <PWAInstallPrompt />
+            <PWAStatus />
           </div>
         </Router>
       </AuthProvider>
