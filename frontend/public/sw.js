@@ -69,16 +69,6 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Handle messages from main app
-self.addEventListener('message', (event) => {
-  console.log('📨 Service Worker received message:', event.data);
-  
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    console.log('⚡ Service Worker: Skipping waiting phase');
-    self.skipWaiting();
-  }
-});
-
 // Activate event - cleanup old caches
 self.addEventListener('activate', (event) => {
   console.log('🚀 FixMate-SA Service Worker: Activating...');
