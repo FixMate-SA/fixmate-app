@@ -448,8 +448,12 @@ def verify_user_ownership(
 # Profile Management API Endpoints
 
 @app.get("/api/profile/{user_id}")
-async def get_user_profile(user_id: str, db: Session = Depends(get_db)):
-    """Get user profile information"""
+async def get_user_profile(
+    user_id: str, 
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_user_ownership)
+):
+    """Get user profile information (authenticated)"""
     try:
         # Find user by ID
         user = db.query(User).filter(User.id == user_id).first()
