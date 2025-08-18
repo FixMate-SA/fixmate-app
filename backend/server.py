@@ -4294,37 +4294,85 @@ async def send_test_notification(request: Request, db: Session = Depends(get_db)
                 "message": "No push subscriptions found for user"
             }
         
-        # In a real implementation, you would use a library like pywebpush
-        # For now, we'll just log the notification details
-        print(f"📤 Would send push notification to {len(subscriptions)} subscription(s):")
-        print(f"   User: {user_id}")
-        print(f"   Type: {notification_type}")
-        print(f"   Title: {title}")
-        print(f"   Message: {message}")
+        # Implement actual push notification sending using pywebpush
+        sent_count = 0
+        failed_count = 0
         
-        # TODO: Implement actual push notification sending using pywebpush
-        # Example:
-        # from pywebpush import webpush
-        # for sub_row in subscriptions:
-        #     subscription_data = json.loads(sub_row[0])
-        #     webpush(
-        #         subscription_info=subscription_data,
-        #         data=json.dumps({
-        #             'title': title,
-        #             'body': message,
-        #             'type': notification_type,
-        #             'url': '/dashboard'
-        #         }),
-        #         vapid_private_key="path/to/private_key.pem",
-        #         vapid_claims={
-        #             "sub": "mailto:admin@fixmate-sa.com"
-        #         }
-        #     )
+        if PYWEBPUSH_AVAILABLE:
+            # Load VAPID keys from environment
+            vapid_private_key = os.getenv('VAPID_PRIVATE_KEY')
+            vapid_subject = os.getenv('VAPID_SUBJECT', 'mailto:support@fixmate-sa.com')
+            
+            if not vapid_private_key:
+                print("⚠️ VAPID private key not configured, using simulation mode")
+                return {
+                    "success": True,
+                    "message": f"Test notification simulated for {len(subscriptions)} subscription(s)",
+                    "dev_mode": "VAPID keys not configured - notifications simulated"
+                }
+            
+            for sub_row in subscriptions:
+                try:
+                    subscription_data = json.loads(sub_row[0])
+                    
+                    # Prepare notification payload
+                    payload = {
+                        'title': title,
+                        'body': message,
+                        'type': notification_type,
+                        'url': '/dashboard',
+                        'icon': '/fixmate-logo.jpg',
+                        'badge': '/fixmate-logo.jpg',
+                        'tag': f'test-{notification_type}',
+                        'timestamp': int(time.time() * 1000)
+                    }
+                    
+                    # Send push notification
+                    webpush(
+                        subscription_info=subscription_data,
+                        data=json.dumps(payload),
+                        vapid_private_key=vapid_private_key,
+                        vapid_claims={"sub": vapid_subject}
+                    )
+                    
+                    sent_count += 1
+                    print(f"✅ Sent push notification to endpoint: {subscription_data.get('endpoint', 'unknown')[:50]}...")
+                    
+                except WebPushException as e:
+                    failed_count += 1
+                    print(f"❌ WebPush error: {e}")
+                    
+                    # If subscription is invalid, remove it from database
+                    if e.response and e.response.status_code in [410, 404]:
+                        try:
+                            delete_invalid_sub = text("""
+                                DELETE FROM push_subscriptions 
+                                WHERE subscription_data = :sub_data
+                            """)
+                            db.execute(delete_invalid_sub, {'sub_data': sub_row[0]})
+                            db.commit()
+                            print(f"🗑️ Removed invalid subscription")
+                        except Exception as cleanup_error:
+                            print(f"Failed to cleanup invalid subscription: {cleanup_error}")
+                    
+                except Exception as e:
+                    failed_count += 1
+                    print(f"❌ Push notification error: {e}")
+        else:
+            # Fallback to simulation
+            sent_count = len(subscriptions)
+            print(f"📤 Simulated push notification to {len(subscriptions)} subscription(s):")
+            print(f"   User: {user_id}")
+            print(f"   Type: {notification_type}")
+            print(f"   Title: {title}")
+            print(f"   Message: {message}")
         
         return {
-            "success": True,
-            "message": f"Test notification sent to {len(subscriptions)} subscription(s)",
-            "dev_mode": "Push notification logged to console (implement pywebpush for production)"
+            "success": sent_count > 0,
+            "message": f"Test notification sent to {sent_count}/{len(subscriptions)} subscription(s)",
+            "sent": sent_count,
+            "failed": failed_count,
+            "simulation_mode": not PYWEBPUSH_AVAILABLE or not os.getenv('VAPID_PRIVATE_KEY')
         }
         
     except HTTPException:
