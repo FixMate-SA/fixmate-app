@@ -5063,17 +5063,13 @@ agent_communication:
 
 test_plan:
   current_focus:
-    - "Automatic Job Allocation System - Fixer Authentication & Dashboard Access"
-    - "Automatic Job Allocation System - FixerJobBoard Component"
-    - "Automatic Job Allocation System - Fixer Notifications Tab"
-    - "Automatic Job Allocation System - Available Jobs Tab"
-    - "Automatic Job Allocation System - End-to-End Workflow"
-    - "Automatic Job Allocation System - API Integration Verification"
-    - "Automatic Job Allocation System - Mobile Responsiveness"
+    - "Push Notification Manager Component"
+    - "Push Notification API Endpoints"
   stuck_tasks:
+    - "Push Notification Manager Component"
+    - "Push Notification API Endpoints"
     - "Missing Enterprise Invoice Detail Endpoint - GET /api/enterprise/invoice/{invoice_id}"
     - "Missing Enterprise Location Delete Endpoint - DELETE /api/enterprise/locations/{location_id}"
   test_all: false
   test_priority: "high_first"
-  test_priority: "frontend_job_allocation_integration"
 
