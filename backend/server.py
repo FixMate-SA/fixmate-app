@@ -20,6 +20,14 @@ from pathlib import Path
 import tempfile
 import shutil
 
+# Push notification imports
+try:
+    from pywebpush import webpush, WebPushException
+    PYWEBPUSH_AVAILABLE = True
+except ImportError:
+    PYWEBPUSH_AVAILABLE = False
+    print("⚠️ pywebpush not available - push notifications will be simulated")
+
 # Optional imports for AI features - don't break if not available
 try:
     import openai
