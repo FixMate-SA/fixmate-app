@@ -409,6 +409,171 @@ async def signup(signup_data: UserSignup, db: Session = Depends(get_db)):
         print(f"Signup error: {str(e)}")
         return UserResponse(success=False, message="Failed to create account. Please try again.")
 
+# Profile Management API Endpoints
+
+@app.get("/api/profile/{user_id}")
+async def get_user_profile(user_id: str, db: Session = Depends(get_db)):
+    """Get user profile information"""
+    try:
+        # Find user by ID
+        user = db.query(User).filter(User.id == user_id).first()
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Build profile data based on role
+        profile_data = {
+            "id": user.id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "phone": user.phone,
+            "town": user.town,
+            "address": getattr(user, 'address', None),
+            "role": user.role.value if hasattr(user.role, 'value') else user.role,
+            "created_at": user.created_at.isoformat() if user.created_at else None
+        }
+        
+        # Add role-specific fields
+        if user.role == UserRole.fixer or user.role == 'fixer':
+            profile_data.update({
+                "services": getattr(user, 'services', None),
+                "experience_years": getattr(user, 'experience_years', None),
+                "hourly_rate": getattr(user, 'hourly_rate', None),
+                "availability_status": getattr(user, 'availability_status', 'available'),
+                "service_area": getattr(user, 'service_area', None),
+                "certifications": getattr(user, 'certifications', None),
+                "portfolio_images": getattr(user, 'portfolio_images', None),
+                "rating": getattr(user, 'rating', 5.0),
+                "total_jobs": getattr(user, 'total_jobs', 0)
+            })
+        elif user.role == UserRole.admin or user.role == 'admin':
+            profile_data.update({
+                "admin_level": getattr(user, 'admin_level', 'standard'),
+                "department": getattr(user, 'department', 'general')
+            })
+        
+        return {
+            "success": True,
+            "user": profile_data
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Get profile error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch profile")
+
+@app.put("/api/profile/{user_id}")
+async def update_user_profile(
+    user_id: str, 
+    profile_data: Dict[str, Any],
+    db: Session = Depends(get_db)
+):
+    """Update user profile information"""
+    try:
+        # Find user by ID
+        user = db.query(User).filter(User.id == user_id).first()
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Update basic fields
+        basic_fields = ['first_name', 'last_name', 'email', 'phone', 'town', 'address']
+        for field in basic_fields:
+            if field in profile_data and profile_data[field] is not None:
+                setattr(user, field, profile_data[field])
+        
+        # Update role-specific fields
+        if user.role == UserRole.fixer or user.role == 'fixer':
+            fixer_fields = [
+                'services', 'experience_years', 'hourly_rate', 
+                'availability_status', 'service_area', 'certifications', 'portfolio_images'
+            ]
+            for field in fixer_fields:
+                if field in profile_data and profile_data[field] is not None:
+                    setattr(user, field, profile_data[field])
+        
+        elif user.role == UserRole.admin or user.role == 'admin':
+            admin_fields = ['admin_level', 'department']
+            for field in admin_fields:
+                if field in profile_data and profile_data[field] is not None:
+                    setattr(user, field, profile_data[field])
+        
+        # Update timestamp
+        user.updated_at = datetime.utcnow()
+        
+        db.commit()
+        db.refresh(user)
+        
+        return ProfileResponse(
+            success=True,
+            message="Profile updated successfully",
+            user={
+                "id": user.id,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.email,
+                "role": user.role.value if hasattr(user.role, 'value') else user.role
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Update profile error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update profile")
+
+@app.post("/api/profile/{user_id}/upload-image")
+async def upload_profile_image(
+    user_id: str,
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """Upload profile image"""
+    try:
+        # Validate user exists
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Validate image file
+        if not image.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="File must be an image")
+        
+        # Create uploads directory if it doesn't exist
+        uploads_dir = Path("/app/frontend/public/uploads/profiles")
+        uploads_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Generate unique filename
+        file_extension = image.filename.split('.')[-1] if '.' in image.filename else 'jpg'
+        unique_filename = f"profile_{user_id}_{int(time.time())}.{file_extension}"
+        file_path = uploads_dir / unique_filename
+        
+        # Save file
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+        
+        # Update user profile with image URL
+        profile_image_url = f"/uploads/profiles/{unique_filename}"
+        setattr(user, 'profile_image', profile_image_url)
+        user.updated_at = datetime.utcnow()
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Profile image uploaded successfully",
+            "image_url": profile_image_url
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Upload image error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to upload image")
+
 # Emergency Services API Endpoints
 
 @app.post("/api/emergency/alert", response_model=EmergencyResponse)
