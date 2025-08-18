@@ -570,9 +570,10 @@ async def update_user_profile(
 async def upload_profile_image(
     user_id: str,
     image: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_user_ownership)
 ):
-    """Upload profile image"""
+    """Upload profile image (authenticated)"""
     try:
         # Validate user exists
         user = db.query(User).filter(User.id == user_id).first()
