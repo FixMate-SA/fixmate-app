@@ -63,10 +63,20 @@ self.addEventListener('install', (event) => {
       caches.open(API_CACHE)
     ]).then(() => {
       console.log('✅ FixMate-SA Service Worker: Installation complete');
-      // Force activation
+      // Force activation immediately for better UX
       return self.skipWaiting();
     })
   );
+});
+
+// Handle messages from main app
+self.addEventListener('message', (event) => {
+  console.log('📨 Service Worker received message:', event.data);
+  
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('⚡ Service Worker: Skipping waiting phase');
+    self.skipWaiting();
+  }
 });
 
 // Activate event - cleanup old caches
@@ -331,7 +341,7 @@ self.addEventListener('notificationclick', (event) => {
   if (event.action === 'view') {
     // Open the app or specific page
     event.waitUntil(
-      clients.openWindow(event.notification.data?.url || '/')
+      self.clients.openWindow(event.notification.data?.url || '/')
     );
   } else if (event.action === 'dismiss') {
     // Just close the notification
@@ -339,7 +349,7 @@ self.addEventListener('notificationclick', (event) => {
   } else {
     // Default click action
     event.waitUntil(
-      clients.openWindow('/')
+      self.clients.openWindow('/')
     );
   }
 });
