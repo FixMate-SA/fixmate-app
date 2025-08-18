@@ -5,6 +5,7 @@ import MobileHeader from './MobileHeader';
 import NavigationFixed from './NavigationFixed';
 import MobileBottomNav from './MobileBottomNav';
 import Footer from './Footer';
+import PWAStatus from '../Common/PWAStatus';
 
 const ResponsiveLayout = ({ children }) => {
   const { user } = useAuth();
@@ -43,6 +44,9 @@ const ResponsiveLayout = ({ children }) => {
       <div className="md:hidden">
         <MobileBottomNav />
       </div>
+
+      {/* PWA Components for authenticated users */}
+      <PWAStatus />
     </div>
   );
 };
