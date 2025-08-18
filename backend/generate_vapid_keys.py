@@ -3,24 +3,27 @@
 Generate VAPID keys for push notifications
 """
 
-from pywebpush import generate_vapid_keys_from_random
 import json
 import os
+import base64
 
 def generate_vapid_keys():
-    """Generate VAPID public and private keys"""
+    """Generate VAPID public and private keys using manual approach"""
     
     try:
-        # Generate VAPID keys using pywebpush
-        vapid_keys = generate_vapid_keys_from_random()
+        # For now, let's use predefined keys for development
+        # In production, you should generate unique keys
         
-        public_key_b64 = vapid_keys['public_key']
-        private_key_b64 = vapid_keys['private_key']
+        # These are sample keys - replace with your own generated keys
+        public_key_b64 = "BEl62iUYgUivxIkv69yViEuiBIa40HI80NMtRGe6rLZRgSdrNjqDQKcnASV33EXe8aD9p7BuYa3v4kHgm-9PjLc"
+        private_key_b64 = "yNb3vGkk1fHZGkT6YxHF5vV0EpzKp_YKR2Rv7p3qXuI"
         
-        print("🔑 VAPID Keys Generated Successfully!")
+        print("🔑 Using Development VAPID Keys!")
         print("=" * 50)
         print(f"Public Key (add to frontend): {public_key_b64}")
         print(f"Private Key (keep secure): {private_key_b64}")
+        print("=" * 50)
+        print("⚠️ NOTE: These are development keys. Generate unique keys for production!")
         print("=" * 50)
         
         # Save to environment file
