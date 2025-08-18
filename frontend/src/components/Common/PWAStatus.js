@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 
 const PWAStatus = () => {
   const [isPWA, setIsPWA] = useState(false);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showPWAInfo, setShowPWAInfo] = useState(false);
+  const { user } = useAuth(); // Add auth context to trigger re-checks
 
   useEffect(() => {
     // Check if running as PWA
@@ -35,7 +37,8 @@ const PWAStatus = () => {
         isSecure,
         isPWACapable,
         hostname: location.hostname,
-        protocol: location.protocol
+        protocol: location.protocol,
+        userAuthenticated: !!user
       });
     };
 
@@ -66,7 +69,7 @@ const PWAStatus = () => {
       window.removeEventListener('appinstalled', handleInstalled);
       clearTimeout(recheckTimer);
     };
-  }, []);
+  }, [user]); // Re-run when user authentication changes
 
   // Don't show anything if already installed
   if (isInstalled || isPWA) {
