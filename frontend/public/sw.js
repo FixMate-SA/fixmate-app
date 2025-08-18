@@ -290,9 +290,9 @@ async function syncFailedMessages() {
   console.log('🔄 Syncing failed messages...');
 }
 
-// Push notification handler
+// Push notification handler with enhanced features
 self.addEventListener('push', (event) => {
-  console.log('🔔 Push notification received');
+  console.log('🔔 Push notification received:', event);
   
   let notificationData = {
     title: 'FixMate-SA',
@@ -301,27 +301,101 @@ self.addEventListener('push', (event) => {
     badge: '/fixmate-logo.jpg',
     tag: 'fixmate-notification',
     requireInteraction: false,
-    actions: []
+    vibrate: [200, 100, 200],
+    data: {
+      url: '/',
+      timestamp: Date.now()
+    },
+    actions: [
+      {
+        action: 'view',
+        title: '👀 View',
+        icon: '/fixmate-logo.jpg'
+      },
+      {
+        action: 'dismiss',
+        title: '❌ Dismiss'
+      }
+    ]
   };
   
   if (event.data) {
     try {
-      const data = event.data.json();
-      notificationData = {
-        ...notificationData,
-        ...data,
-        actions: [
-          {
-            action: 'view',
-            title: 'View',
-            icon: '/fixmate-logo.jpg'
+      const pushData = event.data.json();
+      console.log('📨 Push data received:', pushData);
+      
+      // Customize notification based on type
+      if (pushData.type === 'job_assigned') {
+        notificationData = {
+          ...notificationData,
+          title: '🔧 New Job Assigned!',
+          body: `You have been assigned a ${pushData.service} job`,
+          tag: 'job-assignment',
+          requireInteraction: true,
+          data: {
+            url: '/fixer/available-jobs',
+            jobId: pushData.jobId,
+            type: 'job_assigned'
           },
-          {
-            action: 'dismiss',
-            title: 'Dismiss'
+          actions: [
+            {
+              action: 'view_job',
+              title: '🔧 View Job',
+              icon: '/fixmate-logo.jpg'
+            },
+            {
+              action: 'dismiss',
+              title: 'Later'
+            }
+          ]
+        };
+      } else if (pushData.type === 'job_completed') {
+        notificationData = {
+          ...notificationData,
+          title: '✅ Job Completed!',
+          body: pushData.message || 'A job has been marked as completed',
+          tag: 'job-completion',
+          data: {
+            url: '/dashboard',
+            jobId: pushData.jobId,
+            type: 'job_completed'
           }
-        ]
-      };
+        };
+      } else if (pushData.type === 'payment_received') {
+        notificationData = {
+          ...notificationData,
+          title: '💰 Payment Received!',
+          body: `You received R${pushData.amount} for your service`,
+          tag: 'payment',
+          data: {
+            url: '/fixer/payment',
+            amount: pushData.amount,
+            type: 'payment_received'
+          }
+        };
+      } else if (pushData.type === 'message') {
+        notificationData = {
+          ...notificationData,
+          title: '💬 New Message',
+          body: pushData.message || 'You have a new message',
+          tag: 'message',
+          data: {
+            url: pushData.url || '/dashboard',
+            type: 'message'
+          }
+        };
+      } else {
+        // Generic notification
+        notificationData = {
+          ...notificationData,
+          title: pushData.title || notificationData.title,
+          body: pushData.body || pushData.message || notificationData.body,
+          data: {
+            url: pushData.url || '/',
+            ...pushData
+          }
+        };
+      }
     } catch (error) {
       console.log('❌ Error parsing push data:', error);
     }
@@ -332,25 +406,59 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Notification click handler
+// Enhanced notification click handler
 self.addEventListener('notificationclick', (event) => {
-  console.log('🔔 Notification clicked:', event.action);
+  console.log('🔔 Notification clicked:', event.action, event.notification.data);
   
   event.notification.close();
   
-  if (event.action === 'view') {
-    // Open the app or specific page
-    event.waitUntil(
-      self.clients.openWindow(event.notification.data?.url || '/')
-    );
+  const notificationData = event.notification.data || {};
+  let targetUrl = '/';
+  
+  if (event.action === 'view_job') {
+    targetUrl = `/fixer/available-jobs${notificationData.jobId ? '?job=' + notificationData.jobId : ''}`;
+  } else if (event.action === 'view') {
+    targetUrl = notificationData.url || '/dashboard';
   } else if (event.action === 'dismiss') {
     // Just close the notification
     return;
   } else {
-    // Default click action
-    event.waitUntil(
-      self.clients.openWindow('/')
-    );
+    // Default click action - open the URL from notification data
+    targetUrl = notificationData.url || '/';
+  }
+  
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clients) => {
+        // Check if there's already a window open
+        for (let client of clients) {
+          if ('focus' in client) {
+            client.focus();
+            client.postMessage({
+              type: 'NOTIFICATION_CLICK',
+              url: targetUrl,
+              data: notificationData
+            });
+            return;
+          }
+        }
+        
+        // No window open, create new one
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(targetUrl);
+        }
+      })
+  );
+});
+
+// Handle notification close
+self.addEventListener('notificationclose', (event) => {
+  console.log('🔔 Notification closed:', event.notification.tag);
+  
+  // Track notification dismissal
+  if (event.notification.data && event.notification.data.trackClose) {
+    // Send analytics or tracking data
+    console.log('📊 Tracking notification dismissal');
   }
 });
 
