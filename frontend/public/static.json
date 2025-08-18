@@ -2,9 +2,22 @@
   "root": "build/",
   "clean_urls": false,
   "routes": {
+    "/manifest.json": "manifest.json",
+    "/sw.js": "sw.js", 
+    "/offline.html": "offline.html",
+    "/fixmate-logo.jpg": "fixmate-logo.jpg",
+    "/static/**": "$1",
     "/**": "index.html"
   },
   "headers": {
+    "/manifest.json": {
+      "Content-Type": "application/manifest+json",
+      "Cache-Control": "public, max-age=0"
+    },
+    "/sw.js": {
+      "Content-Type": "application/javascript",
+      "Cache-Control": "public, max-age=0"
+    },
     "/static/**": {
       "Cache-Control": "public, max-age=31536000, immutable"
     },
