@@ -508,9 +508,10 @@ async def get_user_profile(
 async def update_user_profile(
     user_id: str, 
     profile_data: Dict[str, Any],
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_user_ownership)
 ):
-    """Update user profile information"""
+    """Update user profile information (authenticated)"""
     try:
         # Find user by ID
         user = db.query(User).filter(User.id == user_id).first()
