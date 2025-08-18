@@ -4444,6 +4444,19 @@ async def send_test_notification(request: Request, db: Session = Depends(get_db)
 async def send_push_notification(request: Request, db: Session = Depends(get_db)):
     """Send push notification to specific users or roles"""
     try:
+        # Extract and validate user from token
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Missing or invalid authorization token")
+            
+        authenticated_user_id = auth_header.replace('Bearer token_', '')
+        
+        # Verify user exists
+        user_check = text("SELECT id FROM users WHERE id = :user_id")
+        user_result = db.execute(user_check, {'user_id': authenticated_user_id}).fetchone()
+        if not user_result:
+            raise HTTPException(status_code=401, detail="Invalid user token")
+        
         data = await request.json()
         
         # Can target by user_id, user_role, or both
