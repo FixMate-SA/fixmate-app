@@ -257,3 +257,24 @@ class AnnouncementChat(Base):
     user_role = Column(String, nullable=False)
     message = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class PushSubscription(Base):
+    __tablename__ = "push_subscriptions"
+    __table_args__ = {'extend_existing': True}
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    user_role = Column(String, nullable=True)
+    endpoint = Column(Text, nullable=False)
+    p256dh_key = Column(Text, nullable=True)
+    auth_key = Column(Text, nullable=True)
+    subscription_data = Column(Text, nullable=False)  # JSON string of full subscription
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="push_subscriptions")
+
+# Add push_subscriptions relationship to User model
+# This will be added by modifying the User class
