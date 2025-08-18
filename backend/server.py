@@ -409,6 +409,42 @@ async def signup(signup_data: UserSignup, db: Session = Depends(get_db)):
         print(f"Signup error: {str(e)}")
         return UserResponse(success=False, message="Failed to create account. Please try again.")
 
+# Authentication Dependencies
+def verify_token_dependency(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())):
+    """Verify Bearer token and return user information"""
+    try:
+        token = credentials.credentials
+        
+        # Simple token validation - token format is "token_{user_id}"
+        if not token or not token.startswith("token_"):
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid authentication credentials"
+            )
+        
+        # Extract user_id from token
+        user_id = token.replace("token_", "")
+        
+        return {"user_id": user_id, "token": token}
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication credentials"
+        )
+
+def verify_user_ownership(
+    user_id: str, 
+    token_data: dict = Depends(verify_token_dependency)
+):
+    """Verify that the authenticated user can access the requested user_id"""
+    if token_data["user_id"] != user_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied: You can only access your own profile"
+        )
+    return token_data
+
 # Profile Management API Endpoints
 
 @app.get("/api/profile/{user_id}")
