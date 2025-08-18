@@ -464,13 +464,149 @@ self.addEventListener('notificationclose', (event) => {
 
 // Helper functions for IndexedDB operations
 async function getFailedJobs() {
-  // Implementation for retrieving failed jobs from IndexedDB
-  return [];
+  try {
+    const db = await openIndexedDB();
+    const transaction = db.transaction(['failed_jobs'], 'readonly');
+    const store = transaction.objectStore('failed_jobs');
+    const jobs = await store.getAll();
+    return jobs;
+  } catch (error) {
+    console.log('❌ Error getting failed jobs:', error);
+    return [];
+  }
 }
 
 async function removeFailedJob(jobId) {
-  // Implementation for removing synced job from IndexedDB
-  console.log('Removing synced job:', jobId);
+  try {
+    const db = await openIndexedDB();
+    const transaction = db.transaction(['failed_jobs'], 'readwrite');
+    const store = transaction.objectStore('failed_jobs');
+    await store.delete(jobId);
+    console.log('✅ Removed synced job from IndexedDB:', jobId);
+  } catch (error) {
+    console.log('❌ Error removing synced job:', error);
+  }
+}
+
+async function saveFailedJob(jobData) {
+  try {
+    const db = await openIndexedDB();
+    const transaction = db.transaction(['failed_jobs'], 'readwrite');
+    const store = transaction.objectStore('failed_jobs');
+    const failedJob = {
+      id: Date.now(),
+      data: jobData,
+      timestamp: new Date(),
+      retryCount: 0
+    };
+    await store.add(failedJob);
+    console.log('💾 Saved failed job to IndexedDB for retry');
+    
+    // Register background sync for retry
+    if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+      self.registration.sync.register('background-job-sync');
+    }
+  } catch (error) {
+    console.log('❌ Error saving failed job:', error);
+  }
+}
+
+async function openIndexedDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('FixMateSA_DB', 1);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      
+      // Create object stores for offline data
+      if (!db.objectStoreNames.contains('failed_jobs')) {
+        const jobStore = db.createObjectStore('failed_jobs', { keyPath: 'id' });
+        jobStore.createIndex('timestamp', 'timestamp', { unique: false });
+      }
+      
+      if (!db.objectStoreNames.contains('cached_data')) {
+        const cacheStore = db.createObjectStore('cached_data', { keyPath: 'key' });
+        cacheStore.createIndex('lastUpdated', 'lastUpdated', { unique: false });
+      }
+      
+      if (!db.objectStoreNames.contains('offline_actions')) {
+        const actionStore = db.createObjectStore('offline_actions', { keyPath: 'id' });
+        actionStore.createIndex('type', 'type', { unique: false });
+        actionStore.createIndex('timestamp', 'timestamp', { unique: false });
+      }
+    };
+  });
+}
+
+// Enhanced offline action storage
+async function saveOfflineAction(actionType, actionData) {
+  try {
+    const db = await openIndexedDB();
+    const transaction = db.transaction(['offline_actions'], 'readwrite');
+    const store = transaction.objectStore('offline_actions');
+    
+    const action = {
+      id: Date.now() + Math.random(),
+      type: actionType,
+      data: actionData,
+      timestamp: new Date(),
+      synced: false
+    };
+    
+    await store.add(action);
+    console.log(`💾 Saved offline action: ${actionType}`);
+    
+    // Register for background sync
+    if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+      self.registration.sync.register(`background-${actionType}-sync`);
+    }
+  } catch (error) {
+    console.log('❌ Error saving offline action:', error);
+  }
+}
+
+// Cache critical user data for offline access
+async function cacheUserData(key, data) {
+  try {
+    const db = await openIndexedDB();
+    const transaction = db.transaction(['cached_data'], 'readwrite');
+    const store = transaction.objectStore('cached_data');
+    
+    const cacheEntry = {
+      key: key,
+      data: data,
+      lastUpdated: new Date(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+    };
+    
+    await store.put(cacheEntry);
+    console.log(`💾 Cached data for offline access: ${key}`);
+  } catch (error) {
+    console.log('❌ Error caching data:', error);
+  }
+}
+
+// Retrieve cached data for offline access
+async function getCachedData(key) {
+  try {
+    const db = await openIndexedDB();
+    const transaction = db.transaction(['cached_data'], 'readonly');
+    const store = transaction.objectStore('cached_data');
+    const entry = await store.get(key);
+    
+    if (entry && entry.expiresAt > new Date()) {
+      console.log(`📦 Retrieved cached data: ${key}`);
+      return entry.data;
+    }
+    
+    return null;
+  } catch (error) {
+    console.log('❌ Error retrieving cached data:', error);
+    return null;
+  }
 }
 
 // Periodic background sync
