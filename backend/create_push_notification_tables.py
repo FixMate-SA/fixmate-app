@@ -6,14 +6,24 @@ Create push notification related database tables
 import os
 import sys
 from sqlalchemy import create_engine, text
-from database import get_database_url
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 def create_push_notification_tables():
     """Create push notification tables in the database"""
     
     try:
-        # Get database URL
-        database_url = get_database_url()
+        # Get database URL from environment
+        database_url = os.getenv("DATABASE_URL")
+        if database_url and database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
+        
+        if not database_url:
+            print("❌ DATABASE_URL not found in environment variables")
+            return False
+        
         engine = create_engine(database_url)
         
         with engine.connect() as connection:
