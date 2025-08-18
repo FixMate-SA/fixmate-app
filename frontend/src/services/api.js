@@ -301,6 +301,11 @@ export const apiService = {
 
   // USSD Support
   getUSSDStats: () => api.get('/ussd/stats'),
+
+  // Push Notification Support
+  subscribeToPush: (subscriptionData) => api.post('/push/subscribe', subscriptionData),
+  unsubscribeFromPush: (subscriptionData) => api.post('/push/unsubscribe', subscriptionData),
+  sendTestNotification: (notificationData) => api.post('/push/test', notificationData),
 };
 
 export default api;
