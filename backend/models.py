@@ -34,7 +34,7 @@ class EmergencyStatus(enum.Enum):
 class User(Base):
     __tablename__ = "users"
     
-    # Only include columns that actually exist in the database
+    # Basic user fields
     id = Column(String, primary_key=True)
     phone = Column(String, unique=True, index=True)
     first_name = Column(String)
@@ -57,6 +57,24 @@ class User(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     password_reset_code = Column(Text)
     password_reset_expires = Column(DateTime)
+    
+    # Enhanced profile fields
+    profile_image = Column(Text)
+    
+    # Fixer-specific fields
+    services = Column(Text)  # JSON or comma-separated services
+    experience_years = Column(Integer)
+    hourly_rate = Column(Float)
+    availability_status = Column(String, default='available')
+    service_area = Column(Text)
+    certifications = Column(Text)  # JSON string of certifications
+    portfolio_images = Column(Text)  # JSON string of image URLs
+    rating = Column(Float, default=5.0)
+    total_jobs = Column(Integer, default=0)
+    
+    # Admin-specific fields
+    admin_level = Column(String, default='standard')
+    department = Column(String, default='general')
     
     # Relationships
     jobs_created = relationship("Job", foreign_keys="Job.client_id", back_populates="client")
