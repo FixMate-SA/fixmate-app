@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-FixMate-SA Push Notification System Backend Testing
-Comprehensive testing for push notification endpoints and enhanced offline features
+FixMate-SA Enhanced Profile Management System Backend Testing
+Comprehensive testing for profile management endpoints, database fields, and role-specific functionality
 """
 
 import requests
@@ -10,9 +10,10 @@ import time
 import uuid
 from datetime import datetime
 import os
+import io
 
-# Configuration
-BACKEND_URL = "https://service-pros-2.preview.emergentagent.com/api"
+# Configuration - Get from frontend .env
+BACKEND_URL = "https://51889874-0b20-4a58-a006-376948278cd6.preview.emergentagent.com/api"
 
 # Test user credentials (from test_result.md)
 TEST_USERS = {
