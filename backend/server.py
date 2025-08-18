@@ -117,6 +117,38 @@ class EmergencyResponse(BaseModel):
     voice_transcribed: Optional[bool] = False
     transcription_preview: Optional[str] = None
 
+# Profile Update Schemas
+class ProfileUpdateBase(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    town: Optional[str] = None
+    address: Optional[str] = None
+
+class ClientProfileUpdate(ProfileUpdateBase):
+    pass
+
+class FixerProfileUpdate(ProfileUpdateBase):
+    # Professional information
+    services: Optional[str] = None  # Comma-separated list
+    experience_years: Optional[int] = None
+    hourly_rate: Optional[float] = None
+    availability_status: Optional[str] = None
+    service_area: Optional[str] = None
+    certifications: Optional[str] = None  # JSON string of certifications
+    portfolio_images: Optional[str] = None  # JSON string of image URLs
+
+class AdminProfileUpdate(ProfileUpdateBase):
+    # Admin-specific settings
+    admin_level: Optional[str] = None
+    department: Optional[str] = None
+
+class ProfileResponse(BaseModel):
+    success: bool
+    message: str
+    user: Optional[Dict[str, Any]] = None
+
 # Helper Functions
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Verify JWT token (simplified for demo)"""
