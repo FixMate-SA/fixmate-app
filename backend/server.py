@@ -4226,19 +4226,23 @@ async def subscribe_to_push(request: Request, db: Session = Depends(get_db)):
         auth = keys.get('auth')
         
         # Insert or update subscription
-        upsert_query = text("""
+        # First, try to delete existing subscription for this user and endpoint
+        delete_existing_query = text("""
+            DELETE FROM push_subscriptions 
+            WHERE user_id = :user_id AND endpoint = :endpoint
+        """)
+        db.execute(delete_existing_query, {
+            'user_id': user_id,
+            'endpoint': endpoint
+        })
+        
+        # Then insert the new subscription
+        insert_query = text("""
             INSERT INTO push_subscriptions (user_id, user_role, endpoint, p256dh_key, auth_key, subscription_data)
             VALUES (:user_id, :user_role, :endpoint, :p256dh, :auth, :subscription_data)
-            ON CONFLICT (user_id, endpoint) 
-            DO UPDATE SET 
-                user_role = EXCLUDED.user_role,
-                p256dh_key = EXCLUDED.p256dh_key,
-                auth_key = EXCLUDED.auth_key,
-                subscription_data = EXCLUDED.subscription_data,
-                updated_at = CURRENT_TIMESTAMP
         """)
         
-        db.execute(upsert_query, {
+        db.execute(insert_query, {
             'user_id': user_id,
             'user_role': user_role,
             'endpoint': endpoint,
