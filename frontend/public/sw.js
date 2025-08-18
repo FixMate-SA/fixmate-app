@@ -341,7 +341,7 @@ self.addEventListener('notificationclick', (event) => {
   if (event.action === 'view') {
     // Open the app or specific page
     event.waitUntil(
-      clients.openWindow(event.notification.data?.url || '/')
+      self.clients.openWindow(event.notification.data?.url || '/')
     );
   } else if (event.action === 'dismiss') {
     // Just close the notification
@@ -349,7 +349,7 @@ self.addEventListener('notificationclick', (event) => {
   } else {
     // Default click action
     event.waitUntil(
-      clients.openWindow('/')
+      self.clients.openWindow('/')
     );
   }
 });
