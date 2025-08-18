@@ -4162,6 +4162,7 @@ async def subscribe_to_push(request: Request, db: Session = Depends(get_db)):
         
         # Create push_subscriptions table if it doesn't exist
         try:
+            # First, try to create the table with the correct schema
             create_table_query = text("""
                 CREATE TABLE IF NOT EXISTS push_subscriptions (
                     id SERIAL PRIMARY KEY,
@@ -4172,11 +4173,18 @@ async def subscribe_to_push(request: Request, db: Session = Depends(get_db)):
                     auth_key TEXT,
                     subscription_data TEXT,
                     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(user_id, endpoint)
+                    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
                 )
             """)
             db.execute(create_table_query)
+            
+            # Add unique constraint if it doesn't exist
+            add_constraint_query = text("""
+                ALTER TABLE push_subscriptions 
+                ADD CONSTRAINT IF NOT EXISTS push_subscriptions_user_endpoint_unique 
+                UNIQUE (user_id, endpoint)
+            """)
+            db.execute(add_constraint_query)
             db.commit()
         except Exception as table_error:
             print(f"Push subscriptions table creation info: {table_error}")
