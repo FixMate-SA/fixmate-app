@@ -306,6 +306,19 @@ export const apiService = {
   subscribeToPush: (subscriptionData) => api.post('/push/subscribe', subscriptionData),
   unsubscribeFromPush: (subscriptionData) => api.post('/push/unsubscribe', subscriptionData),
   sendTestNotification: (notificationData) => api.post('/push/test', notificationData),
+
+  // Profile Management API calls
+  getProfile: (userId) => api.get(`/profile/${userId}`),
+  updateProfile: (userId, profileData) => api.put(`/profile/${userId}`, profileData),
+  uploadProfileImage: (userId, imageFile) => {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    return api.post(`/profile/${userId}/upload-image`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 };
 
 export default api;
