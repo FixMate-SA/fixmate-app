@@ -158,11 +158,11 @@ backend:
 frontend:
   - task: "Push Notification Manager Component"
     implemented: true
-    working: true
+    working: false
     file: "frontend/src/components/PushNotifications/PushNotificationManager.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "critical"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
@@ -170,6 +170,9 @@ frontend:
       - working: true
         agent: "main"
         comment: "✅ INTEGRATED PUSH NOTIFICATION MANAGER: Added PushNotificationManager component to Profile component as a dedicated notification settings section. Component includes permission handling, subscription management, test notification functionality, and proper VAPID key configuration. Frontend is ready for full push notification testing with backend endpoints."
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL ISSUE: PushNotificationManager component is NOT VISIBLE on the profile page despite being imported and integrated in Profile.js. Comprehensive testing revealed: ✅ LOGIN SUCCESSFUL: Client authentication (+27800000002/client2024test) working perfectly, ✅ PROFILE PAGE ACCESS: Successfully navigated to /client/profile page, ✅ BROWSER SUPPORT: Full push notification support confirmed (ServiceWorker: ✅, PushManager: ✅, Notifications: ✅, Secure Context: ✅), ✅ COMPONENT CODE: PushNotificationManager.js exists with proper implementation, ❌ UI RENDERING ISSUE: Component not rendering in the profile page UI - no notification settings section visible, no notification buttons found, no notification status indicators present. The component appears to be conditionally rendered or has a rendering issue preventing it from displaying to users."
 
   - task: "Enhanced Service Worker Offline Features"
     implemented: true
