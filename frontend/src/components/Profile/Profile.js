@@ -381,7 +381,22 @@ const Profile = () => {
         </div>
         
         <div className="p-6">
-          <PushNotificationManager />
+          {/* Debug: Test if component renders */}
+          <div className="bg-yellow-100 border border-yellow-400 rounded p-4 mb-4">
+            <h3 className="font-bold text-yellow-800">🔍 Debug: Push Notification Component Test</h3>
+            <p className="text-yellow-700">If you can see this, the Profile component is rendering correctly.</p>
+          </div>
+          
+          {/* Try-catch wrapper for PushNotificationManager */}
+          <div className="push-notification-wrapper">
+            <PushNotificationManager />
+          </div>
+          
+          {/* Fallback content */}
+          <div className="bg-blue-100 border border-blue-400 rounded p-4 mt-4">
+            <h3 className="font-bold text-blue-800">🔔 Push Notifications</h3>
+            <p className="text-blue-700">Push notification component should appear above this message.</p>
+          </div>
         </div>
       </div>
     </div>
