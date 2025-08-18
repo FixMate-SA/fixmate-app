@@ -62,6 +62,7 @@ class User(Base):
     jobs_created = relationship("Job", foreign_keys="Job.client_id", back_populates="client")
     jobs_assigned = relationship("Job", foreign_keys="Job.fixer_id", back_populates="fixer")
     emergency_alerts = relationship("EmergencyAlert", back_populates="user")
+    push_subscriptions = relationship("PushSubscription", back_populates="user")
     
     # Properties for backward compatibility
     @property
