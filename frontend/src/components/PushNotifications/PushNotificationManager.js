@@ -191,23 +191,14 @@ const PushNotificationManager = () => {
     if (!isSubscribed) return;
 
     try {
-      const response = await fetch('/api/push/test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          userId: user?.id,
-          type: 'test',
-          title: '🧪 Test Notification',
-          message: 'This is a test notification from FixMate-SA!'
-        })
+      const response = await apiService.post('/push/test', {
+        userId: user?.id,
+        type: 'test',
+        title: '🧪 Test Notification',
+        message: 'This is a test notification from FixMate-SA!'
       });
 
-      if (response.ok) {
-        console.log('✅ Test notification sent');
-      }
+      console.log('✅ Test notification sent');
     } catch (error) {
       console.error('❌ Error sending test notification:', error);
     }
