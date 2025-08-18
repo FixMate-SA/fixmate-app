@@ -4313,11 +4313,28 @@ async def unsubscribe_from_push(request: Request, db: Session = Depends(get_db))
 async def send_test_notification(request: Request, db: Session = Depends(get_db)):
     """Send test push notification to user"""
     try:
+        # Extract and validate user from token
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer token_'):
+            raise HTTPException(status_code=401, detail="Missing or invalid authorization token")
+            
+        authenticated_user_id = auth_header.replace('Bearer token_', '')
+        
+        # Verify user exists
+        user_check = text("SELECT id FROM users WHERE id = :user_id")
+        user_result = db.execute(user_check, {'user_id': authenticated_user_id}).fetchone()
+        if not user_result:
+            raise HTTPException(status_code=401, detail="Invalid user token")
+        
         data = await request.json()
         user_id = data.get('userId')
         notification_type = data.get('type', 'test')
         title = data.get('title', '🧪 Test Notification')
         message = data.get('message', 'This is a test notification from FixMate-SA!')
+        
+        # Security check: users can only send test notifications to themselves
+        if authenticated_user_id != user_id:
+            raise HTTPException(status_code=403, detail="Access denied: You can only send test notifications to yourself")
         
         if not user_id:
             raise HTTPException(status_code=400, detail="Missing user ID")
