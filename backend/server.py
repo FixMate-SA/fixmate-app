@@ -4195,13 +4195,18 @@ async def subscribe_to_push(request: Request, db: Session = Depends(get_db)):
             """)
             db.execute(create_table_query)
             
-            # Add unique constraint if it doesn't exist
-            add_constraint_query = text("""
-                ALTER TABLE push_subscriptions 
-                ADD CONSTRAINT IF NOT EXISTS push_subscriptions_user_endpoint_unique 
-                UNIQUE (user_id, endpoint)
-            """)
-            db.execute(add_constraint_query)
+            # Try to add unique constraint, ignore if it already exists
+            try:
+                add_constraint_query = text("""
+                    ALTER TABLE push_subscriptions 
+                    ADD CONSTRAINT push_subscriptions_user_endpoint_unique 
+                    UNIQUE (user_id, endpoint)
+                """)
+                db.execute(add_constraint_query)
+            except Exception as constraint_error:
+                # Constraint might already exist, that's okay
+                print(f"Constraint info (expected if already exists): {constraint_error}")
+            
             db.commit()
         except Exception as table_error:
             print(f"Push subscriptions table creation info: {table_error}")
