@@ -4,6 +4,9 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { apiService } from '../../services/api';
 import LanguageSelector from '../Common/LanguageSelector';
 import PushNotificationManager from '../PushNotifications/PushNotificationManager';
+import ClientProfile from './ClientProfile';
+import FixerProfile from './FixerProfile';
+import AdminProfile from './AdminProfile';
 
 const Profile = () => {
   const { user, getUserRole } = useAuth();
