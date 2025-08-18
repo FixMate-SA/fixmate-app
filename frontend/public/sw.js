@@ -611,12 +611,173 @@ async function getCachedData(key) {
 
 // Periodic background sync
 self.addEventListener('periodicsync', (event) => {
+  console.log('📱 Periodic sync triggered:', event.tag);
+  
   if (event.tag === 'content-sync') {
     event.waitUntil(syncContent());
+  } else if (event.tag === 'user-data-sync') {
+    event.waitUntil(syncUserData());
+  } else if (event.tag === 'notification-sync') {
+    event.waitUntil(syncNotifications());
   }
 });
 
 async function syncContent() {
   console.log('📱 Periodic sync: Updating app content...');
-  // Sync critical app data in the background
+  try {
+    // Sync critical app data in the background
+    const endpoints = [
+      '/api/fixers',
+      '/api/jobs',
+      '/api/announcements'
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint);
+        if (response.ok) {
+          const data = await response.json();
+          await cacheUserData(endpoint, data);
+          console.log(`✅ Synced ${endpoint}`);
+        }
+      } catch (error) {
+        console.log(`❌ Failed to sync ${endpoint}:`, error);
+      }
+    }
+  } catch (error) {
+    console.log('❌ Content sync error:', error);
+  }
 }
+
+async function syncUserData() {
+  console.log('👤 Syncing user-specific data...');
+  try {
+    // Get user token from cache or storage
+    const token = await getCachedData('auth_token');
+    if (!token) return;
+    
+    const userEndpoints = [
+      '/api/dashboard',
+      '/api/profile',
+      '/api/notifications'
+    ];
+    
+    for (const endpoint of userEndpoints) {
+      try {
+        const response = await fetch(endpoint, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          await cacheUserData(`user_${endpoint}`, data);
+          console.log(`✅ Synced user data: ${endpoint}`);
+        }
+      } catch (error) {
+        console.log(`❌ Failed to sync user data ${endpoint}:`, error);
+      }
+    }
+  } catch (error) {
+    console.log('❌ User data sync error:', error);
+  }
+}
+
+async function syncNotifications() {
+  console.log('🔔 Syncing notifications...');
+  try {
+    // Sync offline actions that were queued
+    const db = await openIndexedDB();
+    const transaction = db.transaction(['offline_actions'], 'readonly');
+    const store = transaction.objectStore('offline_actions');
+    const actions = await store.getAll();
+    
+    for (const action of actions) {
+      if (!action.synced) {
+        try {
+          // Attempt to sync the action
+          const success = await syncOfflineAction(action);
+          if (success) {
+            // Mark as synced
+            const updateTransaction = db.transaction(['offline_actions'], 'readwrite');
+            const updateStore = updateTransaction.objectStore('offline_actions');
+            action.synced = true;
+            await updateStore.put(action);
+          }
+        } catch (error) {
+          console.log(`❌ Failed to sync action ${action.id}:`, error);
+        }
+      }
+    }
+  } catch (error) {
+    console.log('❌ Notification sync error:', error);
+  }
+}
+
+async function syncOfflineAction(action) {
+  try {
+    const token = await getCachedData('auth_token');
+    if (!token) return false;
+    
+    let endpoint, method, body;
+    
+    switch (action.type) {
+      case 'job_create':
+        endpoint = '/api/jobs';
+        method = 'POST';
+        body = JSON.stringify(action.data);
+        break;
+      case 'profile_update':
+        endpoint = '/api/profile';
+        method = 'PUT';
+        body = JSON.stringify(action.data);
+        break;
+      case 'notification_read':
+        endpoint = `/api/notifications/${action.data.id}/read`;
+        method = 'POST';
+        break;
+      default:
+        return false;
+    }
+    
+    const response = await fetch(endpoint, {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: body
+    });
+    
+    return response.ok;
+  } catch (error) {
+    console.log('❌ Error syncing offline action:', error);
+    return false;
+  }
+}
+
+// Enhanced message handling for offline actions
+self.addEventListener('message', (event) => {
+  console.log('📨 Service Worker received message:', event.data);
+  
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('⚡ Service Worker: Skipping waiting phase');
+    self.skipWaiting();
+  } else if (event.data && event.data.type === 'SAVE_OFFLINE_ACTION') {
+    // Save action for offline sync
+    saveOfflineAction(event.data.actionType, event.data.actionData);
+  } else if (event.data && event.data.type === 'CACHE_USER_DATA') {
+    // Cache important user data
+    cacheUserData(event.data.key, event.data.data);
+  } else if (event.data && event.data.type === 'SHOW_TEST_NOTIFICATION') {
+    // Show test notification
+    self.registration.showNotification(event.data.data.title, {
+      body: event.data.data.body,
+      icon: '/fixmate-logo.jpg',
+      badge: '/fixmate-logo.jpg',
+      tag: 'test-notification',
+      data: event.data.data
+    });
+  }
+});
