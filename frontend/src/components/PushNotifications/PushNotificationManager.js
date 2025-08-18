@@ -149,22 +149,11 @@ const PushNotificationManager = () => {
 
   const sendSubscriptionToServer = async (subscription) => {
     try {
-      const response = await fetch('/api/push/subscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          subscription: subscription.toJSON(),
-          userId: user?.id,
-          userRole: user?.role
-        })
+      const response = await apiService.post('/push/subscribe', {
+        subscription: subscription.toJSON(),
+        userId: user?.id,
+        userRole: user?.role
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to save subscription to server');
-      }
 
       console.log('✅ Subscription saved to server');
     } catch (error) {
@@ -174,21 +163,10 @@ const PushNotificationManager = () => {
 
   const removeSubscriptionFromServer = async (subscription) => {
     try {
-      const response = await fetch('/api/push/unsubscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          subscription: subscription.toJSON(),
-          userId: user?.id
-        })
+      const response = await apiService.post('/push/unsubscribe', {
+        subscription: subscription.toJSON(),
+        userId: user?.id
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to remove subscription from server');
-      }
 
       console.log('✅ Subscription removed from server');
     } catch (error) {
