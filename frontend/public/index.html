@@ -47,23 +47,37 @@
         
         <!-- PWA Service Worker Registration -->
         <script>
-            // Register service worker
+            // Register service worker with better update handling
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
-                    navigator.serviceWorker.register('/sw.js')
+                    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
                         .then(function(registration) {
                             console.log('🔧 FixMate-SA PWA: Service Worker registered successfully:', registration.scope);
                             
-                            // Check for updates
+                            // Force immediate activation for new installations
+                            if (!navigator.serviceWorker.controller) {
+                                console.log('🔧 PWA: First time registration - activating immediately');
+                                return;
+                            }
+                            
+                            // Check for updates every 30 seconds
+                            setInterval(() => {
+                                registration.update();
+                            }, 30000);
+                            
+                            // Handle updates
                             registration.addEventListener('updatefound', function() {
                                 const newWorker = registration.installing;
-                                console.log('📦 FixMate-SA PWA: New version available');
+                                console.log('📦 FixMate-SA PWA: New version found, installing...');
                                 
                                 newWorker.addEventListener('statechange', function() {
-                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                        // New version installed, show update notification
-                                        if (window.confirm('New version of FixMate-SA is available. Update now?')) {
-                                            window.location.reload();
+                                    if (newWorker.state === 'installed') {
+                                        if (navigator.serviceWorker.controller) {
+                                            console.log('📦 FixMate-SA PWA: New version ready');
+                                            // Auto-update without user prompt for better experience
+                                            newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                        } else {
+                                            console.log('📦 FixMate-SA PWA: First install complete');
                                         }
                                     }
                                 });
@@ -72,11 +86,24 @@
                         .catch(function(error) {
                             console.log('❌ FixMate-SA PWA: Service Worker registration failed:', error);
                         });
+                    
+                    // Handle service worker updates
+                    navigator.serviceWorker.addEventListener('controllerchange', function() {
+                        console.log('🔄 FixMate-SA PWA: New service worker activated');
+                        // Optionally reload the page to get new content
+                        if (window.location.pathname !== '/') {
+                            window.location.reload();
+                        }
+                    });
                 });
                 
                 // Listen for messages from service worker
                 navigator.serviceWorker.addEventListener('message', function(event) {
                     console.log('📨 Message from Service Worker:', event.data);
+                    
+                    if (event.data.type === 'NEW_VERSION_AVAILABLE') {
+                        console.log('🆕 New version available for FixMate-SA');
+                    }
                 });
             }
         </script>
