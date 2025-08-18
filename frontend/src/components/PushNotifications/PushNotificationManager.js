@@ -40,13 +40,25 @@ const PushNotificationManager = () => {
     const supported = 'serviceWorker' in navigator && 
                      'PushManager' in window && 
                      'Notification' in window;
-    setIsSupported(supported);
+    
+    // Force support to true in development for testing
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const finalSupported = supported || isDevelopment;
+    
+    setIsSupported(finalSupported);
     
     if (supported) {
       setPermission(Notification.permission);
     }
     
-    console.log('🔔 Push notification support:', supported);
+    console.log('🔔 Push notification support check:', {
+      serviceWorker: 'serviceWorker' in navigator,
+      pushManager: 'PushManager' in window,
+      notification: 'Notification' in window,
+      secureContext: window.isSecureContext,
+      hostname: window.location.hostname,
+      finalSupported: finalSupported
+    });
   };
 
   const checkExistingSubscription = async () => {
