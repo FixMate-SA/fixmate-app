@@ -18,7 +18,7 @@ import requests
 import json
 from datetime import datetime
 
-HEROKU_BACKEND_URL = "https://7ef742b6-84fb-4679-ad46-1746d9bdf7d5.preview.emergentagent.com"
+HEROKU_BACKEND_URL = "https://service-pros-2.preview.emergentagent.com"
 
 def analyze_fixer_signup_error():
     """Analyze the HTTP 500 error in fixer signup"""

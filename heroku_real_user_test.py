@@ -11,7 +11,7 @@ import json
 from datetime import datetime
 
 # Heroku Backend URL
-HEROKU_BACKEND_URL = "https://7ef742b6-84fb-4679-ad46-1746d9bdf7d5.preview.emergentagent.com"
+HEROKU_BACKEND_URL = "https://service-pros-2.preview.emergentagent.com"
 
 def test_fixer_signup_with_real_user():
     """Test fixer signup with a real existing user"""

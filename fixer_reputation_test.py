@@ -10,7 +10,7 @@ import sys
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "https://fixmate-deploy-2.preview.emergentagent.com/api"
+BACKEND_URL = "https://service-pros-2.preview.emergentagent.com/api"
 FIXER_USER_ID = "c417ef19-cdb6-44ee-80aa-8128e0ff8e75"  # Fixer that logs in with +27800000003
 FIXER_LOGIN_PHONE = "+27800000003"
 FIXER_LOGIN_PASSWORD = "fixer2024test"

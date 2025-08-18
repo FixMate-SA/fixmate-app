@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "https://7ef742b6-84fb-4679-ad46-1746d9bdf7d5.preview.emergentagent.com"
+BACKEND_URL = "https://service-pros-2.preview.emergentagent.com"
 API_BASE = f"{BACKEND_URL}/api"
 
 def generate_unique_test_data():

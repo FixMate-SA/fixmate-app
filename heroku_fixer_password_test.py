@@ -21,7 +21,7 @@ import uuid
 from datetime import datetime
 
 # Heroku Backend URL from frontend/.env
-HEROKU_BACKEND_URL = "https://7ef742b6-84fb-4679-ad46-1746d9bdf7d5.preview.emergentagent.com"
+HEROKU_BACKEND_URL = "https://service-pros-2.preview.emergentagent.com"
 
 class HerokuFixerPasswordTester:
     def __init__(self):
