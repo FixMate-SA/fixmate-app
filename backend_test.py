@@ -37,6 +37,11 @@ TEST_USERS = {
 class ProfileManagementTester:
     def __init__(self):
         self.session = requests.Session()
+        # Disable SSL verification for testing (not recommended for production)
+        self.session.verify = False
+        # Disable SSL warnings
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         self.test_results = []
         self.authenticated_users = {}
         
