@@ -16,12 +16,27 @@ const PWAStatus = () => {
       setIsInstalled(isStandalone);
       setIsPWA(isStandalone);
 
-      // Check PWA capabilities
+      // Check PWA capabilities more thoroughly
       const hasSW = 'serviceWorker' in navigator;
       const hasManifest = document.querySelector('link[rel="manifest"]') !== null;
       const hasCache = 'caches' in window;
+      const isSecure = location.protocol === 'https:' || location.hostname === 'localhost';
       
-      setIsInstallable(hasSW && hasManifest && hasCache);
+      // Force PWA availability for all capable browsers
+      const isPWACapable = hasSW && hasManifest && hasCache && isSecure;
+      setIsInstallable(isPWACapable);
+      
+      // Debug logging for Heroku troubleshooting
+      console.log('🔍 PWA Status Check:', {
+        isStandalone,
+        hasSW,
+        hasManifest,
+        hasCache,
+        isSecure,
+        isPWACapable,
+        hostname: location.hostname,
+        protocol: location.protocol
+      });
     };
 
     checkPWAStatus();
@@ -43,9 +58,13 @@ const PWAStatus = () => {
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
     window.addEventListener('appinstalled', handleInstalled);
 
+    // Additional check after DOM is fully loaded
+    const recheckTimer = setTimeout(checkPWAStatus, 2000);
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
       window.removeEventListener('appinstalled', handleInstalled);
+      clearTimeout(recheckTimer);
     };
   }, []);
 
