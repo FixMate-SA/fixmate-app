@@ -137,8 +137,8 @@ class PushNotificationTester:
                 "subscription": {
                     "endpoint": f"https://fcm.googleapis.com/fcm/send/test-endpoint-{uuid.uuid4()}",
                     "keys": {
-                        "p256dh": "BEl62iUYgUivxIkv69yViEuiBIa40HI80NMtRGe6rLZRgSdrNjqDQKcnASV33EXe8aD9p7BuYa3v4kHgm-9PjLc",
-                        "auth": "yNb3vGkk1fHZGkT6YxHF5vV0EpzKp_YKR2Rv7p3qXuI"
+                        "p256dh": "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
+                        "auth": "tBHItJI5svbpez7KI4CCXg"
                     }
                 }
             }
